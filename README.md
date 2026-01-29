@@ -21,7 +21,7 @@ An editor for creating enriched Cyber Kill Chain assessments by mapping MITRE AT
 - **Score & Confidence** — Rate items by severity and assessment confidence
 - **Visual Indicators** — Color-coded ribbons, CVE badges, and metadata icons
 - **Hide Empty Phases** — Focus on active phases by hiding empty ones
-- **Import/Export** — JSON and CSV with full metadata support
+- **Import/Export** — Lightweight JSON sharing and CSV exports with metadata
 - **Navigator Layers** — Import ATT&CK Navigator JSON exports
 
 ![Relations View](relations.png)
@@ -95,6 +95,27 @@ Each assigned item supports:
 - [CAPEC](https://capec.mitre.org/) — Common Attack Pattern Enumeration
 - [CWE](https://cwe.mitre.org/) — Common Weakness Enumeration
 - [Unified Kill Chain](https://www.unifiedkillchain.com/) — Attack phase framework
+
+## Security
+
+AttackFlow implements defense-in-depth protections and adheres to security by design principles. 
+(Note: Application NOT production ready yet - may still contain vulnerable components) 
+Please do not hesitate to create an issue / pull request or contact me directly if you find any security related issues or have suggestions for further improving application security and mitigating exploitation scenarios. 
+
+- **Input Blocking** — Dangerous characters (`` < > [ ] { } " ' ; -- ` ``) blocked at input level
+- **Output Encoding** — All user-supplied values HTML-encoded before rendering
+- **DOM-Safe Rendering** — Uses `textContent` and DOM APIs instead of `innerHTML`
+- **Import Validation** — File size, item count, and pattern validation on imports
+- **Sanitized Data** — Source data cleaned of embedded markup during extraction
+- **XXE Protection** — Secure XML parsing with entity expansion disabled
+- **CSV Safety** — Formula injection protection on exports
+
+### Security Objectives
+1. **No execution of untrusted content** from local or upstream data (MITRE JSON/XML, user-imported layers).
+2. **Defensive rendering**: all UI output is treated as untrusted until sanitized & encoded.
+3. **Safe file import/export** with integrity and injection-resistant outputs.
+4. **Resilient parsing** of large/hostile XML/JSON inputs.
+5. **Predictable standalone, offline operation** No CDN requests, remote resource retrievals or third party dependencies to protect against upstream supply-chain compromises.
 
 ## Updating Data
 

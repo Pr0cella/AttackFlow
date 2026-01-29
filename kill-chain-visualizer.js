@@ -839,7 +839,7 @@ class KillChainVisualizer {
      * Render the kill chain visualization
      */
     render() {
-        this.container.innerHTML = '';
+        this.container.textContent = '';
 
         const superPhases = ['IN', 'THROUGH', 'OUT'];
         
@@ -852,7 +852,7 @@ class KillChainVisualizer {
             if (index < superPhases.length - 1) {
                 const arrow = document.createElement('div');
                 arrow.className = 'flow-arrow';
-                arrow.innerHTML = '→';
+                arrow.textContent = '→';
                 this.container.appendChild(arrow);
             }
         });
@@ -868,7 +868,15 @@ class KillChainVisualizer {
 
         const header = document.createElement('div');
         header.className = 'super-phase-header';
-        header.innerHTML = `${id} <small style="display: block; font-size: 0.7em; opacity: 0.8;">${superPhase.name}</small>`;
+        const headerTitle = document.createElement('span');
+        headerTitle.textContent = id;
+        const headerSub = document.createElement('small');
+        headerSub.style.display = 'block';
+        headerSub.style.fontSize = '0.7em';
+        headerSub.style.opacity = '0.8';
+        headerSub.textContent = superPhase.name || '';
+        header.appendChild(headerTitle);
+        header.appendChild(headerSub);
         el.appendChild(header);
 
         const content = document.createElement('div');
@@ -899,13 +907,26 @@ class KillChainVisualizer {
 
         const header = document.createElement('div');
         header.className = 'phase-header';
-        header.innerHTML = `
-            <div class="phase-title">
-                <span class="phase-name">${phase.name}</span>
-                <span class="phase-count ${techniques.length === 0 ? 'zero' : ''}">${techniques.length}</span>
-            </div>
-            <span class="phase-toggle">▼</span>
-        `;
+        const title = document.createElement('div');
+        title.className = 'phase-title';
+
+        const name = document.createElement('span');
+        name.className = 'phase-name';
+        name.textContent = phase.name || '';
+
+        const count = document.createElement('span');
+        count.className = `phase-count ${techniques.length === 0 ? 'zero' : ''}`;
+        count.textContent = String(techniques.length);
+
+        title.appendChild(name);
+        title.appendChild(count);
+
+        const toggle = document.createElement('span');
+        toggle.className = 'phase-toggle';
+        toggle.textContent = '▼';
+
+        header.appendChild(title);
+        header.appendChild(toggle);
         header.addEventListener('click', () => this.togglePhase(el));
         el.appendChild(header);
 
@@ -924,7 +945,9 @@ class KillChainVisualizer {
         if (techniques.length === 0) {
             const emptyMsg = document.createElement('div');
             emptyMsg.className = 'empty-state';
-            emptyMsg.innerHTML = '<small>No techniques in this phase</small>';
+            const small = document.createElement('small');
+            small.textContent = 'No techniques in this phase';
+            emptyMsg.appendChild(small);
             content.appendChild(emptyMsg);
         }
 
@@ -942,10 +965,17 @@ class KillChainVisualizer {
         const el = document.createElement('div');
         el.className = `technique domain-${domain}`;
         el.title = `${technique.id}: ${technique.name}${domainLabel}`;
-        el.innerHTML = `
-            <span class="technique-id">${technique.id}</span>
-            <span class="technique-name">${technique.name}</span>
-        `;
+
+        const idEl = document.createElement('span');
+        idEl.className = 'technique-id';
+        idEl.textContent = technique.id;
+
+        const nameEl = document.createElement('span');
+        nameEl.className = 'technique-name';
+        nameEl.textContent = technique.name;
+
+        el.appendChild(idEl);
+        el.appendChild(nameEl);
         
         // Add click handler for MITRE ATT&CK link
         // KCE-SEC-002: Use noopener to prevent tabnabbing

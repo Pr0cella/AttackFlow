@@ -1737,6 +1737,8 @@
                             <button class="dropdown-item" onclick="exportCSV(); closeDropdowns()">CSV</button>
                         </div>
                     </div>
+                    <button class="btn" onclick="triggerImportKillChain()">Import</button>
+                    <input id="import-killchain-input" type="file" accept=".json" onchange="importKillChain(event)" style="display: none;" />
                 </div>
             </div>
         </div>
@@ -2080,7 +2082,8 @@
                 <div class="guide-section">
                     <h4>Import & Export</h4>
                     <ul>
-                        <li><strong>JSON Export</strong> — Full project state, can be re-imported later</li>
+                        <li><strong>JSON Export</strong> — Lightweight kill chain state for sharing</li>
+                        <li><strong>JSON Import</strong> — Restore exported kill chains</li>
                         <li><strong>CSV Export</strong> — Spreadsheet format with all metadata</li>
                         <li><strong>Navigator Import</strong> — Load ATT&CK Navigator layer files</li>
                         <li>Use <span class="guide-key">Clear All</span> to reset the workspace</li>
@@ -2147,9 +2150,21 @@
                 div.textContent = String(str);
                 return div.innerHTML;
             },
-            
-            // Sanitize: remove control chars, trim, limit length
-            sanitize(str, maxLength = 1000) {
+
+            // Encode HTML entities (including quotes and backticks)
+            encodeHtmlEntities(str) {
+                if (str === null || str === undefined) return '';
+                return String(str)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;')
+                    .replace(/`/g, '&#96;');
+            },
+
+            // Normalize input: remove control chars, strip script tags, trim, limit length
+            normalize(str, maxLength = 1000) {
                 if (str === null || str === undefined) return '';
                 return String(str)
                     .replace(/[\x00-\x1F\x7F]/g, '')  // Remove control chars
@@ -2158,10 +2173,18 @@
                     .slice(0, maxLength);
             },
             
+            // Sanitize: remove control chars, strip disallowed chars, trim, limit length, encode entities
+            sanitize(str, maxLength = 1000) {
+                let value = this.normalize(str, maxLength);
+                // Remove disallowed bracket/quote/semicolon characters and SQL comment markers
+                value = value.replace(/[\[\]\{\};"'`]/g, '');
+                value = value.replace(/--+/g, '');
+                return this.encodeHtmlEntities(value);
+            },
+            
             // Sanitize for use in HTML attributes
             sanitizeAttr(str, maxLength = 200) {
-                return this.sanitize(str, maxLength)
-                    .replace(/["'`]/g, '');  // Remove quotes
+                return this.encodeHtmlEntities(this.sanitize(str, maxLength));
             },
             
             // Validators - return { valid: boolean, message?: string }
@@ -2214,7 +2237,7 @@
             
             // Validate observable based on type
             validateObservable(type, value) {
-                const v = this.sanitize(value, 500);
+                const v = this.normalize(value, 500);
                 switch (type) {
                     case 'ipv4-addr': return this.validators.ipv4(v);
                     case 'ipv6-addr': return this.validators.ipv6(v);
@@ -2236,6 +2259,111 @@
         // KCE-SEC-001: Shorthand for escaping HTML in template strings
         const esc = (str) => InputSecurity.escapeHtml(str);
         const escAttr = (str) => InputSecurity.sanitizeAttr(str);
+
+        const BLOCKED_INPUT_CHARS = new Set(['<', '>', '[', ']', '{', '}', '"', "'", '`', ';']);
+
+        function isTextInputElement(el) {
+            return el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA');
+        }
+
+        function sanitizeUserInputText(text) {
+            let value = InputSecurity.normalize(text, 10000);
+            value = value.replace(/[\[\]\{\};"'`]/g, '');
+            value = value.replace(/--+/g, '');
+            return value;
+        }
+
+        function applyInputGuards() {
+            document.addEventListener('keydown', (e) => {
+                const target = e.target;
+                if (!isTextInputElement(target)) return;
+                if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+                const key = e.key;
+                if (BLOCKED_INPUT_CHARS.has(key)) {
+                    e.preventDefault();
+                    return;
+                }
+
+                if (key === '-') {
+                    const value = target.value || '';
+                    const start = target.selectionStart ?? 0;
+                    const end = target.selectionEnd ?? start;
+                    const prev = start > 0 ? value[start - 1] : '';
+                    const next = end < value.length ? value[end] : '';
+                    if (prev === '-' || next === '-') {
+                        e.preventDefault();
+                    }
+                }
+            });
+
+            document.addEventListener('beforeinput', (e) => {
+                const target = e.target;
+                if (!isTextInputElement(target)) return;
+                if (e.inputType === 'insertText' && e.data) {
+                    if ([...e.data].some(ch => BLOCKED_INPUT_CHARS.has(ch))) {
+                        e.preventDefault();
+                    }
+                    if (e.data.includes('--')) {
+                        e.preventDefault();
+                    }
+                }
+            });
+
+            document.addEventListener('paste', (e) => {
+                const target = e.target;
+                if (!isTextInputElement(target)) return;
+                const data = (e.clipboardData || window.clipboardData)?.getData('text');
+                if (!data) return;
+                const sanitized = sanitizeUserInputText(data);
+                if (sanitized !== data) {
+                    e.preventDefault();
+                    const value = target.value || '';
+                    const start = target.selectionStart ?? value.length;
+                    const end = target.selectionEnd ?? value.length;
+                    const nextValue = value.slice(0, start) + sanitized + value.slice(end);
+                    target.value = nextValue;
+                    const cursor = start + sanitized.length;
+                    if (target.setSelectionRange) {
+                        target.setSelectionRange(cursor, cursor);
+                    }
+                }
+            });
+
+            document.addEventListener('drop', (e) => {
+                const target = e.target;
+                if (!isTextInputElement(target)) return;
+                const data = e.dataTransfer?.getData('text');
+                if (!data) return;
+                const sanitized = sanitizeUserInputText(data);
+                if (sanitized !== data) {
+                    e.preventDefault();
+                    const value = target.value || '';
+                    const start = target.selectionStart ?? value.length;
+                    const end = target.selectionEnd ?? value.length;
+                    const nextValue = value.slice(0, start) + sanitized + value.slice(end);
+                    target.value = nextValue;
+                    const cursor = start + sanitized.length;
+                    if (target.setSelectionRange) {
+                        target.setSelectionRange(cursor, cursor);
+                    }
+                }
+            });
+
+            document.addEventListener('input', (e) => {
+                const target = e.target;
+                if (!isTextInputElement(target)) return;
+                const value = target.value || '';
+                const sanitized = sanitizeUserInputText(value);
+                if (sanitized !== value) {
+                    const pos = target.selectionStart ?? sanitized.length;
+                    target.value = sanitized;
+                    if (target.setSelectionRange) {
+                        target.setSelectionRange(pos, pos);
+                    }
+                }
+            });
+        }
 
         // Encode < and > in any JSON-loaded strings
         function stripAngleBracketsFromJson(value) {
@@ -3432,12 +3560,16 @@
         function exportJSON() {
             const exportData = {
                 version: APP_VERSION,
+                schema: 'killchain-export-lite',
                 exportedAt: new Date().toISOString(),
+                view: state.view,
+                activeTab: state.activeTab,
+                filters: state.filters,
                 layers: state.layers,
+                groupByCapec: state.groupByCapec,
+                hideEmpty: state.hideEmpty,
                 assignments: state.assignments,
-                library: {
-                    techniques: state.library.techniques
-                }
+                selection: state.selection
             };
             
             const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
@@ -3448,6 +3580,111 @@
             a.click();
             URL.revokeObjectURL(url);
             showToast('Exported JSON');
+        }
+
+        function triggerImportKillChain() {
+            const input = document.getElementById('import-killchain-input');
+            if (input) input.click();
+        }
+
+        function ensureAssignmentShape(assignments) {
+            for (const [phaseKey, phaseData] of Object.entries(assignments)) {
+                if (!phaseData) continue;
+                for (const key of ['techniques', 'capecs', 'cwes']) {
+                    const list = Array.isArray(phaseData[key]) ? phaseData[key] : [];
+                    phaseData[key] = list.map(a => migrateAssignment(a));
+                }
+                assignments[phaseKey] = phaseData;
+            }
+        }
+
+        function ensureLibraryFallbacks(assignments) {
+            for (const phaseData of Object.values(assignments)) {
+                for (const tech of phaseData.techniques || []) {
+                    const id = getAssignmentId(tech);
+                    if (!state.library.techniques[id]) {
+                        state.library.techniques[id] = {
+                            id,
+                            name: getTechniqueName(id),
+                            domain: detectDomain(id)
+                        };
+                    }
+                }
+                for (const capec of phaseData.capecs || []) {
+                    const id = getAssignmentId(capec);
+                    if (!state.library.capecs[id]) {
+                        state.library.capecs[id] = { id, name: id };
+                    }
+                }
+                for (const cwe of phaseData.cwes || []) {
+                    const id = getAssignmentId(cwe);
+                    if (!state.library.cwes[id]) {
+                        state.library.cwes[id] = { id, name: id };
+                    }
+                }
+            }
+        }
+
+        function importKillChain(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = stripAngleBracketsFromJson(JSON.parse(e.target.result));
+
+                    if (!data || typeof data !== 'object') {
+                        throw new Error('Invalid export format');
+                    }
+
+                    const assignments = data.assignments;
+                    if (!assignments || typeof assignments !== 'object') {
+                        throw new Error('Missing assignments in export');
+                    }
+
+                    // Reset assignments and load imported state
+                    initAssignments();
+                    for (const [phaseKey, phaseData] of Object.entries(assignments)) {
+                        if (state.assignments[phaseKey]) {
+                            state.assignments[phaseKey] = phaseData;
+                        }
+                    }
+
+                    ensureAssignmentShape(state.assignments);
+                    ensureLibraryFallbacks(state.assignments);
+
+                    // Restore view state
+                    if (data.layers) state.layers = data.layers;
+                    if (data.filters) state.filters = data.filters;
+                    if (data.groupByCapec !== undefined) state.groupByCapec = data.groupByCapec;
+                    if (data.hideEmpty !== undefined) state.hideEmpty = data.hideEmpty;
+                    if (data.activeTab) state.activeTab = data.activeTab;
+                    if (data.selection) state.selection = data.selection;
+
+                    // Apply UI state
+                    document.getElementById('layer-attack').checked = !!state.layers.attack;
+                    document.getElementById('layer-capec').checked = !!state.layers.capec;
+                    document.getElementById('layer-cwe').checked = !!state.layers.cwe;
+                    document.getElementById('btn-group-capec').classList.toggle('active', !!state.groupByCapec);
+                    document.getElementById('btn-hide-empty').classList.toggle('active', !!state.hideEmpty);
+
+                    if (data.view) {
+                        setView(data.view);
+                    } else {
+                        renderKillChain();
+                    }
+
+                    switchTab(state.activeTab);
+                    renderAll();
+                    showToast('Imported kill chain');
+                } catch (err) {
+                    showToast('Import failed: ' + err.message);
+                }
+            };
+
+            reader.readAsText(file);
+            event.target.value = '';
         }
 
         function exportCSV() {
@@ -3683,11 +3920,26 @@
             const list = document.getElementById('hyperlink-list');
             const row = document.createElement('div');
             row.className = 'hyperlink-item';
-            row.innerHTML = `
-                <input type="text" class="metadata-input" placeholder="Label" value="${InputSecurity.escapeHtml(label)}">
-                <input type="text" class="metadata-input" placeholder="https://..." value="${InputSecurity.escapeHtml(url)}">
-                <button class="observable-remove" onclick="this.parentElement.remove()">&times;</button>
-            `;
+            const labelInput = document.createElement('input');
+            labelInput.type = 'text';
+            labelInput.className = 'metadata-input';
+            labelInput.placeholder = 'Label';
+            labelInput.value = label || '';
+
+            const urlInput = document.createElement('input');
+            urlInput.type = 'text';
+            urlInput.className = 'metadata-input';
+            urlInput.placeholder = 'https://...';
+            urlInput.value = url || '';
+
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'observable-remove';
+            removeBtn.innerHTML = '&times;';
+            removeBtn.onclick = () => row.remove();
+
+            row.appendChild(labelInput);
+            row.appendChild(urlInput);
+            row.appendChild(removeBtn);
             list.appendChild(row);
         }
 
@@ -3695,16 +3947,30 @@
             const list = document.getElementById('observable-list');
             const row = document.createElement('div');
             row.className = 'observable-item';
-            
-            let options = OBSERVABLE_TYPES.map(t => 
-                `<option value="${t.value}" ${t.value === type ? 'selected' : ''}>${t.label}</option>`
-            ).join('');
-            
-            row.innerHTML = `
-                <select class="metadata-select">${options}</select>
-                <input type="text" class="metadata-input" placeholder="Value" value="${InputSecurity.escapeHtml(value)}">
-                <button class="observable-remove" onclick="this.parentElement.remove()">&times;</button>
-            `;
+            const select = document.createElement('select');
+            select.className = 'metadata-select';
+            OBSERVABLE_TYPES.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t.value;
+                opt.textContent = t.label;
+                if (t.value === type) opt.selected = true;
+                select.appendChild(opt);
+            });
+
+            const valueInput = document.createElement('input');
+            valueInput.type = 'text';
+            valueInput.className = 'metadata-input';
+            valueInput.placeholder = 'Value';
+            valueInput.value = value || '';
+
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'observable-remove';
+            removeBtn.innerHTML = '&times;';
+            removeBtn.onclick = () => row.remove();
+
+            row.appendChild(select);
+            row.appendChild(valueInput);
+            row.appendChild(removeBtn);
             list.appendChild(row);
         }
 
@@ -3883,6 +4149,7 @@
             applyConfigColors();
         }
         initAssignments();
+        applyInputGuards();
         loadVersion();
         loadData();
     </script>

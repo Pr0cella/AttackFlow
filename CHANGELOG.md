@@ -13,6 +13,12 @@ This changelog also serves as a development context document for AI agents conti
 Security audit remediation implementing defense-in-depth protections across the application.
 
 #### Input/Output Security
+- **FIXED**: XSS via unsanitized double quotes
+- Added `InputSecurity` object with `encodeHtmlEntities()`, `sanitize()`, `sanitizeAttr()` methods
+- Created `BLOCKED_INPUT_CHARS` set blocking ``< > [ ] { } " ' ` ; --`` at input level
+- Added `applyInputGuards()` to all text inputs with `keydown`, `beforeinput`, `paste`, `drop` handlers
+- Replaced `innerHTML` with DOM APIs (`textContent`, `createElement`) where user values appear
+- Hardened `kill-chain-visualizer.js` render methods to use safe DOM construction
 - Applied HTML output encoding to all dynamic content rendering
 - Added shorthand utilities for consistent escaping throughout the codebase
 - Strengthened input validation patterns for structured data fields
@@ -50,6 +56,10 @@ Security audit remediation implementing defense-in-depth protections across the 
 - Framework source paths moved under frameworks/ and made configurable in config.js
 - Extraction scripts run sanitization before and after parsing
 - JSON loader encodes angle brackets on read to prevent unencoded < or >
+
+#### Export / Import
+- JSON export is now lightweight (assignments + metadata only)
+- Import button restores exported kill chain state using local framework data
 
 #### Deployment
 - deploy.sh now skips files/directories ignored by .gitignore
