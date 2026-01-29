@@ -1,6 +1,6 @@
 # Unified Kill Chain Visualizer
 
-A JavaScript component that visualizes MITRE ATT&CK techniques mapped to the Unified Kill Chain framework. Supports all ATT&CK domains: **Enterprise**, **Mobile**, and **ICS**.
+A JavaScript application that visualizes for mapping MITRE ATT&CK, CAPEC & CWE to the Unified Kill Chain framework. Supports all ATT&CK domains: **Enterprise**, **Mobile**, and **ICS**.
 
 ![Version](https://img.shields.io/badge/version-2.4.1-blue)
 ![Preview](preview.png)
