@@ -7,7 +7,7 @@
 
 const CONFIG = {
     // Application info
-    version: '2.4.1',
+    version: '2.4.2',
     changelogUrl: 'CHANGELOG.md',
     
     // Phase colors (IN/THROUGH/OUT) - distinct from framework colors

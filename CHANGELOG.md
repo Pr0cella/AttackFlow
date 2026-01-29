@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to the Kill Chain Visualizer project are documented here.
+All notable changes to the AttackFlow application are documented here.
 
 This changelog also serves as a development context document for AI agents continuing this project.
 
@@ -8,7 +8,7 @@ This changelog also serves as a development context document for AI agents conti
 
 ## [2.4.2] - 2026-01-29
 
-### Security - General Missing Hardening
+### Security - Comprehensive Hardening
 
 Security audit remediation implementing defense-in-depth protections across the application.
 
@@ -29,7 +29,7 @@ Security audit remediation implementing defense-in-depth protections across the 
 - Ensured data extraction produces clean, display-ready content
 
 #### External Resource Protection
-- Hardened all external links with `target="_blank"` and `rel="noopener noreferrer"`
+- Hardened all external links with `target="_blank"` and `rel=\"noopener noreferrer\"`
 - Prevents reverse tabnapping and referrer leakage attacks
 
 #### XML Processing Security
@@ -49,6 +49,33 @@ Security audit remediation implementing defense-in-depth protections across the 
 - Increased detection and mitigation guidance limits (2,000 chars each)
 - Increased CAPEC and CWE description limits (2,000 chars)
 - Fuller context now available without truncation
+
+### Added - UI Enhancements
+
+#### Hide Empty Phases
+- New **Hide Empty** button in kill chain view controls
+- Hides phases with no assigned entities for a cleaner view
+- Toggle on/off to focus on active phases
+
+#### CVE Badge Display
+- CVE-IDs now display as full badges on phase items (e.g., "CVE-2024-12345")
+- Replaces the previous "V" indicator for better visibility
+
+#### Changelog Modal
+- Version number click now opens changelog in a modal dialog
+- No longer opens external file in new tab
+- Changelog content displayed in scrollable modal
+
+#### Dynamic Version Loading
+- Version number loaded dynamically from CHANGELOG.md
+- Ensures UI always reflects current release version
+- Used in JSON exports for schema versioning
+
+#### Expanded Usage Guide
+- Added Metadata & Enrichment section covering CVE, observables, and hyperlinks
+- Added View Controls section with Hide Empty and Relationships view
+- Reorganized Import & Export section with Navigator import info
+- Updated Tips section with new feature hints
 
 ---
 

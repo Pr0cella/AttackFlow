@@ -19,7 +19,8 @@ An editor for creating enriched Cyber Kill Chain assessments by mapping MITRE AT
 - **Drag & Drop** — Intuitive assignment of entities to phases
 - **Rich Metadata** — Comments, hyperlinks, observables, CVE/CVSS references
 - **Score & Confidence** — Rate items by severity and assessment confidence
-- **Visual Indicators** — Color-coded ribbons and metadata icons
+- **Visual Indicators** — Color-coded ribbons, CVE badges, and metadata icons
+- **Hide Empty Phases** — Focus on active phases by hiding empty ones
 - **Import/Export** — JSON and CSV with full metadata support
 - **Navigator Layers** — Import ATT&CK Navigator JSON exports
 
@@ -42,7 +43,8 @@ An editor for creating enriched Cyber Kill Chain assessments by mapping MITRE AT
 ├── kill-chain-visualizer.js    # Core visualization component
 ├── scripts/
 │   ├── extract-attack.py       # ATT&CK STIX bundle parser
-│   └── extract-data.py         # CAPEC/CWE XML parser
+│   ├── extract-data.py         # CAPEC/CWE XML parser
+│   └── sanitize-json.py        # Remove markup from data files
 └── resources/
     ├── attack-techniques.json  # ATT&CK library (898 techniques)
     ├── capec-full.json         # CAPEC attack patterns

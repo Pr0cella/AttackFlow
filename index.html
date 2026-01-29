@@ -549,6 +549,7 @@
         }
 
         .phase.empty { opacity: 0.4; }
+        .phase.hidden { display: none; }
         .phase.drop-target { border-color: var(--accent); background: rgba(113, 113, 122, 0.15); }
         .phase.minimized .phase-content { display: none; }
 
@@ -831,8 +832,9 @@
         }
         
         .metadata-icons .meta-icon {
-            width: 16px;
+            min-width: 16px;
             height: 16px;
+            padding: 0 4px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -841,6 +843,7 @@
             font-size: 10px;
             font-weight: 600;
             color: var(--text-primary);
+            white-space: nowrap;
         }
         
         .metadata-icons .meta-icon.has-cve { background: rgba(239, 68, 68, 0.3); color: #fca5a5; }
@@ -1556,6 +1559,21 @@
             line-height: 1.6;
         }
 
+        .modal-wide {
+            max-width: 700px;
+            max-height: 80vh;
+        }
+
+        .changelog-body {
+            white-space: pre-wrap;
+            font-family: var(--font-mono, 'SF Mono', Consolas, monospace);
+            font-size: 0.8rem;
+            background: var(--bg-dark);
+            border-radius: 4px;
+            padding: 16px;
+            max-height: 60vh;
+        }
+
         .guide-section {
             margin-bottom: 16px;
         }
@@ -1630,7 +1648,7 @@
             <div class="header-left">
                 <div class="header-title">Kill Chain Editor</div>
                 <div class="header-meta">
-                    <a href="CHANGELOG.md" target="_blank" rel="noopener noreferrer" class="version-link" title="View changelog">v2.4.1</a>
+                    <a href="#" class="version-link" id="app-version" title="View changelog" onclick="showChangelog(); return false;">v2.4.2</a>
                     <a href="#" class="help-link" onclick="showUsageGuide(); return false;" title="Usage guide">?</a>
                 </div>
             </div>
@@ -1751,6 +1769,7 @@
                 <div class="content-header">
                     <span style="font-size: 0.9rem; font-weight: 500;" id="content-title">Unified Kill Chain</span>
                     <div class="view-controls">
+                        <button class="btn" id="btn-hide-empty" onclick="toggleHideEmpty()">Hide Empty</button>
                         <button class="btn" id="btn-group-capec" onclick="toggleCapecGrouping()">Group by CAPEC</button>
                     </div>
                 </div>
@@ -1976,6 +1995,18 @@
                 </div>
 
                 <div class="guide-section">
+                    <h4>Metadata & Enrichment</h4>
+                    <ul>
+                        <li>Click assigned entities in the diagram to open the metadata editor</li>
+                        <li>Add <strong>Score</strong> (severity) and <strong>Confidence</strong> (assessment certainty)</li>
+                        <li>Link <strong>CVE-IDs</strong> and <strong>CVSS vectors</strong> to vulnerabilities</li>
+                        <li>Add <strong>Observables</strong>: IPs, hashes, domains, URLs, file names</li>
+                        <li>Attach <strong>Hyperlinks</strong> and <strong>Comments</strong> for context</li>
+                        <li>CVE-IDs display as badges on phase items</li>
+                    </ul>
+                </div>
+
+                <div class="guide-section">
                     <h4>Kill Chain Phases</h4>
                     <ul>
                         <li><span class="guide-color" style="background: var(--phase-in)"></span><strong>IN</strong> — Initial Foothold (reconnaissance → C2)</li>
@@ -1985,20 +2016,24 @@
                 </div>
 
                 <div class="guide-section">
-                    <h4>Filters & Views</h4>
+                    <h4>View Controls</h4>
                     <ul>
                         <li>Toggle <span class="guide-key">ATT&CK</span> <span class="guide-key">CAPEC</span> <span class="guide-key">CWE</span> layers to show/hide entity types</li>
                         <li>Use domain filters (All / Enterprise / Mobile / ICS) for techniques</li>
                         <li>Use abstraction filters for CAPECs and CWEs</li>
+                        <li>Enable <span class="guide-key">Hide Empty</span> to focus on phases with assignments</li>
                         <li>Enable <span class="guide-key">Group by CAPEC</span> to nest techniques under patterns</li>
+                        <li>Switch to <span class="guide-key">Relationships</span> view for CAPEC→CWE→ATT&CK chains</li>
                     </ul>
                 </div>
 
                 <div class="guide-section">
-                    <h4>Export Options</h4>
+                    <h4>Import & Export</h4>
                     <ul>
-                        <li><strong>JSON</strong> — Full project state, can be re-imported later</li>
-                        <li><strong>CSV</strong> — Spreadsheet format with phases as columns</li>
+                        <li><strong>JSON Export</strong> — Full project state, can be re-imported later</li>
+                        <li><strong>CSV Export</strong> — Spreadsheet format with all metadata</li>
+                        <li><strong>Navigator Import</strong> — Load ATT&CK Navigator layer files</li>
+                        <li>Use <span class="guide-key">Clear All</span> to reset the workspace</li>
                     </ul>
                 </div>
 
@@ -2007,16 +2042,50 @@
                     <ul>
                         <li>Assigned entities appear dimmed in the sidebar</li>
                         <li>Click phase headers to expand/collapse</li>
+                        <li>Score colors appear as left border ribbons on items</li>
                         <li>Related CAPECs and CWEs are shown in the detail panel</li>
-                        <li>External links open MITRE documentation in new tabs</li>
+                        <li>Click the version number to view the changelog</li>
                     </ul>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Changelog Modal -->
+    <div class="modal-overlay" id="changelog-modal" onclick="closeChangelog(event)">
+        <div class="modal modal-wide" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="modal-title">Changelog</div>
+                <button class="modal-close" onclick="closeChangelog()">×</button>
+            </div>
+            <div class="modal-body changelog-body" id="changelog-content">
+                <div class="loading-text">Loading changelog...</div>
+            </div>
+        </div>
+    </div>
+
     <script src="kill-chain-visualizer.js"></script>
     <script>
+        // ============================================================
+        // VERSION - Loaded dynamically from changelog
+        // ============================================================
+        let APP_VERSION = '2.4.2';  // Fallback version
+        
+        async function loadVersion() {
+            try {
+                const res = await fetch('CHANGELOG.md');
+                const text = await res.text();
+                const match = text.match(/^## \[([\d.]+)\]/m);
+                if (match) {
+                    APP_VERSION = match[1];
+                    const versionEl = document.getElementById('app-version');
+                    if (versionEl) versionEl.textContent = 'v' + APP_VERSION;
+                }
+            } catch (e) {
+                console.warn('Could not load version from changelog:', e);
+            }
+        }
+
         // ============================================================
         // INPUT SECURITY - Validation, Sanitization, Escaping
         // ============================================================
@@ -2223,6 +2292,7 @@
             view: 'killchain',  // 'killchain' | 'relationship'
             layers: { attack: true, capec: true, cwe: true },
             groupByCapec: false,
+            hideEmpty: false,
             activeTab: 'attack',
             filters: { attack: 'all', capec: 'all', cwe: 'all' },
             
@@ -2471,6 +2541,7 @@
             document.getElementById('relationship-container').classList.toggle('visible', view === 'relationship');
             document.getElementById('content-title').textContent = view === 'killchain' ? 'Unified Kill Chain' : 'CAPEC → CWE → ATT&CK → Phase';
             document.getElementById('btn-group-capec').style.display = view === 'killchain' ? 'inline-block' : 'none';
+            document.getElementById('btn-hide-empty').style.display = view === 'killchain' ? 'inline-block' : 'none';
             
             if (view === 'relationship') {
                 renderRelationshipView();
@@ -2488,6 +2559,12 @@
         function toggleCapecGrouping() {
             state.groupByCapec = !state.groupByCapec;
             document.getElementById('btn-group-capec').classList.toggle('active', state.groupByCapec);
+            renderKillChain();
+        }
+
+        function toggleHideEmpty() {
+            state.hideEmpty = !state.hideEmpty;
+            document.getElementById('btn-hide-empty').classList.toggle('active', state.hideEmpty);
             renderKillChain();
         }
 
@@ -2970,9 +3047,10 @@
                     const capecCount = state.layers.capec ? phaseData.capecs.length : 0;
                     const cweCount = state.layers.cwe ? phaseData.cwes.length : 0;
                     const totalCount = techCount + capecCount + cweCount;
+                    const isHidden = state.hideEmpty && totalCount === 0;
                     
                     html += `
-                        <div class="phase ${totalCount === 0 ? 'empty' : ''}" data-phase="${phaseKey}"
+                        <div class="phase ${totalCount === 0 ? 'empty' : ''} ${isHidden ? 'hidden' : ''}" data-phase="${phaseKey}"
                              ondragover="handleDragOver(event)"
                              ondragleave="handleDragLeave(event)"
                              ondrop="handleDrop(event, '${phaseKey}')">
@@ -3090,7 +3168,7 @@
             
             if (hasCve || hasObservables || hasLinks || hasComment || hasConfidence) {
                 metaIcons = '<div class="metadata-icons">';
-                if (hasCve) metaIcons += '<span class="meta-icon has-cve" title="Has CVE">V</span>';
+                if (hasCve) metaIcons += `<span class="meta-icon has-cve" title="${esc(metadata.cveId)}">${esc(metadata.cveId)}</span>`;
                 if (hasObservables) metaIcons += '<span class="meta-icon has-observable" title="Has Observables">O</span>';
                 if (hasLinks) metaIcons += '<span class="meta-icon has-link" title="Has Links">L</span>';
                 if (hasComment) metaIcons += '<span class="meta-icon has-comment" title="Has Comments">C</span>';
@@ -3285,7 +3363,7 @@
 
         function exportJSON() {
             const exportData = {
-                version: '2.4.1',  // Schema version for score/confidence separation
+                version: APP_VERSION,
                 exportedAt: new Date().toISOString(),
                 layers: state.layers,
                 assignments: state.assignments,
@@ -3685,10 +3763,33 @@
             document.getElementById('usage-guide-modal').classList.remove('visible');
         }
 
+        // ============================================================
+        // CHANGELOG MODAL
+        // ============================================================
+        async function showChangelog() {
+            const modal = document.getElementById('changelog-modal');
+            const content = document.getElementById('changelog-content');
+            modal.classList.add('visible');
+            
+            try {
+                const res = await fetch('CHANGELOG.md');
+                const text = await res.text();
+                content.textContent = text;
+            } catch (e) {
+                content.textContent = 'Error loading changelog: ' + e.message;
+            }
+        }
+
+        function closeChangelog(event) {
+            if (event && event.target !== event.currentTarget) return;
+            document.getElementById('changelog-modal').classList.remove('visible');
+        }
+
         // Close modals on Escape key
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 closeUsageGuide();
+                closeChangelog();
                 closeMetadataEditor();
             }
         });
@@ -3714,6 +3815,7 @@
             applyConfigColors();
         }
         initAssignments();
+        loadVersion();
         loadData();
     </script>
 </body>
