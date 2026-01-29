@@ -1,0 +1,3617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kill Chain Editor - Unified Kill Chain</title>
+    <script src="config.js"></script>
+    <style>
+        :root {
+            --phase-in: #10b981;
+            --phase-through: #06b6d4;
+            --phase-out: #ef4444;
+            --bg-dark: #1a1a1a;
+            --bg-card: #242424;
+            --bg-phase: #2d2d2d;
+            --text-primary: #e5e5e5;
+            --text-secondary: #a3a3a3;
+            --border-color: #404040;
+            --accent: #71717a;
+            --capec-color: #8b5cf6;
+            --cwe-color: #f59e0b;
+            --attack-color: #3b82f6;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .app {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 16px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .header-title {
+            font-size: 1rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.65rem;
+        }
+
+        .version-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            padding: 2px 6px;
+            background: var(--bg-phase);
+            border-radius: 3px;
+            transition: all 0.15s;
+        }
+
+        .version-link:hover {
+            color: var(--text-primary);
+            background: var(--accent);
+        }
+
+        .help-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-phase);
+            border-radius: 50%;
+            font-weight: 600;
+            transition: all 0.15s;
+        }
+
+        .help-link:hover {
+            color: var(--text-primary);
+            background: var(--accent);
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-label {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* View Toggle */
+        .view-toggle {
+            display: flex;
+            background: var(--bg-phase);
+            border-radius: 4px;
+            padding: 2px;
+        }
+
+        .view-btn {
+            padding: 5px 12px;
+            border: none;
+            border-radius: 3px;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .view-btn.active {
+            background: var(--accent);
+            color: var(--text-primary);
+        }
+
+        /* Layer Toggles */
+        .layer-toggles {
+            display: flex;
+            gap: 12px;
+        }
+
+        .layer-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+
+        .layer-toggle input {
+            display: none;
+        }
+
+        .layer-toggle .checkbox {
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+        }
+
+        .layer-toggle input:checked + .checkbox {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .layer-toggle input:checked + .checkbox::after {
+            content: '✓';
+            font-size: 10px;
+            color: white;
+        }
+
+        .layer-toggle.attack .checkbox { border-color: var(--attack-color); }
+        .layer-toggle.attack input:checked + .checkbox { background: var(--attack-color); border-color: var(--attack-color); }
+        .layer-toggle.capec .checkbox { border-color: var(--capec-color); }
+        .layer-toggle.capec input:checked + .checkbox { background: var(--capec-color); border-color: var(--capec-color); }
+        .layer-toggle.cwe .checkbox { border-color: var(--cwe-color); }
+        .layer-toggle.cwe input:checked + .checkbox { background: var(--cwe-color); border-color: var(--cwe-color); }
+
+        /* Buttons */
+        .btn {
+            padding: 5px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-phase);
+            color: var(--text-primary);
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .btn:hover { background: #3a3a3a; }
+        .btn.active { background: var(--accent); border-color: var(--accent); }
+
+        /* Dropdown */
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            min-width: 100px;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .dropdown.open .dropdown-content { display: block; }
+
+        .dropdown-item {
+            display: block;
+            width: 100%;
+            padding: 8px 12px;
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            font-size: 0.7rem;
+            text-align: left;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .dropdown-item:hover { background: var(--bg-phase); }
+        .dropdown-item:first-child { border-radius: 4px 4px 0 0; }
+        .dropdown-item:last-child { border-radius: 0 0 4px 4px; }
+
+        /* Main Layout */
+        .main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 340px;
+            background: var(--bg-card);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sidebar-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .sidebar-tab {
+            flex: 1;
+            padding: 10px 8px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.15s;
+        }
+
+        .sidebar-tab:hover { color: var(--text-primary); }
+        .sidebar-tab.active { color: var(--text-primary); border-bottom-color: var(--accent); }
+        .sidebar-tab.attack.active { border-bottom-color: var(--attack-color); }
+        .sidebar-tab.capec.active { border-bottom-color: var(--capec-color); }
+        .sidebar-tab.cwe.active { border-bottom-color: var(--cwe-color); }
+
+        .sidebar-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .tab-panel {
+            display: none;
+            flex-direction: column;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .tab-panel.active { display: flex; }
+
+        /* Search & Filters */
+        .search-bar {
+            padding: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 8px 10px;
+            background: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-primary);
+            font-size: 0.8rem;
+        }
+
+        .search-input:focus { outline: none; border-color: var(--accent); }
+
+        .filter-row {
+            display: flex;
+            gap: 6px;
+            padding: 6px 10px;
+            border-bottom: 1px solid var(--border-color);
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 3px 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 0.65rem;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .filter-btn:hover { border-color: var(--accent); color: var(--text-primary); }
+        .filter-btn.active { background: var(--accent); border-color: var(--accent); color: var(--text-primary); }
+
+        /* Entity List */
+        .entity-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 6px;
+        }
+
+        .entity-item {
+            display: flex;
+            flex-direction: column;
+            padding: 8px;
+            background: var(--bg-phase);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            margin-bottom: 4px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .entity-item:hover { border-color: var(--accent); }
+        .entity-item.selected { border-color: var(--accent); background: rgba(113, 113, 122, 0.2); }
+        .entity-item.assigned { opacity: 0.5; border-style: dashed; }
+        .entity-item.dragging { opacity: 0.4; transform: scale(0.95); }
+        .entity-item[draggable="true"] { cursor: grab; }
+        .entity-item[draggable="true"]:active { cursor: grabbing; }
+
+        .entity-item.attack { border-left: 3px solid var(--attack-color); }
+        .entity-item.capec { border-left: 3px solid var(--capec-color); }
+        .entity-item.cwe { border-left: 3px solid var(--cwe-color); }
+
+        .entity-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .entity-id {
+            font-family: monospace;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .entity-item.attack .entity-id { color: var(--attack-color); }
+        .entity-item.capec .entity-id { color: var(--capec-color); }
+        .entity-item.cwe .entity-id { color: var(--cwe-color); }
+
+        .entity-name {
+            font-size: 0.75rem;
+            color: var(--text-primary);
+            margin-top: 2px;
+        }
+
+        .entity-meta {
+            display: flex;
+            gap: 6px;
+            margin-top: 4px;
+            flex-wrap: wrap;
+        }
+
+        .entity-badge {
+            font-size: 0.6rem;
+            padding: 1px 5px;
+            border-radius: 2px;
+            background: var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .entity-badge.severity-high { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+        .entity-badge.severity-medium { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+        .entity-badge.severity-low { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+
+        .list-info {
+            padding: 8px;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+        }
+
+        /* Import Section */
+        .import-section {
+            padding: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .import-btns {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .import-btn {
+            padding: 4px 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+            background: var(--bg-phase);
+            color: var(--text-secondary);
+            font-size: 0.65rem;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .import-btn:hover { border-color: var(--attack-color); color: var(--text-primary); }
+
+        /* Main Content */
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .view-controls {
+            display: flex;
+            gap: 6px;
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            padding: 8px 16px;
+            border-bottom: 1px solid var(--border-color);
+            flex-wrap: wrap;
+        }
+
+        .stat {
+            text-align: center;
+            padding: 4px 12px;
+            background: var(--bg-card);
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+
+        .stat-value { font-size: 1rem; font-weight: bold; }
+        .stat-label { font-size: 0.6rem; color: var(--text-secondary); text-transform: uppercase; }
+
+        /* Kill Chain View */
+        .kill-chain-container {
+            flex: 1;
+            overflow: auto;
+            padding: 16px;
+        }
+
+        .kill-chain-container.hidden { display: none; }
+
+        .kill-chain {
+            display: flex;
+            gap: 8px;
+            min-height: 100%;
+        }
+
+        .super-phase {
+            flex: 1;
+            min-width: 240px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .super-phase-header {
+            text-align: center;
+            padding: 8px;
+            border-radius: 4px 4px 0 0;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-left: 3px solid;
+        }
+
+        .super-phase.in .super-phase-header { background: var(--bg-card); border-left-color: var(--phase-in); }
+        .super-phase.through .super-phase-header { background: var(--bg-card); border-left-color: var(--phase-through); }
+        .super-phase.out .super-phase-header { background: var(--bg-card); border-left-color: var(--phase-out); }
+
+        .super-phase-content {
+            background: var(--bg-card);
+            border-radius: 0 0 4px 4px;
+            padding: 6px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            border: 1px solid var(--border-color);
+            border-top: none;
+        }
+
+        .phase {
+            background: var(--bg-phase);
+            border-radius: 3px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            transition: all 0.2s;
+        }
+
+        .phase.empty { opacity: 0.4; }
+        .phase.drop-target { border-color: var(--accent); background: rgba(113, 113, 122, 0.15); }
+        .phase.minimized .phase-content { display: none; }
+
+        .phase-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 8px;
+            cursor: pointer;
+        }
+
+        .phase-header:hover { background: rgba(255, 255, 255, 0.03); }
+
+        .phase-title {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .phase-name { font-weight: 500; font-size: 0.75rem; }
+
+        .phase-count {
+            background: var(--border-color);
+            padding: 1px 5px;
+            border-radius: 8px;
+            font-size: 0.6rem;
+            font-weight: 600;
+        }
+
+        .phase-count.zero { background: transparent; border: 1px solid var(--border-color); color: var(--text-secondary); }
+
+        .phase-toggle {
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            transition: transform 0.2s;
+        }
+
+        .phase.minimized .phase-toggle { transform: rotate(-90deg); }
+
+        .phase-content {
+            padding: 4px 6px 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        /* CAPEC Group */
+        .capec-group {
+            background: rgba(139, 92, 246, 0.08);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 3px;
+            padding: 6px;
+        }
+
+        .capec-group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+        }
+
+        .capec-group-id {
+            font-family: monospace;
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: var(--capec-color);
+        }
+
+        .capec-group-name {
+            font-size: 0.65rem;
+            color: var(--text-primary);
+        }
+
+        .capec-group-techniques {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 3px;
+        }
+
+        /* Technique Tag */
+        .technique-tag {
+            display: inline-flex;
+            flex-direction: column;
+            padding: 4px 6px;
+            background: rgba(59, 130, 246, 0.15);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 3px;
+            font-size: 0.65rem;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .technique-tag:hover { border-color: var(--attack-color); background: rgba(59, 130, 246, 0.25); }
+
+        .technique-tag .tag-header {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .technique-tag .id {
+            font-family: monospace;
+            font-weight: 600;
+            color: var(--attack-color);
+        }
+
+        .technique-tag .name {
+            color: var(--text-primary);
+            max-width: 200px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .technique-tag .remove {
+            margin-left: auto;
+            color: #ef4444;
+            font-weight: bold;
+            font-size: 0.7rem;
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+
+        .technique-tag:hover .remove { opacity: 1; }
+
+        /* CWE Tag */
+        .cwe-tag {
+            display: inline-flex;
+            flex-direction: column;
+            padding: 4px 6px;
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.25);
+            border-radius: 3px;
+            font-size: 0.6rem;
+            cursor: pointer;
+        }
+
+        .cwe-tag .tag-header {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .cwe-tag .id { font-family: monospace; color: var(--cwe-color); font-weight: 600; }
+
+        .cwe-tag .name {
+            color: var(--text-primary);
+            max-width: 200px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .cwe-tag .remove {
+            margin-left: auto;
+            color: #ef4444;
+            font-weight: bold;
+            font-size: 0.7rem;
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+
+        .cwe-tag:hover .remove { opacity: 1; }
+
+        /* CAPEC Tag */
+        .capec-tag {
+            display: inline-flex;
+            flex-direction: column;
+            padding: 4px 6px;
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.25);
+            border-radius: 3px;
+            font-size: 0.6rem;
+            cursor: pointer;
+        }
+
+        .capec-tag .tag-header {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .capec-tag .id { font-family: monospace; color: var(--capec-color); font-weight: 600; }
+
+        .capec-tag .name {
+            color: var(--text-primary);
+            max-width: 200px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .capec-tag .remove {
+            margin-left: auto;
+            color: #ef4444;
+            font-weight: bold;
+            font-size: 0.7rem;
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+
+        .capec-tag:hover .remove { opacity: 1; }
+
+        /* ============================================================
+           SCORE RIBBONS & METADATA INDICATORS
+           ============================================================ */
+        
+        /* Score ribbon (left border) */
+        .technique-tag[data-score="low"],
+        .capec-tag[data-score="low"],
+        .cwe-tag[data-score="low"] {
+            border-left: 3px solid #22c55e;
+            background: rgba(34, 197, 94, 0.1);
+        }
+        
+        .technique-tag[data-score="medium"],
+        .capec-tag[data-score="medium"],
+        .cwe-tag[data-score="medium"] {
+            border-left: 3px solid #eab308;
+            background: rgba(234, 179, 8, 0.1);
+        }
+        
+        .technique-tag[data-score="high"],
+        .capec-tag[data-score="high"],
+        .cwe-tag[data-score="high"] {
+            border-left: 3px solid #f97316;
+            background: rgba(249, 115, 22, 0.1);
+        }
+        
+        .technique-tag[data-score="critical"],
+        .capec-tag[data-score="critical"],
+        .cwe-tag[data-score="critical"] {
+            border-left: 3px solid #ef4444;
+            background: rgba(239, 68, 68, 0.15);
+        }
+
+        /* Metadata indicators - displayed below title */
+        .metadata-icons {
+            display: flex;
+            gap: 4px;
+            margin-top: 4px;
+            flex-wrap: wrap;
+        }
+        
+        .metadata-icons .meta-icon {
+            width: 16px;
+            height: 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.15);
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .metadata-icons .meta-icon.has-cve { background: rgba(239, 68, 68, 0.3); color: #fca5a5; }
+        .metadata-icons .meta-icon.has-observable { background: rgba(59, 130, 246, 0.3); color: #93c5fd; }
+        .metadata-icons .meta-icon.has-link { background: rgba(139, 92, 246, 0.3); color: #c4b5fd; }
+        .metadata-icons .meta-icon.has-comment { background: rgba(34, 197, 94, 0.3); color: #86efac; }
+        .metadata-icons .meta-icon.has-confidence { background: rgba(251, 191, 36, 0.3); color: #fcd34d; }
+
+        /* Score Legend */
+        .score-legend {
+            display: flex;
+            gap: 12px;
+            padding: 8px 12px;
+            background: var(--bg-card);
+            border-radius: 4px;
+            font-size: 0.7rem;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .legend-swatch {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        /* ============================================================
+           METADATA EDITOR MODAL
+           ============================================================ */
+        .metadata-editor-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+        }
+        
+        .metadata-editor-overlay.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .metadata-editor {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        
+        .metadata-editor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .metadata-editor-title {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        
+        .metadata-editor-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0 4px;
+        }
+        
+        .metadata-editor-close:hover { color: var(--text-primary); }
+        
+        .metadata-editor-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+        
+        .metadata-section {
+            margin-bottom: 16px;
+        }
+        
+        .metadata-section-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+        
+        .metadata-input {
+            width: 100%;
+            padding: 8px 10px;
+            background: var(--bg-phase);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            font-family: inherit;
+        }
+        
+        .metadata-input:focus {
+            outline: none;
+            border-color: var(--attack-color);
+        }
+        
+        .metadata-input.invalid {
+            border-color: #ef4444;
+        }
+        
+        .metadata-input-error {
+            font-size: 0.7rem;
+            color: #ef4444;
+            margin-top: 4px;
+        }
+        
+        .metadata-textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        
+        .metadata-select {
+            width: 100%;
+            padding: 8px 10px;
+            background: var(--bg-phase);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+        }
+        
+        /* Score selector */
+        .score-selector {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .score-option {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 10px;
+            background: var(--bg-phase);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.15s;
+        }
+        
+        .score-option:hover {
+            border-color: var(--text-secondary);
+        }
+        
+        .score-option.selected {
+            border-color: var(--attack-color);
+            background: rgba(59, 130, 246, 0.1);
+        }
+        
+        .score-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+        
+        /* Confidence slider */
+        .confidence-slider-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .confidence-slider {
+            flex: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 6px;
+            background: var(--bg-phase);
+            border-radius: 3px;
+            outline: none;
+        }
+        
+        .confidence-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--attack-color);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        .confidence-slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: var(--attack-color);
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+        
+        .confidence-value {
+            min-width: 80px;
+            text-align: right;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+        }
+        
+        .confidence-label {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        
+        .confidence-label.unknown { background: rgba(107, 114, 128, 0.3); color: #9ca3af; }
+        .confidence-label.low { background: rgba(239, 68, 68, 0.3); color: #fca5a5; }
+        .confidence-label.medium { background: rgba(251, 191, 36, 0.3); color: #fcd34d; }
+        .confidence-label.high { background: rgba(34, 197, 94, 0.3); color: #86efac; }
+        
+        /* Observable list */
+        .observable-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .observable-item {
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+        }
+        
+        .observable-item select {
+            width: 140px;
+            flex-shrink: 0;
+        }
+        
+        .observable-item input {
+            flex: 1;
+        }
+        
+        .observable-remove {
+            background: none;
+            border: none;
+            color: #ef4444;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 4px 8px;
+        }
+        
+        .add-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 12px;
+            background: var(--bg-phase);
+            border: 1px dashed var(--border-color);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        
+        .add-btn:hover {
+            border-color: var(--text-primary);
+            color: var(--text-primary);
+        }
+        
+        /* Hyperlink list */
+        .hyperlink-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .hyperlink-item {
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+        }
+        
+        .hyperlink-item input:first-child {
+            width: 120px;
+            flex-shrink: 0;
+        }
+        
+        .hyperlink-item input:nth-child(2) {
+            flex: 1;
+        }
+        
+        .metadata-editor-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            padding: 12px 16px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .metadata-btn {
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        
+        .metadata-btn-cancel {
+            background: var(--bg-phase);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+        
+        .metadata-btn-cancel:hover {
+            background: var(--bg-dark);
+        }
+        
+        .metadata-btn-save {
+            background: var(--attack-color);
+            border: 1px solid var(--attack-color);
+            color: white;
+        }
+        
+        .metadata-btn-save:hover {
+            background: #2563eb;
+        }
+
+        /* Relationship View */
+        .relationship-container {
+            flex: 1;
+            overflow: auto;
+            padding: 16px;
+            display: none;
+        }
+
+        .relationship-container.visible { display: block; }
+
+        .relationship-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding: 12px;
+            background: var(--bg-card);
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+
+        .relationship-header-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .relationship-header-item .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .relationship-header-item .dot.capec { background: var(--capec-color); }
+        .relationship-header-item .dot.cwe { background: var(--cwe-color); }
+        .relationship-header-item .dot.attack { background: var(--attack-color); }
+        .relationship-header-item .dot.phase { background: var(--accent); }
+
+        .relationship-arrow {
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+        }
+
+        .relationship-chain {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .relationship-row {
+            display: flex;
+            align-items: stretch;
+            gap: 4px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .relationship-cell {
+            flex: 1;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            border-right: 1px solid var(--border-color);
+            min-width: 0;
+        }
+
+        .relationship-cell:last-child { border-right: none; }
+
+        .relationship-cell-header {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .relationship-cell.capec { background: rgba(139, 92, 246, 0.05); }
+        .relationship-cell.cwe { background: rgba(245, 158, 11, 0.05); }
+        .relationship-cell.attack { background: rgba(59, 130, 246, 0.05); }
+        .relationship-cell.phase { background: rgba(113, 113, 122, 0.05); }
+
+        .relationship-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 6px;
+            background: var(--bg-phase);
+            border-radius: 3px;
+            font-size: 0.7rem;
+            cursor: pointer;
+        }
+
+        .relationship-item:hover { background: var(--bg-dark); }
+
+        .relationship-item .id {
+            font-family: monospace;
+            font-weight: 600;
+        }
+
+        .relationship-item .id.capec { color: var(--capec-color); }
+        .relationship-item .id.cwe { color: var(--cwe-color); }
+        .relationship-item .id.attack { color: var(--attack-color); }
+        .relationship-item .id.phase { color: var(--accent); }
+
+        .relationship-item .name {
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .relationship-empty {
+            padding: 30px;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        /* Detail Panel */
+        .detail-panel {
+            width: 320px;
+            background: var(--bg-card);
+            border-left: 1px solid var(--border-color);
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .detail-panel.visible { display: flex; }
+
+        .detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            gap: 8px;
+        }
+
+        .detail-header-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .detail-close {
+            flex-shrink: 0;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .detail-close:hover { color: var(--text-primary); }
+
+        .detail-id {
+            font-family: monospace;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .detail-id.attack { color: var(--attack-color); }
+        .detail-id.capec { color: var(--capec-color); }
+        .detail-id.cwe { color: var(--cwe-color); }
+
+        .detail-name {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        .detail-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+        }
+
+        .detail-section {
+            margin-bottom: 16px;
+        }
+
+        .detail-section h4 {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .detail-section p {
+            font-size: 0.8rem;
+            line-height: 1.5;
+        }
+
+        .detail-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .detail-list-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 8px;
+            background: var(--bg-phase);
+            border-radius: 3px;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+
+        .detail-list-item:hover { background: var(--bg-dark); }
+
+        .detail-list-item .id { font-family: monospace; font-weight: 600; }
+        .detail-list-item .id.attack { color: var(--attack-color); }
+        .detail-list-item .id.capec { color: var(--capec-color); }
+        .detail-list-item .id.cwe { color: var(--cwe-color); }
+
+        /* Assignment Panel */
+        .assignment-panel {
+            padding: 12px;
+            background: rgba(113, 113, 122, 0.1);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .assignment-panel h4 {
+            font-size: 0.75rem;
+            margin-bottom: 8px;
+            color: var(--accent);
+        }
+
+        .phase-select {
+            width: 100%;
+            padding: 8px;
+            background: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-primary);
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+
+        .phase-select:focus { outline: none; border-color: var(--accent); }
+
+        /* Legend */
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            padding: 8px 16px;
+            border-top: 1px solid var(--border-color);
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+
+        .legend-color.attack { background: var(--attack-color); }
+        .legend-color.capec { background: var(--capec-color); }
+        .legend-color.cwe { background: var(--cwe-color); }
+        .legend-color.in { background: var(--phase-in); }
+        .legend-color.through { background: var(--phase-through); }
+        .legend-color.out { background: var(--phase-out); }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 18px;
+            background: var(--bg-card);
+            border: 1px solid var(--accent);
+            border-radius: 4px;
+            font-size: 0.8rem;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .toast.show { opacity: 1; transform: translateY(0); }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+        }
+
+        .modal-overlay.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            max-width: 600px;
+            max-height: 80vh;
+            width: 90%;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transform: scale(0.95);
+            transition: transform 0.2s;
+        }
+
+        .modal-overlay.visible .modal {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .modal-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.4rem;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .modal-close:hover { color: var(--text-primary); }
+
+        .modal-body {
+            padding: 16px;
+            overflow-y: auto;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .guide-section {
+            margin-bottom: 16px;
+        }
+
+        .guide-section h4 {
+            color: var(--accent);
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        .guide-section ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .guide-section li {
+            margin-bottom: 4px;
+        }
+
+        .guide-key {
+            display: inline-block;
+            background: var(--bg-phase);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 0.8rem;
+            margin: 0 2px;
+        }
+
+        .guide-color {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+            vertical-align: middle;
+            margin-right: 4px;
+        }
+
+        /* Loading Overlay */
+        .loading {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .loading.hidden { display: none; }
+
+        .loading-text {
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-dark); }
+        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+    </style>
+</head>
+<body>
+    <div class="loading" id="loading">
+        <div class="loading-text">Loading data...</div>
+    </div>
+
+    <div class="app">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <div class="header-title">Kill Chain Editor</div>
+                <div class="header-meta">
+                    <a href="CHANGELOG.md" target="_blank" class="version-link" title="View changelog">v2.4.1</a>
+                    <a href="#" class="help-link" onclick="showUsageGuide(); return false;" title="Usage guide">?</a>
+                </div>
+            </div>
+            
+            <div class="header-controls">
+                <div class="control-group">
+                    <span class="control-label">View</span>
+                    <div class="view-toggle">
+                        <button class="view-btn active" id="view-killchain" onclick="setView('killchain')">Kill Chain</button>
+                        <button class="view-btn" id="view-relationship" onclick="setView('relationship')">Relationships</button>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <span class="control-label">Layers</span>
+                    <div class="layer-toggles">
+                        <label class="layer-toggle attack">
+                            <input type="checkbox" id="layer-attack" checked onchange="toggleLayer('attack')">
+                            <span class="checkbox"></span>
+                            <span>ATT&CK</span>
+                        </label>
+                        <label class="layer-toggle capec">
+                            <input type="checkbox" id="layer-capec" checked onchange="toggleLayer('capec')">
+                            <span class="checkbox"></span>
+                            <span>CAPEC</span>
+                        </label>
+                        <label class="layer-toggle cwe">
+                            <input type="checkbox" id="layer-cwe" checked onchange="toggleLayer('cwe')">
+                            <span class="checkbox"></span>
+                            <span>CWE</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <button class="btn" onclick="expandAll()">Expand</button>
+                    <button class="btn" onclick="collapseAll()">Collapse</button>
+                    <button class="btn" onclick="clearAssignments()">Clear</button>
+                    <div class="dropdown" id="export-dropdown">
+                        <button class="btn" onclick="toggleDropdown('export-dropdown')">Export ▼</button>
+                        <div class="dropdown-content">
+                            <button class="dropdown-item" onclick="exportJSON(); closeDropdowns()">JSON</button>
+                            <button class="dropdown-item" onclick="exportCSV(); closeDropdowns()">CSV</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main -->
+        <div class="main">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <div class="sidebar-tabs">
+                    <button class="sidebar-tab attack active" onclick="switchTab('attack')">ATT&CK</button>
+                    <button class="sidebar-tab capec" onclick="switchTab('capec')">CAPEC</button>
+                    <button class="sidebar-tab cwe" onclick="switchTab('cwe')">CWE</button>
+                </div>
+
+                <div class="sidebar-content">
+                    <!-- ATT&CK Tab -->
+                    <div class="tab-panel active" id="tab-attack">
+                        <div class="import-section">
+                            <div class="import-btns">
+                                <button class="import-btn" onclick="loadNavigator('enterprise')">Enterprise</button>
+                                <button class="import-btn" onclick="loadNavigator('mobile')">Mobile</button>
+                                <button class="import-btn" onclick="loadNavigator('ics')">ICS</button>
+                                <label class="import-btn" style="cursor: pointer;">
+                                    Import JSON
+                                    <input type="file" accept=".json" onchange="importNavigator(event)" style="display: none;">
+                                </label>
+                            </div>
+                        </div>
+                        <div class="search-bar">
+                            <input type="text" class="search-input" id="search-attack" placeholder="Search techniques..." oninput="filterEntities('attack')">
+                        </div>
+                        <div class="filter-row" id="filter-attack">
+                            <button class="filter-btn active" data-filter="all" onclick="setFilter('attack', 'all')">All</button>
+                            <button class="filter-btn" data-filter="enterprise" onclick="setFilter('attack', 'enterprise')">Enterprise</button>
+                            <button class="filter-btn" data-filter="mobile" onclick="setFilter('attack', 'mobile')">Mobile</button>
+                            <button class="filter-btn" data-filter="ics" onclick="setFilter('attack', 'ics')">ICS</button>
+                        </div>
+                        <div class="entity-list" id="list-attack"></div>
+                    </div>
+
+                    <!-- CAPEC Tab -->
+                    <div class="tab-panel" id="tab-capec">
+                        <div class="search-bar">
+                            <input type="text" class="search-input" id="search-capec" placeholder="Search patterns..." oninput="filterEntities('capec')">
+                        </div>
+                        <div class="filter-row" id="filter-capec">
+                            <button class="filter-btn active" data-filter="all" onclick="setFilter('capec', 'all')">All</button>
+                            <button class="filter-btn" data-filter="meta" onclick="setFilter('capec', 'meta')">Meta</button>
+                            <button class="filter-btn" data-filter="standard" onclick="setFilter('capec', 'standard')">Standard</button>
+                            <button class="filter-btn" data-filter="detailed" onclick="setFilter('capec', 'detailed')">Detailed</button>
+                        </div>
+                        <div class="entity-list" id="list-capec"></div>
+                    </div>
+
+                    <!-- CWE Tab -->
+                    <div class="tab-panel" id="tab-cwe">
+                        <div class="search-bar">
+                            <input type="text" class="search-input" id="search-cwe" placeholder="Search weaknesses..." oninput="filterEntities('cwe')">
+                        </div>
+                        <div class="filter-row" id="filter-cwe">
+                            <button class="filter-btn active" data-filter="all" onclick="setFilter('cwe', 'all')">All</button>
+                            <button class="filter-btn" data-filter="pillar" onclick="setFilter('cwe', 'pillar')">Pillar</button>
+                            <button class="filter-btn" data-filter="class" onclick="setFilter('cwe', 'class')">Class</button>
+                            <button class="filter-btn" data-filter="base" onclick="setFilter('cwe', 'base')">Base</button>
+                        </div>
+                        <div class="entity-list" id="list-cwe"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div class="content" id="content">
+                <div class="content-header">
+                    <span style="font-size: 0.9rem; font-weight: 500;" id="content-title">Unified Kill Chain</span>
+                    <div class="view-controls">
+                        <button class="btn" id="btn-group-capec" onclick="toggleCapecGrouping()">Group by CAPEC</button>
+                    </div>
+                </div>
+
+                <div class="stats-bar" id="stats-bar"></div>
+                
+                <!-- Score Legend -->
+                <div class="score-legend" id="score-legend">
+                    <span style="color: var(--text-secondary); margin-right: 8px;">Score:</span>
+                    <div class="legend-item">
+                        <div class="legend-swatch" style="background: #6b7280;"></div>
+                        <span>Unclassified</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-swatch" style="background: #22c55e;"></div>
+                        <span>Low</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-swatch" style="background: #eab308;"></div>
+                        <span>Medium</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-swatch" style="background: #f97316;"></div>
+                        <span>High</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-swatch" style="background: #ef4444;"></div>
+                        <span>Critical</span>
+                    </div>
+                </div>
+
+                <div class="kill-chain-container" id="kill-chain-container">
+                    <div class="kill-chain" id="kill-chain"></div>
+                </div>
+
+                <div class="relationship-container" id="relationship-container">
+                    <div class="relationship-header">
+                        <div class="relationship-header-item"><div class="dot capec"></div>CAPEC</div>
+                        <span class="relationship-arrow">→</span>
+                        <div class="relationship-header-item"><div class="dot cwe"></div>CWE</div>
+                        <span class="relationship-arrow">→</span>
+                        <div class="relationship-header-item"><div class="dot attack"></div>ATT&CK</div>
+                        <span class="relationship-arrow">→</span>
+                        <div class="relationship-header-item"><div class="dot phase"></div>Phase</div>
+                    </div>
+                    <div class="relationship-chain" id="relationship-chain"></div>
+                </div>
+
+                <div class="legend">
+                    <div class="legend-item"><div class="legend-color attack"></div><span>ATT&CK Technique</span></div>
+                    <div class="legend-item"><div class="legend-color capec"></div><span>CAPEC Pattern</span></div>
+                    <div class="legend-item"><div class="legend-color cwe"></div><span>CWE Weakness</span></div>
+                    <div class="legend-item" style="margin-left: 16px; padding-left: 16px; border-left: 1px solid var(--border-color);">
+                        <div class="legend-color in"></div><span>IN</span>
+                    </div>
+                    <div class="legend-item"><div class="legend-color through"></div><span>THROUGH</span></div>
+                    <div class="legend-item"><div class="legend-color out"></div><span>OUT</span></div>
+                </div>
+            </div>
+
+            <!-- Detail Panel -->
+            <div class="detail-panel" id="detail-panel">
+                <div class="detail-header">
+                    <div class="detail-header-content">
+                        <div class="detail-id" id="detail-id"></div>
+                        <div class="detail-name" id="detail-name"></div>
+                    </div>
+                    <button class="detail-close" onclick="closeDetail()">×</button>
+                </div>
+                <div class="assignment-panel" id="assignment-panel">
+                    <h4>Assign to Phase</h4>
+                    <select class="phase-select" id="phase-select" onchange="assignSelectedEntity()">
+                        <option value="">-- Select Phase --</option>
+                        <optgroup label="IN - Initial Foothold">
+                            <option value="IN:reconnaissance">Reconnaissance</option>
+                            <option value="IN:resource-development">Resource Development</option>
+                            <option value="IN:delivery">Delivery</option>
+                            <option value="IN:social-engineering">Social Engineering</option>
+                            <option value="IN:exploitation">Exploitation</option>
+                            <option value="IN:persistence">Persistence</option>
+                            <option value="IN:defense-evasion">Defense Evasion</option>
+                            <option value="IN:command-control">Command & Control</option>
+                        </optgroup>
+                        <optgroup label="THROUGH - Network Propagation">
+                            <option value="THROUGH:pivoting">Pivoting</option>
+                            <option value="THROUGH:discovery">Discovery</option>
+                            <option value="THROUGH:privilege-escalation">Privilege Escalation</option>
+                            <option value="THROUGH:execution">Execution</option>
+                            <option value="THROUGH:credential-access">Credential Access</option>
+                            <option value="THROUGH:lateral-movement">Lateral Movement</option>
+                        </optgroup>
+                        <optgroup label="OUT - Action on Objectives">
+                            <option value="OUT:collection">Collection</option>
+                            <option value="OUT:exfiltration">Exfiltration</option>
+                            <option value="OUT:impact">Impact</option>
+                            <option value="OUT:objectives">Objectives</option>
+                        </optgroup>
+                    </select>
+                </div>
+                <div class="detail-content" id="detail-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <!-- Metadata Editor Modal -->
+    <div class="metadata-editor-overlay" id="metadata-editor-modal" onclick="closeMetadataEditor(event)">
+        <div class="metadata-editor" onclick="event.stopPropagation()">
+            <div class="metadata-editor-header">
+                <div class="metadata-editor-title">Edit Metadata: <span id="metadata-entity-id"></span></div>
+                <button class="metadata-editor-close" onclick="closeMetadataEditor()">&times;</button>
+            </div>
+            <div class="metadata-editor-body">
+                <!-- Score -->
+                <div class="metadata-section">
+                    <div class="metadata-section-title">Score (Severity)</div>
+                    <div class="score-selector" id="score-selector">
+                        <label class="score-option" data-value="unclassified">
+                            <span class="score-dot" style="background: #6b7280;"></span>
+                            Unclassified
+                        </label>
+                        <label class="score-option" data-value="low">
+                            <span class="score-dot" style="background: #22c55e;"></span>
+                            Low
+                        </label>
+                        <label class="score-option" data-value="medium">
+                            <span class="score-dot" style="background: #eab308;"></span>
+                            Medium
+                        </label>
+                        <label class="score-option" data-value="high">
+                            <span class="score-dot" style="background: #f97316;"></span>
+                            High
+                        </label>
+                        <label class="score-option" data-value="critical">
+                            <span class="score-dot" style="background: #ef4444;"></span>
+                            Critical
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Confidence -->
+                <div class="metadata-section">
+                    <div class="metadata-section-title">Confidence Level</div>
+                    <div class="confidence-slider-container">
+                        <input type="range" class="confidence-slider" id="meta-confidence" min="0" max="100" value="0">
+                        <div class="confidence-value">
+                            <span class="confidence-label unknown" id="confidence-label">Unknown</span>
+                        </div>
+                    </div>
+                    <div style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 4px;">
+                        0 = Unknown, 1-33% = Low, 34-66% = Medium, 67-100% = High
+                    </div>
+                </div>
+                
+                <!-- CVE & CVSS -->
+                <div class="metadata-section">
+                    <div class="metadata-section-title">Vulnerability Reference</div>
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 180px;">
+                            <input type="text" class="metadata-input" id="meta-cve-id" placeholder="CVE-2024-12345">
+                            <div class="metadata-input-error" id="meta-cve-id-error"></div>
+                        </div>
+                        <div style="flex: 2; min-width: 280px;">
+                            <input type="text" class="metadata-input" id="meta-cvss-vector" placeholder="CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H">
+                            <div class="metadata-input-error" id="meta-cvss-vector-error"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Comments -->
+                <div class="metadata-section">
+                    <div class="metadata-section-title">Comments</div>
+                    <textarea class="metadata-input metadata-textarea" id="meta-comments" placeholder="Add notes about this assignment..."></textarea>
+                </div>
+                
+                <!-- Hyperlinks -->
+                <div class="metadata-section">
+                    <div class="metadata-section-title">Hyperlinks</div>
+                    <div class="hyperlink-list" id="hyperlink-list"></div>
+                    <button class="add-btn" onclick="addHyperlinkRow()">+ Add Link</button>
+                </div>
+                
+                <!-- Observables -->
+                <div class="metadata-section">
+                    <div class="metadata-section-title">Observables</div>
+                    <div class="observable-list" id="observable-list"></div>
+                    <button class="add-btn" onclick="addObservableRow()">+ Add Observable</button>
+                </div>
+            </div>
+            <div class="metadata-editor-footer">
+                <button class="metadata-btn metadata-btn-cancel" onclick="closeMetadataEditor()">Cancel</button>
+                <button class="metadata-btn metadata-btn-save" onclick="saveMetadata()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Usage Guide Modal -->
+    <div class="modal-overlay" id="usage-guide-modal" onclick="closeUsageGuide(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="modal-title">Usage Guide</div>
+                <button class="modal-close" onclick="closeUsageGuide()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="guide-section">
+                    <h4>Getting Started</h4>
+                    <ul>
+                        <li>Browse <span class="guide-key">ATT&CK</span>, <span class="guide-key">CAPEC</span>, and <span class="guide-key">CWE</span> tabs in the left sidebar</li>
+                        <li>Use the search bar to find specific techniques, patterns, or weaknesses</li>
+                        <li>Click any entity to view detailed information in the right panel</li>
+                    </ul>
+                </div>
+
+                <div class="guide-section">
+                    <h4>Drag & Drop</h4>
+                    <ul>
+                        <li>Drag entities from the sidebar directly onto kill chain phases</li>
+                        <li>Drop zones highlight when dragging over them</li>
+                        <li>Entities can be reassigned by dragging to a different phase</li>
+                        <li>Click the <span class="guide-key">×</span> on an assigned entity to remove it</li>
+                    </ul>
+                </div>
+
+                <div class="guide-section">
+                    <h4>Kill Chain Phases</h4>
+                    <ul>
+                        <li><span class="guide-color" style="background: var(--phase-in)"></span><strong>IN</strong> — Initial Foothold (reconnaissance → C2)</li>
+                        <li><span class="guide-color" style="background: var(--phase-through)"></span><strong>THROUGH</strong> — Network Propagation (pivoting → lateral movement)</li>
+                        <li><span class="guide-color" style="background: var(--phase-out)"></span><strong>OUT</strong> — Action on Objectives (collection → impact)</li>
+                    </ul>
+                </div>
+
+                <div class="guide-section">
+                    <h4>Filters & Views</h4>
+                    <ul>
+                        <li>Toggle <span class="guide-key">ATT&CK</span> <span class="guide-key">CAPEC</span> <span class="guide-key">CWE</span> layers to show/hide entity types</li>
+                        <li>Use domain filters (All / Enterprise / Mobile / ICS) for techniques</li>
+                        <li>Use abstraction filters for CAPECs and CWEs</li>
+                        <li>Enable <span class="guide-key">Group by CAPEC</span> to nest techniques under patterns</li>
+                    </ul>
+                </div>
+
+                <div class="guide-section">
+                    <h4>Export Options</h4>
+                    <ul>
+                        <li><strong>JSON</strong> — Full project state, can be re-imported later</li>
+                        <li><strong>CSV</strong> — Spreadsheet format with phases as columns</li>
+                    </ul>
+                </div>
+
+                <div class="guide-section">
+                    <h4>Tips</h4>
+                    <ul>
+                        <li>Assigned entities appear dimmed in the sidebar</li>
+                        <li>Click phase headers to expand/collapse</li>
+                        <li>Related CAPECs and CWEs are shown in the detail panel</li>
+                        <li>External links open MITRE documentation in new tabs</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="kill-chain-visualizer.js"></script>
+    <script>
+        // ============================================================
+        // INPUT SECURITY - Validation, Sanitization, Escaping
+        // ============================================================
+        const InputSecurity = {
+            // HTML escape to prevent XSS
+            escapeHtml(str) {
+                if (str === null || str === undefined) return '';
+                const div = document.createElement('div');
+                div.textContent = String(str);
+                return div.innerHTML;
+            },
+            
+            // Sanitize: remove control chars, trim, limit length
+            sanitize(str, maxLength = 1000) {
+                if (str === null || str === undefined) return '';
+                return String(str)
+                    .replace(/[\x00-\x1F\x7F]/g, '')  // Remove control chars
+                    .replace(/<script[^>]*>.*?<\/script>/gi, '')  // Remove script tags
+                    .trim()
+                    .slice(0, maxLength);
+            },
+            
+            // Sanitize for use in HTML attributes
+            sanitizeAttr(str, maxLength = 200) {
+                return this.sanitize(str, maxLength)
+                    .replace(/["'`]/g, '');  // Remove quotes
+            },
+            
+            // Validators - return { valid: boolean, message?: string }
+            validators: {
+                ipv4(v) {
+                    const valid = /^(?:(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)$/.test(v);
+                    return { valid, message: valid ? null : 'Invalid IPv4 address' };
+                },
+                ipv6(v) {
+                    const valid = /^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$|^::$|^(?:[0-9a-fA-F]{1,4}:){1,7}:$|^(?:[0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}$/.test(v);
+                    return { valid, message: valid ? null : 'Invalid IPv6 address' };
+                },
+                md5(v) {
+                    const valid = /^[a-fA-F0-9]{32}$/.test(v);
+                    return { valid, message: valid ? null : 'MD5 must be 32 hex characters' };
+                },
+                sha1(v) {
+                    const valid = /^[a-fA-F0-9]{40}$/.test(v);
+                    return { valid, message: valid ? null : 'SHA1 must be 40 hex characters' };
+                },
+                sha256(v) {
+                    const valid = /^[a-fA-F0-9]{64}$/.test(v);
+                    return { valid, message: valid ? null : 'SHA256 must be 64 hex characters' };
+                },
+                domain(v) {
+                    const valid = /^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/.test(v);
+                    return { valid, message: valid ? null : 'Invalid domain name' };
+                },
+                url(v) {
+                    const valid = /^https?:\/\/[^\s<>"{}|\\^`\[\]]+$/.test(v);
+                    return { valid, message: valid ? null : 'Invalid URL (must start with http:// or https://)' };
+                },
+                cveId(v) {
+                    const valid = /^CVE-\d{4}-\d{4,}$/.test(v);
+                    return { valid, message: valid ? null : 'CVE format: CVE-YYYY-NNNNN' };
+                },
+                cvssVector(v) {
+                    const valid = /^CVSS:3\.[01]\/AV:[NALP]\/AC:[LH]\/PR:[NLH]\/UI:[NR]\/S:[UC]\/C:[NLH]\/I:[NLH]\/A:[NLH]/.test(v);
+                    return { valid, message: valid ? null : 'Invalid CVSS 3.x vector string' };
+                },
+                filename(v) {
+                    const valid = /^[^<>:"/\\|?*\x00-\x1F]+$/.test(v) && v.length <= 255;
+                    return { valid, message: valid ? null : 'Invalid filename' };
+                },
+                text(v, maxLen = 1000) {
+                    const valid = v.length <= maxLen;
+                    return { valid, message: valid ? null : `Text exceeds ${maxLen} characters` };
+                }
+            },
+            
+            // Validate observable based on type
+            validateObservable(type, value) {
+                const v = this.sanitize(value, 500);
+                switch (type) {
+                    case 'ipv4-addr': return this.validators.ipv4(v);
+                    case 'ipv6-addr': return this.validators.ipv6(v);
+                    case 'file-hash-md5': return this.validators.md5(v);
+                    case 'file-hash-sha1': return this.validators.sha1(v);
+                    case 'file-hash-sha256': return this.validators.sha256(v);
+                    case 'domain-name': return this.validators.domain(v);
+                    case 'url': return this.validators.url(v);
+                    case 'file-name': return this.validators.filename(v);
+                    case 'threat-actor':
+                    case 'malware':
+                        return this.validators.text(v, 100);
+                    default:
+                        return { valid: true };
+                }
+            }
+        };
+
+        // ============================================================
+        // METADATA HELPERS
+        // ============================================================
+        // Default metadata structure
+        function createDefaultMetadata() {
+            return {
+                score: 'unclassified',     // Color-coded severity: unclassified|low|medium|high|critical
+                confidence: null,           // Percentage: null (Unknown) or 1-100
+                comments: '',
+                cveId: '',
+                cvssVector: '',
+                hyperlinks: [],    // [{ label, url }]
+                observables: []    // [{ type, value }]
+            };
+        }
+
+        // Get confidence label from percentage value
+        function getConfidenceLabel(value) {
+            if (value === null || value === undefined || value === 0) return 'Unknown';
+            if (value <= 33) return 'Low';
+            if (value <= 66) return 'Medium';
+            return 'High';
+        }
+
+        // Get confidence CSS class
+        function getConfidenceClass(value) {
+            if (value === null || value === undefined || value === 0) return 'unknown';
+            if (value <= 33) return 'low';
+            if (value <= 66) return 'medium';
+            return 'high';
+        }
+
+        // Migrate old ID-only format to new object format
+        function migrateAssignment(idOrObj) {
+            if (typeof idOrObj === 'string') {
+                return { id: idOrObj, metadata: createDefaultMetadata() };
+            }
+            // Ensure metadata exists
+            if (!idOrObj.metadata) {
+                idOrObj.metadata = createDefaultMetadata();
+            }
+            return idOrObj;
+        }
+
+        // Get ID from assignment (handles both old and new format)
+        function getAssignmentId(assignment) {
+            return typeof assignment === 'string' ? assignment : assignment.id;
+        }
+
+        // Get metadata from assignment
+        function getAssignmentMetadata(assignment) {
+            return typeof assignment === 'string' ? createDefaultMetadata() : (assignment.metadata || createDefaultMetadata());
+        }
+
+        // Find assignment object by ID in a phase
+        function findAssignment(phaseKey, entityType, id) {
+            const key = entityType === 'attack' ? 'techniques' : entityType === 'capec' ? 'capecs' : 'cwes';
+            const assignments = state.assignments[phaseKey]?.[key] || [];
+            return assignments.find(a => getAssignmentId(a) === id);
+        }
+
+        // Update metadata for an assignment
+        function updateAssignmentMetadata(phaseKey, entityType, id, newMetadata) {
+            const key = entityType === 'attack' ? 'techniques' : entityType === 'capec' ? 'capecs' : 'cwes';
+            const assignments = state.assignments[phaseKey]?.[key] || [];
+            const idx = assignments.findIndex(a => getAssignmentId(a) === id);
+            if (idx !== -1) {
+                // Ensure it's in object format
+                if (typeof assignments[idx] === 'string') {
+                    assignments[idx] = { id: assignments[idx], metadata: createDefaultMetadata() };
+                }
+                assignments[idx].metadata = { ...assignments[idx].metadata, ...newMetadata };
+            }
+        }
+
+        // Score level config (color-coded severity)
+        const SCORE_LEVELS = {
+            unclassified: { label: 'Unclassified', color: null, bgColor: null },
+            low: { label: 'Low', color: '#22c55e', bgColor: 'rgba(34, 197, 94, 0.1)' },
+            medium: { label: 'Medium', color: '#eab308', bgColor: 'rgba(234, 179, 8, 0.1)' },
+            high: { label: 'High', color: '#f97316', bgColor: 'rgba(249, 115, 22, 0.1)' },
+            critical: { label: 'Critical', color: '#ef4444', bgColor: 'rgba(239, 68, 68, 0.15)' }
+        };
+
+        // Observable types
+        const OBSERVABLE_TYPES = [
+            { value: 'ipv4-addr', label: 'IPv4 Address' },
+            { value: 'ipv6-addr', label: 'IPv6 Address' },
+            { value: 'file-hash-md5', label: 'Hash (MD5)' },
+            { value: 'file-hash-sha1', label: 'Hash (SHA1)' },
+            { value: 'file-hash-sha256', label: 'Hash (SHA256)' },
+            { value: 'domain-name', label: 'Domain Name' },
+            { value: 'url', label: 'URL' },
+            { value: 'file-name', label: 'File Name' },
+            { value: 'malware', label: 'Malware Name' },
+            { value: 'threat-actor', label: 'Threat Actor' }
+        ];
+
+        // ============================================================
+        // STATE
+        // ============================================================
+        const state = {
+            view: 'killchain',  // 'killchain' | 'relationship'
+            layers: { attack: true, capec: true, cwe: true },
+            groupByCapec: false,
+            activeTab: 'attack',
+            filters: { attack: 'all', capec: 'all', cwe: 'all' },
+            
+            // Full data libraries (loaded from JSON)
+            library: {
+                techniques: {},  // T1566 -> { id, name, domain }
+                capecs: {},      // CAPEC-98 -> { id, name, severity, ... }
+                cwes: {}         // CWE-89 -> { id, name, ... }
+            },
+            
+            // Mappings
+            techniqueToCapec: {},
+            cweToCapec: {},
+            capecToTechnique: {},
+            
+            // Assigned entities (by phase)
+            assignments: {},
+            
+            // Current selection
+            selection: { type: null, id: null }
+        };
+
+        // Kill chain structure
+        const KILL_CHAIN = {
+            'IN': {
+                name: 'Initial Foothold',
+                phases: ['reconnaissance', 'resource-development', 'delivery', 'social-engineering', 'exploitation', 'persistence', 'defense-evasion', 'command-control']
+            },
+            'THROUGH': {
+                name: 'Network Propagation',
+                phases: ['pivoting', 'discovery', 'privilege-escalation', 'execution', 'credential-access', 'lateral-movement']
+            },
+            'OUT': {
+                name: 'Action on Objectives',
+                phases: ['collection', 'exfiltration', 'impact', 'objectives']
+            }
+        };
+
+        // All phases in order
+        const ALL_PHASES = [];
+        for (const [superPhase, data] of Object.entries(KILL_CHAIN)) {
+            for (const phase of data.phases) {
+                ALL_PHASES.push(`${superPhase}:${phase}`);
+            }
+        }
+
+        // Phase name formatter
+        function formatPhaseName(id) {
+            return id.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        }
+
+        // Initialize all phase assignments
+        function initAssignments() {
+            for (const [superPhase, data] of Object.entries(KILL_CHAIN)) {
+                for (const phase of data.phases) {
+                    const key = `${superPhase}:${phase}`;
+                    state.assignments[key] = { techniques: [], capecs: [], cwes: [] };
+                }
+            }
+        }
+
+        // ============================================================
+        // DATA LOADING
+        // ============================================================
+        async function loadData() {
+            try {
+                // Load ATT&CK techniques data
+                const attackRes = await fetch('resources/attack-techniques.json');
+                state.library.techniques = await attackRes.json();
+                
+                // Load CAPEC data
+                const capecRes = await fetch('resources/capec-full.json');
+                const capecData = await capecRes.json();
+                state.library.capecs = capecData.patterns;
+                
+                // Load CWE data
+                const cweRes = await fetch('resources/cwe-full.json');
+                const cweData = await cweRes.json();
+                state.library.cwes = cweData.weaknesses;
+                
+                // Load mappings
+                const t2cRes = await fetch('resources/technique-to-capec.json');
+                state.techniqueToCapec = await t2cRes.json();
+                
+                const c2tRes = await fetch('resources/capec-to-technique.json');
+                state.capecToTechnique = await c2tRes.json();
+                
+                const c2cRes = await fetch('resources/cwe-to-capec.json');
+                state.cweToCapec = await c2cRes.json();
+                
+                console.log(`Loaded: ${Object.keys(state.library.techniques).length} techniques, ${Object.keys(state.library.capecs).length} CAPECs, ${Object.keys(state.library.cwes).length} CWEs`);
+                
+                document.getElementById('loading').classList.add('hidden');
+                renderAll();
+            } catch (err) {
+                console.error('Failed to load data:', err);
+                document.getElementById('loading').innerHTML = `<div class="loading-text">Error loading data: ${err.message}</div>`;
+            }
+        }
+
+        // Load Navigator layer (techniques become searchable, not auto-assigned)
+        async function loadNavigator(domain) {
+            try {
+                const res = await fetch(`resources/${domain}.json`);
+                const layer = await res.json();
+                
+                let added = 0, existing = 0;
+                for (const tech of layer.techniques || []) {
+                    if (tech.enabled === false) continue;
+                    const id = tech.techniqueID;
+                    if (state.library.techniques[id]) {
+                        existing++;
+                    } else {
+                        // Add technique with minimal info (not in our technique library)
+                        state.library.techniques[id] = {
+                            id,
+                            name: getTechniqueName(id),
+                            domain: detectDomain(id)
+                        };
+                        added++;
+                    }
+                }
+                
+                showToast(`Navigator: ${existing} techniques found in library, ${added} new`);
+                filterEntities('attack');
+            } catch (err) {
+                showToast('Error: ' + err.message);
+            }
+        }
+
+        function importNavigator(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const layer = JSON.parse(e.target.result);
+                    let added = 0, existing = 0;
+                    
+                    for (const tech of layer.techniques || []) {
+                        if (tech.enabled === false) continue;
+                        const id = tech.techniqueID;
+                        if (state.library.techniques[id]) {
+                            existing++;
+                        } else {
+                            state.library.techniques[id] = {
+                                id,
+                                name: getTechniqueName(id),
+                                domain: detectDomain(id)
+                            };
+                            added++;
+                        }
+                    }
+                    
+                    showToast(`Import: ${existing} in library, ${added} new techniques`);
+                    filterEntities('attack');
+                } catch (err) {
+                    showToast('Invalid JSON: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Domain detection (from visualizer)
+        function detectDomain(techId) {
+            if (techId.startsWith('T0')) return 'ics';
+            const num = parseInt(techId.replace(/^T/, '').split('.')[0], 10);
+            if (num >= 1398 && num <= 1665) return 'mobile';
+            return 'enterprise';
+        }
+
+        // Technique name lookup
+        function getTechniqueName(techId) {
+            // First, check our loaded technique library
+            if (state.library.techniques[techId]) {
+                return state.library.techniques[techId].name;
+            }
+            // Fallback to visualizer if available
+            if (typeof KillChainVisualizer !== 'undefined') {
+                const viz = new KillChainVisualizer(null, null);
+                const name = viz.getTechniqueName(techId);
+                if (name) return name;
+            }
+            return `Technique ${techId}`;
+        }
+
+        // ============================================================
+        // VIEW & LAYER CONTROLS
+        // ============================================================
+        function setView(view) {
+            state.view = view;
+            document.getElementById('view-killchain').classList.toggle('active', view === 'killchain');
+            document.getElementById('view-relationship').classList.toggle('active', view === 'relationship');
+            document.getElementById('kill-chain-container').classList.toggle('hidden', view !== 'killchain');
+            document.getElementById('relationship-container').classList.toggle('visible', view === 'relationship');
+            document.getElementById('content-title').textContent = view === 'killchain' ? 'Unified Kill Chain' : 'CAPEC → CWE → ATT&CK → Phase';
+            document.getElementById('btn-group-capec').style.display = view === 'killchain' ? 'inline-block' : 'none';
+            
+            if (view === 'relationship') {
+                renderRelationshipView();
+            }
+        }
+
+        function toggleLayer(layer) {
+            state.layers[layer] = document.getElementById(`layer-${layer}`).checked;
+            renderKillChain();
+            if (state.view === 'relationship') {
+                renderRelationshipView();
+            }
+        }
+
+        function toggleCapecGrouping() {
+            state.groupByCapec = !state.groupByCapec;
+            document.getElementById('btn-group-capec').classList.toggle('active', state.groupByCapec);
+            renderKillChain();
+        }
+
+        // ============================================================
+        // TAB & FILTER CONTROLS
+        // ============================================================
+        function switchTab(tab) {
+            state.activeTab = tab;
+            document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`.sidebar-tab.${tab}`).classList.add('active');
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            document.getElementById(`tab-${tab}`).classList.add('active');
+        }
+
+        function setFilter(type, filter) {
+            state.filters[type] = filter;
+            document.querySelectorAll(`#filter-${type} .filter-btn`).forEach(b => {
+                b.classList.toggle('active', b.dataset.filter === filter);
+            });
+            filterEntities(type);
+        }
+
+        // ============================================================
+        // ENTITY LIST RENDERING
+        // ============================================================
+        function filterEntities(type) {
+            const searchTerm = document.getElementById(`search-${type}`).value.toLowerCase();
+            const filter = state.filters[type];
+            const listEl = document.getElementById(`list-${type}`);
+            
+            let entities = [];
+            
+            if (type === 'attack') {
+                entities = Object.values(state.library.techniques).filter(t => {
+                    if (searchTerm && !t.id.toLowerCase().includes(searchTerm) && !t.name.toLowerCase().includes(searchTerm)) return false;
+                    if (filter !== 'all' && t.domain !== filter) return false;
+                    return true;
+                });
+            } else if (type === 'capec') {
+                entities = Object.values(state.library.capecs).filter(c => {
+                    if (searchTerm && !c.id.toLowerCase().includes(searchTerm) && !c.name.toLowerCase().includes(searchTerm)) return false;
+                    if (filter !== 'all' && c.abstraction?.toLowerCase() !== filter) return false;
+                    return true;
+                });
+            } else if (type === 'cwe') {
+                entities = Object.values(state.library.cwes).filter(w => {
+                    if (searchTerm && !w.id.toLowerCase().includes(searchTerm) && !w.name.toLowerCase().includes(searchTerm)) return false;
+                    if (filter !== 'all' && w.abstraction?.toLowerCase() !== filter) return false;
+                    return true;
+                });
+            }
+            
+            // Limit display for performance
+            const maxDisplay = 100;
+            const total = entities.length;
+            entities = entities.slice(0, maxDisplay);
+            
+            let html = '';
+            
+            for (const entity of entities) {
+                const isAssigned = isEntityAssigned(type, entity.id);
+                const isSelected = state.selection.type === type && state.selection.id === entity.id;
+                
+                if (type === 'attack') {
+                    const subIndicator = entity.isSubtechnique ? '↳ ' : '';
+                    const tacticBadge = entity.tactics?.length ? `<span class="entity-badge">${entity.tactics[0]}</span>` : '';
+                    html += `
+                        <div class="entity-item attack ${isAssigned ? 'assigned' : ''} ${isSelected ? 'selected' : ''}" 
+                             onclick="selectEntity('attack', '${entity.id}')"
+                             draggable="true"
+                             ondragstart="handleDragStart(event, 'attack', '${entity.id}')"
+                             ondragend="handleDragEnd(event)"
+                             title="${entity.description ? entity.description.substring(0, 200) + '...' : ''}">
+                            <div class="entity-header">
+                                <span class="entity-id">${subIndicator}${entity.id}</span>
+                                <span class="entity-badge">${entity.domain?.toUpperCase() || 'ENT'}</span>
+                            </div>
+                            <div class="entity-name">${entity.name}</div>
+                            <div class="entity-meta">
+                                ${tacticBadge}
+                                ${entity.platforms?.length ? `<span class="entity-badge">${entity.platforms.slice(0,2).join(', ')}</span>` : ''}
+                            </div>
+                        </div>
+                    `;
+                } else if (type === 'capec') {
+                    const severityClass = entity.severity?.toLowerCase().includes('high') ? 'severity-high' : 
+                                         entity.severity?.toLowerCase().includes('medium') ? 'severity-medium' : 'severity-low';
+                    html += `
+                        <div class="entity-item capec ${isAssigned ? 'assigned' : ''} ${isSelected ? 'selected' : ''}"
+                             onclick="selectEntity('capec', '${entity.id}')"
+                             draggable="true"
+                             ondragstart="handleDragStart(event, 'capec', '${entity.id}')"
+                             ondragend="handleDragEnd(event)">
+                            <div class="entity-header">
+                                <span class="entity-id">${entity.id}</span>
+                                <span class="entity-badge ${severityClass}">${entity.severity || 'Unknown'}</span>
+                            </div>
+                            <div class="entity-name">${entity.name}</div>
+                            <div class="entity-meta">
+                                <span class="entity-badge">${entity.abstraction || 'Standard'}</span>
+                                ${entity.techniques?.length ? `<span class="entity-badge">${entity.techniques.length} techniques</span>` : ''}
+                            </div>
+                        </div>
+                    `;
+                } else if (type === 'cwe') {
+                    html += `
+                        <div class="entity-item cwe ${isAssigned ? 'assigned' : ''} ${isSelected ? 'selected' : ''}"
+                             onclick="selectEntity('cwe', '${entity.id}')"
+                             draggable="true"
+                             ondragstart="handleDragStart(event, 'cwe', '${entity.id}')"
+                             ondragend="handleDragEnd(event)">
+                            <div class="entity-header">
+                                <span class="entity-id">${entity.id}</span>
+                                <span class="entity-badge">${entity.abstraction || 'Base'}</span>
+                            </div>
+                            <div class="entity-name">${entity.name}</div>
+                        </div>
+                    `;
+                }
+            }
+            
+            if (total > maxDisplay) {
+                html += `<div class="list-info">Showing ${maxDisplay} of ${total}. Refine your search.</div>`;
+            } else if (entities.length === 0) {
+                html += `<div class="list-info">No ${type === 'attack' ? 'techniques' : type === 'capec' ? 'patterns' : 'weaknesses'} found</div>`;
+            }
+            
+            listEl.innerHTML = html;
+        }
+
+        function isEntityAssigned(type, id) {
+            const key = type === 'attack' ? 'techniques' : type === 'capec' ? 'capecs' : 'cwes';
+            for (const phase of Object.values(state.assignments)) {
+                if (phase[key]?.some(a => getAssignmentId(a) === id)) return true;
+            }
+            return false;
+        }
+
+        // ============================================================
+        // SELECTION & DETAIL
+        // ============================================================
+        function selectEntity(type, id) {
+            state.selection = { type, id };
+            
+            // Update list selection
+            filterEntities(type);
+            
+            // Show detail panel
+            showDetail(type, id);
+        }
+
+        function showDetail(type, id) {
+            const panel = document.getElementById('detail-panel');
+            const idEl = document.getElementById('detail-id');
+            const nameEl = document.getElementById('detail-name');
+            const contentEl = document.getElementById('detail-content');
+            const selectEl = document.getElementById('phase-select');
+            
+            panel.classList.add('visible');
+            idEl.className = `detail-id ${type}`;
+            
+            let entity, html = '';
+            
+            if (type === 'attack') {
+                entity = state.library.techniques[id];
+                idEl.textContent = id;
+                nameEl.textContent = entity?.name || 'Unknown';
+                
+                // Find related CAPECs
+                const relatedCapecs = state.techniqueToCapec[id] || [];
+                
+                // Build platforms display
+                const platforms = entity?.platforms?.join(', ') || 'N/A';
+                
+                // Build tactics display
+                const tactics = entity?.tactics?.map(t => t.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')).join(', ') || 'N/A';
+                
+                // Build mitigations list
+                const mitigations = entity?.mitigations || [];
+                const mitigationsHtml = mitigations.length > 0 
+                    ? mitigations.slice(0, 8).map(m => `
+                        <div class="detail-list-item" title="${(m.description || '').replace(/"/g, '&quot;')}">
+                            <span class="id" style="color: #10b981;">${m.id}</span>
+                            <span>${m.name}</span>
+                        </div>
+                    `).join('') + (mitigations.length > 8 ? `<div class="list-info">+${mitigations.length - 8} more</div>` : '')
+                    : '<div class="list-info">No mitigations available</div>';
+                
+                // Build references list (first 3)
+                const refs = entity?.references || [];
+                const refsHtml = refs.slice(0, 3).map(r => `
+                    <div class="detail-list-item">
+                        <a href="${r.url}" target="_blank" style="color: var(--text-secondary); text-decoration: none;">
+                            ${r.name} →
+                        </a>
+                    </div>
+                `).join('');
+                
+                html = `
+                    <div class="detail-section">
+                        <h4>Description</h4>
+                        <p>${entity?.description || 'No description available.'}</p>
+                    </div>
+                    <div class="detail-section">
+                        <h4>Attributes</h4>
+                        <div class="detail-list">
+                            <div class="detail-list-item"><span>Domain:</span><span>${(entity?.domain || 'enterprise').toUpperCase()}</span></div>
+                            <div class="detail-list-item"><span>Platforms:</span><span>${platforms}</span></div>
+                            <div class="detail-list-item"><span>Tactics:</span><span>${tactics}</span></div>
+                            ${entity?.isSubtechnique ? `<div class="detail-list-item"><span>Parent:</span><span onclick="selectEntity('attack', '${entity.parentTechnique}')" style="cursor:pointer; color: var(--attack-color);">${entity.parentTechnique}</span></div>` : ''}
+                            <div class="detail-list-item"><span>Version:</span><span>${entity?.version || '1.0'}</span></div>
+                        </div>
+                    </div>
+                    ${entity?.detection ? `
+                    <div class="detail-section">
+                        <h4>Detection</h4>
+                        <p style="font-size: 0.75rem;">${entity.detection}</p>
+                    </div>
+                    ` : ''}
+                    <div class="detail-section">
+                        <h4>Mitigations (${mitigations.length})</h4>
+                        <div class="detail-list">
+                            ${mitigationsHtml}
+                        </div>
+                    </div>
+                    <div class="detail-section">
+                        <h4>Related CAPEC Patterns (${relatedCapecs.length})</h4>
+                        <div class="detail-list">
+                            ${relatedCapecs.map(c => `
+                                <div class="detail-list-item" onclick="selectEntity('capec', '${c}')">
+                                    <span class="id capec">${c}</span>
+                                    <span>${state.library.capecs[c]?.name || 'Unknown'}</span>
+                                </div>
+                            `).join('')}
+                            ${relatedCapecs.length === 0 ? '<div class="list-info">No CAPEC mappings</div>' : ''}
+                        </div>
+                    </div>
+                    ${refs.length > 0 ? `
+                    <div class="detail-section">
+                        <h4>References</h4>
+                        <div class="detail-list">
+                            ${refsHtml}
+                        </div>
+                    </div>
+                    ` : ''}
+                    <div class="detail-section">
+                        <a href="https://attack.mitre.org/techniques/${id.replace('.', '/')}" target="_blank" style="color: var(--attack-color);">View on MITRE ATT&CK →</a>
+                    </div>
+                `;
+            } else if (type === 'capec') {
+                entity = state.library.capecs[id];
+                idEl.textContent = id;
+                nameEl.textContent = entity?.name || 'Unknown';
+                
+                html = `
+                    <div class="detail-section">
+                        <h4>Description</h4>
+                        <p>${entity?.description || 'No description available.'}</p>
+                    </div>
+                    <div class="detail-section">
+                        <h4>Attributes</h4>
+                        <div class="detail-list">
+                            <div class="detail-list-item"><span>Severity:</span><span>${entity?.severity || 'Unknown'}</span></div>
+                            <div class="detail-list-item"><span>Likelihood:</span><span>${entity?.likelihood || 'Unknown'}</span></div>
+                            <div class="detail-list-item"><span>Abstraction:</span><span>${entity?.abstraction || 'Standard'}</span></div>
+                        </div>
+                    </div>
+                    <div class="detail-section">
+                        <h4>Related Techniques (${entity?.techniques?.length || 0})</h4>
+                        <div class="detail-list">
+                            ${(entity?.techniques || []).map(t => `
+                                <div class="detail-list-item" onclick="selectEntity('attack', '${t}')">
+                                    <span class="id attack">${t}</span>
+                                    <span>${state.library.techniques[t]?.name || getTechniqueName(t)}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <div class="detail-section">
+                        <h4>Related CWEs (${entity?.cwes?.length || 0})</h4>
+                        <div class="detail-list">
+                            ${(entity?.cwes || []).slice(0, 10).map(c => `
+                                <div class="detail-list-item" onclick="selectEntity('cwe', '${c}')">
+                                    <span class="id cwe">${c}</span>
+                                    <span>${state.library.cwes[c]?.name || 'Unknown'}</span>
+                                </div>
+                            `).join('')}
+                            ${(entity?.cwes?.length || 0) > 10 ? `<div class="list-info">+${entity.cwes.length - 10} more</div>` : ''}
+                        </div>
+                    </div>
+                    <div class="detail-section">
+                        <a href="https://capec.mitre.org/data/definitions/${id.replace('CAPEC-', '')}.html" target="_blank" style="color: var(--capec-color);">View on MITRE CAPEC →</a>
+                    </div>
+                `;
+            } else if (type === 'cwe') {
+                entity = state.library.cwes[id];
+                idEl.textContent = id;
+                nameEl.textContent = entity?.name || 'Unknown';
+                
+                const relatedCapecs = state.cweToCapec[id] || entity?.capecs || [];
+                
+                html = `
+                    <div class="detail-section">
+                        <h4>Description</h4>
+                        <p>${entity?.description || 'No description available.'}</p>
+                    </div>
+                    <div class="detail-section">
+                        <h4>Abstraction</h4>
+                        <p>${entity?.abstraction || 'Base'}</p>
+                    </div>
+                    <div class="detail-section">
+                        <h4>Related CAPEC Patterns (${relatedCapecs.length})</h4>
+                        <div class="detail-list">
+                            ${relatedCapecs.slice(0, 10).map(c => `
+                                <div class="detail-list-item" onclick="selectEntity('capec', '${c}')">
+                                    <span class="id capec">${c}</span>
+                                    <span>${state.library.capecs[c]?.name || 'Unknown'}</span>
+                                </div>
+                            `).join('')}
+                            ${relatedCapecs.length > 10 ? `<div class="list-info">+${relatedCapecs.length - 10} more</div>` : ''}
+                        </div>
+                    </div>
+                    <div class="detail-section">
+                        <a href="https://cwe.mitre.org/data/definitions/${id.replace('CWE-', '')}.html" target="_blank" style="color: var(--cwe-color);">View on MITRE CWE →</a>
+                    </div>
+                `;
+            }
+            
+            contentEl.innerHTML = html;
+            
+            // Set current assignment in dropdown
+            const currentPhase = findEntityPhase(type, id);
+            selectEl.value = currentPhase || '';
+        }
+
+        function closeDetail() {
+            document.getElementById('detail-panel').classList.remove('visible');
+            state.selection = { type: null, id: null };
+            filterEntities(state.activeTab);
+        }
+
+        function findEntityPhase(type, id) {
+            const key = type === 'attack' ? 'techniques' : type === 'capec' ? 'capecs' : 'cwes';
+            for (const [phase, data] of Object.entries(state.assignments)) {
+                if (data[key]?.includes(id)) return phase;
+            }
+            return null;
+        }
+
+        // ============================================================
+        // ASSIGNMENT LOGIC
+        // ============================================================
+        
+        // Manual single-phase assignment
+        function assignSelectedEntity() {
+            const { type, id } = state.selection;
+            if (!type || !id) return;
+            
+            const phaseValue = document.getElementById('phase-select').value;
+            const key = type === 'attack' ? 'techniques' : type === 'capec' ? 'capecs' : 'cwes';
+            
+            // Remove from all phases first
+            for (const phase of Object.values(state.assignments)) {
+                const idx = phase[key].indexOf(id);
+                if (idx !== -1) phase[key].splice(idx, 1);
+            }
+            
+            // Add to selected phase
+            if (phaseValue && state.assignments[phaseValue]) {
+                state.assignments[phaseValue][key].push(id);
+                showToast(`${id} → ${formatPhaseName(phaseValue.split(':')[1])}`);
+            } else {
+                showToast(`${id} unassigned`);
+            }
+            
+            renderKillChain();
+            filterEntities(state.activeTab);
+            if (state.view === 'relationship') {
+                renderRelationshipView();
+            }
+        }
+
+        // ============================================================
+        // DRAG & DROP
+        // ============================================================
+        let dragData = { type: null, id: null };
+
+        function handleDragStart(event, type, id) {
+            dragData = { type, id };
+            event.target.classList.add('dragging');
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', `${type}:${id}`);
+            
+            // Highlight all phases as potential drop targets
+            document.querySelectorAll('.phase').forEach(p => {
+                p.classList.add('drop-target');
+            });
+        }
+
+        function handleDragEnd(event) {
+            event.target.classList.remove('dragging');
+            dragData = { type: null, id: null };
+            
+            // Remove drop target highlighting
+            document.querySelectorAll('.phase').forEach(p => {
+                p.classList.remove('drop-target');
+            });
+        }
+
+        function handleDragOver(event) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+            event.currentTarget.style.background = 'rgba(113, 113, 122, 0.25)';
+        }
+
+        function handleDragLeave(event) {
+            event.currentTarget.style.background = '';
+        }
+
+        function handleDrop(event, phaseKey) {
+            event.preventDefault();
+            event.currentTarget.style.background = '';
+            
+            const { type, id } = dragData;
+            if (!type || !id) return;
+            
+            const key = type === 'attack' ? 'techniques' : type === 'capec' ? 'capecs' : 'cwes';
+            
+            // Find existing assignment to preserve metadata
+            let existingMetadata = null;
+            for (const phase of Object.values(state.assignments)) {
+                const idx = phase[key].findIndex(a => getAssignmentId(a) === id);
+                if (idx !== -1) {
+                    existingMetadata = getAssignmentMetadata(phase[key][idx]);
+                    phase[key].splice(idx, 1);
+                }
+            }
+            
+            // Add to target phase with metadata (new format)
+            if (state.assignments[phaseKey]) {
+                const newAssignment = {
+                    id: id,
+                    metadata: existingMetadata || createDefaultMetadata()
+                };
+                state.assignments[phaseKey][key].push(newAssignment);
+                showToast(`${id} → ${formatPhaseName(phaseKey.split(':')[1])}`);
+            }
+            
+            renderKillChain();
+            filterEntities(state.activeTab);
+            if (state.view === 'relationship') {
+                renderRelationshipView();
+            }
+        }
+
+        // ============================================================
+        // KILL CHAIN RENDERING
+        // ============================================================
+        function renderKillChain() {
+            const container = document.getElementById('kill-chain');
+            let html = '';
+            
+            for (const [superPhaseId, superPhase] of Object.entries(KILL_CHAIN)) {
+                html += `
+                    <div class="super-phase ${superPhaseId.toLowerCase()}">
+                        <div class="super-phase-header">${superPhaseId} - ${superPhase.name}</div>
+                        <div class="super-phase-content">
+                `;
+                
+                for (const phaseId of superPhase.phases) {
+                    const phaseKey = `${superPhaseId}:${phaseId}`;
+                    const phaseData = state.assignments[phaseKey] || { techniques: [], capecs: [], cwes: [] };
+                    
+                    const techCount = state.layers.attack ? phaseData.techniques.length : 0;
+                    const capecCount = state.layers.capec ? phaseData.capecs.length : 0;
+                    const cweCount = state.layers.cwe ? phaseData.cwes.length : 0;
+                    const totalCount = techCount + capecCount + cweCount;
+                    
+                    html += `
+                        <div class="phase ${totalCount === 0 ? 'empty' : ''}" data-phase="${phaseKey}"
+                             ondragover="handleDragOver(event)"
+                             ondragleave="handleDragLeave(event)"
+                             ondrop="handleDrop(event, '${phaseKey}')">
+                            <div class="phase-header" onclick="togglePhase(this)">
+                                <div class="phase-title">
+                                    <span class="phase-name">${formatPhaseName(phaseId)}</span>
+                                    <span class="phase-count ${totalCount === 0 ? 'zero' : ''}">${totalCount}</span>
+                                </div>
+                                <span class="phase-toggle">▼</span>
+                            </div>
+                            <div class="phase-content">
+                    `;
+                    
+                    // Render CAPECs (grouped)
+                    if (state.layers.capec && state.groupByCapec && phaseData.capecs.length > 0) {
+                        for (const capecAssignment of phaseData.capecs) {
+                            const capecId = getAssignmentId(capecAssignment);
+                            const capec = state.library.capecs[capecId];
+                            if (!capec) continue;
+                            
+                            // Find techniques in this phase that belong to this CAPEC
+                            const capecTechs = (capec.techniques || []).filter(t => 
+                                phaseData.techniques.some(a => getAssignmentId(a) === t)
+                            );
+                            
+                            html += `
+                                <div class="capec-group">
+                                    <div class="capec-group-header">
+                                        <span class="capec-group-id">${InputSecurity.escapeHtml(capecId)}</span>
+                                        <span class="capec-group-name">${InputSecurity.escapeHtml(capec.name)}</span>
+                                    </div>
+                                    <div class="capec-group-techniques">
+                            `;
+                            
+                            for (const techId of capecTechs) {
+                                const techAssignment = phaseData.techniques.find(a => getAssignmentId(a) === techId);
+                                const tech = state.library.techniques[techId];
+                                const meta = getAssignmentMetadata(techAssignment);
+                                html += renderEntityTag('attack', techId, tech?.name || '', meta, phaseKey);
+                            }
+                            
+                            html += `</div></div>`;
+                        }
+                    }
+                    
+                    // Render CAPECs (not grouped)
+                    if (state.layers.capec && !state.groupByCapec && phaseData.capecs.length > 0) {
+                        for (const capecAssignment of phaseData.capecs) {
+                            const capecId = getAssignmentId(capecAssignment);
+                            const capec = state.library.capecs[capecId];
+                            const meta = getAssignmentMetadata(capecAssignment);
+                            html += renderEntityTag('capec', capecId, capec?.name || '', meta, phaseKey);
+                        }
+                    }
+                    
+                    // Render techniques
+                    if (state.layers.attack) {
+                        const groupedTechs = new Set();
+                        if (state.layers.capec && state.groupByCapec) {
+                            for (const capecAssignment of phaseData.capecs) {
+                                const capecId = getAssignmentId(capecAssignment);
+                                const capec = state.library.capecs[capecId];
+                                (capec?.techniques || []).forEach(t => groupedTechs.add(t));
+                            }
+                        }
+                        
+                        for (const techAssignment of phaseData.techniques) {
+                            const techId = getAssignmentId(techAssignment);
+                            if (state.groupByCapec && groupedTechs.has(techId)) continue;
+                            const tech = state.library.techniques[techId];
+                            const meta = getAssignmentMetadata(techAssignment);
+                            html += renderEntityTag('attack', techId, tech?.name || '', meta, phaseKey);
+                        }
+                    }
+                    
+                    // Render CWEs
+                    if (state.layers.cwe && phaseData.cwes.length > 0) {
+                        for (const cweAssignment of phaseData.cwes) {
+                            const cweId = getAssignmentId(cweAssignment);
+                            const cwe = state.library.cwes[cweId];
+                            const meta = getAssignmentMetadata(cweAssignment);
+                            html += renderEntityTag('cwe', cweId, cwe?.name || '', meta, phaseKey);
+                        }
+                    }
+                    
+                    if (totalCount === 0) {
+                        html += `<div class="list-info">Empty</div>`;
+                    }
+                    
+                    html += `</div></div>`;
+                }
+                
+                html += `</div></div>`;
+            }
+            
+            container.innerHTML = html;
+            renderStats();
+        }
+
+        // Render a single entity tag with metadata indicators
+        function renderEntityTag(type, id, name, metadata, phaseKey) {
+            const tagClass = type === 'attack' ? 'technique-tag' : type === 'capec' ? 'capec-tag' : 'cwe-tag';
+            const score = metadata.score || 'unclassified';
+            const safeId = InputSecurity.escapeHtml(id);
+            const safeName = InputSecurity.escapeHtml(name);
+            const safePhaseKey = InputSecurity.sanitizeAttr(phaseKey);
+            
+            // Build metadata icons
+            let metaIcons = '';
+            const hasComment = metadata.comments && metadata.comments.trim().length > 0;
+            const hasLinks = metadata.hyperlinks && metadata.hyperlinks.length > 0;
+            const hasObservables = metadata.observables && metadata.observables.length > 0;
+            const hasCve = metadata.cveId && metadata.cveId.trim().length > 0;
+            const hasConfidence = metadata.confidence !== null && metadata.confidence !== undefined && metadata.confidence > 0;
+            
+            if (hasCve || hasObservables || hasLinks || hasComment || hasConfidence) {
+                metaIcons = '<div class="metadata-icons">';
+                if (hasCve) metaIcons += '<span class="meta-icon has-cve" title="Has CVE">V</span>';
+                if (hasObservables) metaIcons += '<span class="meta-icon has-observable" title="Has Observables">O</span>';
+                if (hasLinks) metaIcons += '<span class="meta-icon has-link" title="Has Links">L</span>';
+                if (hasComment) metaIcons += '<span class="meta-icon has-comment" title="Has Comments">C</span>';
+                if (hasConfidence) metaIcons += `<span class="meta-icon has-confidence" title="Confidence: ${metadata.confidence}%">${metadata.confidence}%</span>`;
+                metaIcons += '</div>';
+            }
+            
+            return `
+                <div class="${tagClass}" data-score="${score}" 
+                     onclick="openMetadataEditor('${type}', '${safeId}', '${safePhaseKey}')">
+                    <span class="tag-header">
+                        <span class="id">${safeId}</span>
+                        <span class="name">${safeName}</span>
+                        <span class="remove" onclick="event.stopPropagation(); removeAssignment('${type}', '${safeId}', '${safePhaseKey}')">×</span>
+                    </span>
+                    ${metaIcons}
+                </div>
+            `;
+        }
+
+        // ============================================================
+        // RELATIONSHIP VIEW RENDERING
+        // ============================================================
+        function renderRelationshipView() {
+            const container = document.getElementById('relationship-chain');
+            
+            // Build relationship chains from assigned CAPECs
+            const chains = [];
+            
+            for (const [phaseKey, phaseData] of Object.entries(state.assignments)) {
+                // For each assigned CAPEC
+                for (const capecAssignment of phaseData.capecs) {
+                    const capecId = getAssignmentId(capecAssignment);
+                    const capec = state.library.capecs[capecId];
+                    if (!capec) continue;
+                    
+                    // Get CWEs related to this CAPEC
+                    const relatedCwes = capec.cwes || [];
+                    
+                    // Get techniques related to this CAPEC that are in this phase
+                    const assignedTechIds = phaseData.techniques.map(t => getAssignmentId(t));
+                    const relatedTechs = (capec.techniques || []).filter(t => 
+                        assignedTechIds.includes(t) || state.library.techniques[t]
+                    );
+                    
+                    chains.push({
+                        capec: { id: capecId, name: capec.name },
+                        cwes: relatedCwes.slice(0, 5).map(id => ({ id, name: state.library.cwes[id]?.name || 'Unknown' })),
+                        techniques: relatedTechs.slice(0, 5).map(id => ({ id, name: state.library.techniques[id]?.name || getTechniqueName(id) })),
+                        phase: { key: phaseKey, name: formatPhaseName(phaseKey.split(':')[1]) }
+                    });
+                }
+                
+                // For assigned techniques without CAPEC, create partial chains
+                const assignedCapecIds = phaseData.capecs.map(c => getAssignmentId(c));
+                for (const techAssignment of phaseData.techniques) {
+                    const techId = getAssignmentId(techAssignment);
+                    const relatedCapecs = state.techniqueToCapec[techId] || [];
+                    // Only show if technique has no assigned CAPEC in this phase
+                    const hasCapecInPhase = relatedCapecs.some(c => assignedCapecIds.includes(c));
+                    if (!hasCapecInPhase && relatedCapecs.length > 0) {
+                        const capecId = relatedCapecs[0];
+                        const capec = state.library.capecs[capecId];
+                        chains.push({
+                            capec: capec ? { id: capecId, name: capec.name } : null,
+                            cwes: capec?.cwes?.slice(0, 3).map(id => ({ id, name: state.library.cwes[id]?.name || 'Unknown' })) || [],
+                            techniques: [{ id: techId, name: state.library.techniques[techId]?.name || getTechniqueName(techId) }],
+                            phase: { key: phaseKey, name: formatPhaseName(phaseKey.split(':')[1]) }
+                        });
+                    } else if (relatedCapecs.length === 0) {
+                        // Technique with no CAPEC
+                        chains.push({
+                            capec: null,
+                            cwes: [],
+                            techniques: [{ id: techId, name: state.library.techniques[techId]?.name || getTechniqueName(techId) }],
+                            phase: { key: phaseKey, name: formatPhaseName(phaseKey.split(':')[1]) }
+                        });
+                    }
+                }
+            }
+            
+            if (chains.length === 0) {
+                container.innerHTML = `<div class="relationship-empty">No relationships to display.<br>Assign techniques, CAPECs, or CWEs to phases first.</div>`;
+                return;
+            }
+            
+            let html = '';
+            for (const chain of chains) {
+                html += `
+                    <div class="relationship-row">
+                        <div class="relationship-cell capec">
+                            <div class="relationship-cell-header">CAPEC</div>
+                            ${chain.capec ? `
+                                <div class="relationship-item" onclick="selectEntity('capec', '${chain.capec.id}')">
+                                    <span class="id capec">${chain.capec.id}</span>
+                                    <span class="name">${chain.capec.name}</span>
+                                </div>
+                            ` : '<div class="list-info">—</div>'}
+                        </div>
+                        <div class="relationship-cell cwe">
+                            <div class="relationship-cell-header">CWE</div>
+                            ${chain.cwes.length > 0 ? chain.cwes.map(cwe => `
+                                <div class="relationship-item" onclick="selectEntity('cwe', '${cwe.id}')">
+                                    <span class="id cwe">${cwe.id}</span>
+                                    <span class="name">${cwe.name}</span>
+                                </div>
+                            `).join('') : '<div class="list-info">—</div>'}
+                        </div>
+                        <div class="relationship-cell attack">
+                            <div class="relationship-cell-header">ATT&CK</div>
+                            ${chain.techniques.map(tech => `
+                                <div class="relationship-item" onclick="selectEntity('attack', '${tech.id}')">
+                                    <span class="id attack">${tech.id}</span>
+                                    <span class="name">${tech.name}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="relationship-cell phase">
+                            <div class="relationship-cell-header">Phase</div>
+                            <div class="relationship-item">
+                                <span class="id phase">${chain.phase.key.split(':')[0]}</span>
+                                <span class="name">${chain.phase.name}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+        }
+
+        function renderStats() {
+            const statsEl = document.getElementById('stats-bar');
+            
+            let phasesUsed = 0;
+            const techSet = new Set(), capecSet = new Set(), cweSet = new Set();
+            
+            for (const phase of Object.values(state.assignments)) {
+                if (phase.techniques.length + phase.capecs.length + phase.cwes.length > 0) phasesUsed++;
+                phase.techniques.forEach(t => techSet.add(getAssignmentId(t)));
+                phase.capecs.forEach(c => capecSet.add(getAssignmentId(c)));
+                phase.cwes.forEach(w => cweSet.add(getAssignmentId(w)));
+            }
+            
+            statsEl.innerHTML = `
+                <div class="stat"><div class="stat-value">${techSet.size}</div><div class="stat-label">Techniques</div></div>
+                <div class="stat"><div class="stat-value">${capecSet.size}</div><div class="stat-label">CAPECs</div></div>
+                <div class="stat"><div class="stat-value">${cweSet.size}</div><div class="stat-label">CWEs</div></div>
+                <div class="stat"><div class="stat-value">${phasesUsed}/18</div><div class="stat-label">Phases</div></div>
+            `;
+        }
+
+        function togglePhase(header) {
+            header.parentElement.classList.toggle('minimized');
+        }
+
+        function removeAssignment(type, id, phaseKey) {
+            const key = type === 'attack' ? 'techniques' : type === 'capec' ? 'capecs' : 'cwes';
+            const assignments = state.assignments[phaseKey][key];
+            const idx = assignments.findIndex(a => getAssignmentId(a) === id);
+            if (idx !== -1) {
+                assignments.splice(idx, 1);
+                renderKillChain();
+                filterEntities(state.activeTab);
+                if (state.view === 'relationship') {
+                    renderRelationshipView();
+                }
+                showToast(`Removed ${id}`);
+            }
+        }
+
+        // ============================================================
+        // UTILITY FUNCTIONS
+        // ============================================================
+        function expandAll() {
+            document.querySelectorAll('.phase').forEach(p => p.classList.remove('minimized'));
+        }
+
+        function collapseAll() {
+            document.querySelectorAll('.phase').forEach(p => p.classList.add('minimized'));
+        }
+
+        function clearAssignments() {
+            initAssignments();
+            renderKillChain();
+            filterEntities(state.activeTab);
+            if (state.view === 'relationship') {
+                renderRelationshipView();
+            }
+            showToast('Cleared all assignments');
+        }
+
+        function exportJSON() {
+            const exportData = {
+                version: '2.4.1',  // Schema version for score/confidence separation
+                exportedAt: new Date().toISOString(),
+                layers: state.layers,
+                assignments: state.assignments,
+                library: {
+                    techniques: state.library.techniques
+                }
+            };
+            
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'attack-chain-export.json';
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Exported JSON');
+        }
+
+        function exportCSV() {
+            // Build CSV with phases as header columns
+            // Format: Entity Type, Entity ID, Entity Name, Score, Confidence, CVE, Comments, Phase1, Phase2, ...
+            
+            const headers = ['Type', 'ID', 'Name', 'Score', 'Confidence', 'CVE', 'Comments', ...ALL_PHASES.map(p => formatPhaseName(p.split(':')[1]))];
+            const rows = [headers];
+            
+            // Collect all unique entities with their metadata
+            const allTechs = new Map();  // id -> { phases: Set, metadata }
+            const allCapecs = new Map();
+            const allCwes = new Map();
+            
+            for (const [phaseKey, phase] of Object.entries(state.assignments)) {
+                phase.techniques.forEach(t => {
+                    const id = getAssignmentId(t);
+                    if (!allTechs.has(id)) {
+                        allTechs.set(id, { phases: new Set(), metadata: getAssignmentMetadata(t) });
+                    }
+                    allTechs.get(id).phases.add(phaseKey);
+                });
+                phase.capecs.forEach(c => {
+                    const id = getAssignmentId(c);
+                    if (!allCapecs.has(id)) {
+                        allCapecs.set(id, { phases: new Set(), metadata: getAssignmentMetadata(c) });
+                    }
+                    allCapecs.get(id).phases.add(phaseKey);
+                });
+                phase.cwes.forEach(w => {
+                    const id = getAssignmentId(w);
+                    if (!allCwes.has(id)) {
+                        allCwes.set(id, { phases: new Set(), metadata: getAssignmentMetadata(w) });
+                    }
+                    allCwes.get(id).phases.add(phaseKey);
+                });
+            }
+            
+            // Helper to format confidence for CSV
+            const formatConfidence = (meta) => {
+                if (meta.confidence === null || meta.confidence === undefined) return '';
+                return `${meta.confidence}% (${getConfidenceLabel(meta.confidence)})`;
+            };
+            
+            // Add technique rows
+            for (const [techId, data] of allTechs) {
+                const tech = state.library.techniques[techId];
+                const meta = data.metadata;
+                const row = [
+                    'ATT&CK', 
+                    techId, 
+                    tech?.name || 'Unknown',
+                    meta.score || '',
+                    formatConfidence(meta),
+                    meta.cveId || '',
+                    (meta.comments || '').slice(0, 100).replace(/\n/g, ' ')
+                ];
+                for (const phaseKey of ALL_PHASES) {
+                    row.push(data.phases.has(phaseKey) ? 'X' : '');
+                }
+                rows.push(row);
+            }
+            
+            // Add CAPEC rows
+            for (const [capecId, data] of allCapecs) {
+                const capec = state.library.capecs[capecId];
+                const meta = data.metadata;
+                const row = [
+                    'CAPEC', 
+                    capecId, 
+                    capec?.name || 'Unknown',
+                    meta.score || '',
+                    formatConfidence(meta),
+                    meta.cveId || '',
+                    (meta.comments || '').slice(0, 100).replace(/\n/g, ' ')
+                ];
+                for (const phaseKey of ALL_PHASES) {
+                    row.push(data.phases.has(phaseKey) ? 'X' : '');
+                }
+                rows.push(row);
+            }
+            
+            // Add CWE rows
+            for (const [cweId, data] of allCwes) {
+                const cwe = state.library.cwes[cweId];
+                const meta = data.metadata;
+                const row = [
+                    'CWE', 
+                    cweId, 
+                    cwe?.name || 'Unknown',
+                    meta.score || '',
+                    formatConfidence(meta),
+                    meta.cveId || '',
+                    (meta.comments || '').slice(0, 100).replace(/\n/g, ' ')
+                ];
+                for (const phaseKey of ALL_PHASES) {
+                    row.push(data.phases.has(phaseKey) ? 'X' : '');
+                }
+                rows.push(row);
+            }
+            
+            // Convert to CSV string
+            const csvContent = rows.map(row => 
+                row.map(cell => {
+                    // Escape quotes and wrap in quotes if contains comma or quote
+                    const escaped = String(cell).replace(/"/g, '""');
+                    return escaped.includes(',') || escaped.includes('"') || escaped.includes('\n') 
+                        ? `"${escaped}"` 
+                        : escaped;
+                }).join(',')
+            ).join('\n');
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'attack-chain-export.csv';
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Exported CSV');
+        }
+
+        // ============================================================
+        // DROPDOWN UTILS
+        // ============================================================
+        function toggleDropdown(id) {
+            const dropdown = document.getElementById(id);
+            const isOpen = dropdown.classList.contains('open');
+            closeDropdowns();
+            if (!isOpen) {
+                dropdown.classList.add('open');
+            }
+        }
+
+        function closeDropdowns() {
+            document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
+        }
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.dropdown')) {
+                closeDropdowns();
+            }
+        });
+
+        // ============================================================
+        // METADATA EDITOR
+        // ============================================================
+        let currentMetadataEdit = { type: null, id: null, phaseKey: null };
+
+        function openMetadataEditor(type, id, phaseKey) {
+            currentMetadataEdit = { type, id, phaseKey };
+            
+            // Find the assignment
+            const assignment = findAssignment(phaseKey, type, id);
+            const metadata = assignment ? getAssignmentMetadata(assignment) : createDefaultMetadata();
+            
+            // Populate form
+            document.getElementById('metadata-entity-id').textContent = id;
+            
+            // Score selector (renamed from confidence)
+            document.querySelectorAll('#score-selector .score-option').forEach(opt => {
+                opt.classList.toggle('selected', opt.dataset.value === (metadata.score || 'unclassified'));
+                opt.onclick = () => selectScore(opt.dataset.value);
+            });
+            
+            // Confidence slider (new percentage field)
+            const confidenceSlider = document.getElementById('meta-confidence');
+            const confidenceValue = metadata.confidence || 0;
+            confidenceSlider.value = confidenceValue;
+            updateConfidenceLabel(confidenceValue);
+            confidenceSlider.oninput = (e) => updateConfidenceLabel(parseInt(e.target.value));
+            
+            // CVE and CVSS
+            document.getElementById('meta-cve-id').value = metadata.cveId || '';
+            document.getElementById('meta-cve-id-error').textContent = '';
+            document.getElementById('meta-cvss-vector').value = metadata.cvssVector || '';
+            document.getElementById('meta-cvss-vector-error').textContent = '';
+            
+            // Comments
+            document.getElementById('meta-comments').value = metadata.comments || '';
+            
+            // Hyperlinks
+            const hyperlinkList = document.getElementById('hyperlink-list');
+            hyperlinkList.innerHTML = '';
+            (metadata.hyperlinks || []).forEach((link, i) => {
+                addHyperlinkRow(link.label, link.url);
+            });
+            
+            // Observables
+            const observableList = document.getElementById('observable-list');
+            observableList.innerHTML = '';
+            (metadata.observables || []).forEach((obs, i) => {
+                addObservableRow(obs.type, obs.value);
+            });
+            
+            // Show modal
+            document.getElementById('metadata-editor-modal').classList.add('visible');
+        }
+
+        function closeMetadataEditor(event) {
+            if (event && event.target !== event.currentTarget) return;
+            document.getElementById('metadata-editor-modal').classList.remove('visible');
+            currentMetadataEdit = { type: null, id: null, phaseKey: null };
+        }
+
+        function selectScore(value) {
+            document.querySelectorAll('#score-selector .score-option').forEach(opt => {
+                opt.classList.toggle('selected', opt.dataset.value === value);
+            });
+        }
+
+        function updateConfidenceLabel(value) {
+            const label = document.getElementById('confidence-label');
+            const labelText = getConfidenceLabel(value);
+            const labelClass = getConfidenceClass(value);
+            label.textContent = value === 0 ? 'Unknown' : `${value}% (${labelText})`;
+            label.className = `confidence-label ${labelClass}`;
+        }
+
+        function addHyperlinkRow(label = '', url = '') {
+            const list = document.getElementById('hyperlink-list');
+            const row = document.createElement('div');
+            row.className = 'hyperlink-item';
+            row.innerHTML = `
+                <input type="text" class="metadata-input" placeholder="Label" value="${InputSecurity.escapeHtml(label)}">
+                <input type="text" class="metadata-input" placeholder="https://..." value="${InputSecurity.escapeHtml(url)}">
+                <button class="observable-remove" onclick="this.parentElement.remove()">&times;</button>
+            `;
+            list.appendChild(row);
+        }
+
+        function addObservableRow(type = 'ipv4-addr', value = '') {
+            const list = document.getElementById('observable-list');
+            const row = document.createElement('div');
+            row.className = 'observable-item';
+            
+            let options = OBSERVABLE_TYPES.map(t => 
+                `<option value="${t.value}" ${t.value === type ? 'selected' : ''}>${t.label}</option>`
+            ).join('');
+            
+            row.innerHTML = `
+                <select class="metadata-select">${options}</select>
+                <input type="text" class="metadata-input" placeholder="Value" value="${InputSecurity.escapeHtml(value)}">
+                <button class="observable-remove" onclick="this.parentElement.remove()">&times;</button>
+            `;
+            list.appendChild(row);
+        }
+
+        function saveMetadata() {
+            const { type, id, phaseKey } = currentMetadataEdit;
+            if (!type || !id || !phaseKey) return;
+            
+            // Get score (renamed from confidence)
+            const selectedScore = document.querySelector('#score-selector .score-option.selected');
+            const score = selectedScore ? selectedScore.dataset.value : 'unclassified';
+            
+            // Get confidence percentage (new field)
+            const confidenceSlider = document.getElementById('meta-confidence');
+            const confidenceValue = parseInt(confidenceSlider.value) || 0;
+            const confidence = confidenceValue === 0 ? null : confidenceValue;
+            
+            // Get CVE (with validation)
+            const cveInput = document.getElementById('meta-cve-id');
+            const cveValue = InputSecurity.sanitize(cveInput.value, 50);
+            const cveError = document.getElementById('meta-cve-id-error');
+            if (cveValue && !InputSecurity.validators.cveId(cveValue).valid) {
+                cveError.textContent = 'Invalid CVE format (CVE-YYYY-NNNNN)';
+                cveInput.classList.add('invalid');
+                return;
+            }
+            cveError.textContent = '';
+            cveInput.classList.remove('invalid');
+            
+            // Get CVSS (with validation)
+            const cvssInput = document.getElementById('meta-cvss-vector');
+            const cvssValue = InputSecurity.sanitize(cvssInput.value, 100);
+            const cvssError = document.getElementById('meta-cvss-vector-error');
+            if (cvssValue && !InputSecurity.validators.cvssVector(cvssValue).valid) {
+                cvssError.textContent = 'Invalid CVSS 3.x vector';
+                cvssInput.classList.add('invalid');
+                return;
+            }
+            cvssError.textContent = '';
+            cvssInput.classList.remove('invalid');
+            
+            // Get comments
+            const comments = InputSecurity.sanitize(document.getElementById('meta-comments').value, 2000);
+            
+            // Get hyperlinks (with validation)
+            const hyperlinks = [];
+            document.querySelectorAll('#hyperlink-list .hyperlink-item').forEach(row => {
+                const inputs = row.querySelectorAll('input');
+                const label = InputSecurity.sanitize(inputs[0].value, 100);
+                const url = InputSecurity.sanitize(inputs[1].value, 500);
+                if (label && url) {
+                    if (InputSecurity.validators.url(url).valid) {
+                        hyperlinks.push({ label, url });
+                    }
+                }
+            });
+            
+            // Get observables (with validation)
+            const observables = [];
+            let hasInvalidObservable = false;
+            document.querySelectorAll('#observable-list .observable-item').forEach(row => {
+                const select = row.querySelector('select');
+                const input = row.querySelector('input');
+                const obsType = select.value;
+                const obsValue = InputSecurity.sanitize(input.value, 500);
+                
+                if (obsValue) {
+                    const validation = InputSecurity.validateObservable(obsType, obsValue);
+                    if (validation.valid) {
+                        observables.push({ type: obsType, value: obsValue });
+                        input.classList.remove('invalid');
+                    } else {
+                        input.classList.add('invalid');
+                        hasInvalidObservable = true;
+                    }
+                }
+            });
+            
+            if (hasInvalidObservable) {
+                showToast('Fix invalid observable values');
+                return;
+            }
+            
+            // Build new metadata
+            const newMetadata = {
+                score,
+                confidence,
+                cveId: cveValue,
+                cvssVector: cvssValue,
+                comments,
+                hyperlinks,
+                observables
+            };
+            
+            // Update the assignment
+            const key = type === 'attack' ? 'techniques' : type === 'capec' ? 'capecs' : 'cwes';
+            const assignments = state.assignments[phaseKey]?.[key] || [];
+            const idx = assignments.findIndex(a => getAssignmentId(a) === id);
+            
+            if (idx !== -1) {
+                // Migrate to object format if needed
+                if (typeof assignments[idx] === 'string') {
+                    assignments[idx] = { id: assignments[idx], metadata: newMetadata };
+                } else {
+                    assignments[idx].metadata = newMetadata;
+                }
+            }
+            
+            // Close and re-render
+            closeMetadataEditor();
+            renderKillChain();
+            showToast('Metadata saved');
+        }
+
+        // ============================================================
+        // USAGE GUIDE
+        // ============================================================
+        function showUsageGuide() {
+            document.getElementById('usage-guide-modal').classList.add('visible');
+        }
+
+        function closeUsageGuide(event) {
+            // If called from overlay click, only close if clicking the overlay itself
+            if (event && event.target !== event.currentTarget) return;
+            document.getElementById('usage-guide-modal').classList.remove('visible');
+        }
+
+        // Close modals on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeUsageGuide();
+                closeMetadataEditor();
+            }
+        });
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2500);
+        }
+
+        function renderAll() {
+            filterEntities('attack');
+            filterEntities('capec');
+            filterEntities('cwe');
+            renderKillChain();
+        }
+
+        // ============================================================
+        // INITIALIZATION
+        // ============================================================
+        if (typeof applyConfigColors === 'function') {
+            applyConfigColors();
+        }
+        initAssignments();
+        loadData();
+    </script>
+</body>
+</html>
