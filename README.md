@@ -38,23 +38,33 @@ An editor for creating enriched Cyber Kill Chain assessments by mapping MITRE AT
 ## Project Structure
 
 ```
-├── index.html                  # Main application
-├── config.js                   # Centralized configuration
-├── kill-chain-visualizer.js    # Core visualization component
+├── index.html                      # Main application
+├── config.js                       # Centralized configuration (paths, colors, settings)
+├── kill-chain-visualizer.js        # Core visualization component
 ├── scripts/
-│   ├── extract-attack.py       # ATT&CK STIX bundle parser
-│   ├── extract-data.py         # CAPEC/CWE XML parser
-│   └── sanitize-json.py        # Remove markup from data files
-└── resources/
-    ├── attack-techniques.json  # ATT&CK library (898 techniques)
-    ├── capec-full.json         # CAPEC attack patterns
-    ├── cwe-full.json           # CWE weaknesses
-    ├── capec-to-technique.json # CAPEC → ATT&CK mappings
-    ├── cwe-to-capec.json       # CWE → CAPEC mappings
-    ├── kill-chain-mappings.json# Technique → Phase mappings
-    ├── enterprise.json         # Enterprise Navigator layer
-    ├── mobile.json             # Mobile Navigator layer
-    └── ics.json                # ICS Navigator layer
+│   ├── extract-attack.py           # ATT&CK STIX bundle parser
+│   ├── extract-data.py             # CAPEC/CWE XML parser
+│   └── sanitize-json.py            # Remove markup from data files
+├── frameworks/                     # Source data (configure paths in config.js)
+│   ├── ATTCK/
+│   │   ├── ENTERPRISE.json         # Enterprise ATT&CK STIX bundle
+│   │   ├── MOBILE.json             # Mobile ATT&CK STIX bundle
+│   │   └── ICS.json                # ICS ATT&CK STIX bundle
+│   ├── CAPEC/
+│   │   ├── DOMAINS.xml             # CAPEC domains view
+│   │   └── MECHANISMS.xml          # CAPEC mechanisms view
+│   └── CWE/
+│       ├── HARDWARE.xml            # CWE hardware design weaknesses
+│       └── SOFTWARE.xml            # CWE software development weaknesses
+└── resources/                      # Generated data (do not edit directly)
+    ├── attack-techniques.json      # ATT&CK library (898 techniques)
+    ├── capec-full.json             # CAPEC attack patterns
+    ├── cwe-full.json               # CWE weaknesses
+    ├── capec-to-technique.json     # CAPEC → ATT&CK mappings
+    ├── cwe-to-capec.json           # CWE → CAPEC mappings
+    ├── Nav_Layer_ENTERPRISE.json   # Enterprise Navigator layer
+    ├── Nav_Layer_MOBILE.json       # Mobile Navigator layer
+    └── Nav_Layer_ICS.json          # ICS Navigator layer
 ```
 
 ## Unified Kill Chain Phases
@@ -88,15 +98,25 @@ Each assigned item supports:
 
 ## Updating Data
 
-Download the latest STIX bundles and run the extraction scripts:
+Download the latest framework data and run the extraction scripts:
 
 ```bash
-cd resources
 # Download ATT&CK STIX bundles from https://github.com/mitre-attack/attack-stix-data
+# Place in frameworks/ATTCK/ as ENTERPRISE.json, MOBILE.json, ICS.json
 
-cd ../scripts
-python3 extract-attack.py    # Parse ATT&CK techniques
-python3 extract-data.py      # Parse CAPEC/CWE (requires XML files)
+# Download CAPEC XML views from https://capec.mitre.org/data/
+# Place in frameworks/CAPEC/ as DOMAINS.xml, MECHANISMS.xml
+
+# Download CWE XML views from https://cwe.mitre.org/data/
+# Place in frameworks/CWE/ as SOFTWARE.xml, HARDWARE.xml
+
+# Run extraction scripts
+python3 scripts/extract-attack.py    # Parse ATT&CK techniques
+python3 scripts/extract-data.py      # Parse CAPEC/CWE
+
+# File paths are configurable in config.js under sources.*
+# JSON sanitization paths are configurable in config.js under sanitize.paths
+# Sanitization runs before and after parsing to keep source and generated files clean
 ```
 
 ## License

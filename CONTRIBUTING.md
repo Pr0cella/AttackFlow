@@ -31,7 +31,9 @@ Contributions are welcome. Please read the following guidelines before submittin
 
 When updating ATT&CK, CAPEC, or CWE data:
 
-1. Download source files to `resources/`
+1. Download ATT&CK STIX Bundle source files to `frameworks/ATTCK/DOMAIN.json` ("ENTERPRISE", "MOBILE" & "ICS").
+Download CAPEC XML Definitions to `frameworks/CAPEC/DOMAINs.xml` & `frameworks/CAPEC/MECHANISMS.xml`.
+Download CWE XML Definitions to `frameworks/CWE/HARDWARE.xml` & `frameworks/CWE/SOFTWARE.xml`.
 2. Run extraction scripts in `scripts/`
 3. Verify JSON output is valid
 4. Test the application with new data

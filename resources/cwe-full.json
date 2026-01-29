@@ -5899,232 +5899,35 @@
         "CWE-918"
       ]
     },
-    "CWE-74": {
-      "id": "CWE-74",
-      "name": "CWE 74",
+    "CWE-113": {
+      "id": "CWE-113",
+      "name": "CWE 113",
       "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
       "abstraction": "Unknown",
       "status": "Referenced",
       "capecs": [
-        "CAPEC-10",
-        "CAPEC-101",
         "CAPEC-105",
-        "CAPEC-108",
-        "CAPEC-120",
-        "CAPEC-13",
-        "CAPEC-135",
-        "CAPEC-14",
-        "CAPEC-24",
-        "CAPEC-250",
-        "CAPEC-267",
-        "CAPEC-273",
-        "CAPEC-28",
-        "CAPEC-3",
-        "CAPEC-34",
-        "CAPEC-42",
-        "CAPEC-43",
-        "CAPEC-45",
-        "CAPEC-46",
-        "CAPEC-47",
-        "CAPEC-51",
-        "CAPEC-52",
-        "CAPEC-53",
-        "CAPEC-6",
-        "CAPEC-64",
-        "CAPEC-67",
-        "CAPEC-7",
-        "CAPEC-71",
-        "CAPEC-72",
-        "CAPEC-76",
-        "CAPEC-78",
-        "CAPEC-79",
-        "CAPEC-8",
-        "CAPEC-80",
-        "CAPEC-83",
-        "CAPEC-84",
-        "CAPEC-9"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-36": {
-      "id": "CWE-36",
-      "name": "CWE 36",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-597"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-327": {
-      "id": "CWE-327",
-      "name": "CWE 327",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-20",
-        "CAPEC-459",
-        "CAPEC-473",
-        "CAPEC-475",
-        "CAPEC-608",
-        "CAPEC-614",
-        "CAPEC-97"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-80": {
-      "id": "CWE-80",
-      "name": "CWE 80",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-18",
-        "CAPEC-193",
-        "CAPEC-32",
-        "CAPEC-86"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-539": {
-      "id": "CWE-539",
-      "name": "CWE 539",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-21",
         "CAPEC-31",
-        "CAPEC-39",
-        "CAPEC-59",
-        "CAPEC-60"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-693": {
-      "id": "CWE-693",
-      "name": "CWE 693",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-1",
-        "CAPEC-107",
-        "CAPEC-127",
-        "CAPEC-17",
-        "CAPEC-20",
-        "CAPEC-22",
-        "CAPEC-237",
-        "CAPEC-36",
-        "CAPEC-477",
-        "CAPEC-480",
-        "CAPEC-51",
-        "CAPEC-57",
-        "CAPEC-59",
-        "CAPEC-65",
-        "CAPEC-668",
-        "CAPEC-74",
-        "CAPEC-87"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-173": {
-      "id": "CWE-173",
-      "name": "CWE 173",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-120",
-        "CAPEC-267",
-        "CAPEC-3",
-        "CAPEC-4",
-        "CAPEC-52",
-        "CAPEC-53",
-        "CAPEC-64",
-        "CAPEC-71",
-        "CAPEC-72",
-        "CAPEC-78",
-        "CAPEC-79",
-        "CAPEC-80"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-692": {
-      "id": "CWE-692",
-      "name": "CWE 692",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-120",
-        "CAPEC-267",
-        "CAPEC-71",
-        "CAPEC-80",
+        "CAPEC-34",
         "CAPEC-85"
       ],
       "parent": null,
       "children": []
     },
-    "CWE-667": {
-      "id": "CWE-667",
-      "name": "CWE 667",
+    "CWE-384": {
+      "id": "CWE-384",
+      "name": "CWE 384",
       "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
       "abstraction": "Unknown",
       "status": "Referenced",
       "capecs": [
-        "CAPEC-25",
-        "CAPEC-26",
-        "CAPEC-27"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-350": {
-      "id": "CWE-350",
-      "name": "CWE 350",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-142",
-        "CAPEC-275",
-        "CAPEC-73",
-        "CAPEC-89"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-912": {
-      "id": "CWE-912",
-      "name": "CWE 912",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-133",
-        "CAPEC-190"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-235": {
-      "id": "CWE-235",
-      "name": "CWE 235",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-460"
+        "CAPEC-196",
+        "CAPEC-21",
+        "CAPEC-31",
+        "CAPEC-39",
+        "CAPEC-59",
+        "CAPEC-60",
+        "CAPEC-61"
       ],
       "parent": null,
       "children": []
@@ -6157,373 +5960,6 @@
       "parent": null,
       "children": []
     },
-    "CWE-614": {
-      "id": "CWE-614",
-      "name": "CWE 614",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-102"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-602": {
-      "id": "CWE-602",
-      "name": "CWE 602",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-162",
-        "CAPEC-202",
-        "CAPEC-207",
-        "CAPEC-208",
-        "CAPEC-21",
-        "CAPEC-31",
-        "CAPEC-383",
-        "CAPEC-384",
-        "CAPEC-385",
-        "CAPEC-386",
-        "CAPEC-387",
-        "CAPEC-388"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-689": {
-      "id": "CWE-689",
-      "name": "CWE 689",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-26",
-        "CAPEC-27"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-172": {
-      "id": "CWE-172",
-      "name": "CWE 172",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-120",
-        "CAPEC-267",
-        "CAPEC-3",
-        "CAPEC-52",
-        "CAPEC-53",
-        "CAPEC-64",
-        "CAPEC-71",
-        "CAPEC-72",
-        "CAPEC-78",
-        "CAPEC-80"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-185": {
-      "id": "CWE-185",
-      "name": "CWE 185",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-15",
-        "CAPEC-6",
-        "CAPEC-79"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-75": {
-      "id": "CWE-75",
-      "name": "CWE 75",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-81",
-        "CAPEC-93"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-363": {
-      "id": "CWE-363",
-      "name": "CWE 363",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-26"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-707": {
-      "id": "CWE-707",
-      "name": "CWE 707",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-250",
-        "CAPEC-276",
-        "CAPEC-277",
-        "CAPEC-278",
-        "CAPEC-279",
-        "CAPEC-3",
-        "CAPEC-43",
-        "CAPEC-468",
-        "CAPEC-52",
-        "CAPEC-53",
-        "CAPEC-64",
-        "CAPEC-7",
-        "CAPEC-78",
-        "CAPEC-79",
-        "CAPEC-83",
-        "CAPEC-84"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-129": {
-      "id": "CWE-129",
-      "name": "CWE 129",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-100"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-326": {
-      "id": "CWE-326",
-      "name": "CWE 326",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-112",
-        "CAPEC-192",
-        "CAPEC-20"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-157": {
-      "id": "CWE-157",
-      "name": "CWE 157",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-15"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-923": {
-      "id": "CWE-923",
-      "name": "CWE 923",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-161",
-        "CAPEC-481",
-        "CAPEC-501",
-        "CAPEC-697"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-436": {
-      "id": "CWE-436",
-      "name": "CWE 436",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-105",
-        "CAPEC-273",
-        "CAPEC-34"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-81": {
-      "id": "CWE-81",
-      "name": "CWE 81",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-198"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-1325": {
-      "id": "CWE-1325",
-      "name": "CWE 1325",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-130"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-514": {
-      "id": "CWE-514",
-      "name": "CWE 514",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-463"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-525": {
-      "id": "CWE-525",
-      "name": "CWE 525",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-37"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-451": {
-      "id": "CWE-451",
-      "name": "CWE 451",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-154",
-        "CAPEC-163",
-        "CAPEC-164",
-        "CAPEC-173",
-        "CAPEC-98"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-691": {
-      "id": "CWE-691",
-      "name": "CWE 691",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-29"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-696": {
-      "id": "CWE-696",
-      "name": "CWE 696",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-463"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-98": {
-      "id": "CWE-98",
-      "name": "CWE 98",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-193"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-162": {
-      "id": "CWE-162",
-      "name": "CWE 162",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-635"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-638": {
-      "id": "CWE-638",
-      "name": "CWE 638",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-104"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-180": {
-      "id": "CWE-180",
-      "name": "CWE 180",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-267",
-        "CAPEC-3",
-        "CAPEC-71",
-        "CAPEC-78",
-        "CAPEC-79",
-        "CAPEC-80"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-553": {
-      "id": "CWE-553",
-      "name": "CWE 553",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-650"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-507": {
-      "id": "CWE-507",
-      "name": "CWE 507",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-698"
-      ],
-      "parent": null,
-      "children": []
-    },
     "CWE-314": {
       "id": "CWE-314",
       "name": "CWE 314",
@@ -6536,415 +5972,15 @@
       "parent": null,
       "children": []
     },
-    "CWE-1321": {
-      "id": "CWE-1321",
-      "name": "CWE 1321",
+    "CWE-97": {
+      "id": "CWE-97",
+      "name": "CWE 97",
       "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
       "abstraction": "Unknown",
       "status": "Referenced",
       "capecs": [
-        "CAPEC-1",
-        "CAPEC-180",
-        "CAPEC-77"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-118": {
-      "id": "CWE-118",
-      "name": "CWE 118",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-10",
-        "CAPEC-14",
-        "CAPEC-24",
-        "CAPEC-45",
-        "CAPEC-46",
-        "CAPEC-47",
-        "CAPEC-8",
-        "CAPEC-9"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-287": {
-      "id": "CWE-287",
-      "name": "CWE 287",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-114",
-        "CAPEC-115",
-        "CAPEC-151",
-        "CAPEC-194",
-        "CAPEC-22",
-        "CAPEC-57",
-        "CAPEC-593",
-        "CAPEC-633",
-        "CAPEC-650",
-        "CAPEC-94"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-284": {
-      "id": "CWE-284",
-      "name": "CWE 284",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-19",
-        "CAPEC-441",
-        "CAPEC-478",
-        "CAPEC-479",
-        "CAPEC-502",
-        "CAPEC-503",
-        "CAPEC-536",
-        "CAPEC-546",
-        "CAPEC-550",
-        "CAPEC-551",
-        "CAPEC-552",
-        "CAPEC-556",
-        "CAPEC-558",
-        "CAPEC-562",
-        "CAPEC-563",
-        "CAPEC-564",
-        "CAPEC-578"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-674": {
-      "id": "CWE-674",
-      "name": "CWE 674",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-230",
-        "CAPEC-231"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-697": {
-      "id": "CWE-697",
-      "name": "CWE 697",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-10",
-        "CAPEC-120",
-        "CAPEC-14",
-        "CAPEC-15",
-        "CAPEC-182",
-        "CAPEC-24",
-        "CAPEC-267",
-        "CAPEC-3",
-        "CAPEC-41",
-        "CAPEC-43",
-        "CAPEC-44",
-        "CAPEC-45",
-        "CAPEC-46",
-        "CAPEC-47",
-        "CAPEC-52",
-        "CAPEC-53",
-        "CAPEC-6",
-        "CAPEC-64",
-        "CAPEC-67",
-        "CAPEC-7",
-        "CAPEC-71",
-        "CAPEC-73",
-        "CAPEC-78",
-        "CAPEC-79",
-        "CAPEC-8",
-        "CAPEC-80",
-        "CAPEC-88",
-        "CAPEC-9",
-        "CAPEC-92"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-345": {
-      "id": "CWE-345",
-      "name": "CWE 345",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-111",
-        "CAPEC-141",
-        "CAPEC-142",
-        "CAPEC-148",
-        "CAPEC-218",
-        "CAPEC-384",
-        "CAPEC-385",
-        "CAPEC-386",
-        "CAPEC-387",
-        "CAPEC-388",
-        "CAPEC-665",
-        "CAPEC-701"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-706": {
-      "id": "CWE-706",
-      "name": "CWE 706",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-159",
-        "CAPEC-177",
-        "CAPEC-48",
-        "CAPEC-641"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-176": {
-      "id": "CWE-176",
-      "name": "CWE 176",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-71"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-96": {
-      "id": "CWE-96",
-      "name": "CWE 96",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-35",
-        "CAPEC-73",
-        "CAPEC-77",
-        "CAPEC-81",
-        "CAPEC-85"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-177": {
-      "id": "CWE-177",
-      "name": "CWE 177",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-120",
-        "CAPEC-468",
-        "CAPEC-64",
-        "CAPEC-72"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-330": {
-      "id": "CWE-330",
-      "name": "CWE 330",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-112",
-        "CAPEC-485",
-        "CAPEC-59"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-610": {
-      "id": "CWE-610",
-      "name": "CWE 610",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-219"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-473": {
-      "id": "CWE-473",
-      "name": "CWE 473",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-77"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-150": {
-      "id": "CWE-150",
-      "name": "CWE 150",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-134",
-        "CAPEC-41",
-        "CAPEC-81",
-        "CAPEC-93"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-352": {
-      "id": "CWE-352",
-      "name": "CWE 352",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-111",
-        "CAPEC-462",
-        "CAPEC-467",
-        "CAPEC-62"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-404": {
-      "id": "CWE-404",
-      "name": "CWE 404",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-125",
-        "CAPEC-130",
-        "CAPEC-131",
-        "CAPEC-494",
-        "CAPEC-495",
-        "CAPEC-496",
-        "CAPEC-666"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-86": {
-      "id": "CWE-86",
-      "name": "CWE 86",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-247",
-        "CAPEC-73",
-        "CAPEC-85"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-181": {
-      "id": "CWE-181",
-      "name": "CWE 181",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-120",
-        "CAPEC-267",
-        "CAPEC-3",
-        "CAPEC-43",
-        "CAPEC-78",
-        "CAPEC-79",
-        "CAPEC-80"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-138": {
-      "id": "CWE-138",
-      "name": "CWE 138",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-105",
-        "CAPEC-15",
-        "CAPEC-34"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-87": {
-      "id": "CWE-87",
-      "name": "CWE 87",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-199"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-116": {
-      "id": "CWE-116",
-      "name": "CWE 116",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-104",
-        "CAPEC-73",
-        "CAPEC-81",
-        "CAPEC-85"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-221": {
-      "id": "CWE-221",
-      "name": "CWE 221",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-81"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-642": {
-      "id": "CWE-642",
-      "name": "CWE 642",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-21",
-        "CAPEC-31"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-377": {
-      "id": "CWE-377",
-      "name": "CWE 377",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-149",
-        "CAPEC-155"
+        "CAPEC-101",
+        "CAPEC-35"
       ],
       "parent": null,
       "children": []
@@ -6968,6 +6004,324 @@
         "CAPEC-47",
         "CAPEC-8",
         "CAPEC-9"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-689": {
+      "id": "CWE-689",
+      "name": "CWE 689",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-26",
+        "CAPEC-27"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-83": {
+      "id": "CWE-83",
+      "name": "CWE 83",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-243",
+        "CAPEC-244",
+        "CAPEC-588"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-665": {
+      "id": "CWE-665",
+      "name": "CWE 665",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-26",
+        "CAPEC-29"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-302": {
+      "id": "CWE-302",
+      "name": "CWE 302",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-10",
+        "CAPEC-13",
+        "CAPEC-21",
+        "CAPEC-274",
+        "CAPEC-31",
+        "CAPEC-39",
+        "CAPEC-45",
+        "CAPEC-77"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-327": {
+      "id": "CWE-327",
+      "name": "CWE 327",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-20",
+        "CAPEC-459",
+        "CAPEC-473",
+        "CAPEC-475",
+        "CAPEC-608",
+        "CAPEC-614",
+        "CAPEC-97"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-1321": {
+      "id": "CWE-1321",
+      "name": "CWE 1321",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-1",
+        "CAPEC-180",
+        "CAPEC-77"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-923": {
+      "id": "CWE-923",
+      "name": "CWE 923",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-161",
+        "CAPEC-481",
+        "CAPEC-501",
+        "CAPEC-697"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-682": {
+      "id": "CWE-682",
+      "name": "CWE 682",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-128",
+        "CAPEC-129"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-122": {
+      "id": "CWE-122",
+      "name": "CWE 122",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-92"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-912": {
+      "id": "CWE-912",
+      "name": "CWE 912",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-133",
+        "CAPEC-190"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-471": {
+      "id": "CWE-471",
+      "name": "CWE 471",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-384",
+        "CAPEC-385",
+        "CAPEC-386",
+        "CAPEC-387",
+        "CAPEC-388"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-20": {
+      "id": "CWE-20",
+      "name": "CWE 20",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-10",
+        "CAPEC-101",
+        "CAPEC-104",
+        "CAPEC-108",
+        "CAPEC-109",
+        "CAPEC-110",
+        "CAPEC-120",
+        "CAPEC-13",
+        "CAPEC-135",
+        "CAPEC-136",
+        "CAPEC-14",
+        "CAPEC-153",
+        "CAPEC-182",
+        "CAPEC-209",
+        "CAPEC-22",
+        "CAPEC-23",
+        "CAPEC-230",
+        "CAPEC-231",
+        "CAPEC-24",
+        "CAPEC-250",
+        "CAPEC-261",
+        "CAPEC-267",
+        "CAPEC-28",
+        "CAPEC-3",
+        "CAPEC-31",
+        "CAPEC-42",
+        "CAPEC-43",
+        "CAPEC-45",
+        "CAPEC-46",
+        "CAPEC-47",
+        "CAPEC-473",
+        "CAPEC-52",
+        "CAPEC-53",
+        "CAPEC-588",
+        "CAPEC-63",
+        "CAPEC-64",
+        "CAPEC-664",
+        "CAPEC-67",
+        "CAPEC-7",
+        "CAPEC-71",
+        "CAPEC-72",
+        "CAPEC-73",
+        "CAPEC-78",
+        "CAPEC-79",
+        "CAPEC-8",
+        "CAPEC-80",
+        "CAPEC-81",
+        "CAPEC-83",
+        "CAPEC-85",
+        "CAPEC-88",
+        "CAPEC-9"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-404": {
+      "id": "CWE-404",
+      "name": "CWE 404",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-125",
+        "CAPEC-130",
+        "CAPEC-131",
+        "CAPEC-494",
+        "CAPEC-495",
+        "CAPEC-496",
+        "CAPEC-666"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-400": {
+      "id": "CWE-400",
+      "name": "CWE 400",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-147",
+        "CAPEC-227",
+        "CAPEC-492"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-1275": {
+      "id": "CWE-1275",
+      "name": "CWE 1275",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-62"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-269": {
+      "id": "CWE-269",
+      "name": "CWE 269",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-122",
+        "CAPEC-233",
+        "CAPEC-58"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-614": {
+      "id": "CWE-614",
+      "name": "CWE 614",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-102"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-99": {
+      "id": "CWE-99",
+      "name": "CWE 99",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-10",
+        "CAPEC-240",
+        "CAPEC-75"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-943": {
+      "id": "CWE-943",
+      "name": "CWE 943",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-676"
       ],
       "parent": null,
       "children": []
@@ -7042,289 +6396,21 @@
       "parent": null,
       "children": []
     },
-    "CWE-567": {
-      "id": "CWE-567",
-      "name": "CWE 567",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-25"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-99": {
-      "id": "CWE-99",
-      "name": "CWE 99",
+    "CWE-118": {
+      "id": "CWE-118",
+      "name": "CWE 118",
       "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
       "abstraction": "Unknown",
       "status": "Referenced",
       "capecs": [
         "CAPEC-10",
-        "CAPEC-240",
-        "CAPEC-75"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-114": {
-      "id": "CWE-114",
-      "name": "CWE 114",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-108",
-        "CAPEC-640"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-20": {
-      "id": "CWE-20",
-      "name": "CWE 20",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-10",
-        "CAPEC-101",
-        "CAPEC-104",
-        "CAPEC-108",
-        "CAPEC-109",
-        "CAPEC-110",
-        "CAPEC-120",
-        "CAPEC-13",
-        "CAPEC-135",
-        "CAPEC-136",
         "CAPEC-14",
-        "CAPEC-153",
-        "CAPEC-182",
-        "CAPEC-209",
-        "CAPEC-22",
-        "CAPEC-23",
-        "CAPEC-230",
-        "CAPEC-231",
         "CAPEC-24",
-        "CAPEC-250",
-        "CAPEC-261",
-        "CAPEC-267",
-        "CAPEC-28",
-        "CAPEC-3",
-        "CAPEC-31",
-        "CAPEC-42",
-        "CAPEC-43",
         "CAPEC-45",
         "CAPEC-46",
         "CAPEC-47",
-        "CAPEC-473",
-        "CAPEC-52",
-        "CAPEC-53",
-        "CAPEC-588",
-        "CAPEC-63",
-        "CAPEC-64",
-        "CAPEC-664",
-        "CAPEC-67",
-        "CAPEC-7",
-        "CAPEC-71",
-        "CAPEC-72",
-        "CAPEC-73",
-        "CAPEC-78",
-        "CAPEC-79",
         "CAPEC-8",
-        "CAPEC-80",
-        "CAPEC-81",
-        "CAPEC-83",
-        "CAPEC-85",
-        "CAPEC-88",
         "CAPEC-9"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-23": {
-      "id": "CWE-23",
-      "name": "CWE 23",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-139",
-        "CAPEC-76"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-302": {
-      "id": "CWE-302",
-      "name": "CWE 302",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-10",
-        "CAPEC-13",
-        "CAPEC-21",
-        "CAPEC-274",
-        "CAPEC-31",
-        "CAPEC-39",
-        "CAPEC-45",
-        "CAPEC-77"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-732": {
-      "id": "CWE-732",
-      "name": "CWE 732",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-1",
-        "CAPEC-122",
-        "CAPEC-127",
-        "CAPEC-17",
-        "CAPEC-180",
-        "CAPEC-206",
-        "CAPEC-234",
-        "CAPEC-60",
-        "CAPEC-61",
-        "CAPEC-62",
-        "CAPEC-642"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-113": {
-      "id": "CWE-113",
-      "name": "CWE 113",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-105",
-        "CAPEC-31",
-        "CAPEC-34",
-        "CAPEC-85"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-122": {
-      "id": "CWE-122",
-      "name": "CWE 122",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-92"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-370": {
-      "id": "CWE-370",
-      "name": "CWE 370",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-26",
-        "CAPEC-29"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-589": {
-      "id": "CWE-589",
-      "name": "CWE 589",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-96"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-564": {
-      "id": "CWE-564",
-      "name": "CWE 564",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-109"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-665": {
-      "id": "CWE-665",
-      "name": "CWE 665",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-26",
-        "CAPEC-29"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-196": {
-      "id": "CWE-196",
-      "name": "CWE 196",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-92"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-61": {
-      "id": "CWE-61",
-      "name": "CWE 61",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-27"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-282": {
-      "id": "CWE-282",
-      "name": "CWE 282",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-17",
-        "CAPEC-35"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-384": {
-      "id": "CWE-384",
-      "name": "CWE 384",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-196",
-        "CAPEC-21",
-        "CAPEC-31",
-        "CAPEC-39",
-        "CAPEC-59",
-        "CAPEC-60",
-        "CAPEC-61"
       ],
       "parent": null,
       "children": []
@@ -7341,118 +6427,84 @@
       "parent": null,
       "children": []
     },
-    "CWE-315": {
-      "id": "CWE-315",
-      "name": "CWE 315",
+    "CWE-149": {
+      "id": "CWE-149",
+      "name": "CWE 149",
       "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
       "abstraction": "Unknown",
       "status": "Referenced",
       "capecs": [
-        "CAPEC-31",
-        "CAPEC-37",
-        "CAPEC-39",
-        "CAPEC-74"
+        "CAPEC-468"
       ],
       "parent": null,
       "children": []
     },
-    "CWE-1275": {
-      "id": "CWE-1275",
-      "name": "CWE 1275",
+    "CWE-173": {
+      "id": "CWE-173",
+      "name": "CWE 173",
       "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
       "abstraction": "Unknown",
       "status": "Referenced",
       "capecs": [
-        "CAPEC-62"
+        "CAPEC-120",
+        "CAPEC-267",
+        "CAPEC-3",
+        "CAPEC-4",
+        "CAPEC-52",
+        "CAPEC-53",
+        "CAPEC-64",
+        "CAPEC-71",
+        "CAPEC-72",
+        "CAPEC-78",
+        "CAPEC-79",
+        "CAPEC-80"
       ],
       "parent": null,
       "children": []
     },
-    "CWE-662": {
-      "id": "CWE-662",
-      "name": "CWE 662",
+    "CWE-287": {
+      "id": "CWE-287",
+      "name": "CWE 287",
       "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
       "abstraction": "Unknown",
       "status": "Referenced",
       "capecs": [
-        "CAPEC-25",
-        "CAPEC-26",
-        "CAPEC-27",
-        "CAPEC-29"
+        "CAPEC-114",
+        "CAPEC-115",
+        "CAPEC-151",
+        "CAPEC-194",
+        "CAPEC-22",
+        "CAPEC-57",
+        "CAPEC-593",
+        "CAPEC-633",
+        "CAPEC-650",
+        "CAPEC-94"
       ],
       "parent": null,
       "children": []
     },
-    "CWE-424": {
-      "id": "CWE-424",
-      "name": "CWE 424",
+    "CWE-330": {
+      "id": "CWE-330",
+      "name": "CWE 330",
       "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
       "abstraction": "Unknown",
       "status": "Referenced",
       "capecs": [
-        "CAPEC-127",
-        "CAPEC-554"
+        "CAPEC-112",
+        "CAPEC-485",
+        "CAPEC-59"
       ],
       "parent": null,
       "children": []
     },
-    "CWE-83": {
-      "id": "CWE-83",
-      "name": "CWE 83",
+    "CWE-85": {
+      "id": "CWE-85",
+      "name": "CWE 85",
       "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
       "abstraction": "Unknown",
       "status": "Referenced",
       "capecs": [
-        "CAPEC-243",
-        "CAPEC-244",
-        "CAPEC-588"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-664": {
-      "id": "CWE-664",
-      "name": "CWE 664",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-196",
-        "CAPEC-21",
-        "CAPEC-60",
-        "CAPEC-61",
-        "CAPEC-62"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-77": {
-      "id": "CWE-77",
-      "name": "CWE 77",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-136",
-        "CAPEC-15",
-        "CAPEC-183",
-        "CAPEC-248",
-        "CAPEC-40",
-        "CAPEC-43",
-        "CAPEC-75",
-        "CAPEC-76"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-147": {
-      "id": "CWE-147",
-      "name": "CWE 147",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-460"
+        "CAPEC-245"
       ],
       "parent": null,
       "children": []
@@ -7469,72 +6521,180 @@
       "parent": null,
       "children": []
     },
-    "CWE-318": {
-      "id": "CWE-318",
-      "name": "CWE 318",
+    "CWE-564": {
+      "id": "CWE-564",
+      "name": "CWE 564",
       "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
       "abstraction": "Unknown",
       "status": "Referenced",
       "capecs": [
-        "CAPEC-37",
-        "CAPEC-65"
+        "CAPEC-109"
       ],
       "parent": null,
       "children": []
     },
-    "CWE-300": {
-      "id": "CWE-300",
-      "name": "CWE 300",
+    "CWE-638": {
+      "id": "CWE-638",
+      "name": "CWE 638",
       "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
       "abstraction": "Unknown",
       "status": "Referenced",
       "capecs": [
-        "CAPEC-466",
+        "CAPEC-104"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-757": {
+      "id": "CWE-757",
+      "name": "CWE 757",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-220",
+        "CAPEC-606",
+        "CAPEC-620"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-667": {
+      "id": "CWE-667",
+      "name": "CWE 667",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-25",
+        "CAPEC-26",
+        "CAPEC-27"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-602": {
+      "id": "CWE-602",
+      "name": "CWE 602",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-162",
+        "CAPEC-202",
+        "CAPEC-207",
+        "CAPEC-208",
+        "CAPEC-21",
+        "CAPEC-31",
+        "CAPEC-383",
+        "CAPEC-384",
+        "CAPEC-385",
+        "CAPEC-386",
+        "CAPEC-387",
+        "CAPEC-388"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-116": {
+      "id": "CWE-116",
+      "name": "CWE 116",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-104",
+        "CAPEC-73",
+        "CAPEC-81",
+        "CAPEC-85"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-862": {
+      "id": "CWE-862",
+      "name": "CWE 862",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-665"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-61": {
+      "id": "CWE-61",
+      "name": "CWE 61",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-27"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-46": {
+      "id": "CWE-46",
+      "name": "CWE 46",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-649"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-98": {
+      "id": "CWE-98",
+      "name": "CWE 98",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-193"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-473": {
+      "id": "CWE-473",
+      "name": "CWE 473",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-77"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-693": {
+      "id": "CWE-693",
+      "name": "CWE 693",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-1",
+        "CAPEC-107",
+        "CAPEC-127",
+        "CAPEC-17",
+        "CAPEC-20",
+        "CAPEC-22",
+        "CAPEC-237",
+        "CAPEC-36",
+        "CAPEC-477",
+        "CAPEC-480",
+        "CAPEC-51",
         "CAPEC-57",
-        "CAPEC-589",
-        "CAPEC-590",
-        "CAPEC-612",
-        "CAPEC-613",
-        "CAPEC-615",
-        "CAPEC-662",
-        "CAPEC-94"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-97": {
-      "id": "CWE-97",
-      "name": "CWE 97",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-101",
-        "CAPEC-35"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-925": {
-      "id": "CWE-925",
-      "name": "CWE 925",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-499"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-943": {
-      "id": "CWE-943",
-      "name": "CWE 943",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-676"
+        "CAPEC-59",
+        "CAPEC-65",
+        "CAPEC-668",
+        "CAPEC-74",
+        "CAPEC-87"
       ],
       "parent": null,
       "children": []
@@ -7561,26 +6721,460 @@
       "parent": null,
       "children": []
     },
-    "CWE-95": {
-      "id": "CWE-95",
-      "name": "CWE 95",
+    "CWE-706": {
+      "id": "CWE-706",
+      "name": "CWE 706",
       "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
       "abstraction": "Unknown",
       "status": "Referenced",
       "capecs": [
+        "CAPEC-159",
+        "CAPEC-177",
+        "CAPEC-48",
+        "CAPEC-641"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-196": {
+      "id": "CWE-196",
+      "name": "CWE 196",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-92"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-553": {
+      "id": "CWE-553",
+      "name": "CWE 553",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-650"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-507": {
+      "id": "CWE-507",
+      "name": "CWE 507",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-698"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-129": {
+      "id": "CWE-129",
+      "name": "CWE 129",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-100"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-77": {
+      "id": "CWE-77",
+      "name": "CWE 77",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-136",
+        "CAPEC-15",
+        "CAPEC-183",
+        "CAPEC-248",
+        "CAPEC-40",
+        "CAPEC-43",
+        "CAPEC-75",
+        "CAPEC-76"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-75": {
+      "id": "CWE-75",
+      "name": "CWE 75",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-81",
+        "CAPEC-93"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-221": {
+      "id": "CWE-221",
+      "name": "CWE 221",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-81"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-691": {
+      "id": "CWE-691",
+      "name": "CWE 691",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-29"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-696": {
+      "id": "CWE-696",
+      "name": "CWE 696",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-463"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-146": {
+      "id": "CWE-146",
+      "name": "CWE 146",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-15",
+        "CAPEC-6"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-697": {
+      "id": "CWE-697",
+      "name": "CWE 697",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-10",
+        "CAPEC-120",
+        "CAPEC-14",
+        "CAPEC-15",
+        "CAPEC-182",
+        "CAPEC-24",
+        "CAPEC-267",
+        "CAPEC-3",
+        "CAPEC-41",
+        "CAPEC-43",
+        "CAPEC-44",
+        "CAPEC-45",
+        "CAPEC-46",
+        "CAPEC-47",
+        "CAPEC-52",
+        "CAPEC-53",
+        "CAPEC-6",
+        "CAPEC-64",
+        "CAPEC-67",
+        "CAPEC-7",
+        "CAPEC-71",
+        "CAPEC-73",
+        "CAPEC-78",
+        "CAPEC-79",
+        "CAPEC-8",
+        "CAPEC-80",
+        "CAPEC-88",
+        "CAPEC-9",
+        "CAPEC-92"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-370": {
+      "id": "CWE-370",
+      "name": "CWE 370",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-26",
+        "CAPEC-29"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-157": {
+      "id": "CWE-157",
+      "name": "CWE 157",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-15"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-114": {
+      "id": "CWE-114",
+      "name": "CWE 114",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-108",
+        "CAPEC-640"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-282": {
+      "id": "CWE-282",
+      "name": "CWE 282",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-17",
         "CAPEC-35"
       ],
       "parent": null,
       "children": []
     },
-    "CWE-46": {
-      "id": "CWE-46",
-      "name": "CWE 46",
+    "CWE-177": {
+      "id": "CWE-177",
+      "name": "CWE 177",
       "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
       "abstraction": "Unknown",
       "status": "Referenced",
       "capecs": [
-        "CAPEC-649"
+        "CAPEC-120",
+        "CAPEC-468",
+        "CAPEC-64",
+        "CAPEC-72"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-567": {
+      "id": "CWE-567",
+      "name": "CWE 567",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-25"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-147": {
+      "id": "CWE-147",
+      "name": "CWE 147",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-460"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-1325": {
+      "id": "CWE-1325",
+      "name": "CWE 1325",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-130"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-362": {
+      "id": "CWE-362",
+      "name": "CWE 362",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-26",
+        "CAPEC-29"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-6": {
+      "id": "CWE-6",
+      "name": "CWE 6",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-21",
+        "CAPEC-59"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-315": {
+      "id": "CWE-315",
+      "name": "CWE 315",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-31",
+        "CAPEC-37",
+        "CAPEC-39",
+        "CAPEC-74"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-326": {
+      "id": "CWE-326",
+      "name": "CWE 326",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-112",
+        "CAPEC-192",
+        "CAPEC-20"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-176": {
+      "id": "CWE-176",
+      "name": "CWE 176",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-71"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-589": {
+      "id": "CWE-589",
+      "name": "CWE 589",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-96"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-925": {
+      "id": "CWE-925",
+      "name": "CWE 925",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-499"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-707": {
+      "id": "CWE-707",
+      "name": "CWE 707",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-250",
+        "CAPEC-276",
+        "CAPEC-277",
+        "CAPEC-278",
+        "CAPEC-279",
+        "CAPEC-3",
+        "CAPEC-43",
+        "CAPEC-468",
+        "CAPEC-52",
+        "CAPEC-53",
+        "CAPEC-64",
+        "CAPEC-7",
+        "CAPEC-78",
+        "CAPEC-79",
+        "CAPEC-83",
+        "CAPEC-84"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-532": {
+      "id": "CWE-532",
+      "name": "CWE 532",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-215"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-86": {
+      "id": "CWE-86",
+      "name": "CWE 86",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-247",
+        "CAPEC-73",
+        "CAPEC-85"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-377": {
+      "id": "CWE-377",
+      "name": "CWE 377",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-149",
+        "CAPEC-155"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-80": {
+      "id": "CWE-80",
+      "name": "CWE 80",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-18",
+        "CAPEC-193",
+        "CAPEC-32",
+        "CAPEC-86"
       ],
       "parent": null,
       "children": []
@@ -7609,55 +7203,344 @@
       "parent": null,
       "children": []
     },
-    "CWE-471": {
-      "id": "CWE-471",
-      "name": "CWE 471",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-384",
-        "CAPEC-385",
-        "CAPEC-386",
-        "CAPEC-387",
-        "CAPEC-388"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-149": {
-      "id": "CWE-149",
-      "name": "CWE 149",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-468"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-85": {
-      "id": "CWE-85",
-      "name": "CWE 85",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-245"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-146": {
-      "id": "CWE-146",
-      "name": "CWE 146",
+    "CWE-185": {
+      "id": "CWE-185",
+      "name": "CWE 185",
       "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
       "abstraction": "Unknown",
       "status": "Referenced",
       "capecs": [
         "CAPEC-15",
-        "CAPEC-6"
+        "CAPEC-6",
+        "CAPEC-79"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-692": {
+      "id": "CWE-692",
+      "name": "CWE 692",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-120",
+        "CAPEC-267",
+        "CAPEC-71",
+        "CAPEC-80",
+        "CAPEC-85"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-181": {
+      "id": "CWE-181",
+      "name": "CWE 181",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-120",
+        "CAPEC-267",
+        "CAPEC-3",
+        "CAPEC-43",
+        "CAPEC-78",
+        "CAPEC-79",
+        "CAPEC-80"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-646": {
+      "id": "CWE-646",
+      "name": "CWE 646",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-209"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-172": {
+      "id": "CWE-172",
+      "name": "CWE 172",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-120",
+        "CAPEC-267",
+        "CAPEC-3",
+        "CAPEC-52",
+        "CAPEC-53",
+        "CAPEC-64",
+        "CAPEC-71",
+        "CAPEC-72",
+        "CAPEC-78",
+        "CAPEC-80"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-610": {
+      "id": "CWE-610",
+      "name": "CWE 610",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-219"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-180": {
+      "id": "CWE-180",
+      "name": "CWE 180",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-267",
+        "CAPEC-3",
+        "CAPEC-71",
+        "CAPEC-78",
+        "CAPEC-79",
+        "CAPEC-80"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-732": {
+      "id": "CWE-732",
+      "name": "CWE 732",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-1",
+        "CAPEC-122",
+        "CAPEC-127",
+        "CAPEC-17",
+        "CAPEC-180",
+        "CAPEC-206",
+        "CAPEC-234",
+        "CAPEC-60",
+        "CAPEC-61",
+        "CAPEC-62",
+        "CAPEC-642"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-300": {
+      "id": "CWE-300",
+      "name": "CWE 300",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-466",
+        "CAPEC-57",
+        "CAPEC-589",
+        "CAPEC-590",
+        "CAPEC-612",
+        "CAPEC-613",
+        "CAPEC-615",
+        "CAPEC-662",
+        "CAPEC-94"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-424": {
+      "id": "CWE-424",
+      "name": "CWE 424",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-127",
+        "CAPEC-554"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-81": {
+      "id": "CWE-81",
+      "name": "CWE 81",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-198"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-642": {
+      "id": "CWE-642",
+      "name": "CWE 642",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-21",
+        "CAPEC-31"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-451": {
+      "id": "CWE-451",
+      "name": "CWE 451",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-154",
+        "CAPEC-163",
+        "CAPEC-164",
+        "CAPEC-173",
+        "CAPEC-98"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-96": {
+      "id": "CWE-96",
+      "name": "CWE 96",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-35",
+        "CAPEC-73",
+        "CAPEC-77",
+        "CAPEC-81",
+        "CAPEC-85"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-162": {
+      "id": "CWE-162",
+      "name": "CWE 162",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-635"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-436": {
+      "id": "CWE-436",
+      "name": "CWE 436",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-105",
+        "CAPEC-273",
+        "CAPEC-34"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-158": {
+      "id": "CWE-158",
+      "name": "CWE 158",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-52",
+        "CAPEC-53"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-288": {
+      "id": "CWE-288",
+      "name": "CWE 288",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-127",
+        "CAPEC-665"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-506": {
+      "id": "CWE-506",
+      "name": "CWE 506",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-442",
+        "CAPEC-448",
+        "CAPEC-636"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-150": {
+      "id": "CWE-150",
+      "name": "CWE 150",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-134",
+        "CAPEC-41",
+        "CAPEC-81",
+        "CAPEC-93"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-291": {
+      "id": "CWE-291",
+      "name": "CWE 291",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-4"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-23": {
+      "id": "CWE-23",
+      "name": "CWE 23",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-139",
+        "CAPEC-76"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-138": {
+      "id": "CWE-138",
+      "name": "CWE 138",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-105",
+        "CAPEC-15",
+        "CAPEC-34"
       ],
       "parent": null,
       "children": []
@@ -7687,157 +7570,242 @@
       "parent": null,
       "children": []
     },
-    "CWE-269": {
-      "id": "CWE-269",
-      "name": "CWE 269",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-122",
-        "CAPEC-233",
-        "CAPEC-58"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-362": {
-      "id": "CWE-362",
-      "name": "CWE 362",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-26",
-        "CAPEC-29"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-158": {
-      "id": "CWE-158",
-      "name": "CWE 158",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-52",
-        "CAPEC-53"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-682": {
-      "id": "CWE-682",
-      "name": "CWE 682",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-128",
-        "CAPEC-129"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-532": {
-      "id": "CWE-532",
-      "name": "CWE 532",
-      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
-      "abstraction": "Unknown",
-      "status": "Referenced",
-      "capecs": [
-        "CAPEC-215"
-      ],
-      "parent": null,
-      "children": []
-    },
-    "CWE-6": {
-      "id": "CWE-6",
-      "name": "CWE 6",
+    "CWE-539": {
+      "id": "CWE-539",
+      "name": "CWE 539",
       "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
       "abstraction": "Unknown",
       "status": "Referenced",
       "capecs": [
         "CAPEC-21",
-        "CAPEC-59"
+        "CAPEC-31",
+        "CAPEC-39",
+        "CAPEC-59",
+        "CAPEC-60"
       ],
       "parent": null,
       "children": []
     },
-    "CWE-400": {
-      "id": "CWE-400",
-      "name": "CWE 400",
+    "CWE-235": {
+      "id": "CWE-235",
+      "name": "CWE 235",
       "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
       "abstraction": "Unknown",
       "status": "Referenced",
       "capecs": [
-        "CAPEC-147",
-        "CAPEC-227",
-        "CAPEC-492"
+        "CAPEC-460"
       ],
       "parent": null,
       "children": []
     },
-    "CWE-288": {
-      "id": "CWE-288",
-      "name": "CWE 288",
+    "CWE-525": {
+      "id": "CWE-525",
+      "name": "CWE 525",
       "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
       "abstraction": "Unknown",
       "status": "Referenced",
       "capecs": [
-        "CAPEC-127",
-        "CAPEC-665"
+        "CAPEC-37"
       ],
       "parent": null,
       "children": []
     },
-    "CWE-862": {
-      "id": "CWE-862",
-      "name": "CWE 862",
+    "CWE-87": {
+      "id": "CWE-87",
+      "name": "CWE 87",
       "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
       "abstraction": "Unknown",
       "status": "Referenced",
       "capecs": [
-        "CAPEC-665"
+        "CAPEC-199"
       ],
       "parent": null,
       "children": []
     },
-    "CWE-757": {
-      "id": "CWE-757",
-      "name": "CWE 757",
+    "CWE-284": {
+      "id": "CWE-284",
+      "name": "CWE 284",
       "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
       "abstraction": "Unknown",
       "status": "Referenced",
       "capecs": [
-        "CAPEC-220",
-        "CAPEC-606",
-        "CAPEC-620"
+        "CAPEC-19",
+        "CAPEC-441",
+        "CAPEC-478",
+        "CAPEC-479",
+        "CAPEC-502",
+        "CAPEC-503",
+        "CAPEC-536",
+        "CAPEC-546",
+        "CAPEC-550",
+        "CAPEC-551",
+        "CAPEC-552",
+        "CAPEC-556",
+        "CAPEC-558",
+        "CAPEC-562",
+        "CAPEC-563",
+        "CAPEC-564",
+        "CAPEC-578"
       ],
       "parent": null,
       "children": []
     },
-    "CWE-291": {
-      "id": "CWE-291",
-      "name": "CWE 291",
+    "CWE-74": {
+      "id": "CWE-74",
+      "name": "CWE 74",
       "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
       "abstraction": "Unknown",
       "status": "Referenced",
       "capecs": [
-        "CAPEC-4"
+        "CAPEC-10",
+        "CAPEC-101",
+        "CAPEC-105",
+        "CAPEC-108",
+        "CAPEC-120",
+        "CAPEC-13",
+        "CAPEC-135",
+        "CAPEC-14",
+        "CAPEC-24",
+        "CAPEC-250",
+        "CAPEC-267",
+        "CAPEC-273",
+        "CAPEC-28",
+        "CAPEC-3",
+        "CAPEC-34",
+        "CAPEC-42",
+        "CAPEC-43",
+        "CAPEC-45",
+        "CAPEC-46",
+        "CAPEC-47",
+        "CAPEC-51",
+        "CAPEC-52",
+        "CAPEC-53",
+        "CAPEC-6",
+        "CAPEC-64",
+        "CAPEC-67",
+        "CAPEC-7",
+        "CAPEC-71",
+        "CAPEC-72",
+        "CAPEC-76",
+        "CAPEC-78",
+        "CAPEC-79",
+        "CAPEC-8",
+        "CAPEC-80",
+        "CAPEC-83",
+        "CAPEC-84",
+        "CAPEC-9"
       ],
       "parent": null,
       "children": []
     },
-    "CWE-646": {
-      "id": "CWE-646",
-      "name": "CWE 646",
+    "CWE-674": {
+      "id": "CWE-674",
+      "name": "CWE 674",
       "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
       "abstraction": "Unknown",
       "status": "Referenced",
       "capecs": [
-        "CAPEC-209"
+        "CAPEC-230",
+        "CAPEC-231"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-95": {
+      "id": "CWE-95",
+      "name": "CWE 95",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-35"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-345": {
+      "id": "CWE-345",
+      "name": "CWE 345",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-111",
+        "CAPEC-141",
+        "CAPEC-142",
+        "CAPEC-148",
+        "CAPEC-218",
+        "CAPEC-384",
+        "CAPEC-385",
+        "CAPEC-386",
+        "CAPEC-387",
+        "CAPEC-388",
+        "CAPEC-665",
+        "CAPEC-701"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-318": {
+      "id": "CWE-318",
+      "name": "CWE 318",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-37",
+        "CAPEC-65"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-363": {
+      "id": "CWE-363",
+      "name": "CWE 363",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-26"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-662": {
+      "id": "CWE-662",
+      "name": "CWE 662",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-25",
+        "CAPEC-26",
+        "CAPEC-27",
+        "CAPEC-29"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-36": {
+      "id": "CWE-36",
+      "name": "CWE 36",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-597"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-514": {
+      "id": "CWE-514",
+      "name": "CWE 514",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-463"
       ],
       "parent": null,
       "children": []
@@ -7854,16 +7822,48 @@
       "parent": null,
       "children": []
     },
-    "CWE-506": {
-      "id": "CWE-506",
-      "name": "CWE 506",
+    "CWE-352": {
+      "id": "CWE-352",
+      "name": "CWE 352",
       "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
       "abstraction": "Unknown",
       "status": "Referenced",
       "capecs": [
-        "CAPEC-442",
-        "CAPEC-448",
-        "CAPEC-636"
+        "CAPEC-111",
+        "CAPEC-462",
+        "CAPEC-467",
+        "CAPEC-62"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-350": {
+      "id": "CWE-350",
+      "name": "CWE 350",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-142",
+        "CAPEC-275",
+        "CAPEC-73",
+        "CAPEC-89"
+      ],
+      "parent": null,
+      "children": []
+    },
+    "CWE-664": {
+      "id": "CWE-664",
+      "name": "CWE 664",
+      "description": "This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.",
+      "abstraction": "Unknown",
+      "status": "Referenced",
+      "capecs": [
+        "CAPEC-196",
+        "CAPEC-21",
+        "CAPEC-60",
+        "CAPEC-61",
+        "CAPEC-62"
       ],
       "parent": null,
       "children": []

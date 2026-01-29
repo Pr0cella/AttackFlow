@@ -6,9 +6,11 @@ This prevents potential XSS vectors in the data layer.
 Usage: python3 scripts/sanitize-json.py
 """
 
+import argparse
 import json
 import re
 import os
+import glob
 from pathlib import Path
 
 
@@ -27,11 +29,8 @@ def strip_html_tags(text):
     # Remove any remaining HTML tags (unpaired or malformed)
     text = re.sub(r'<[^>]+>', '', text)
     
-    # Remove stray < and > characters that aren't part of valid comparisons
-    # Keep patterns like "a < b" or "x > y" where there's space around the operator
-    # Remove patterns like "<script" or "onclick>" that look like partial tags
-    text = re.sub(r'<(?!\s)', '', text)  # < not followed by space
-    text = re.sub(r'(?<!\s)>', '', text)  # > not preceded by space
+    # Encode any remaining angle brackets to prevent unencoded < or >
+    text = text.replace('<', '&lt;').replace('>', '&gt;')
     
     return text
 
@@ -60,8 +59,8 @@ def sanitize_json_file(file_path):
     sanitized = sanitize_value(data)
     modified = json.dumps(sanitized)
     
-    # Count removed tags
-    tag_pattern = r'<[^>]+>'
+    # Count removed HTML tags (ignore comparison operators like "< 5")
+    tag_pattern = r'</?\w+[^>]*>'
     original_tags = len(re.findall(tag_pattern, original))
     
     with open(file_path, 'w', encoding='utf-8') as f:
@@ -75,27 +74,70 @@ def sanitize_json_file(file_path):
     return original_tags
 
 
+def load_config_paths(project_dir):
+    """Load sanitization paths from config.js, with defaults."""
+    default_paths = [
+        'resources/**/*.json',
+        'frameworks/ATTCK/**/*.json'
+    ]
+
+    config_path = project_dir / 'config.js'
+    if not config_path.exists():
+        return default_paths
+
+    try:
+        content = config_path.read_text(encoding='utf-8')
+    except Exception:
+        return default_paths
+
+    # Look for sanitize: { paths: [ ... ] }
+    match = re.search(r"sanitize\s*:\s*\{[^}]*paths\s*:\s*\[([^\]]*)\]", content, re.DOTALL)
+    if not match:
+        return default_paths
+
+    raw = match.group(1)
+    # Extract quoted strings
+    paths = re.findall(r"['\"]([^'\"]+)['\"]", raw)
+    return paths if paths else default_paths
+
+
+def resolve_paths(project_dir, patterns):
+    """Resolve glob patterns to a unique list of JSON files."""
+    files = set()
+    for pattern in patterns:
+        if os.path.isabs(pattern):
+            matches = glob.glob(pattern, recursive=True)
+        else:
+            matches = glob.glob(str(project_dir / pattern), recursive=True)
+        for match in matches:
+            p = Path(match)
+            if p.is_file() and p.suffix.lower() == '.json':
+                files.add(p)
+    return sorted(files)
+
+
 def main():
     script_dir = Path(__file__).parent
-    resources_dir = script_dir.parent / 'resources'
+    project_dir = script_dir.parent
+
+    parser = argparse.ArgumentParser(description='Sanitize JSON files by removing HTML tags and stray < > characters.')
+    parser.add_argument('--path', action='append', default=[], help='Additional glob path(s) to sanitize')
+    args = parser.parse_args()
     
     print('=== JSON Sanitization ===\n')
-    
-    # Files to sanitize
-    json_files = [
-        'attack-techniques.json',
-        'capec-full.json',
-        'cwe-full.json'
-    ]
-    
+
+    config_paths = load_config_paths(project_dir)
+    patterns = config_paths + args.path
+    json_files = resolve_paths(project_dir, patterns)
+
+    if not json_files:
+        print('  Warning: No JSON files found for sanitization')
+        return 0
+
     total_removed = 0
-    for filename in json_files:
-        file_path = resources_dir / filename
-        if file_path.exists():
-            removed = sanitize_json_file(file_path)
-            total_removed += removed
-        else:
-            print(f'  Warning: {filename} not found')
+    for file_path in json_files:
+        removed = sanitize_json_file(file_path)
+        total_removed += removed
     
     print(f'\n=== Sanitization Complete ===')
     print(f'Total HTML tags/fragments removed: {total_removed}')

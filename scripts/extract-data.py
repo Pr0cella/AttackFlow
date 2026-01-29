@@ -9,6 +9,8 @@ Usage: python3 scripts/extract-data.py
 import json
 import os
 import re
+import subprocess
+import sys
 # KCE-SEC-005: Use defusedxml to prevent XML entity expansion attacks
 try:
     import defusedxml.ElementTree as ET
@@ -39,6 +41,29 @@ def get_text(element, default=''):
             text += ' ' + child.tail
     
     return re.sub(r'\s+', ' ', text).strip()
+
+
+def strip_html_tags(text):
+    """Remove HTML tags and encode any remaining angle brackets."""
+    if not isinstance(text, str):
+        return text
+
+    text = re.sub(r'<(\w+)(?:\s+[^>]*)?>([^<]*)</\1>', r'\2', text)
+    text = re.sub(r'<\w+\s*/>', '', text)
+    text = re.sub(r'<[^>]+>', '', text)
+    text = text.replace('<', '&lt;').replace('>', '&gt;')
+    return text
+
+
+def sanitize_value(value):
+    """Recursively sanitize strings in data structures."""
+    if isinstance(value, str):
+        return strip_html_tags(value)
+    if isinstance(value, list):
+        return [sanitize_value(item) for item in value]
+    if isinstance(value, dict):
+        return {k: sanitize_value(v) for k, v in value.items()}
+    return value
 
 
 def extract_capec(xml_files):
@@ -344,31 +369,91 @@ def add_missing_cwes(cwe_data, capec_data):
     return cwe_data
 
 
+def load_config(project_dir):
+    """Load configuration from config.js."""
+    config_path = project_dir / 'config.js'
+    config = {
+        'sources': {
+            'capec': {
+                'domains': 'frameworks/CAPEC/DOMAINS.xml',
+                'mechanisms': 'frameworks/CAPEC/MECHANISMS.xml'
+            },
+            'cwe': {
+                'hardware': 'frameworks/CWE/HARDWARE.xml',
+                'software': 'frameworks/CWE/SOFTWARE.xml'
+            }
+        }
+    }
+    
+    # Try to parse config.js for source paths
+    if config_path.exists():
+        import re
+        with open(config_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+            
+            # Extract CAPEC paths
+            m = re.search(r"domains:\s*['\"]([^'\"]+)['\"]", content)
+            if m:
+                config['sources']['capec']['domains'] = m.group(1)
+            m = re.search(r"mechanisms:\s*['\"]([^'\"]+)['\"]", content)
+            if m:
+                config['sources']['capec']['mechanisms'] = m.group(1)
+            
+            # Extract CWE paths
+            m = re.search(r"hardware:\s*['\"]([^'\"]+)['\"]", content)
+            if m:
+                config['sources']['cwe']['hardware'] = m.group(1)
+            m = re.search(r"software:\s*['\"]([^'\"]+)['\"]", content)
+            if m:
+                config['sources']['cwe']['software'] = m.group(1)
+    
+    return config
+
+
+def run_sanitizer(project_dir, stage):
+    """Run JSON sanitization before/after parsing."""
+    script_path = project_dir / 'scripts' / 'sanitize-json.py'
+    if not script_path.exists():
+        print(f'Warning: sanitize-json.py not found ({stage})')
+        return
+    print(f'\n=== JSON Sanitization ({stage}) ===')
+    subprocess.run([sys.executable, str(script_path)], check=False)
+
+
 def main():
     script_dir = Path(__file__).parent
     project_dir = script_dir.parent
     resources_dir = project_dir / 'resources'
-    frameworks_dir = project_dir / 'frameworks'
+
+    # Sanitize JSON before parsing (cleans ATT&CK bundles)
+    run_sanitizer(project_dir, 'before')
     
-    # Check for XML files in frameworks/ directory
+    # Load config
+    config = load_config(project_dir)
+    
+    # Build file paths from config
     capec_files = [
-        frameworks_dir / 'CAPEC_Mechanisms.xml',
-        frameworks_dir / 'CAPEC_Domains.xml'
+        project_dir / config['sources']['capec']['mechanisms'],
+        project_dir / config['sources']['capec']['domains']
     ]
     capec_files = [f for f in capec_files if f.exists()]
     
     cwe_files = [
-        frameworks_dir / 'CWE_Software_Development.xml',
-        frameworks_dir / 'CWE_Hardware_Design.xml'
+        project_dir / config['sources']['cwe']['software'],
+        project_dir / config['sources']['cwe']['hardware']
     ]
     cwe_files = [f for f in cwe_files if f.exists()]
     
     if not capec_files:
-        print('No CAPEC XML files found in frameworks/')
+        print('No CAPEC XML files found. Check config.js sources.capec paths:')
+        print(f"  - {config['sources']['capec']['mechanisms']}")
+        print(f"  - {config['sources']['capec']['domains']}")
         return 1
     
     if not cwe_files:
-        print('No CWE XML files found in frameworks/')
+        print('No CWE XML files found. Check config.js sources.cwe paths:')
+        print(f"  - {config['sources']['cwe']['software']}")
+        print(f"  - {config['sources']['cwe']['hardware']}")
         return 1
     
     print('=== Attack Chain Data Extraction ===\n')
@@ -389,11 +474,11 @@ def main():
     print('\nWriting output files...')
     
     output_files = [
-        ('capec-full.json', capec_data),
-        ('cwe-full.json', cwe_data),
-        ('capec-to-technique.json', capec_to_technique),
-        ('technique-to-capec.json', technique_to_capec),
-        ('cwe-to-capec.json', cwe_to_capec)
+        ('capec-full.json', sanitize_value(capec_data)),
+        ('cwe-full.json', sanitize_value(cwe_data)),
+        ('capec-to-technique.json', sanitize_value(capec_to_technique)),
+        ('technique-to-capec.json', sanitize_value(technique_to_capec)),
+        ('cwe-to-capec.json', sanitize_value(cwe_to_capec))
     ]
     
     for name, data in output_files:
@@ -412,6 +497,9 @@ def main():
     print(f'  CAPEC→Technique mappings: {len(capec_to_technique)}')
     print(f'  Technique→CAPEC mappings: {len(technique_to_capec)}')
     print(f'  CWE→CAPEC mappings: {len(cwe_to_capec)}')
+
+    # Sanitize JSON after parsing (cleans generated files)
+    run_sanitizer(project_dir, 'after')
     
     return 0
 

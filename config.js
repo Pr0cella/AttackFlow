@@ -10,6 +10,35 @@ const CONFIG = {
     version: '2.4.2',
     changelogUrl: 'CHANGELOG.md',
     
+    // Framework source files (for extraction scripts)
+    sources: {
+        // CAPEC XML files
+        capec: {
+            domains: 'frameworks/CAPEC/DOMAINS.xml',
+            mechanisms: 'frameworks/CAPEC/MECHANISMS.xml'
+        },
+        // CWE XML files
+        cwe: {
+            hardware: 'frameworks/CWE/HARDWARE.xml',
+            software: 'frameworks/CWE/SOFTWARE.xml'
+        },
+        // ATT&CK STIX bundles (v18.1 as of 01/2026)
+        attack: {
+            version: '18.1',
+            enterprise: 'frameworks/ATTCK/ENTERPRISE.json',
+            mobile: 'frameworks/ATTCK/MOBILE.json',
+            ics: 'frameworks/ATTCK/ICS.json'
+        }
+    },
+
+    // JSON sanitization paths (glob patterns, relative to project root)
+    sanitize: {
+        paths: [
+            'resources/**/*.json',
+            'frameworks/ATTCK/**/*.json'
+        ]
+    },
+    
     // Phase colors (IN/THROUGH/OUT) - distinct from framework colors
     phases: {
         in: '#10b981',       // Emerald green - entry/initial foothold

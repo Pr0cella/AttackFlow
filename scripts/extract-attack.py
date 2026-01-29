@@ -8,6 +8,8 @@ Usage: python3 scripts/extract-attack.py
 
 import json
 import os
+import subprocess
+import sys
 from pathlib import Path
 
 
@@ -178,21 +180,81 @@ def resolve_relationships(techniques, mitigations, relationships):
         del tech['stixId']
 
 
+def load_config(project_dir):
+    """Load configuration from config.js."""
+    config_path = project_dir / 'config.js'
+    config = {
+        'sources': {
+            'attack': {
+                'version': '18.1',
+                'enterprise': 'frameworks/ATTCK/ENTERPRISE.json',
+                'mobile': 'frameworks/ATTCK/MOBILE.json',
+                'ics': 'frameworks/ATTCK/ICS.json'
+            }
+        }
+    }
+    
+    # Try to parse config.js for source paths
+    if config_path.exists():
+        import re
+        with open(config_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+            
+            # Extract ATT&CK paths (in attack: { ... } block)
+            attack_block = re.search(r"attack:\s*\{([^}]+)\}", content)
+            if attack_block:
+                block = attack_block.group(1)
+                m = re.search(r"version:\s*['\"]([^'\"]+)['\"]", block)
+                if m:
+                    config['sources']['attack']['version'] = m.group(1)
+                m = re.search(r"enterprise:\s*['\"]([^'\"]+)['\"]", block)
+                if m:
+                    config['sources']['attack']['enterprise'] = m.group(1)
+                m = re.search(r"mobile:\s*['\"]([^'\"]+)['\"]", block)
+                if m:
+                    config['sources']['attack']['mobile'] = m.group(1)
+                m = re.search(r"ics:\s*['\"]([^'\"]+)['\"]", block)
+                if m:
+                    config['sources']['attack']['ics'] = m.group(1)
+    
+    return config
+
+
+def run_sanitizer(project_dir, stage):
+    """Run JSON sanitization before/after parsing."""
+    script_path = project_dir / 'scripts' / 'sanitize-json.py'
+    if not script_path.exists():
+        print(f'Warning: sanitize-json.py not found ({stage})')
+        return
+    print(f'\n=== JSON Sanitization ({stage}) ===')
+    subprocess.run([sys.executable, str(script_path)], check=False)
+
+
 def main():
     script_dir = Path(__file__).parent
-    resources_dir = script_dir.parent / 'resources'
+    project_dir = script_dir.parent
+    resources_dir = project_dir / 'resources'
+
+    # Sanitize JSON before parsing (cleans ATT&CK bundles)
+    run_sanitizer(project_dir, 'before')
     
-    # STIX bundle files
+    # Load config
+    config = load_config(project_dir)
+    attack_config = config['sources']['attack']
+    
+    # Build file paths from config
     stix_files = [
-        resources_dir / 'enterprise-attack-18.1.json',
-        resources_dir / 'mobile-attack-18.1.json',
-        resources_dir / 'ics-attack-18.1.json'
+        project_dir / attack_config['enterprise'],
+        project_dir / attack_config['mobile'],
+        project_dir / attack_config['ics']
     ]
     stix_files = [f for f in stix_files if f.exists()]
     
     if not stix_files:
-        print('No ATT&CK STIX bundle files found in resources/')
-        print('Expected: enterprise-attack-*.json, mobile-attack-*.json, ics-attack-*.json')
+        print('No ATT&CK STIX bundle files found. Check config.js sources.attack paths:')
+        print(f"  - {attack_config['enterprise']}")
+        print(f"  - {attack_config['mobile']}")
+        print(f"  - {attack_config['ics']}")
         return 1
     
     print('=== ATT&CK Technique Extraction ===\n')
@@ -236,6 +298,9 @@ def main():
     # Count techniques with mitigations
     with_mit = sum(1 for t in techniques.values() if t['mitigations'])
     print(f'  With mitigations: {with_mit}')
+
+    # Sanitize JSON after parsing (cleans generated files)
+    run_sanitizer(project_dir, 'after')
     
     return 0
 

@@ -27,6 +27,8 @@ Security audit remediation implementing defense-in-depth protections across the 
 - Sanitized source data files to remove embedded markup and HTML artifacts
 - Cleaned 1,700+ description fields containing formatting remnants
 - Ensured data extraction produces clean, display-ready content
+ - Sanitizer now encodes remaining angle brackets as &lt; and &gt;
+ - Sanitizer covers resources/ and frameworks/ATTCK by default via config
 
 #### External Resource Protection
 - Hardened all external links with `target="_blank"` and `rel=\"noopener noreferrer\"`
@@ -43,6 +45,14 @@ Security audit remediation implementing defense-in-depth protections across the 
 #### Error Handling
 - Sanitized error message display to prevent reflected content injection
 - Error messages rendered safely without interpreting user input
+
+#### Data Pipeline & Config
+- Framework source paths moved under frameworks/ and made configurable in config.js
+- Extraction scripts run sanitization before and after parsing
+- JSON loader encodes angle brackets on read to prevent unencoded < or >
+
+#### Deployment
+- deploy.sh now skips files/directories ignored by .gitignore
 
 #### Description Improvements
 - Increased description length limits for ATT&CK techniques (3,000 chars)

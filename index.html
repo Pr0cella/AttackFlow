@@ -1240,6 +1240,49 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
+            flex: 1;
+        }
+
+        .relationship-wrapper {
+            display: flex;
+            gap: 12px;
+        }
+
+        .flow-arrow {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 8px;
+            min-height: 100px;
+        }
+
+        .flow-arrow-line {
+            width: 2px;
+            flex: 1;
+            background: linear-gradient(to bottom, var(--phase-in), var(--phase-through), var(--phase-out));
+            border-radius: 1px;
+            position: relative;
+        }
+
+        .flow-arrow-head {
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 12px solid var(--phase-out);
+            margin-top: -1px;
+        }
+
+        .flow-arrow-label {
+            font-size: 0.6rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            transform: rotate(180deg);
+            margin-bottom: 8px;
         }
 
         .relationship-row {
@@ -1815,7 +1858,14 @@
                         <span class="relationship-arrow">→</span>
                         <div class="relationship-header-item"><div class="dot phase"></div>Phase</div>
                     </div>
-                    <div class="relationship-chain" id="relationship-chain"></div>
+                    <div class="relationship-wrapper">
+                        <div class="relationship-chain" id="relationship-chain"></div>
+                        <div class="flow-arrow">
+                            <div class="flow-arrow-label">Attack Flow</div>
+                            <div class="flow-arrow-line"></div>
+                            <div class="flow-arrow-head"></div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="legend">
@@ -2187,6 +2237,24 @@
         const esc = (str) => InputSecurity.escapeHtml(str);
         const escAttr = (str) => InputSecurity.sanitizeAttr(str);
 
+        // Encode < and > in any JSON-loaded strings
+        function stripAngleBracketsFromJson(value) {
+            if (typeof value === 'string') {
+                return value.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            }
+            if (Array.isArray(value)) {
+                return value.map(stripAngleBracketsFromJson);
+            }
+            if (value && typeof value === 'object') {
+                const cleaned = {};
+                for (const [key, val] of Object.entries(value)) {
+                    cleaned[key] = stripAngleBracketsFromJson(val);
+                }
+                return cleaned;
+            }
+            return value;
+        }
+
         // ============================================================
         // METADATA HELPERS
         // ============================================================
@@ -2361,27 +2429,27 @@
             try {
                 // Load ATT&CK techniques data
                 const attackRes = await fetch('resources/attack-techniques.json');
-                state.library.techniques = await attackRes.json();
+                state.library.techniques = stripAngleBracketsFromJson(await attackRes.json());
                 
                 // Load CAPEC data
                 const capecRes = await fetch('resources/capec-full.json');
-                const capecData = await capecRes.json();
+                const capecData = stripAngleBracketsFromJson(await capecRes.json());
                 state.library.capecs = capecData.patterns;
                 
                 // Load CWE data
                 const cweRes = await fetch('resources/cwe-full.json');
-                const cweData = await cweRes.json();
+                const cweData = stripAngleBracketsFromJson(await cweRes.json());
                 state.library.cwes = cweData.weaknesses;
                 
                 // Load mappings
                 const t2cRes = await fetch('resources/technique-to-capec.json');
-                state.techniqueToCapec = await t2cRes.json();
+                state.techniqueToCapec = stripAngleBracketsFromJson(await t2cRes.json());
                 
                 const c2tRes = await fetch('resources/capec-to-technique.json');
-                state.capecToTechnique = await c2tRes.json();
+                state.capecToTechnique = stripAngleBracketsFromJson(await c2tRes.json());
                 
                 const c2cRes = await fetch('resources/cwe-to-capec.json');
-                state.cweToCapec = await c2cRes.json();
+                state.cweToCapec = stripAngleBracketsFromJson(await c2cRes.json());
                 
                 console.log(`Loaded: ${Object.keys(state.library.techniques).length} techniques, ${Object.keys(state.library.capecs).length} CAPECs, ${Object.keys(state.library.cwes).length} CWEs`);
                 
@@ -2399,8 +2467,8 @@
         // Load Navigator layer (techniques become searchable, not auto-assigned)
         async function loadNavigator(domain) {
             try {
-                const res = await fetch(`resources/${domain}.json`);
-                const layer = await res.json();
+                const res = await fetch(`resources/Nav_Layer_${domain.toUpperCase()}.json`);
+                const layer = stripAngleBracketsFromJson(await res.json());
                 
                 let added = 0, existing = 0;
                 for (const tech of layer.techniques || []) {
@@ -2448,7 +2516,7 @@
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {
-                    const layer = JSON.parse(e.target.result);
+                    const layer = stripAngleBracketsFromJson(JSON.parse(e.target.result));
                     
                     // KCE-SEC-003: Validate it's an object (basic schema check)
                     if (typeof layer !== 'object' || layer === null || Array.isArray(layer)) {
