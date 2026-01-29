@@ -1,190 +1,101 @@
-# Unified Kill Chain Visualizer
+# Kill Chain Visualizer
 
-A JavaScript application that visualizes MITRE ATT&CK, CAPEC & CWE mapped to the Unified Kill Chain framework. Supports all ATT&CK domains: **Enterprise**, **Mobile**, and **ICS**.
+Interactive editor for mapping MITRE ATT&CK techniques, CAPEC attack patterns, and CWE weaknesses to the Unified Kill Chain framework.
 
 ![Version](https://img.shields.io/badge/version-2.4.1-blue)
-![Preview](preview.png)
-![Relations](relations.png)
+![License](https://img.shields.io/badge/license-Apache%202.0-green)
+![Dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)
 
-## Work in Progress
+![Preview](preview.png)
 
 ## Features
 
--  **Vanilla JS** - No external dependencies
--  **Unified Kill Chain Mapping** - Techniques mapped to IN → THROUGH → OUT phases
--  **Multi-Domain Support** - Enterprise, Mobile, and ICS ATT&CK matrices
--  **Navigator Layer Import** - Import MITRE ATT&CK Navigator JSON layers
--  **Configurable Colors** - Fully customizable color scheme
--  **Responsive Design** - Works on desktop and mobile
--  **MITRE Links** - Click techniques to open ATT&CK documentation
--  **Statistics** - Real-time technique counts per phase
--  **Compact Mode** - Toggle between full and compact views
+- **Vanilla JavaScript** — No external dependencies, runs in any browser
+- **Unified Kill Chain** — Map entities to IN → THROUGH → OUT phases
+- **Multi-Domain ATT&CK** — 898 techniques across Enterprise, Mobile, and ICS
+- **CAPEC/CWE Integration** — Link attack patterns and weaknesses
+- **Drag & Drop** — Intuitive assignment of entities to phases
+- **Rich Metadata** — Comments, hyperlinks, observables, CVE/CVSS references
+- **Score & Confidence** — Rate items by severity and assessment confidence
+- **Visual Indicators** — Color-coded ribbons and metadata icons
+- **Import/Export** — JSON and CSV with full metadata support
+- **Navigator Layers** — Import ATT&CK Navigator JSON exports
+- **Input Security** — All user input validated, sanitized, and escaped
 
-### New in v2.4.0 - Phase Item Metadata
-
--  **Rich Metadata** - Add comments, hyperlinks, observables to any assigned item
--  **CVE/CVSS Support** - Link items to specific vulnerabilities with CVSS scores
--  **Confidence Levels** - Rate items as Unclassified/Low/Medium/High/Critical
--  **Visual Indicators** - Color-coded ribbons and icons show metadata at a glance
--  **Input Security** - All user input validated, sanitized, and escaped
--  **Enhanced Exports** - JSON and CSV include full metadata
-
-### v2.3.0 - Attack Chain Editor
-
--  **Drag & Drop** - Drag techniques, CAPECs, and CWEs directly onto kill chain phases
--  **Full ATT&CK Library** - 898 techniques with descriptions, mitigations, platforms, and more
--  **Rich Detail Panel** - View complete technique info including detection and mitigations
--  **CAPEC/CWE Integration** - Link attack patterns and weaknesses to your kill chain
--  **Save/Load Projects** - Export and import your custom attack chains as JSON
--  **Centralized Config** - All colors and settings in `config.js`
--  **Usage Guide** - Built-in help modal with keyboard shortcut
--  **Distinct Phase Colors** - IN (green), THROUGH (cyan), OUT (red)
+![Relations View](relations.png)
 
 ## Quick Start
 
-### Basic Usage
+1. Clone or download this repository
+2. Open `index.html` in a browser, or deploy to a web server
+3. Browse techniques in the left sidebar
+4. Drag items onto kill chain phases
+5. Click items in the diagram to add metadata
+6. Export your attack chain as JSON or CSV
 
-```html
-<div id="kill-chain"></div>
-<div id="stats-bar"></div>
+## Project Structure
 
-<script src="kill-chain-visualizer.js"></script>
-<script>
-    const viz = new KillChainVisualizer('kill-chain', 'stats-bar');
-    
-    viz.setTechniques({
-        'T1566': 'Phishing',
-        'T1059': 'Command and Scripting Interpreter',
-        'T1486': 'Data Encrypted for Impact'
-    });
-</script>
 ```
-
-### Import Navigator Layer
-
-```javascript
-// Load from ATT&CK Navigator JSON export
-fetch('layer.json')
-    .then(r => r.json())
-    .then(layer => {
-        const techniques = viz.parseNavigatorLayer(layer);
-        viz.setTechniques(techniques);
-    });
-```
-
-## API Reference
-
-### Constructor
-
-```javascript
-new KillChainVisualizer(containerId, statsId, options?)
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `containerId` | string | ID of the container element for the visualization |
-| `statsId` | string | ID of the container for statistics bar |
-| `options` | object | Optional configuration object |
-| `options.colors` | object | Custom color configuration |
-
-### Methods
-
-| Method | Description |
-|--------|-------------|
-| `setTechniques(techniques)` | Set techniques to visualize (object: `{id: name}`) |
-| `parseNavigatorLayer(json)` | Parse ATT&CK Navigator layer JSON, returns techniques object |
-| `expandAll()` | Expand all phases |
-| `collapseAll()` | Collapse all phases |
-| `toggleCompactMode()` | Toggle compact mode (ID only vs ID + name) |
-| `showOnlyActive()` | Hide phases with no techniques |
-| `resetView()` | Reset to default view |
-| `setColors(colors)` | Update color configuration |
-| `highlightTechniques(ids[])` | Highlight specific techniques |
-| `clearHighlights()` | Remove all highlights |
-| `exportData()` | Export current state as JSON |
-| `getMitreAttackUrl(techId)` | Get MITRE ATT&CK URL for a technique |
-| `detectDomain(techId)` | Detect domain (enterprise/mobile/ics) from technique ID |
-
-### Color Configuration
-
-```javascript
-const viz = new KillChainVisualizer('container', 'stats', {
-    colors: {
-        phaseIn: '#6b7280',      // IN phase accent
-        phaseThrough: '#78716c', // THROUGH phase accent
-        phaseOut: '#64748b',     // OUT phase accent
-        bgDark: '#1a1a1a',       // Page background
-        bgCard: '#242424',       // Card background
-        bgPhase: '#2d2d2d',      // Phase background
-        textPrimary: '#e5e5e5',  // Primary text
-        textSecondary: '#a3a3a3', // Secondary text
-        borderColor: '#404040',  // Borders
-        accent: '#71717a'        // Accent color
-    }
-});
+├── index.html                  # Main application
+├── config.js                   # Centralized configuration
+├── kill-chain-visualizer.js    # Core visualization component
+├── scripts/
+│   ├── extract-attack.py       # ATT&CK STIX bundle parser
+│   └── extract-data.py         # CAPEC/CWE XML parser
+└── resources/
+    ├── attack-techniques.json  # ATT&CK library (898 techniques)
+    ├── capec-full.json         # CAPEC attack patterns
+    ├── cwe-full.json           # CWE weaknesses
+    ├── capec-to-technique.json # CAPEC → ATT&CK mappings
+    ├── cwe-to-capec.json       # CWE → CAPEC mappings
+    ├── kill-chain-mappings.json# Technique → Phase mappings
+    ├── enterprise.json         # Enterprise Navigator layer
+    ├── mobile.json             # Mobile Navigator layer
+    └── ics.json                # ICS Navigator layer
 ```
 
 ## Unified Kill Chain Phases
 
-### IN (Initial Foothold)
-- Reconnaissance
-- Resource Development
-- Delivery
-- Social Engineering
-- Exploitation
-- Persistence
-- Defense Evasion
-- Command & Control
+| Phase | Stages |
+|-------|--------|
+| **IN** (Initial Foothold) | Reconnaissance, Resource Development, Delivery, Social Engineering, Exploitation, Persistence, Defense Evasion, Command & Control |
+| **THROUGH** (Network Propagation) | Pivoting, Discovery, Privilege Escalation, Execution, Credential Access, Lateral Movement |
+| **OUT** (Action on Objectives) | Collection, Exfiltration, Impact, Objectives |
 
-### THROUGH (Network Propagation)
-- Pivoting
-- Discovery
-- Privilege Escalation
-- Execution
-- Credential Access
-- Lateral Movement
+## Metadata Fields
 
-### OUT (Action on Objectives)
-- Collection
-- Exfiltration
-- Impact
-- Objectives
+Each assigned item supports:
 
-## Files
+| Field | Description |
+|-------|-------------|
+| **Score** | Severity rating: Unclassified, Low, Medium, High, Critical |
+| **Confidence** | Assessment confidence: 0% (Unknown) to 100% (High) |
+| **CVE-ID** | Vulnerability reference (e.g., CVE-2024-12345) |
+| **CVSS Vector** | CVSS 3.1 vector string |
+| **Comments** | Free-text notes |
+| **Hyperlinks** | External references with labels |
+| **Observables** | Threat indicators (IPs, hashes, domains, etc.) |
 
-```
-├── index.html                # Attack Chain Editor (main app)
-├── demo.html                 # Interactive demo with scenarios
-├── demo-advanced.html        # Advanced mode with manual mapping
-├── demo-capec-test.html      # CAPEC integration demo
-├── kill-chain-visualizer.js  # Core JavaScript component
-├── config.js                 # Centralized configuration (colors, version)
-├── README.md                 # This file
-├── CHANGELOG.md              # Version history
-├── TASKS.md                  # Planned features
-├── scripts/
-│   ├── extract-attack.py     # ATT&CK STIX bundle parser
-│   └── extract-data.py       # CAPEC/CWE XML parser
-└── resources/
-    ├── attack-techniques.json  # Full ATT&CK technique library (898)
-    ├── capec-library.json      # CAPEC patterns
-    ├── cwe-library.json        # CWE weaknesses
-    ├── capec-to-technique.json # CAPEC → ATT&CK mappings
-    ├── cwe-to-capec.json       # CWE → CAPEC mappings
-    ├── enterprise.json         # Enterprise Navigator layer
-    ├── mobile.json             # Mobile Navigator layer
-    ├── ics.json                # ICS Navigator layer
-    └── *-attack-18.1.json      # ATT&CK STIX bundles (source data)
+## Data Sources
+
+- [MITRE ATT&CK](https://attack.mitre.org/) — Adversarial tactics and techniques
+- [CAPEC](https://capec.mitre.org/) — Common Attack Pattern Enumeration
+- [CWE](https://cwe.mitre.org/) — Common Weakness Enumeration
+- [Unified Kill Chain](https://www.unifiedkillchain.com/) — Attack phase framework
+
+## Updating Data
+
+Download the latest STIX bundles and run the extraction scripts:
+
+```bash
+cd resources
+# Download ATT&CK STIX bundles from https://github.com/mitre-attack/attack-stix-data
+
+cd ../scripts
+python3 extract-attack.py    # Parse ATT&CK techniques
+python3 extract-data.py      # Parse CAPEC/CWE (requires XML files)
 ```
 
 ## License
 
-Apache License - See LICENSE file for details.
-
-## Related Links
-
-- [MITRE ATT&CK](https://attack.mitre.org/)
-- [ATT&CK Navigator](https://mitre-attack.github.io/attack-navigator/)
-- [Unified Kill Chain](https://www.unifiedkillchain.com/)
-- [CAPEC](https://capec.mitre.org/) - Common Attack Pattern Enumeration
-- [CWE](https://cwe.mitre.org/) - Common Weakness Enumeration
+Apache License 2.0 — See [LICENSE](LICENSE) for details.
