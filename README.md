@@ -3,38 +3,40 @@
 A JavaScript component that visualizes MITRE ATT&CK techniques mapped to the Unified Kill Chain framework. Supports all ATT&CK domains: **Enterprise**, **Mobile**, and **ICS**.
 
 ![Version](https://img.shields.io/badge/version-2.4.1-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
+
+## Work in Progress
 
 ## Features
 
-- 🎯 **Unified Kill Chain Mapping** - Techniques mapped to IN → THROUGH → OUT phases
-- 🌐 **Multi-Domain Support** - Enterprise, Mobile, and ICS ATT&CK matrices
-- 📊 **Navigator Layer Import** - Import MITRE ATT&CK Navigator JSON layers
-- 🎨 **Configurable Colors** - Fully customizable color scheme
-- 📱 **Responsive Design** - Works on desktop and mobile
-- 🔗 **MITRE Links** - Click techniques to open ATT&CK documentation
-- 📈 **Statistics** - Real-time technique counts per phase
-- 🗜️ **Compact Mode** - Toggle between full and compact views
+-  **Vanilla JS** - No external dependencies
+-  **Unified Kill Chain Mapping** - Techniques mapped to IN → THROUGH → OUT phases
+-  **Multi-Domain Support** - Enterprise, Mobile, and ICS ATT&CK matrices
+-  **Navigator Layer Import** - Import MITRE ATT&CK Navigator JSON layers
+-  **Configurable Colors** - Fully customizable color scheme
+-  **Responsive Design** - Works on desktop and mobile
+-  **MITRE Links** - Click techniques to open ATT&CK documentation
+-  **Statistics** - Real-time technique counts per phase
+-  **Compact Mode** - Toggle between full and compact views
 
 ### New in v2.4.0 - Phase Item Metadata
 
-- 📝 **Rich Metadata** - Add comments, hyperlinks, observables to any assigned item
-- 🔒 **CVE/CVSS Support** - Link items to specific vulnerabilities with CVSS scores
-- 🎚️ **Confidence Levels** - Rate items as Unclassified/Low/Medium/High/Critical
-- 🎨 **Visual Indicators** - Color-coded ribbons and icons show metadata at a glance
-- 🛡️ **Input Security** - All user input validated, sanitized, and escaped
-- 📊 **Enhanced Exports** - JSON and CSV include full metadata
+-  **Rich Metadata** - Add comments, hyperlinks, observables to any assigned item
+-  **CVE/CVSS Support** - Link items to specific vulnerabilities with CVSS scores
+-  **Confidence Levels** - Rate items as Unclassified/Low/Medium/High/Critical
+-  **Visual Indicators** - Color-coded ribbons and icons show metadata at a glance
+-  **Input Security** - All user input validated, sanitized, and escaped
+-  **Enhanced Exports** - JSON and CSV include full metadata
 
 ### v2.3.0 - Attack Chain Editor
 
-- 🖱️ **Drag & Drop** - Drag techniques, CAPECs, and CWEs directly onto kill chain phases
-- 📚 **Full ATT&CK Library** - 898 techniques with descriptions, mitigations, platforms, and more
-- 🔍 **Rich Detail Panel** - View complete technique info including detection and mitigations
-- 🔗 **CAPEC/CWE Integration** - Link attack patterns and weaknesses to your kill chain
-- 💾 **Save/Load Projects** - Export and import your custom attack chains as JSON
-- ⚙️ **Centralized Config** - All colors and settings in `config.js`
-- 📖 **Usage Guide** - Built-in help modal with keyboard shortcut
-- 🎨 **Distinct Phase Colors** - IN (green), THROUGH (cyan), OUT (red)
+-  **Drag & Drop** - Drag techniques, CAPECs, and CWEs directly onto kill chain phases
+-  **Full ATT&CK Library** - 898 techniques with descriptions, mitigations, platforms, and more
+-  **Rich Detail Panel** - View complete technique info including detection and mitigations
+-  **CAPEC/CWE Integration** - Link attack patterns and weaknesses to your kill chain
+-  **Save/Load Projects** - Export and import your custom attack chains as JSON
+-  **Centralized Config** - All colors and settings in `config.js`
+-  **Usage Guide** - Built-in help modal with keyboard shortcut
+-  **Distinct Phase Colors** - IN (green), THROUGH (cyan), OUT (red)
 
 ## Quick Start
 
@@ -146,19 +148,6 @@ const viz = new KillChainVisualizer('container', 'stats', {
 - Impact
 - Objectives
 
-## Domain Support
-
-| Domain | Technique Format | Example |
-|--------|-----------------|---------|
-| Enterprise | T1xxx | T1566, T1059 |
-| Mobile | T1xxx (specific ranges) | T1418, T1430 |
-| ICS | T0xxx | T0800, T0879 |
-
-Visual indicators:
-- Enterprise: Default styling
-- Mobile: Green left border
-- ICS: Brown left border
-
 ## Files
 
 ```
@@ -186,16 +175,9 @@ Visual indicators:
     └── *-attack-18.1.json      # ATT&CK STIX bundles (source data)
 ```
 
-## Browser Support
-
-- Chrome 80+
-- Firefox 75+
-- Safari 13+
-- Edge 80+
-
 ## License
 
-MIT License - See LICENSE file for details.
+Apache License - See LICENSE file for details.
 
 ## Related Links
 
