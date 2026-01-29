@@ -92,13 +92,13 @@ def process_stix_bundle(file_path, techniques, mitigations, relationships):
                     'id': ext_id,
                     'stixId': obj.get('id'),
                     'name': obj.get('name', ''),
-                    'description': (obj.get('description', '') or '')[:800],
+                    'description': (obj.get('description', '') or '')[:3000],
                     'platforms': obj.get('x_mitre_platforms', []),
                     'tactics': extract_tactics(obj),
                     'domain': domain,
                     'isSubtechnique': obj.get('x_mitre_is_subtechnique', False),
                     'parentTechnique': None,  # Will be resolved later
-                    'detection': (obj.get('x_mitre_detection', '') or '')[:500],
+                    'detection': (obj.get('x_mitre_detection', '') or '')[:2000],
                     'version': obj.get('x_mitre_version', '1.0'),
                     'references': extract_references(obj),
                     'mitigations': []  # Will be populated later
@@ -112,7 +112,7 @@ def process_stix_bundle(file_path, techniques, mitigations, relationships):
                     'id': mit_id,
                     'stixId': obj.get('id'),
                     'name': obj.get('name', ''),
-                    'description': (obj.get('description', '') or '')[:500]
+                    'description': (obj.get('description', '') or '')[:2000]
                 }
                 mit_count += 1
         
@@ -123,7 +123,7 @@ def process_stix_bundle(file_path, techniques, mitigations, relationships):
                     'type': rel_type,
                     'source': obj.get('source_ref'),
                     'target': obj.get('target_ref'),
-                    'description': (obj.get('description', '') or '')[:300]
+                    'description': (obj.get('description', '') or '')[:1000]
                 })
                 rel_count += 1
     

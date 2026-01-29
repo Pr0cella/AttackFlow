@@ -6,6 +6,52 @@ This changelog also serves as a development context document for AI agents conti
 
 ---
 
+## [2.4.2] - 2026-01-29
+
+### Security - General Missing Hardening
+
+Security audit remediation implementing defense-in-depth protections across the application.
+
+#### Input/Output Security
+- Applied HTML output encoding to all dynamic content rendering
+- Added shorthand utilities for consistent escaping throughout the codebase
+- Strengthened input validation patterns for structured data fields
+
+#### Import Protection
+- Added file size limits for Navigator JSON imports (25 MB maximum)
+- Implemented technique count limits (5,000 max) to prevent resource exhaustion
+- Added string length validation for imported fields
+- Added ID pattern validation to reject malformed import data
+
+#### Data Layer Hardening
+- Sanitized source data files to remove embedded markup and HTML artifacts
+- Cleaned 1,700+ description fields containing formatting remnants
+- Ensured data extraction produces clean, display-ready content
+
+#### External Resource Protection
+- Hardened all external links with `target="_blank"` and `rel="noopener noreferrer"`
+- Prevents reverse tabnapping and referrer leakage attacks
+
+#### XML Processing Security
+- Migrated to secure XML parsing with entity expansion disabled
+- Prevents XXE (XML External Entity) and billion laughs attacks
+
+#### Export Safety
+- Added formula injection protection for CSV exports
+- Prefixes potential formula triggers to prevent spreadsheet exploits
+
+#### Error Handling
+- Sanitized error message display to prevent reflected content injection
+- Error messages rendered safely without interpreting user input
+
+#### Description Improvements
+- Increased description length limits for ATT&CK techniques (3,000 chars)
+- Increased detection and mitigation guidance limits (2,000 chars each)
+- Increased CAPEC and CWE description limits (2,000 chars)
+- Fuller context now available without truncation
+
+---
+
 ## [2.4.1] - 2026-01-29
 
 ### Changed - Score/Confidence Separation & Icon Visibility

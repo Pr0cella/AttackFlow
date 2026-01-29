@@ -948,9 +948,10 @@ class KillChainVisualizer {
         `;
         
         // Add click handler for MITRE ATT&CK link
+        // KCE-SEC-002: Use noopener to prevent tabnabbing
         el.addEventListener('click', () => {
             const url = this.getMitreAttackUrl(technique.id);
-            window.open(url, '_blank');
+            window.open(url, '_blank', 'noopener,noreferrer');
         });
         el.style.cursor = 'pointer';
         

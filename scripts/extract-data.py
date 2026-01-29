@@ -9,7 +9,13 @@ Usage: python3 scripts/extract-data.py
 import json
 import os
 import re
-import xml.etree.ElementTree as ET
+# KCE-SEC-005: Use defusedxml to prevent XML entity expansion attacks
+try:
+    import defusedxml.ElementTree as ET
+except ImportError:
+    print("Warning: defusedxml not installed. Using standard xml.etree.ElementTree.")
+    print("Install with: pip install defusedxml")
+    import xml.etree.ElementTree as ET
 from pathlib import Path
 
 # XML namespaces
@@ -70,7 +76,7 @@ def extract_capec(xml_files):
                 
                 # Description
                 desc_el = pattern.find('capec:Description', CAPEC_NS)
-                description = get_text(desc_el)[:500]  # Limit length
+                description = get_text(desc_el)[:2000]  # Limit length
                 
                 # Severity and Likelihood
                 severity_el = pattern.find('capec:Typical_Severity', CAPEC_NS)
@@ -193,7 +199,7 @@ def extract_cwe(xml_files):
                 
                 # Description
                 desc_el = weakness.find('cwe:Description', CWE_NS)
-                description = get_text(desc_el)[:500]
+                description = get_text(desc_el)[:2000]
                 
                 # Related CAPECs
                 capecs = []
@@ -340,27 +346,29 @@ def add_missing_cwes(cwe_data, capec_data):
 
 def main():
     script_dir = Path(__file__).parent
-    resources_dir = script_dir.parent / 'resources'
+    project_dir = script_dir.parent
+    resources_dir = project_dir / 'resources'
+    frameworks_dir = project_dir / 'frameworks'
     
-    # Check for XML files
+    # Check for XML files in frameworks/ directory
     capec_files = [
-        resources_dir / 'CAPEC_Mechanisms.xml',
-        resources_dir / 'CAPEC_Domains.xml'
+        frameworks_dir / 'CAPEC_Mechanisms.xml',
+        frameworks_dir / 'CAPEC_Domains.xml'
     ]
     capec_files = [f for f in capec_files if f.exists()]
     
     cwe_files = [
-        resources_dir / 'CWE_Software_Development.xml',
-        resources_dir / 'CWE_Hardware_Design.xml'
+        frameworks_dir / 'CWE_Software_Development.xml',
+        frameworks_dir / 'CWE_Hardware_Design.xml'
     ]
     cwe_files = [f for f in cwe_files if f.exists()]
     
     if not capec_files:
-        print('No CAPEC XML files found in resources/')
+        print('No CAPEC XML files found in frameworks/')
         return 1
     
     if not cwe_files:
-        print('No CWE XML files found in resources/')
+        print('No CWE XML files found in frameworks/')
         return 1
     
     print('=== Attack Chain Data Extraction ===\n')

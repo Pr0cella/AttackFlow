@@ -1630,7 +1630,7 @@
             <div class="header-left">
                 <div class="header-title">Kill Chain Editor</div>
                 <div class="header-meta">
-                    <a href="CHANGELOG.md" target="_blank" class="version-link" title="View changelog">v2.4.1</a>
+                    <a href="CHANGELOG.md" target="_blank" rel="noopener noreferrer" class="version-link" title="View changelog">v2.4.1</a>
                     <a href="#" class="help-link" onclick="showUsageGuide(); return false;" title="Usage guide">?</a>
                 </div>
             </div>
@@ -2114,6 +2114,10 @@
             }
         };
 
+        // KCE-SEC-001: Shorthand for escaping HTML in template strings
+        const esc = (str) => InputSecurity.escapeHtml(str);
+        const escAttr = (str) => InputSecurity.sanitizeAttr(str);
+
         // ============================================================
         // METADATA HELPERS
         // ============================================================
@@ -2315,7 +2319,10 @@
                 renderAll();
             } catch (err) {
                 console.error('Failed to load data:', err);
-                document.getElementById('loading').innerHTML = `<div class="loading-text">Error loading data: ${err.message}</div>`;
+                // KCE-SEC-009: Use textContent instead of innerHTML for error messages
+                const loadingEl = document.getElementById('loading');
+                loadingEl.innerHTML = '<div class="loading-text"></div>';
+                loadingEl.querySelector('.loading-text').textContent = 'Error loading data: ' + err.message;
             }
         }
 
@@ -2349,19 +2356,63 @@
             }
         }
 
+        // KCE-SEC-003: Navigator import validation constants
+        const IMPORT_LIMITS = {
+            maxFileSize: 5 * 1024 * 1024 * 5,  // 25MB
+            maxTechniques: 5000,
+            maxStringLength: 500,
+            techniqueIdPattern: /^T\d{4}(\.\d{3})?$/  // T1234 or T1234.001
+        };
+
         function importNavigator(event) {
             const file = event.target.files[0];
             if (!file) return;
+            
+            // KCE-SEC-003: Validate file size
+            if (file.size > IMPORT_LIMITS.maxFileSize) {
+                showToast(`File too large: ${(file.size / 1024 / 1024).toFixed(1)}MB (max 25MB)`);
+                event.target.value = '';
+                return;
+            }
             
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {
                     const layer = JSON.parse(e.target.result);
-                    let added = 0, existing = 0;
                     
-                    for (const tech of layer.techniques || []) {
+                    // KCE-SEC-003: Validate it's an object (basic schema check)
+                    if (typeof layer !== 'object' || layer === null || Array.isArray(layer)) {
+                        throw new Error('Invalid layer format: expected object');
+                    }
+                    
+                    // KCE-SEC-003: Validate techniques array exists and has reasonable size
+                    const techniques = layer.techniques;
+                    if (!Array.isArray(techniques)) {
+                        throw new Error('Invalid layer format: techniques array required');
+                    }
+                    
+                    if (techniques.length > IMPORT_LIMITS.maxTechniques) {
+                        throw new Error(`Too many techniques: ${techniques.length} (max ${IMPORT_LIMITS.maxTechniques})`);
+                    }
+                    
+                    let added = 0, existing = 0, skipped = 0;
+                    
+                    for (const tech of techniques) {
                         if (tech.enabled === false) continue;
+                        
+                        // KCE-SEC-003: Validate technique ID format
                         const id = tech.techniqueID;
+                        if (!id || typeof id !== 'string') {
+                            skipped++;
+                            continue;
+                        }
+                        
+                        // Validate ID matches expected pattern (T1234 or T1234.001)
+                        if (!IMPORT_LIMITS.techniqueIdPattern.test(id)) {
+                            skipped++;
+                            continue;
+                        }
+                        
                         if (state.library.techniques[id]) {
                             existing++;
                         } else {
@@ -2374,13 +2425,16 @@
                         }
                     }
                     
-                    showToast(`Import: ${existing} in library, ${added} new techniques`);
+                    let msg = `Import: ${existing} in library, ${added} new techniques`;
+                    if (skipped > 0) msg += `, ${skipped} skipped (invalid ID)`;
+                    showToast(msg);
                     filterEntities('attack');
                 } catch (err) {
                     showToast('Invalid JSON: ' + err.message);
                 }
             };
             reader.readAsText(file);
+            event.target.value = '';  // Reset input
         }
 
         // Domain detection (from visualizer)
@@ -2499,22 +2553,22 @@
                 
                 if (type === 'attack') {
                     const subIndicator = entity.isSubtechnique ? '↳ ' : '';
-                    const tacticBadge = entity.tactics?.length ? `<span class="entity-badge">${entity.tactics[0]}</span>` : '';
+                    const tacticBadge = entity.tactics?.length ? `<span class="entity-badge">${esc(entity.tactics[0])}</span>` : '';
                     html += `
                         <div class="entity-item attack ${isAssigned ? 'assigned' : ''} ${isSelected ? 'selected' : ''}" 
-                             onclick="selectEntity('attack', '${entity.id}')"
+                             onclick="selectEntity('attack', '${esc(entity.id)}')"
                              draggable="true"
-                             ondragstart="handleDragStart(event, 'attack', '${entity.id}')"
+                             ondragstart="handleDragStart(event, 'attack', '${esc(entity.id)}')"
                              ondragend="handleDragEnd(event)"
-                             title="${entity.description ? entity.description.substring(0, 200) + '...' : ''}">
+                             title="${escAttr(entity.description ? entity.description.substring(0, 200) + '...' : '')}">
                             <div class="entity-header">
-                                <span class="entity-id">${subIndicator}${entity.id}</span>
-                                <span class="entity-badge">${entity.domain?.toUpperCase() || 'ENT'}</span>
+                                <span class="entity-id">${subIndicator}${esc(entity.id)}</span>
+                                <span class="entity-badge">${esc(entity.domain?.toUpperCase() || 'ENT')}</span>
                             </div>
-                            <div class="entity-name">${entity.name}</div>
+                            <div class="entity-name">${esc(entity.name)}</div>
                             <div class="entity-meta">
                                 ${tacticBadge}
-                                ${entity.platforms?.length ? `<span class="entity-badge">${entity.platforms.slice(0,2).join(', ')}</span>` : ''}
+                                ${entity.platforms?.length ? `<span class="entity-badge">${esc(entity.platforms.slice(0,2).join(', '))}</span>` : ''}
                             </div>
                         </div>
                     `;
@@ -2523,17 +2577,17 @@
                                          entity.severity?.toLowerCase().includes('medium') ? 'severity-medium' : 'severity-low';
                     html += `
                         <div class="entity-item capec ${isAssigned ? 'assigned' : ''} ${isSelected ? 'selected' : ''}"
-                             onclick="selectEntity('capec', '${entity.id}')"
+                             onclick="selectEntity('capec', '${esc(entity.id)}')"
                              draggable="true"
-                             ondragstart="handleDragStart(event, 'capec', '${entity.id}')"
+                             ondragstart="handleDragStart(event, 'capec', '${esc(entity.id)}')"
                              ondragend="handleDragEnd(event)">
                             <div class="entity-header">
-                                <span class="entity-id">${entity.id}</span>
-                                <span class="entity-badge ${severityClass}">${entity.severity || 'Unknown'}</span>
+                                <span class="entity-id">${esc(entity.id)}</span>
+                                <span class="entity-badge ${severityClass}">${esc(entity.severity || 'Unknown')}</span>
                             </div>
-                            <div class="entity-name">${entity.name}</div>
+                            <div class="entity-name">${esc(entity.name)}</div>
                             <div class="entity-meta">
-                                <span class="entity-badge">${entity.abstraction || 'Standard'}</span>
+                                <span class="entity-badge">${esc(entity.abstraction || 'Standard')}</span>
                                 ${entity.techniques?.length ? `<span class="entity-badge">${entity.techniques.length} techniques</span>` : ''}
                             </div>
                         </div>
@@ -2541,15 +2595,15 @@
                 } else if (type === 'cwe') {
                     html += `
                         <div class="entity-item cwe ${isAssigned ? 'assigned' : ''} ${isSelected ? 'selected' : ''}"
-                             onclick="selectEntity('cwe', '${entity.id}')"
+                             onclick="selectEntity('cwe', '${esc(entity.id)}')"
                              draggable="true"
-                             ondragstart="handleDragStart(event, 'cwe', '${entity.id}')"
+                             ondragstart="handleDragStart(event, 'cwe', '${esc(entity.id)}')"
                              ondragend="handleDragEnd(event)">
                             <div class="entity-header">
-                                <span class="entity-id">${entity.id}</span>
-                                <span class="entity-badge">${entity.abstraction || 'Base'}</span>
+                                <span class="entity-id">${esc(entity.id)}</span>
+                                <span class="entity-badge">${esc(entity.abstraction || 'Base')}</span>
                             </div>
-                            <div class="entity-name">${entity.name}</div>
+                            <div class="entity-name">${esc(entity.name)}</div>
                         </div>
                     `;
                 }
@@ -2615,42 +2669,47 @@
                 const mitigations = entity?.mitigations || [];
                 const mitigationsHtml = mitigations.length > 0 
                     ? mitigations.slice(0, 8).map(m => `
-                        <div class="detail-list-item" title="${(m.description || '').replace(/"/g, '&quot;')}">
-                            <span class="id" style="color: #10b981;">${m.id}</span>
-                            <span>${m.name}</span>
+                        <div class="detail-list-item" title="${escAttr(m.description || '')}">
+                            <span class="id" style="color: #10b981;">${esc(m.id)}</span>
+                            <span>${esc(m.name)}</span>
                         </div>
                     `).join('') + (mitigations.length > 8 ? `<div class="list-info">+${mitigations.length - 8} more</div>` : '')
                     : '<div class="list-info">No mitigations available</div>';
                 
                 // Build references list (first 3)
                 const refs = entity?.references || [];
-                const refsHtml = refs.slice(0, 3).map(r => `
+                const refsHtml = refs.slice(0, 3).map(r => {
+                    // KCE-SEC-002: Validate URL scheme (allowlist http/https)
+                    const url = r.url || '';
+                    const isSafeUrl = /^https?:\/\//i.test(url);
+                    return isSafeUrl ? `
                     <div class="detail-list-item">
-                        <a href="${r.url}" target="_blank" style="color: var(--text-secondary); text-decoration: none;">
-                            ${r.name} →
+                        <a href="${esc(url)}" target="_blank" rel="noopener noreferrer" style="color: var(--text-secondary); text-decoration: none;">
+                            ${esc(r.name)} →
                         </a>
                     </div>
-                `).join('');
+                ` : '';
+                }).join('');
                 
                 html = `
                     <div class="detail-section">
                         <h4>Description</h4>
-                        <p>${entity?.description || 'No description available.'}</p>
+                        <p>${esc(entity?.description || 'No description available.')}</p>
                     </div>
                     <div class="detail-section">
                         <h4>Attributes</h4>
                         <div class="detail-list">
-                            <div class="detail-list-item"><span>Domain:</span><span>${(entity?.domain || 'enterprise').toUpperCase()}</span></div>
-                            <div class="detail-list-item"><span>Platforms:</span><span>${platforms}</span></div>
-                            <div class="detail-list-item"><span>Tactics:</span><span>${tactics}</span></div>
-                            ${entity?.isSubtechnique ? `<div class="detail-list-item"><span>Parent:</span><span onclick="selectEntity('attack', '${entity.parentTechnique}')" style="cursor:pointer; color: var(--attack-color);">${entity.parentTechnique}</span></div>` : ''}
-                            <div class="detail-list-item"><span>Version:</span><span>${entity?.version || '1.0'}</span></div>
+                            <div class="detail-list-item"><span>Domain:</span><span>${esc((entity?.domain || 'enterprise').toUpperCase())}</span></div>
+                            <div class="detail-list-item"><span>Platforms:</span><span>${esc(platforms)}</span></div>
+                            <div class="detail-list-item"><span>Tactics:</span><span>${esc(tactics)}</span></div>
+                            ${entity?.isSubtechnique ? `<div class="detail-list-item"><span>Parent:</span><span onclick="selectEntity('attack', '${esc(entity.parentTechnique)}')" style="cursor:pointer; color: var(--attack-color);">${esc(entity.parentTechnique)}</span></div>` : ''}
+                            <div class="detail-list-item"><span>Version:</span><span>${esc(entity?.version || '1.0')}</span></div>
                         </div>
                     </div>
                     ${entity?.detection ? `
                     <div class="detail-section">
                         <h4>Detection</h4>
-                        <p style="font-size: 0.75rem;">${entity.detection}</p>
+                        <p style="font-size: 0.75rem;">${esc(entity.detection)}</p>
                     </div>
                     ` : ''}
                     <div class="detail-section">
@@ -2663,9 +2722,9 @@
                         <h4>Related CAPEC Patterns (${relatedCapecs.length})</h4>
                         <div class="detail-list">
                             ${relatedCapecs.map(c => `
-                                <div class="detail-list-item" onclick="selectEntity('capec', '${c}')">
-                                    <span class="id capec">${c}</span>
-                                    <span>${state.library.capecs[c]?.name || 'Unknown'}</span>
+                                <div class="detail-list-item" onclick="selectEntity('capec', '${esc(c)}')">
+                                    <span class="id capec">${esc(c)}</span>
+                                    <span>${esc(state.library.capecs[c]?.name || 'Unknown')}</span>
                                 </div>
                             `).join('')}
                             ${relatedCapecs.length === 0 ? '<div class="list-info">No CAPEC mappings</div>' : ''}
@@ -2680,7 +2739,7 @@
                     </div>
                     ` : ''}
                     <div class="detail-section">
-                        <a href="https://attack.mitre.org/techniques/${id.replace('.', '/')}" target="_blank" style="color: var(--attack-color);">View on MITRE ATT&CK →</a>
+                        <a href="https://attack.mitre.org/techniques/${id.replace('.', '/')}" target="_blank" rel="noopener noreferrer" style="color: var(--attack-color);">View on MITRE ATT&CK →</a>
                     </div>
                 `;
             } else if (type === 'capec') {
@@ -2691,23 +2750,23 @@
                 html = `
                     <div class="detail-section">
                         <h4>Description</h4>
-                        <p>${entity?.description || 'No description available.'}</p>
+                        <p>${esc(entity?.description || 'No description available.')}</p>
                     </div>
                     <div class="detail-section">
                         <h4>Attributes</h4>
                         <div class="detail-list">
-                            <div class="detail-list-item"><span>Severity:</span><span>${entity?.severity || 'Unknown'}</span></div>
-                            <div class="detail-list-item"><span>Likelihood:</span><span>${entity?.likelihood || 'Unknown'}</span></div>
-                            <div class="detail-list-item"><span>Abstraction:</span><span>${entity?.abstraction || 'Standard'}</span></div>
+                            <div class="detail-list-item"><span>Severity:</span><span>${esc(entity?.severity || 'Unknown')}</span></div>
+                            <div class="detail-list-item"><span>Likelihood:</span><span>${esc(entity?.likelihood || 'Unknown')}</span></div>
+                            <div class="detail-list-item"><span>Abstraction:</span><span>${esc(entity?.abstraction || 'Standard')}</span></div>
                         </div>
                     </div>
                     <div class="detail-section">
                         <h4>Related Techniques (${entity?.techniques?.length || 0})</h4>
                         <div class="detail-list">
                             ${(entity?.techniques || []).map(t => `
-                                <div class="detail-list-item" onclick="selectEntity('attack', '${t}')">
-                                    <span class="id attack">${t}</span>
-                                    <span>${state.library.techniques[t]?.name || getTechniqueName(t)}</span>
+                                <div class="detail-list-item" onclick="selectEntity('attack', '${esc(t)}')">
+                                    <span class="id attack">${esc(t)}</span>
+                                    <span>${esc(state.library.techniques[t]?.name || getTechniqueName(t))}</span>
                                 </div>
                             `).join('')}
                         </div>
@@ -2716,16 +2775,16 @@
                         <h4>Related CWEs (${entity?.cwes?.length || 0})</h4>
                         <div class="detail-list">
                             ${(entity?.cwes || []).slice(0, 10).map(c => `
-                                <div class="detail-list-item" onclick="selectEntity('cwe', '${c}')">
-                                    <span class="id cwe">${c}</span>
-                                    <span>${state.library.cwes[c]?.name || 'Unknown'}</span>
+                                <div class="detail-list-item" onclick="selectEntity('cwe', '${esc(c)}')">
+                                    <span class="id cwe">${esc(c)}</span>
+                                    <span>${esc(state.library.cwes[c]?.name || 'Unknown')}</span>
                                 </div>
                             `).join('')}
                             ${(entity?.cwes?.length || 0) > 10 ? `<div class="list-info">+${entity.cwes.length - 10} more</div>` : ''}
                         </div>
                     </div>
                     <div class="detail-section">
-                        <a href="https://capec.mitre.org/data/definitions/${id.replace('CAPEC-', '')}.html" target="_blank" style="color: var(--capec-color);">View on MITRE CAPEC →</a>
+                        <a href="https://capec.mitre.org/data/definitions/${esc(id.replace('CAPEC-', ''))}.html" target="_blank" rel="noopener noreferrer" style="color: var(--capec-color);">View on MITRE CAPEC →</a>
                     </div>
                 `;
             } else if (type === 'cwe') {
@@ -2738,26 +2797,26 @@
                 html = `
                     <div class="detail-section">
                         <h4>Description</h4>
-                        <p>${entity?.description || 'No description available.'}</p>
+                        <p>${esc(entity?.description || 'No description available.')}</p>
                     </div>
                     <div class="detail-section">
                         <h4>Abstraction</h4>
-                        <p>${entity?.abstraction || 'Base'}</p>
+                        <p>${esc(entity?.abstraction || 'Base')}</p>
                     </div>
                     <div class="detail-section">
                         <h4>Related CAPEC Patterns (${relatedCapecs.length})</h4>
                         <div class="detail-list">
                             ${relatedCapecs.slice(0, 10).map(c => `
-                                <div class="detail-list-item" onclick="selectEntity('capec', '${c}')">
-                                    <span class="id capec">${c}</span>
-                                    <span>${state.library.capecs[c]?.name || 'Unknown'}</span>
+                                <div class="detail-list-item" onclick="selectEntity('capec', '${esc(c)}')">
+                                    <span class="id capec">${esc(c)}</span>
+                                    <span>${esc(state.library.capecs[c]?.name || 'Unknown')}</span>
                                 </div>
                             `).join('')}
                             ${relatedCapecs.length > 10 ? `<div class="list-info">+${relatedCapecs.length - 10} more</div>` : ''}
                         </div>
                     </div>
                     <div class="detail-section">
-                        <a href="https://cwe.mitre.org/data/definitions/${id.replace('CWE-', '')}.html" target="_blank" style="color: var(--cwe-color);">View on MITRE CWE →</a>
+                        <a href="https://cwe.mitre.org/data/definitions/${esc(id.replace('CWE-', ''))}.html" target="_blank" rel="noopener noreferrer" style="color: var(--cwe-color);">View on MITRE CWE →</a>
                     </div>
                 `;
             }
@@ -3345,10 +3404,21 @@
             }
             
             // Convert to CSV string
+            // KCE-SEC-004: Prefix cells starting with formula characters to prevent injection
+            const sanitizeForCsv = (value) => {
+                const str = String(value);
+                // Prefix with single quote if starts with formula characters
+                if (/^[=+\-@\t\r]/.test(str)) {
+                    return "'" + str;
+                }
+                return str;
+            };
+            
             const csvContent = rows.map(row => 
                 row.map(cell => {
-                    // Escape quotes and wrap in quotes if contains comma or quote
-                    const escaped = String(cell).replace(/"/g, '""');
+                    // Sanitize for formula injection, then escape quotes
+                    const sanitized = sanitizeForCsv(cell);
+                    const escaped = sanitized.replace(/"/g, '""');
                     return escaped.includes(',') || escaped.includes('"') || escaped.includes('\n') 
                         ? `"${escaped}"` 
                         : escaped;
