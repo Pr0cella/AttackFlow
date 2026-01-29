@@ -1,4 +1,4 @@
-# Kill Chain Visualizer
+# KillChainEdit - Kill Chain Editor & Visualizer
 
 Interactive editor for mapping MITRE ATT&CK techniques, CAPEC attack patterns, and CWE weaknesses to the Unified Kill Chain framework.
 
