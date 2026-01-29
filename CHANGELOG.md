@@ -8,7 +8,7 @@ This changelog also serves as a development context document for AI agents conti
 
 ## [2.4.2] - 2026-01-29
 
-### Security - Comprehensive Hardening
+### Security - General Security Improvements
 
 Security audit remediation implementing defense-in-depth protections across the application.
 
