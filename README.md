@@ -1,6 +1,6 @@
-# KillChainEdit - Kill Chain Editor & Visualizer
+# AttackFlow - Kill Chain Editor & Visualizer
 
-Interactive editor for mapping MITRE ATT&CK techniques, CAPEC attack patterns, and CWE weaknesses to the Unified Kill Chain framework.
+An editor for creating enriched Cyber Kill Chain assessments by mapping MITRE ATT&CK, CAPEC & CWE to the Unified Kill Chain framework and enriching phase parts with additonal data. Visualize and assess complex attack scenarios easily by combining flexible TTPs with atomic IOCs and forensic data.
 
 ### Work in progress 
 
