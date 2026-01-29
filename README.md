@@ -20,7 +20,6 @@ Interactive editor for mapping MITRE ATT&CK techniques, CAPEC attack patterns, a
 - **Visual Indicators** — Color-coded ribbons and metadata icons
 - **Import/Export** — JSON and CSV with full metadata support
 - **Navigator Layers** — Import ATT&CK Navigator JSON exports
-- **Input Security** — All user input validated, sanitized, and escaped
 
 ![Relations View](relations.png)
 
