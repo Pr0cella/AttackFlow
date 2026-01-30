@@ -6,6 +6,24 @@ This changelog also serves as a development context document for AI agents conti
 
 ---
 
+## [2.4.3] - 2026-01-30
+
+### Fixed - Import & Visual Corrections
+
+#### Kill Chain Import Metadata
+- **FIXED**: Imported kill chains now properly restore metadata (score, confidence, CVE, CVSS, comments, hyperlinks, observables)
+- `sanitizeImportedAssignment()` now returns proper `{ id, metadata: {...} }` structure matching application data model
+- Handles both nested metadata format (from exports) and flat format for backwards compatibility
+- Maps field name variations (`cve`/`cveId`, `cvss`/`cvssVector`) during import
+
+#### Phase Item Visual Styling
+- **FIXED**: Score/severity now only indicated by left border ribbon color
+- Removed background color overrides that were hiding framework colors
+- Phase items now retain their framework background colors (blue for ATT&CK, purple for CAPEC, orange for CWE)
+- Score ribbons (green/yellow/orange/red for Low/Medium/High/Critical) appear on left border only
+
+---
+
 ## [2.4.2] - 2026-01-29
 
 ### Security - General Security Improvements
@@ -28,6 +46,10 @@ Security audit remediation implementing defense-in-depth protections across the 
 - Implemented technique count limits (5,000 max) to prevent resource exhaustion
 - Added string length validation for imported fields
 - Added ID pattern validation to reject malformed import data
+- Added `IMPORT_LIMITS` configuration for imported Kill Chains (5 MB file, 500 items/phase, 50 hyperlinks, 100 observables) to prevent resource exhaustion
+- Added `validateKillChainImport()` to Kill Chain import for structure and schema validation
+- Added `sanitizeImportedData()` for sanitization of imported values
+
 
 #### Data Layer Hardening
 - Sanitized source data files to remove embedded markup and HTML artifacts

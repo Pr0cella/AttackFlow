@@ -794,33 +794,29 @@
            SCORE RIBBONS & METADATA INDICATORS
            ============================================================ */
         
-        /* Score ribbon (left border) */
+        /* Score ribbon (left border only - preserves framework background colors) */
         .technique-tag[data-score="low"],
         .capec-tag[data-score="low"],
         .cwe-tag[data-score="low"] {
             border-left: 3px solid #22c55e;
-            background: rgba(34, 197, 94, 0.1);
         }
         
         .technique-tag[data-score="medium"],
         .capec-tag[data-score="medium"],
         .cwe-tag[data-score="medium"] {
             border-left: 3px solid #eab308;
-            background: rgba(234, 179, 8, 0.1);
         }
         
         .technique-tag[data-score="high"],
         .capec-tag[data-score="high"],
         .cwe-tag[data-score="high"] {
             border-left: 3px solid #f97316;
-            background: rgba(249, 115, 22, 0.1);
         }
         
         .technique-tag[data-score="critical"],
         .capec-tag[data-score="critical"],
         .cwe-tag[data-score="critical"] {
             border-left: 3px solid #ef4444;
-            background: rgba(239, 68, 68, 0.15);
         }
 
         /* Metadata indicators - displayed below title */
@@ -3625,27 +3621,236 @@
             }
         }
 
+        // Validation and sanitization for imported kill chain data
+        const KILLCHAIN_IMPORT_LIMITS = {
+            maxFileSize: 5 * 1024 * 1024,  // 5 MB
+            maxAssignmentsPerPhase: 500,
+            maxHyperlinks: 50,
+            maxObservables: 100,
+            maxStringLength: 5000
+        };
+
+        function validateKillChainImport(data) {
+            if (!data || typeof data !== 'object') {
+                return { valid: false, error: 'Invalid export format: expected object' };
+            }
+
+            const assignments = data.assignments;
+            if (!assignments || typeof assignments !== 'object') {
+                return { valid: false, error: 'Missing or invalid assignments object' };
+            }
+
+            // Validate schema version if present
+            if (data.schemaVersion && !/^\d+\.\d+(\.\d+)?$/.test(data.schemaVersion)) {
+                return { valid: false, error: 'Invalid schema version format' };
+            }
+
+            // Validate phase keys and structure
+            for (const [phaseKey, phaseData] of Object.entries(assignments)) {
+                if (!phaseKey.includes(':')) {
+                    return { valid: false, error: `Invalid phase key format: ${phaseKey}` };
+                }
+                if (!phaseData || typeof phaseData !== 'object') {
+                    return { valid: false, error: `Invalid phase data for: ${phaseKey}` };
+                }
+
+                // Check assignment counts
+                for (const key of ['techniques', 'capecs', 'cwes']) {
+                    const list = phaseData[key];
+                    if (list && !Array.isArray(list)) {
+                        return { valid: false, error: `${key} must be an array in ${phaseKey}` };
+                    }
+                    if (list && list.length > KILLCHAIN_IMPORT_LIMITS.maxAssignmentsPerPhase) {
+                        return { valid: false, error: `Too many ${key} in ${phaseKey} (max ${KILLCHAIN_IMPORT_LIMITS.maxAssignmentsPerPhase})` };
+                    }
+                }
+            }
+
+            return { valid: true };
+        }
+
+        function sanitizeImportedString(str, maxLength = KILLCHAIN_IMPORT_LIMITS.maxStringLength) {
+            if (str === null || str === undefined) return '';
+            if (typeof str !== 'string') return '';
+            // Normalize, remove dangerous chars, limit length
+            return String(str)
+                .replace(/[\x00-\x1F\x7F]/g, '')  // Control chars
+                .replace(/<script[^>]*>.*?<\/script>/gi, '')  // Script tags
+                .replace(/on\w+\s*=/gi, '')  // Event handlers (onmouseover=, onerror=, etc.)
+                .replace(/[\[\]\{\};"'`]/g, '')  // Blocked chars including double quotes
+                .replace(/--+/g, '')  // SQL comments
+                .replace(/</g, '&lt;').replace(/>/g, '&gt;')  // Encode angle brackets
+                .trim()
+                .slice(0, maxLength);
+        }
+
+        function sanitizeImportedAssignment(assignment) {
+            if (!assignment || typeof assignment !== 'object') return null;
+
+            // ID validation - must match expected patterns
+            const id = assignment.id || assignment.entityId;
+            if (typeof id !== 'string') return null;
+            
+            // Validate ID format (T1234, T1234.001, CAPEC-123, CWE-123)
+            if (!/^(T\d{4}(\.\d{3})?|CAPEC-\d+|CWE-\d+)$/.test(id)) {
+                return null;  // Reject invalid ID patterns
+            }
+
+            // Extract metadata from either nested or flat structure
+            const sourceMeta = assignment.metadata || assignment;
+            const metadata = {
+                score: 'unclassified',
+                confidence: null,
+                comments: '',
+                cveId: '',
+                cvssVector: '',
+                hyperlinks: [],
+                observables: []
+            };
+
+            // Sanitize score - must be valid enum
+            const validScores = ['unclassified', 'low', 'medium', 'high', 'critical'];
+            if (sourceMeta.score && validScores.includes(sourceMeta.score)) {
+                metadata.score = sourceMeta.score;
+            }
+
+            // Sanitize confidence - must be number 0-100
+            if (typeof sourceMeta.confidence === 'number') {
+                metadata.confidence = Math.max(0, Math.min(100, Math.floor(sourceMeta.confidence)));
+            }
+
+            // Sanitize CVE - must match pattern (handle both cveId and cve field names)
+            const cveSource = sourceMeta.cveId || sourceMeta.cve;
+            if (cveSource && typeof cveSource === 'string') {
+                const cve = cveSource.trim();
+                if (/^CVE-\d{4}-\d{4,}$/.test(cve)) {
+                    metadata.cveId = cve;
+                }
+            }
+
+            // Sanitize CVSS vector (handle both cvssVector and cvss field names)
+            const cvssSource = sourceMeta.cvssVector || sourceMeta.cvss;
+            if (cvssSource && typeof cvssSource === 'string') {
+                const cvss = cvssSource.trim();
+                if (/^CVSS:3\.[01]\/AV:[NALP]\/AC:[LH]\/PR:[NLH]\/UI:[NR]\/S:[UC]\/C:[NLH]\/I:[NLH]\/A:[NLH]/.test(cvss)) {
+                    metadata.cvssVector = cvss;
+                }
+            }
+
+            // Sanitize comments
+            if (sourceMeta.comments) {
+                metadata.comments = sanitizeImportedString(sourceMeta.comments, 2000);
+            }
+
+            // Sanitize hyperlinks array
+            if (Array.isArray(sourceMeta.hyperlinks)) {
+                metadata.hyperlinks = sourceMeta.hyperlinks
+                    .slice(0, KILLCHAIN_IMPORT_LIMITS.maxHyperlinks)
+                    .filter(h => h && typeof h === 'object')
+                    .map(h => ({
+                        label: sanitizeImportedString(h.label || '', 200),
+                        url: (typeof h.url === 'string' && /^https?:\/\//.test(h.url)) 
+                            ? sanitizeImportedString(h.url, 2000) 
+                            : ''
+                    }))
+                    .filter(h => h.url);  // Keep only valid URLs
+            }
+
+            // Sanitize observables array
+            if (Array.isArray(sourceMeta.observables)) {
+                const validTypes = ['ipv4-addr', 'ipv6-addr', 'domain-name', 'url', 'file-hash-md5', 
+                    'file-hash-sha1', 'file-hash-sha256', 'file-name', 'email-addr', 'threat-actor', 'other'];
+                metadata.observables = sourceMeta.observables
+                    .slice(0, KILLCHAIN_IMPORT_LIMITS.maxObservables)
+                    .filter(o => o && typeof o === 'object' && validTypes.includes(o.type))
+                    .map(o => ({
+                        type: o.type,
+                        value: sanitizeImportedString(o.value || '', 500)
+                    }))
+                    .filter(o => o.value);
+            }
+
+            return { id: id, metadata: metadata };
+        }
+
+        function sanitizeImportedData(data) {
+            const sanitized = {
+                assignments: {}
+            };
+
+            // Sanitize assignments
+            for (const [phaseKey, phaseData] of Object.entries(data.assignments || {})) {
+                sanitized.assignments[phaseKey] = {
+                    techniques: [],
+                    capecs: [],
+                    cwes: []
+                };
+
+                for (const key of ['techniques', 'capecs', 'cwes']) {
+                    const list = Array.isArray(phaseData[key]) ? phaseData[key] : [];
+                    sanitized.assignments[phaseKey][key] = list
+                        .map(a => sanitizeImportedAssignment(a))
+                        .filter(a => a !== null);
+                }
+            }
+
+            // Sanitize optional view state (booleans/strings only)
+            if (data.layers && typeof data.layers === 'object') {
+                sanitized.layers = {
+                    attack: !!data.layers.attack,
+                    capec: !!data.layers.capec,
+                    cwe: !!data.layers.cwe
+                };
+            }
+
+            if (typeof data.groupByCapec === 'boolean') {
+                sanitized.groupByCapec = data.groupByCapec;
+            }
+
+            if (typeof data.hideEmpty === 'boolean') {
+                sanitized.hideEmpty = data.hideEmpty;
+            }
+
+            if (typeof data.view === 'string' && ['killchain', 'relations'].includes(data.view)) {
+                sanitized.view = data.view;
+            }
+
+            if (typeof data.activeTab === 'string' && ['attack', 'capec', 'cwe'].includes(data.activeTab)) {
+                sanitized.activeTab = data.activeTab;
+            }
+
+            return sanitized;
+        }
+
         function importKillChain(event) {
             const file = event.target.files[0];
             if (!file) return;
 
+            // Check file size
+            if (file.size > KILLCHAIN_IMPORT_LIMITS.maxFileSize) {
+                showToast(`File too large (max ${KILLCHAIN_IMPORT_LIMITS.maxFileSize / 1024 / 1024} MB)`);
+                event.target.value = '';
+                return;
+            }
+
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {
-                    const data = stripAngleBracketsFromJson(JSON.parse(e.target.result));
+                    const rawData = JSON.parse(e.target.result);
+                    const data = stripAngleBracketsFromJson(rawData);
 
-                    if (!data || typeof data !== 'object') {
-                        throw new Error('Invalid export format');
+                    // Validate structure before processing
+                    const validation = validateKillChainImport(data);
+                    if (!validation.valid) {
+                        throw new Error(validation.error);
                     }
 
-                    const assignments = data.assignments;
-                    if (!assignments || typeof assignments !== 'object') {
-                        throw new Error('Missing assignments in export');
-                    }
+                    // Sanitize all imported data
+                    const sanitized = sanitizeImportedData(data);
 
-                    // Reset assignments and load imported state
+                    // Reset assignments and load sanitized state
                     initAssignments();
-                    for (const [phaseKey, phaseData] of Object.entries(assignments)) {
+                    for (const [phaseKey, phaseData] of Object.entries(sanitized.assignments)) {
                         if (state.assignments[phaseKey]) {
                             state.assignments[phaseKey] = phaseData;
                         }
@@ -3654,13 +3859,11 @@
                     ensureAssignmentShape(state.assignments);
                     ensureLibraryFallbacks(state.assignments);
 
-                    // Restore view state
-                    if (data.layers) state.layers = data.layers;
-                    if (data.filters) state.filters = data.filters;
-                    if (data.groupByCapec !== undefined) state.groupByCapec = data.groupByCapec;
-                    if (data.hideEmpty !== undefined) state.hideEmpty = data.hideEmpty;
-                    if (data.activeTab) state.activeTab = data.activeTab;
-                    if (data.selection) state.selection = data.selection;
+                    // Restore sanitized view state
+                    if (sanitized.layers) state.layers = sanitized.layers;
+                    if (sanitized.groupByCapec !== undefined) state.groupByCapec = sanitized.groupByCapec;
+                    if (sanitized.hideEmpty !== undefined) state.hideEmpty = sanitized.hideEmpty;
+                    if (sanitized.activeTab) state.activeTab = sanitized.activeTab;
 
                     // Apply UI state
                     document.getElementById('layer-attack').checked = !!state.layers.attack;
@@ -3669,8 +3872,8 @@
                     document.getElementById('btn-group-capec').classList.toggle('active', !!state.groupByCapec);
                     document.getElementById('btn-hide-empty').classList.toggle('active', !!state.hideEmpty);
 
-                    if (data.view) {
-                        setView(data.view);
+                    if (sanitized.view) {
+                        setView(sanitized.view);
                     } else {
                         renderKillChain();
                     }
@@ -3679,7 +3882,7 @@
                     renderAll();
                     showToast('Imported kill chain');
                 } catch (err) {
-                    showToast('Import failed: ' + err.message);
+                    showToast('Import failed: ' + InputSecurity.escapeHtml(err.message));
                 }
             };
 
