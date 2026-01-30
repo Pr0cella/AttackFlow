@@ -658,6 +658,9 @@
             font-family: monospace;
             font-weight: 600;
             color: var(--attack-color);
+            background: rgba(59, 130, 246, 0.4);
+            padding: 1px 4px;
+            border-radius: 2px;
         }
 
         .technique-tag .name {
@@ -698,9 +701,12 @@
             background: rgba(245, 158, 11, 0.1);
             border: 1px solid rgba(245, 158, 11, 0.25);
             border-radius: 3px;
-            font-size: 0.6rem;
+            font-size: 0.65rem;
             cursor: pointer;
+            transition: all 0.15s;
         }
+
+        .cwe-tag:hover { border-color: var(--cwe-color); background: rgba(245, 158, 11, 0.2); }
 
         .cwe-tag .tag-header {
             display: flex;
@@ -708,7 +714,14 @@
             gap: 3px;
         }
 
-        .cwe-tag .id { font-family: monospace; color: var(--cwe-color); font-weight: 600; }
+        .cwe-tag .id {
+            font-family: monospace;
+            color: var(--cwe-color);
+            font-weight: 600;
+            background: rgba(245, 158, 11, 0.4);
+            padding: 1px 4px;
+            border-radius: 2px;
+        }
 
         .cwe-tag .name {
             color: var(--text-primary);
@@ -748,9 +761,12 @@
             background: rgba(139, 92, 246, 0.1);
             border: 1px solid rgba(139, 92, 246, 0.25);
             border-radius: 3px;
-            font-size: 0.6rem;
+            font-size: 0.65rem;
             cursor: pointer;
+            transition: all 0.15s;
         }
+
+        .capec-tag:hover { border-color: var(--capec-color); background: rgba(139, 92, 246, 0.2); }
 
         .capec-tag .tag-header {
             display: flex;
@@ -758,7 +774,14 @@
             gap: 3px;
         }
 
-        .capec-tag .id { font-family: monospace; color: var(--capec-color); font-weight: 600; }
+        .capec-tag .id {
+            font-family: monospace;
+            color: var(--capec-color);
+            font-weight: 600;
+            background: rgba(139, 92, 246, 0.4);
+            padding: 1px 4px;
+            border-radius: 2px;
+        }
 
         .capec-tag .name {
             color: var(--text-primary);
