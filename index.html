@@ -657,10 +657,15 @@
         .technique-tag .id {
             font-family: monospace;
             font-weight: 600;
-            color: var(--attack-color);
-            background: rgba(59, 130, 246, 0.4);
+            color: #fff;
+            background: rgba(59, 130, 246, 0.5);
             padding: 1px 4px;
             border-radius: 2px;
+            cursor: pointer;
+        }
+
+        .technique-tag .id:hover {
+            background: rgba(0, 0, 0, 0.32);
         }
 
         .technique-tag .name {
@@ -716,11 +721,16 @@
 
         .cwe-tag .id {
             font-family: monospace;
-            color: var(--cwe-color);
+            color: #fff;
             font-weight: 600;
-            background: rgba(245, 158, 11, 0.4);
+            background: rgba(245, 158, 11, 0.5);
             padding: 1px 4px;
             border-radius: 2px;
+            cursor: pointer;
+        }
+
+        .cwe-tag .id:hover {
+            background: rgba(0, 0, 0, 0.32);
         }
 
         .cwe-tag .name {
@@ -776,11 +786,16 @@
 
         .capec-tag .id {
             font-family: monospace;
-            color: var(--capec-color);
+            color: #fff;
             font-weight: 600;
-            background: rgba(139, 92, 246, 0.4);
+            background: rgba(139, 92, 246, 0.5);
             padding: 1px 4px;
             border-radius: 2px;
+            cursor: pointer;
+        }
+
+        .capec-tag .id:hover {
+            background: rgba(0, 0, 0, 0.32);
         }
 
         .capec-tag .name {
@@ -3395,7 +3410,7 @@
                 <div class="${tagClass}" data-score="${score}" 
                      onclick="openMetadataEditor('${type}', '${safeId}', '${safePhaseKey}')">
                     <span class="tag-header">
-                        <span class="id">${safeId}</span>
+                        <span class="id" onclick="event.stopPropagation(); selectEntity('${type}', '${safeId}')">${safeId}</span>
                         <span class="name">${safeName}</span>
                         <span class="remove" onclick="event.stopPropagation(); removeAssignment('${type}', '${safeId}', '${safePhaseKey}')">×</span>
                     </span>

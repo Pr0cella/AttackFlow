@@ -22,6 +22,12 @@ This changelog also serves as a development context document for AI agents conti
 - Phase items now retain their framework background colors (blue for ATT&CK, purple for CAPEC, orange for CWE)
 - Score ribbons (green/yellow/orange/red for Low/Medium/High/Critical) appear on left border only
 
+### Added - Phase Item ID Click
+
+- **NEW**: Clicking the ID badge on any phase item (ATT&CK, CAPEC, CWE) now opens the right sidebar with full entity details
+- ID badges show pointer cursor and highlight on hover
+- Clicking the rest of the phase item still opens the metadata editor as before
+
 ---
 
 ## [2.4.2] - 2026-01-29
