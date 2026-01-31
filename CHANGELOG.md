@@ -6,6 +6,32 @@ This changelog also serves as a development context document for AI agents conti
 
 ---
 
+## [2.5.0] - 2026-01-31
+
+### Added
+- Embedded Relationship Explorer view alongside the Kill Chain Editor with breadcrumbed tab navigation.
+- Entity deep-linking for the explorer via URL parameters.
+- Phase item action buttons (Explore, Edit, Remove) plus a detail modal for quick review.
+- Metadata icon badges and a legend row for CVE, observables, links, comments, and confidence.
+- Demo kill chain mapping with full-metadata coverage for import testing.
+
+### Changed
+- Mitigation clicks now open the embedded explorer in the current tab to preserve editor state.
+- Leave-site confirmation behavior is configurable via `CONFIG.navigation.confirmOnLeave`.
+- Phase item layout updated to header/body/footer rows with improved truncation rules.
+- Relationship view rendering now escapes IDs and names using safe helpers.
+
+### Fixed
+- Metadata storage no longer double-encodes values on save.
+- SVG icon hover state now follows `currentColor` for consistent theming.
+- Import validation tests now align with the current metadata model and validate demo feature coverage.
+
+### Removed
+- Group-by-CAPEC feature and related UI/state logic.
+- Legacy Group-by-CAPEC test fixtures and export schema references.
+
+---
+
 ## [2.4.3] - 2026-01-31
 
 ### Fixed - Import & Visual Corrections
