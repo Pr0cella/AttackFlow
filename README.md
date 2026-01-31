@@ -4,7 +4,7 @@ An editor for creating enriched Cyber Kill Chain assessments by mapping MITRE AT
 
 ### Work in progress 
 
-![Version](https://img.shields.io/badge/version-2.4.2-blue)
+![Version](https://img.shields.io/badge/version-2.4.3-blue)
 ![License](https://img.shields.io/badge/license-Apache%202.0-green)
 ![Dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)
 
@@ -20,6 +20,7 @@ An editor for creating enriched Cyber Kill Chain assessments by mapping MITRE AT
 - **Rich Metadata** — Comments, hyperlinks, observables, CVE/CVSS references
 - **Score & Confidence** — Rate items by severity and assessment confidence
 - **Visual Indicators** — Color-coded ribbons, CVE badges, and metadata icons
+- **Relationship Explorer** — Browse ATT&CK ↔ CAPEC ↔ CWE ↔ Mitigations in a dedicated view
 - **Hide Empty Phases** — Focus on active phases by hiding empty ones
 - **Import/Export** — Lightweight JSON sharing and CSV exports with metadata
 - **Navigator Layers** — Import ATT&CK Navigator JSON exports
@@ -28,17 +29,21 @@ An editor for creating enriched Cyber Kill Chain assessments by mapping MITRE AT
 
 ## Quick Start
 
+The Relationship Explorer is a second main view that lets you investigate ATT&CK ↔ CAPEC ↔ CWE ↔ Mitigations without assigning items first. Use the header navigation to switch views, click any node to load its details in the right panel, and open mitigation links to explore cross‑framework relationships in context.
+
 1. Clone or download this repository
 2. Open `index.html` in a browser, or deploy to a web server
 3. Browse techniques in the left sidebar
 4. Drag items onto kill chain phases
 5. Click items in the diagram to add metadata
-6. Export your attack chain as JSON or CSV
+6. Use the header navigation to switch to Relationship Explorer
+7. Export your attack chain as JSON or CSV
 
 ## Project Structure
 
 ```
 ├── index.html                      # Main application
+├── explorer.html                   # Relationship Explorer view
 ├── config.js                       # Centralized configuration (paths, colors, settings)
 ├── kill-chain-visualizer.js        # Core visualization component
 ├── scripts/

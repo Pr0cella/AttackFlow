@@ -1770,6 +1770,7 @@
                 <div class="header-nav">
                     <div class="view-toggle">
                         <button class="view-btn active" id="view-killchain" onclick="setView('killchain')">Kill Chain Editor</button>
+                        <button class="view-btn" id="view-relationship" onclick="setView('relationship')">Relationships</button>
                         <button class="view-btn" id="view-explorer" onclick="setView('explorer')">Relationship Explorer</button>
                     </div>
                 </div>
@@ -2108,6 +2109,7 @@
                         <li>Browse <span class="guide-key">ATT&CK</span>, <span class="guide-key">CAPEC</span>, and <span class="guide-key">CWE</span> tabs in the left sidebar</li>
                         <li>Use the search bar to find specific techniques, patterns, or weaknesses</li>
                         <li>Click any entity to view detailed information in the right panel</li>
+                        <li>Switch to <span class="guide-key">Relationship Explorer</span> to investigate ATT&CK ↔ CAPEC ↔ CWE ↔ Mitigations without assigning items</li>
                     </ul>
                 </div>
 
@@ -2151,6 +2153,7 @@
                         <li>Enable <span class="guide-key">Hide Empty</span> to focus on phases with assignments</li>
                         <li>Enable <span class="guide-key">Group by CAPEC</span> to nest techniques under patterns</li>
                         <li>Switch to <span class="guide-key">Relationships</span> view for CAPEC→CWE→ATT&CK chains</li>
+                        <li>Use <span class="guide-key">Relationship Explorer</span> for full entity and mitigation browsing</li>
                     </ul>
                 </div>
 
@@ -2809,6 +2812,7 @@
             const isExplorer = view === 'explorer';
             const isRelationship = view === 'relationship';
             document.getElementById('view-killchain').classList.toggle('active', view === 'killchain' || isRelationship);
+            document.getElementById('view-relationship').classList.toggle('active', isRelationship);
             document.getElementById('view-explorer').classList.toggle('active', isExplorer);
             document.getElementById('kill-chain-container').classList.toggle('hidden', isExplorer || isRelationship);
             document.getElementById('relationship-container').classList.toggle('visible', isRelationship);

@@ -6,7 +6,7 @@ This changelog also serves as a development context document for AI agents conti
 
 ---
 
-## [2.4.3] - 2026-01-30
+## [2.4.3] - 2026-01-31
 
 ### Fixed - Import & Visual Corrections
 
@@ -27,6 +27,13 @@ This changelog also serves as a development context document for AI agents conti
 - **NEW**: Clicking the ID badge on any phase item (ATT&CK, CAPEC, CWE) now opens the right sidebar with full entity details
 - ID badges show pointer cursor and highlight on hover
 - Clicking the rest of the phase item still opens the metadata editor as before
+
+### Added - Relationship Explorer Integration
+
+- **NEW**: Relationship Explorer integrated as a second main view
+- Header navigation now shows AttackFlow branding with primary view buttons
+- Explorer embedded via `explorer.html` with full-screen layout
+- Mitigation items in the detail panel open the explorer in a new tab, deep-linked to the mitigation
 
 ---
 
