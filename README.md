@@ -4,7 +4,7 @@ An editor for creating enriched Cyber Kill Chain assessments by mapping MITRE AT
 
 ### Work in progress 
 
-![Version](https://img.shields.io/badge/version-2.4.3-blue)
+![Version](https://img.shields.io/badge/version-2.5.0-blue)
 ![License](https://img.shields.io/badge/license-Apache%202.0-green)
 ![Dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)
 
@@ -38,6 +38,11 @@ The Relationship Explorer is a second main view that lets you investigate ATT&CK
 5. Click items in the diagram to add metadata
 6. Use the header navigation to switch to Relationship Explorer
 7. Export your attack chain as JSON or CSV
+
+## Testing
+
+- **Demo kill chain**: Import [tests/demo.json](tests/demo.json) to exercise all metadata fields (CVE/CVSS, observables, links, confidence) and multi-phase coverage.
+- **Import validation suite**: Open [tests/import-validation/test-runner.html](tests/import-validation/test-runner.html) in a browser to run validation, sanitization, and feature checks (includes the demo file).
 
 ## Project Structure
 
