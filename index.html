@@ -3602,35 +3602,35 @@
                         <div class="relationship-cell capec">
                             <div class="relationship-cell-header">CAPEC</div>
                             ${chain.capec ? `
-                                <div class="relationship-item" onclick="selectEntity('capec', '${chain.capec.id}')">
-                                    <span class="id capec">${chain.capec.id}</span>
-                                    <span class="name">${chain.capec.name}</span>
+                                <div class="relationship-item" onclick="selectEntity('capec', '${escAttr(chain.capec.id)}')">
+                                    <span class="id capec">${esc(chain.capec.id)}</span>
+                                    <span class="name">${esc(chain.capec.name)}</span>
                                 </div>
                             ` : '<div class="list-info">—</div>'}
                         </div>
                         <div class="relationship-cell cwe">
                             <div class="relationship-cell-header">CWE</div>
                             ${chain.cwes.length > 0 ? chain.cwes.map(cwe => `
-                                <div class="relationship-item" onclick="selectEntity('cwe', '${cwe.id}')">
-                                    <span class="id cwe">${cwe.id}</span>
-                                    <span class="name">${cwe.name}</span>
+                                <div class="relationship-item" onclick="selectEntity('cwe', '${escAttr(cwe.id)}')">
+                                    <span class="id cwe">${esc(cwe.id)}</span>
+                                    <span class="name">${esc(cwe.name)}</span>
                                 </div>
                             `).join('') : '<div class="list-info">—</div>'}
                         </div>
                         <div class="relationship-cell attack">
                             <div class="relationship-cell-header">ATT&CK</div>
                             ${chain.techniques.map(tech => `
-                                <div class="relationship-item" onclick="selectEntity('attack', '${tech.id}')">
-                                    <span class="id attack">${tech.id}</span>
-                                    <span class="name">${tech.name}</span>
+                                <div class="relationship-item" onclick="selectEntity('attack', '${escAttr(tech.id)}')">
+                                    <span class="id attack">${esc(tech.id)}</span>
+                                    <span class="name">${esc(tech.name)}</span>
                                 </div>
                             `).join('')}
                         </div>
                         <div class="relationship-cell phase">
                             <div class="relationship-cell-header">Phase</div>
                             <div class="relationship-item">
-                                <span class="id phase">${chain.phase.key.split(':')[0]}</span>
-                                <span class="name">${chain.phase.name}</span>
+                                <span class="id phase">${esc(chain.phase.key.split(':')[0])}</span>
+                                <span class="name">${esc(chain.phase.name)}</span>
                             </div>
                         </div>
                     </div>
