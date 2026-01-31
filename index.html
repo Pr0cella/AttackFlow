@@ -2894,8 +2894,18 @@
 
         function openMitigationExplorer(mitigationId) {
             if (!mitigationId) return;
-            const url = `explorer.html?mitigation=${encodeURIComponent(mitigationId)}`;
-            window.open(url, '_blank', 'noopener');
+
+            // Validate mitigationId to ensure it matches the expected ID format
+            const mitigationIdPattern = /^[A-Za-z0-9_-]+$/;
+            if (!mitigationIdPattern.test(mitigationId)) {
+                console.error('Invalid mitigationId provided to openMitigationExplorer:', mitigationId);
+                return;
+            }
+            const frame = document.querySelector('.explorer-frame');
+            if (frame) {
+                frame.src = `explorer.html?mitigation=${encodeURIComponent(mitigationId)}`;
+            }
+            setView('explorer');
         }
 
         // ============================================================
@@ -4484,10 +4494,28 @@
         }
 
         // ============================================================
+        // LEAVE SITE CONFIRMATION
+        // ============================================================
+        function enableLeaveSiteConfirmation() {
+            window.addEventListener('beforeunload', (e) => {
+                e.preventDefault();
+                e.returnValue = '';
+                return '';
+            });
+        }
+
+        // ============================================================
         // INITIALIZATION
         // ============================================================
         if (typeof applyConfigColors === 'function') {
             applyConfigColors();
+        }
+        if (typeof CONFIG !== 'undefined') {
+            if (CONFIG.navigation?.confirmOnLeave !== false) {
+                enableLeaveSiteConfirmation();
+            }
+        } else {
+            enableLeaveSiteConfirmation();
         }
         initAssignments();
         applyInputGuards();

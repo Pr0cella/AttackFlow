@@ -35,6 +35,13 @@ This changelog also serves as a development context document for AI agents conti
 - Explorer embedded via `explorer.html` with full-screen layout
 - Mitigation items in the detail panel open the explorer in a new tab, deep-linked to the mitigation
 
+### Changed - Navigation & Safety
+
+- **CHANGED**: Mitigation clicks now open the embedded Relationship Explorer in the current tab (preserves kill chain state)
+- **NEW**: Leave-site confirmation dialog to prevent accidental data loss
+- **NEW**: Confirmation behavior configurable via `CONFIG.navigation.confirmOnLeave` (default enabled)
+- **CHANGED**: Editor view now renders a breadcrumbed Relationships sub-tab with Explorer as a separate tab group
+
 ---
 
 ## [2.4.2] - 2026-01-29
