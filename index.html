@@ -137,9 +137,22 @@
         /* View Toggle */
         .view-toggle {
             display: flex;
+            gap: 4px;
             background: var(--bg-phase);
             border-radius: 4px;
             padding: 2px;
+        }
+
+        .view-tab-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 2px;
+            border-radius: 3px;
+        }
+
+        .view-tab-group.active {
+            background: rgba(113, 113, 122, 0.25);
         }
 
         .view-btn {
@@ -157,6 +170,29 @@
         .view-btn.active {
             background: var(--accent);
             color: var(--text-primary);
+        }
+
+        .view-breadcrumb {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .breadcrumb-sep {
+            color: var(--text-secondary);
+            font-size: 0.7rem;
+        }
+
+        .view-btn.view-btn-crumb {
+            padding: 3px 8px;
+            font-size: 0.7rem;
+            border: 1px solid transparent;
+        }
+
+        .view-btn.view-btn-crumb.active {
+            background: rgba(113, 113, 122, 0.35);
+            color: var(--text-primary);
+            border-color: var(--border-color);
         }
 
         /* Layer Toggles */
@@ -1769,9 +1805,16 @@
                 </div>
                 <div class="header-nav">
                     <div class="view-toggle">
-                        <button class="view-btn active" id="view-killchain" onclick="setView('killchain')">Kill Chain Editor</button>
-                        <button class="view-btn" id="view-relationship" onclick="setView('relationship')">Relationships</button>
-                        <button class="view-btn" id="view-explorer" onclick="setView('explorer')">Relationship Explorer</button>
+                        <div class="view-tab-group active" id="view-editor-group">
+                            <button class="view-btn active" id="view-killchain" onclick="setView('killchain')">Kill Chain Editor</button>
+                            <span class="view-breadcrumb">
+                                <span class="breadcrumb-sep">›</span>
+                                <button class="view-btn view-btn-crumb" id="view-relationship" onclick="setView('relationship')">Relationships</button>
+                            </span>
+                        </div>
+                        <div class="view-tab-group" id="view-explorer-group">
+                            <button class="view-btn" id="view-explorer" onclick="setView('explorer')">Relationship Explorer</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -2814,6 +2857,8 @@
             document.getElementById('view-killchain').classList.toggle('active', view === 'killchain' || isRelationship);
             document.getElementById('view-relationship').classList.toggle('active', isRelationship);
             document.getElementById('view-explorer').classList.toggle('active', isExplorer);
+            document.getElementById('view-editor-group').classList.toggle('active', view === 'killchain' || isRelationship);
+            document.getElementById('view-explorer-group').classList.toggle('active', isExplorer);
             document.getElementById('kill-chain-container').classList.toggle('hidden', isExplorer || isRelationship);
             document.getElementById('relationship-container').classList.toggle('visible', isRelationship);
             document.getElementById('content-title').textContent = isRelationship ? 'CAPEC → CWE → ATT&CK → Phase' : 'Unified Kill Chain';
