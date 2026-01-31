@@ -963,7 +963,26 @@
 
             const params = new URLSearchParams(window.location.search);
             const mitigationId = params.get('mitigation');
-            if (mitigationId && state.data.mitigations[mitigationId]) {
+            const entityParam = params.get('entity');
+            if (entityParam) {
+                const [typeRaw, ...rest] = entityParam.split(':');
+                const type = typeRaw?.toLowerCase();
+                const id = rest.join(':');
+                const validTypes = new Set(['attack', 'capec', 'cwe', 'mitigation']);
+                if (validTypes.has(type)) {
+                    const store = type === 'attack'
+                        ? state.data.techniques
+                        : type === 'capec'
+                        ? state.data.capecs
+                        : type === 'cwe'
+                        ? state.data.cwes
+                        : state.data.mitigations;
+                    if (store && store[id]) {
+                        state.activeTab = type;
+                        selectEntity(type, id);
+                    }
+                }
+            } else if (mitigationId && state.data.mitigations[mitigationId]) {
                 state.activeTab = 'mitigation';
                 selectEntity('mitigation', mitigationId);
             }
