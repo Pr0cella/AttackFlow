@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kill Chain Editor - Unified Kill Chain</title>
+    <title>AttackFlow - Kill Chain Editor</title>
     <script src="config.js"></script>
     <style>
         :root {
@@ -60,6 +60,18 @@
             display: flex;
             align-items: center;
             gap: 12px;
+        }
+
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-nav {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .header-meta {
@@ -125,9 +137,22 @@
         /* View Toggle */
         .view-toggle {
             display: flex;
+            gap: 4px;
             background: var(--bg-phase);
             border-radius: 4px;
             padding: 2px;
+        }
+
+        .view-tab-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 2px;
+            border-radius: 3px;
+        }
+
+        .view-tab-group.active {
+            background: rgba(113, 113, 122, 0.25);
         }
 
         .view-btn {
@@ -145,6 +170,29 @@
         .view-btn.active {
             background: var(--accent);
             color: var(--text-primary);
+        }
+
+        .view-breadcrumb {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .breadcrumb-sep {
+            color: var(--text-secondary);
+            font-size: 0.7rem;
+        }
+
+        .view-btn.view-btn-crumb {
+            padding: 3px 8px;
+            font-size: 0.7rem;
+            border: 1px solid transparent;
+        }
+
+        .view-btn.view-btn-crumb.active {
+            background: rgba(113, 113, 122, 0.35);
+            color: var(--text-primary);
+            border-color: var(--border-color);
         }
 
         /* Layer Toggles */
@@ -252,6 +300,31 @@
             display: flex;
             flex: 1;
             overflow: hidden;
+        }
+
+        .explorer-container {
+            flex: 1;
+            display: none;
+            background: var(--bg-dark);
+        }
+
+        .explorer-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .app.explorer-view .sidebar,
+        .app.explorer-view .content {
+            display: none;
+        }
+
+        .app.explorer-view .header-controls {
+            display: none;
+        }
+
+        .app.explorer-view .explorer-container {
+            display: block;
         }
 
         /* Sidebar */
@@ -598,41 +671,6 @@
             overflow-y: auto;
         }
 
-        /* CAPEC Group */
-        .capec-group {
-            background: rgba(139, 92, 246, 0.08);
-            border: 1px solid rgba(139, 92, 246, 0.2);
-            border-radius: 3px;
-            padding: 6px;
-        }
-
-        .capec-group-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 4px;
-            padding-bottom: 4px;
-            border-bottom: 1px solid rgba(139, 92, 246, 0.2);
-        }
-
-        .capec-group-id {
-            font-family: monospace;
-            font-size: 0.65rem;
-            font-weight: 600;
-            color: var(--capec-color);
-        }
-
-        .capec-group-name {
-            font-size: 0.65rem;
-            color: var(--text-primary);
-        }
-
-        .capec-group-techniques {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 3px;
-        }
-
         /* Technique Tag */
         .technique-tag {
             display: inline-flex;
@@ -648,10 +686,11 @@
 
         .technique-tag:hover { border-color: var(--attack-color); background: rgba(59, 130, 246, 0.25); }
 
-        .technique-tag .tag-header {
+        .technique-tag .tag-header-row {
             display: flex;
             align-items: center;
-            gap: 3px;
+            justify-content: space-between;
+            gap: 6px;
         }
 
         .technique-tag .id {
@@ -662,6 +701,7 @@
             padding: 1px 4px;
             border-radius: 2px;
             cursor: pointer;
+            font-size: 0.8rem;
         }
 
         .technique-tag .id:hover {
@@ -670,20 +710,20 @@
 
         .technique-tag .name {
             color: var(--text-primary);
-            max-width: 200px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            max-width: 260px;
+            white-space: normal;
+            overflow: visible;
+            text-overflow: initial;
+            word-break: break-word;
         }
 
         .technique-tag .remove {
-            margin-left: auto;
             color: #ef4444;
             font-weight: bold;
             font-size: 1rem;
             width: 18px;
             height: 18px;
-            display: flex;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
             border-radius: 3px;
@@ -713,10 +753,11 @@
 
         .cwe-tag:hover { border-color: var(--cwe-color); background: rgba(245, 158, 11, 0.2); }
 
-        .cwe-tag .tag-header {
+        .cwe-tag .tag-header-row {
             display: flex;
             align-items: center;
-            gap: 3px;
+            justify-content: space-between;
+            gap: 6px;
         }
 
         .cwe-tag .id {
@@ -727,6 +768,7 @@
             padding: 1px 4px;
             border-radius: 2px;
             cursor: pointer;
+            font-size: 0.8rem;
         }
 
         .cwe-tag .id:hover {
@@ -735,20 +777,20 @@
 
         .cwe-tag .name {
             color: var(--text-primary);
-            max-width: 200px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            max-width: 260px;
+            white-space: normal;
+            overflow: visible;
+            text-overflow: initial;
+            word-break: break-word;
         }
 
         .cwe-tag .remove {
-            margin-left: auto;
             color: #ef4444;
             font-weight: bold;
             font-size: 1rem;
             width: 18px;
             height: 18px;
-            display: flex;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
             border-radius: 3px;
@@ -778,10 +820,11 @@
 
         .capec-tag:hover { border-color: var(--capec-color); background: rgba(139, 92, 246, 0.2); }
 
-        .capec-tag .tag-header {
+        .capec-tag .tag-header-row {
             display: flex;
             align-items: center;
-            gap: 3px;
+            justify-content: space-between;
+            gap: 6px;
         }
 
         .capec-tag .id {
@@ -792,6 +835,7 @@
             padding: 1px 4px;
             border-radius: 2px;
             cursor: pointer;
+            font-size: 0.8rem;
         }
 
         .capec-tag .id:hover {
@@ -800,20 +844,20 @@
 
         .capec-tag .name {
             color: var(--text-primary);
-            max-width: 200px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            max-width: 260px;
+            white-space: normal;
+            overflow: visible;
+            text-overflow: initial;
+            word-break: break-word;
         }
 
         .capec-tag .remove {
-            margin-left: auto;
             color: #ef4444;
             font-weight: bold;
             font-size: 1rem;
             width: 18px;
             height: 18px;
-            display: flex;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
             border-radius: 3px;
@@ -826,7 +870,55 @@
             background: rgba(239, 68, 68, 0.2);
         }
 
+        .remove svg {
+            fill: #ff6565f7;
+        }
+
         .capec-tag:hover .remove { opacity: 1; }
+
+        .technique-tag .name,
+        .capec-tag .name,
+        .cwe-tag .name {
+            flex: 1;
+            min-width: 0;
+            font-size: 0.8rem;
+        }
+
+        .tag-actions {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-left: auto;
+        }
+
+        .tag-body {
+            margin-top: 4px;
+        }
+
+        .tag-footer {
+            margin-top: 4px;
+        }
+
+        .tag-action-btn {
+            border: 1px solid var(--border-color);
+            background: rgba(0, 0, 0, 0.2);
+            color: var(--text-secondary);
+            font-size: 0.7rem;
+            padding: 3px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.15s;
+            line-height: 1.1;
+        }
+
+        .tag-action-btn:hover {
+            color: var(--text-primary);
+            border-color: var(--accent);
+            background: rgba(113, 113, 122, 0.25);
+        }
+
+        .tag-action-btn.explore { color: #93c5fd; }
+        .tag-action-btn.edit { color: #fcd34d; }
 
         /* ============================================================
            SCORE RIBBONS & METADATA INDICATORS
@@ -874,10 +966,25 @@
             justify-content: center;
             background: rgba(255,255,255,0.15);
             border-radius: 3px;
-            font-size: 10px;
+            font-size: 12px;
             font-weight: 600;
             color: var(--text-primary);
             white-space: nowrap;
+            gap: 4px;
+        }
+
+        .meta-icon svg,
+        .tag-action-btn svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+            stroke: currentColor;
+            flex: 0 0 auto;
+        }
+
+        .tag-action-btn:hover svg {
+            fill: currentColor;
+            stroke: currentColor;
         }
         
         .metadata-icons .meta-icon.has-cve { background: rgba(239, 68, 68, 0.3); color: #fca5a5; }
@@ -896,6 +1003,53 @@
             font-size: 0.7rem;
             flex-wrap: wrap;
         }
+
+        .legend-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .metadata-legend {
+            display: flex;
+            gap: 10px;
+            padding: 8px 12px;
+            background: var(--bg-card);
+            border-radius: 4px;
+            font-size: 0.7rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .metadata-legend .legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .legend-icon {
+            width: 14px;
+            height: 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 3px;
+            background: rgba(255,255,255,0.15);
+            color: var(--text-primary);
+        }
+
+        .legend-icon svg {
+            width: 12px;
+            height: 12px;
+            fill: currentColor;
+        }
+
+        .legend-icon.has-cve { background: rgba(239, 68, 68, 0.3); color: #fca5a5; }
+        .legend-icon.has-observable { background: rgba(59, 130, 246, 0.3); color: #93c5fd; }
+        .legend-icon.has-link { background: rgba(139, 92, 246, 0.3); color: #c4b5fd; }
+        .legend-icon.has-comment { background: rgba(34, 197, 94, 0.3); color: #86efac; }
+        .legend-icon.has-confidence { background: rgba(251, 191, 36, 0.3); color: #fcd34d; }
         
         .legend-item {
             display: flex;
@@ -1723,22 +1877,30 @@
         <!-- Header -->
         <div class="header">
             <div class="header-left">
-                <div class="header-title">Kill Chain Editor</div>
-                <div class="header-meta">
-                    <a href="#" class="version-link" id="app-version" title="View changelog" onclick="showChangelog(); return false;">v2.4.2</a>
-                    <a href="#" class="help-link" onclick="showUsageGuide(); return false;" title="Usage guide">?</a>
+                <div class="header-brand">
+                    <div class="header-title">AttackFlow</div>
+                    <div class="header-meta">
+                        <a href="#" class="version-link" id="app-version" title="View changelog" onclick="showChangelog(); return false;">v2.4.2</a>
+                        <a href="#" class="help-link" onclick="showUsageGuide(); return false;" title="Usage guide">?</a>
+                    </div>
+                </div>
+                <div class="header-nav">
+                    <div class="view-toggle">
+                        <div class="view-tab-group active" id="view-editor-group">
+                            <button class="view-btn active" id="view-killchain" onclick="setView('killchain')">Kill Chain Editor</button>
+                            <span class="view-breadcrumb">
+                                <span class="breadcrumb-sep">›</span>
+                                <button class="view-btn view-btn-crumb" id="view-relationship" onclick="setView('relationship')">Relationships</button>
+                            </span>
+                        </div>
+                        <div class="view-tab-group" id="view-explorer-group">
+                            <button class="view-btn" id="view-explorer" onclick="setView('explorer')">Relationship Explorer</button>
+                        </div>
+                    </div>
                 </div>
             </div>
             
             <div class="header-controls">
-                <div class="control-group">
-                    <span class="control-label">View</span>
-                    <div class="view-toggle">
-                        <button class="view-btn active" id="view-killchain" onclick="setView('killchain')">Kill Chain</button>
-                        <button class="view-btn" id="view-relationship" onclick="setView('relationship')">Relationships</button>
-                    </div>
-                </div>
-
                 <div class="control-group">
                     <span class="control-label">Layers</span>
                     <div class="layer-toggles">
@@ -1843,40 +2005,78 @@
                 </div>
             </div>
 
+            <div class="explorer-container" id="explorer-container">
+                <iframe class="explorer-frame" src="explorer.html" title="Relationship Explorer"></iframe>
+            </div>
+
             <!-- Content -->
             <div class="content" id="content">
                 <div class="content-header">
                     <span style="font-size: 0.9rem; font-weight: 500;" id="content-title">Unified Kill Chain</span>
                     <div class="view-controls">
                         <button class="btn" id="btn-hide-empty" onclick="toggleHideEmpty()">Hide Empty</button>
-                        <button class="btn" id="btn-group-capec" onclick="toggleCapecGrouping()">Group by CAPEC</button>
                     </div>
                 </div>
 
                 <div class="stats-bar" id="stats-bar"></div>
                 
                 <!-- Score Legend -->
-                <div class="score-legend" id="score-legend">
-                    <span style="color: var(--text-secondary); margin-right: 8px;">Score:</span>
-                    <div class="legend-item">
-                        <div class="legend-swatch" style="background: #6b7280;"></div>
-                        <span>Unclassified</span>
+                <div class="legend-row" id="legend-row">
+                    <div class="score-legend" id="score-legend">
+                        <span style="color: var(--text-secondary); margin-right: 8px;">Score:</span>
+                        <div class="legend-item">
+                            <div class="legend-swatch" style="background: #6b7280;"></div>
+                            <span>Unclassified</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-swatch" style="background: #22c55e;"></div>
+                            <span>Low</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-swatch" style="background: #eab308;"></div>
+                            <span>Medium</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-swatch" style="background: #f97316;"></div>
+                            <span>High</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-swatch" style="background: #ef4444;"></div>
+                            <span>Critical</span>
+                        </div>
                     </div>
-                    <div class="legend-item">
-                        <div class="legend-swatch" style="background: #22c55e;"></div>
-                        <span>Low</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-swatch" style="background: #eab308;"></div>
-                        <span>Medium</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-swatch" style="background: #f97316;"></div>
-                        <span>High</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-swatch" style="background: #ef4444;"></div>
-                        <span>Critical</span>
+                    <div class="metadata-legend" id="metadata-legend">
+                        <span style="color: var(--text-secondary); margin-right: 6px;">Metadata:</span>
+                        <div class="legend-item">
+                            <span class="legend-icon has-cve">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v7a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-7a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5Zm-3 8V7a3 3 0 1 1 6 0v3H9Zm3 3a2 2 0 0 1 1 3.732V18h-2v-1.268A2 2 0 0 1 12 13Z"/></svg>
+                            </span>
+                            <span>CVE</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-icon has-observable">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5c-4.5 0-8.1 2.6-10 7 1.9 4.4 5.5 7 10 7s8.1-2.6 10-7c-1.9-4.4-5.5-7-10-7Zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm0-6a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z"/></svg>
+                            </span>
+                            <span>Observable</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-icon has-link">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.6 13.4a1 1 0 0 0 1.4 1.4l3.5-3.5a3 3 0 1 0-4.2-4.2l-1.3 1.3a1 1 0 1 0 1.4 1.4l1.3-1.3a1 1 0 0 1 1.4 1.4l-3.5 3.5Zm2.8-2.8a1 1 0 0 0-1.4-1.4L8.5 12.7a3 3 0 1 0 4.2 4.2l1.3-1.3a1 1 0 1 0-1.4-1.4l-1.3 1.3a1 1 0 0 1-1.4-1.4l3.5-3.5Z"/></svg>
+                            </span>
+                            <span>Link</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-icon has-comment">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H9l-5 4v-4H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm3 5h10v2H7V9Zm0-3h10v2H7V6Zm0 6h6v2H7v-2Z"/></svg>
+                            </span>
+                            <span>Comment</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-icon has-confidence">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 1 9 9 9 9 0 0 1-9-9Zm8-5h2v6h-2V7Zm0 8h2v2h-2v-2Z"/></svg>
+                            </span>
+                            <span>Confidence</span>
+                        </div>
                     </div>
                 </div>
 
@@ -1961,6 +2161,20 @@
     </div>
 
     <div class="toast" id="toast"></div>
+
+    <!-- Entity Detail Modal -->
+    <div class="modal-overlay" id="entity-modal" onclick="closeEntityModal(event)">
+        <div class="modal modal-wide" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <span id="entity-modal-id"></span>
+                    <span id="entity-modal-name" style="margin-left: 8px; color: var(--text-secondary);"></span>
+                </div>
+                <button class="modal-close" onclick="closeEntityModal()">×</button>
+            </div>
+            <div class="modal-body" id="entity-modal-content"></div>
+        </div>
+    </div>
 
     <!-- Metadata Editor Modal -->
     <div class="metadata-editor-overlay" id="metadata-editor-modal" onclick="closeMetadataEditor(event)">
@@ -2067,6 +2281,7 @@
                         <li>Browse <span class="guide-key">ATT&CK</span>, <span class="guide-key">CAPEC</span>, and <span class="guide-key">CWE</span> tabs in the left sidebar</li>
                         <li>Use the search bar to find specific techniques, patterns, or weaknesses</li>
                         <li>Click any entity to view detailed information in the right panel</li>
+                        <li>Switch to <span class="guide-key">Relationship Explorer</span> to investigate ATT&CK ↔ CAPEC ↔ CWE ↔ Mitigations without assigning items</li>
                     </ul>
                 </div>
 
@@ -2110,6 +2325,7 @@
                         <li>Enable <span class="guide-key">Hide Empty</span> to focus on phases with assignments</li>
                         <li>Enable <span class="guide-key">Group by CAPEC</span> to nest techniques under patterns</li>
                         <li>Switch to <span class="guide-key">Relationships</span> view for CAPEC→CWE→ATT&CK chains</li>
+                        <li>Use <span class="guide-key">Relationship Explorer</span> for full entity and mitigation browsing</li>
                     </ul>
                 </div>
 
@@ -2305,6 +2521,26 @@
             value = value.replace(/[\[\]\{\};"'`]/g, '');
             value = value.replace(/--+/g, '');
             return value;
+        }
+
+        function sanitizeForStorage(text, maxLength = 1000) {
+            let value = InputSecurity.normalize(text, maxLength);
+            value = value.replace(/[\[\]\{\};"'`]/g, '');
+            value = value.replace(/--+/g, '');
+            return value;
+        }
+
+        function truncateAtBoundary(text, maxLen = 500) {
+            if (!text) return '';
+            if (text.length <= maxLen) return text;
+            const slice = text.slice(0, maxLen);
+            const sentenceMatch = slice.match(/([\s\S]*?[.!?])\s[^.!?]*$/);
+            let cut = sentenceMatch ? sentenceMatch[1].trimEnd() : '';
+            if (!cut || cut.length < maxLen * 0.6) {
+                const wsIndex = slice.lastIndexOf(' ');
+                cut = wsIndex > 0 ? slice.slice(0, wsIndex).trimEnd() : slice.trimEnd();
+            }
+            return `${cut}…`;
         }
 
         function applyInputGuards() {
@@ -2521,7 +2757,6 @@
         const state = {
             view: 'killchain',  // 'killchain' | 'relationship'
             layers: { attack: true, capec: true, cwe: true },
-            groupByCapec: false,
             hideEmpty: false,
             activeTab: 'attack',
             filters: { attack: 'all', capec: 'all', cwe: 'all' },
@@ -2765,15 +3000,21 @@
         // ============================================================
         function setView(view) {
             state.view = view;
-            document.getElementById('view-killchain').classList.toggle('active', view === 'killchain');
-            document.getElementById('view-relationship').classList.toggle('active', view === 'relationship');
-            document.getElementById('kill-chain-container').classList.toggle('hidden', view !== 'killchain');
-            document.getElementById('relationship-container').classList.toggle('visible', view === 'relationship');
-            document.getElementById('content-title').textContent = view === 'killchain' ? 'Unified Kill Chain' : 'CAPEC → CWE → ATT&CK → Phase';
-            document.getElementById('btn-group-capec').style.display = view === 'killchain' ? 'inline-block' : 'none';
-            document.getElementById('btn-hide-empty').style.display = view === 'killchain' ? 'inline-block' : 'none';
-            
-            if (view === 'relationship') {
+            const isExplorer = view === 'explorer';
+            const isRelationship = view === 'relationship';
+            document.getElementById('view-killchain').classList.toggle('active', view === 'killchain' || isRelationship);
+            document.getElementById('view-relationship').classList.toggle('active', isRelationship);
+            document.getElementById('view-explorer').classList.toggle('active', isExplorer);
+            document.getElementById('view-editor-group').classList.toggle('active', view === 'killchain' || isRelationship);
+            document.getElementById('view-explorer-group').classList.toggle('active', isExplorer);
+            document.getElementById('kill-chain-container').classList.toggle('hidden', isExplorer || isRelationship);
+            document.getElementById('relationship-container').classList.toggle('visible', isRelationship);
+            document.getElementById('content-title').textContent = isRelationship ? 'CAPEC → CWE → ATT&CK → Phase' : 'Unified Kill Chain';
+            document.getElementById('btn-hide-empty').style.display = !isExplorer && !isRelationship ? 'inline-block' : 'none';
+            document.getElementById('stats-bar').style.display = isExplorer ? 'none' : 'flex';
+            document.getElementById('legend-row').style.display = isExplorer ? 'none' : 'flex';
+            document.querySelector('.app').classList.toggle('explorer-view', isExplorer);
+            if (isRelationship) {
                 renderRelationshipView();
             }
         }
@@ -2786,16 +3027,37 @@
             }
         }
 
-        function toggleCapecGrouping() {
-            state.groupByCapec = !state.groupByCapec;
-            document.getElementById('btn-group-capec').classList.toggle('active', state.groupByCapec);
-            renderKillChain();
-        }
-
         function toggleHideEmpty() {
             state.hideEmpty = !state.hideEmpty;
             document.getElementById('btn-hide-empty').classList.toggle('active', state.hideEmpty);
             renderKillChain();
+        }
+
+        function openMitigationExplorer(mitigationId) {
+            if (!mitigationId) return;
+
+            // Validate mitigationId to ensure it matches the expected ID format
+            const mitigationIdPattern = /^[A-Za-z0-9_-]+$/;
+            if (!mitigationIdPattern.test(mitigationId)) {
+                console.error('Invalid mitigationId provided to openMitigationExplorer:', mitigationId);
+                return;
+            }
+            const frame = document.querySelector('.explorer-frame');
+            if (frame) {
+                frame.src = `explorer.html?mitigation=${encodeURIComponent(mitigationId)}`;
+            }
+            setView('explorer');
+        }
+
+        function openEntityExplorer(type, id) {
+            if (!type || !id) return;
+            const allowed = new Set(['attack', 'capec', 'cwe']);
+            if (!allowed.has(type)) return;
+            const frame = document.querySelector('.explorer-frame');
+            if (frame) {
+                frame.src = `explorer.html?entity=${encodeURIComponent(`${type}:${id}`)}`;
+            }
+            setView('explorer');
         }
 
         // ============================================================
@@ -2946,47 +3208,29 @@
             showDetail(type, id);
         }
 
-        function showDetail(type, id) {
-            const panel = document.getElementById('detail-panel');
-            const idEl = document.getElementById('detail-id');
-            const nameEl = document.getElementById('detail-name');
-            const contentEl = document.getElementById('detail-content');
-            const selectEl = document.getElementById('phase-select');
-            
-            panel.classList.add('visible');
-            idEl.className = `detail-id ${type}`;
-            
-            let entity, html = '';
-            
+        function buildEntityDetail(type, id) {
+            let entity, html = '', name = 'Unknown';
+
             if (type === 'attack') {
                 entity = state.library.techniques[id];
-                idEl.textContent = id;
-                nameEl.textContent = entity?.name || 'Unknown';
-                
-                // Find related CAPECs
+                name = entity?.name || 'Unknown';
+
                 const relatedCapecs = state.techniqueToCapec[id] || [];
-                
-                // Build platforms display
                 const platforms = entity?.platforms?.join(', ') || 'N/A';
-                
-                // Build tactics display
                 const tactics = entity?.tactics?.map(t => t.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')).join(', ') || 'N/A';
-                
-                // Build mitigations list
+
                 const mitigations = entity?.mitigations || [];
                 const mitigationsHtml = mitigations.length > 0 
                     ? mitigations.slice(0, 8).map(m => `
-                        <div class="detail-list-item" title="${escAttr(m.description || '')}">
+                        <div class="detail-list-item" style="cursor: pointer;" onclick="openMitigationExplorer('${escAttr(m.id)}')" title="${escAttr(m.description || '')}">
                             <span class="id" style="color: #10b981;">${esc(m.id)}</span>
                             <span>${esc(m.name)}</span>
                         </div>
                     `).join('') + (mitigations.length > 8 ? `<div class="list-info">+${mitigations.length - 8} more</div>` : '')
                     : '<div class="list-info">No mitigations available</div>';
-                
-                // Build references list (first 3)
+
                 const refs = entity?.references || [];
                 const refsHtml = refs.slice(0, 3).map(r => {
-                    // KCE-SEC-002: Validate URL scheme (allowlist http/https)
                     const url = r.url || '';
                     const isSafeUrl = /^https?:\/\//i.test(url);
                     return isSafeUrl ? `
@@ -2997,7 +3241,7 @@
                     </div>
                 ` : '';
                 }).join('');
-                
+
                 html = `
                     <div class="detail-section">
                         <h4>Description</h4>
@@ -3009,7 +3253,7 @@
                             <div class="detail-list-item"><span>Domain:</span><span>${esc((entity?.domain || 'enterprise').toUpperCase())}</span></div>
                             <div class="detail-list-item"><span>Platforms:</span><span>${esc(platforms)}</span></div>
                             <div class="detail-list-item"><span>Tactics:</span><span>${esc(tactics)}</span></div>
-                            ${entity?.isSubtechnique ? `<div class="detail-list-item"><span>Parent:</span><span onclick="selectEntity('attack', '${esc(entity.parentTechnique)}')" style="cursor:pointer; color: var(--attack-color);">${esc(entity.parentTechnique)}</span></div>` : ''}
+                            ${entity?.isSubtechnique ? `<div class="detail-list-item"><span>Parent:</span><span onclick="selectEntity('attack', '${escAttr(entity.parentTechnique)}')" style="cursor:pointer; color: var(--attack-color);">${esc(entity.parentTechnique)}</span></div>` : ''}
                             <div class="detail-list-item"><span>Version:</span><span>${esc(entity?.version || '1.0')}</span></div>
                         </div>
                     </div>
@@ -3029,7 +3273,7 @@
                         <h4>Related CAPEC Patterns (${relatedCapecs.length})</h4>
                         <div class="detail-list">
                             ${relatedCapecs.map(c => `
-                                <div class="detail-list-item" onclick="selectEntity('capec', '${esc(c)}')">
+                                <div class="detail-list-item" onclick="selectEntity('capec', '${escAttr(c)}')">
                                     <span class="id capec">${esc(c)}</span>
                                     <span>${esc(state.library.capecs[c]?.name || 'Unknown')}</span>
                                 </div>
@@ -3051,9 +3295,8 @@
                 `;
             } else if (type === 'capec') {
                 entity = state.library.capecs[id];
-                idEl.textContent = id;
-                nameEl.textContent = entity?.name || 'Unknown';
-                
+                name = entity?.name || 'Unknown';
+
                 html = `
                     <div class="detail-section">
                         <h4>Description</h4>
@@ -3071,7 +3314,7 @@
                         <h4>Related Techniques (${entity?.techniques?.length || 0})</h4>
                         <div class="detail-list">
                             ${(entity?.techniques || []).map(t => `
-                                <div class="detail-list-item" onclick="selectEntity('attack', '${esc(t)}')">
+                                <div class="detail-list-item" onclick="selectEntity('attack', '${escAttr(t)}')">
                                     <span class="id attack">${esc(t)}</span>
                                     <span>${esc(state.library.techniques[t]?.name || getTechniqueName(t))}</span>
                                 </div>
@@ -3082,7 +3325,7 @@
                         <h4>Related CWEs (${entity?.cwes?.length || 0})</h4>
                         <div class="detail-list">
                             ${(entity?.cwes || []).slice(0, 10).map(c => `
-                                <div class="detail-list-item" onclick="selectEntity('cwe', '${esc(c)}')">
+                                <div class="detail-list-item" onclick="selectEntity('cwe', '${escAttr(c)}')">
                                     <span class="id cwe">${esc(c)}</span>
                                     <span>${esc(state.library.cwes[c]?.name || 'Unknown')}</span>
                                 </div>
@@ -3096,11 +3339,9 @@
                 `;
             } else if (type === 'cwe') {
                 entity = state.library.cwes[id];
-                idEl.textContent = id;
-                nameEl.textContent = entity?.name || 'Unknown';
-                
+                name = entity?.name || 'Unknown';
                 const relatedCapecs = state.cweToCapec[id] || entity?.capecs || [];
-                
+
                 html = `
                     <div class="detail-section">
                         <h4>Description</h4>
@@ -3114,7 +3355,7 @@
                         <h4>Related CAPEC Patterns (${relatedCapecs.length})</h4>
                         <div class="detail-list">
                             ${relatedCapecs.slice(0, 10).map(c => `
-                                <div class="detail-list-item" onclick="selectEntity('capec', '${esc(c)}')">
+                                <div class="detail-list-item" onclick="selectEntity('capec', '${escAttr(c)}')">
                                     <span class="id capec">${esc(c)}</span>
                                     <span>${esc(state.library.capecs[c]?.name || 'Unknown')}</span>
                                 </div>
@@ -3127,8 +3368,102 @@
                     </div>
                 `;
             }
+
+            return { id, name, html };
+        }
+
+        function buildMetadataSummary(type, id, phaseKey) {
+            const assignment = phaseKey ? findAssignment(phaseKey, type, id) : null;
+            const metadata = assignment ? getAssignmentMetadata(assignment) : createDefaultMetadata();
+            const score = metadata.score || 'unclassified';
+            const scoreLabel = SCORE_LEVELS[score]?.label || 'Unclassified';
+            const confidence = metadata.confidence ? `${metadata.confidence}% (${getConfidenceLabel(metadata.confidence)})` : 'Unknown';
+            const safePhase = phaseKey ? `${phaseKey.split(':')[0]} — ${formatPhaseName(phaseKey.split(':')[1])}` : '';
+
+            const links = (metadata.hyperlinks || []).filter(l => l?.url && /^https?:\/\//i.test(l.url));
+            const linksHtml = links.length
+                ? links.map(l => `
+                    <div class="detail-list-item">
+                        <a href="${escAttr(l.url)}" target="_blank" rel="noopener noreferrer" style="color: var(--text-secondary); text-decoration: none;">
+                            ${esc(l.label || l.url)} →
+                        </a>
+                    </div>
+                `).join('')
+                : '<div class="list-info">No hyperlinks</div>';
+
+            const observables = metadata.observables || [];
+            const observablesHtml = observables.length
+                ? observables.map(o => `
+                    <div class="detail-list-item">
+                        <span>${esc(o.type)}</span>
+                        <span>${esc(o.value)}</span>
+                    </div>
+                `).join('')
+                : '<div class="list-info">No observables</div>';
+
+            return `
+                <div class="detail-section">
+                    <h4>Metadata</h4>
+                    <div class="detail-list">
+                        <div class="detail-list-item"><span>Score:</span><span>${esc(scoreLabel)}</span></div>
+                        <div class="detail-list-item"><span>Confidence:</span><span>${esc(confidence)}</span></div>
+                        ${safePhase ? `<div class="detail-list-item"><span>Phase:</span><span>${esc(safePhase)}</span></div>` : ''}
+                        ${metadata.cveId ? `<div class="detail-list-item"><span>CVE:</span><span>${esc(metadata.cveId)}</span></div>` : ''}
+                        ${metadata.cvssVector ? `<div class="detail-list-item"><span>CVSS:</span><span>${esc(metadata.cvssVector)}</span></div>` : ''}
+                    </div>
+                </div>
+                ${metadata.comments ? `
+                <div class="detail-section">
+                    <h4>Comments</h4>
+                    <p>${esc(metadata.comments).replace(/\n/g, '<br>')}</p>
+                </div>
+                ` : ''}
+                <div class="detail-section">
+                    <h4>Hyperlinks</h4>
+                    <div class="detail-list">
+                        ${linksHtml}
+                    </div>
+                </div>
+                <div class="detail-section">
+                    <h4>Observables</h4>
+                    <div class="detail-list">
+                        ${observablesHtml}
+                    </div>
+                </div>
+            `;
+        }
+
+        function openEntityModal(type, id, phaseKey) {
+            if (!type || !id) return;
+            const detail = buildEntityDetail(type, id);
+            document.getElementById('entity-modal-id').textContent = detail.id;
+            document.getElementById('entity-modal-name').textContent = detail.name;
+            const content = document.getElementById('entity-modal-content');
+            content.innerHTML = detail.html + buildMetadataSummary(type, id, phaseKey);
+            document.getElementById('entity-modal').classList.add('visible');
+            document.getElementById('detail-panel').classList.remove('visible');
+            state.selection = { type, id };
+        }
+
+        function closeEntityModal(event) {
+            if (event && event.target !== event.currentTarget) return;
+            document.getElementById('entity-modal').classList.remove('visible');
+        }
+
+        function showDetail(type, id) {
+            const panel = document.getElementById('detail-panel');
+            const idEl = document.getElementById('detail-id');
+            const nameEl = document.getElementById('detail-name');
+            const contentEl = document.getElementById('detail-content');
+            const selectEl = document.getElementById('phase-select');
             
-            contentEl.innerHTML = html;
+            panel.classList.add('visible');
+            idEl.className = `detail-id ${type}`;
+            
+            const detail = buildEntityDetail(type, id);
+            idEl.textContent = detail.id;
+            nameEl.textContent = detail.name;
+            contentEl.innerHTML = detail.html;
             
             // Set current assignment in dropdown
             const currentPhase = findEntityPhase(type, id);
@@ -3294,40 +3629,8 @@
                             <div class="phase-content">
                     `;
                     
-                    // Render CAPECs (grouped)
-                    if (state.layers.capec && state.groupByCapec && phaseData.capecs.length > 0) {
-                        for (const capecAssignment of phaseData.capecs) {
-                            const capecId = getAssignmentId(capecAssignment);
-                            const capec = state.library.capecs[capecId];
-                            if (!capec) continue;
-                            
-                            // Find techniques in this phase that belong to this CAPEC
-                            const capecTechs = (capec.techniques || []).filter(t => 
-                                phaseData.techniques.some(a => getAssignmentId(a) === t)
-                            );
-                            
-                            html += `
-                                <div class="capec-group">
-                                    <div class="capec-group-header">
-                                        <span class="capec-group-id">${InputSecurity.escapeHtml(capecId)}</span>
-                                        <span class="capec-group-name">${InputSecurity.escapeHtml(capec.name)}</span>
-                                    </div>
-                                    <div class="capec-group-techniques">
-                            `;
-                            
-                            for (const techId of capecTechs) {
-                                const techAssignment = phaseData.techniques.find(a => getAssignmentId(a) === techId);
-                                const tech = state.library.techniques[techId];
-                                const meta = getAssignmentMetadata(techAssignment);
-                                html += renderEntityTag('attack', techId, tech?.name || '', meta, phaseKey);
-                            }
-                            
-                            html += `</div></div>`;
-                        }
-                    }
-                    
-                    // Render CAPECs (not grouped)
-                    if (state.layers.capec && !state.groupByCapec && phaseData.capecs.length > 0) {
+                    // Render CAPECs
+                    if (state.layers.capec && phaseData.capecs.length > 0) {
                         for (const capecAssignment of phaseData.capecs) {
                             const capecId = getAssignmentId(capecAssignment);
                             const capec = state.library.capecs[capecId];
@@ -3338,18 +3641,8 @@
                     
                     // Render techniques
                     if (state.layers.attack) {
-                        const groupedTechs = new Set();
-                        if (state.layers.capec && state.groupByCapec) {
-                            for (const capecAssignment of phaseData.capecs) {
-                                const capecId = getAssignmentId(capecAssignment);
-                                const capec = state.library.capecs[capecId];
-                                (capec?.techniques || []).forEach(t => groupedTechs.add(t));
-                            }
-                        }
-                        
                         for (const techAssignment of phaseData.techniques) {
                             const techId = getAssignmentId(techAssignment);
-                            if (state.groupByCapec && groupedTechs.has(techId)) continue;
                             const tech = state.library.techniques[techId];
                             const meta = getAssignmentMetadata(techAssignment);
                             html += renderEntityTag('attack', techId, tech?.name || '', meta, phaseKey);
@@ -3385,7 +3678,10 @@
             const tagClass = type === 'attack' ? 'technique-tag' : type === 'capec' ? 'capec-tag' : 'cwe-tag';
             const score = metadata.score || 'unclassified';
             const safeId = InputSecurity.escapeHtml(id);
-            const safeName = InputSecurity.escapeHtml(name);
+            const displayName = truncateAtBoundary(name || '', 500);
+            const safeName = InputSecurity.escapeHtml(displayName || '');
+            const safeType = InputSecurity.sanitizeAttr(type, 20);
+            const safeIdAttr = InputSecurity.sanitizeAttr(id);
             const safePhaseKey = InputSecurity.sanitizeAttr(phaseKey);
             
             // Build metadata icons
@@ -3398,23 +3694,40 @@
             
             if (hasCve || hasObservables || hasLinks || hasComment || hasConfidence) {
                 metaIcons = '<div class="metadata-icons">';
-                if (hasCve) metaIcons += `<span class="meta-icon has-cve" title="${esc(metadata.cveId)}">${esc(metadata.cveId)}</span>`;
-                if (hasObservables) metaIcons += '<span class="meta-icon has-observable" title="Has Observables">O</span>';
-                if (hasLinks) metaIcons += '<span class="meta-icon has-link" title="Has Links">L</span>';
-                if (hasComment) metaIcons += '<span class="meta-icon has-comment" title="Has Comments">C</span>';
-                if (hasConfidence) metaIcons += `<span class="meta-icon has-confidence" title="Confidence: ${metadata.confidence}%">${metadata.confidence}%</span>`;
+                if (hasCve) metaIcons += `<span class="meta-icon has-cve" title="${esc(metadata.cveId)}">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v7a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-7a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5Zm-3 8V7a3 3 0 1 1 6 0v3H9Zm3 3a2 2 0 0 1 1 3.732V18h-2v-1.268A2 2 0 0 1 12 13Z"/></svg>
+                    <span>${esc(metadata.cveId)}</span>
+                </span>`;
+                if (hasObservables) metaIcons += '<span class="meta-icon has-observable" title="Has Observables"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5c-4.5 0-8.1 2.6-10 7 1.9 4.4 5.5 7 10 7s8.1-2.6 10-7c-1.9-4.4-5.5-7-10-7Zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm0-6a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z"/></svg></span>';
+                if (hasLinks) metaIcons += '<span class="meta-icon has-link" title="Has Links"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.6 13.4a1 1 0 0 0 1.4 1.4l3.5-3.5a3 3 0 1 0-4.2-4.2l-1.3 1.3a1 1 0 1 0 1.4 1.4l1.3-1.3a1 1 0 0 1 1.4 1.4l-3.5 3.5Zm2.8-2.8a1 1 0 0 0-1.4-1.4L8.5 12.7a3 3 0 1 0 4.2 4.2l1.3-1.3a1 1 0 1 0-1.4-1.4l-1.3 1.3a1 1 0 0 1-1.4-1.4l3.5-3.5Z"/></svg></span>';
+                if (hasComment) metaIcons += '<span class="meta-icon has-comment" title="Has Comments"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H9l-5 4v-4H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm3 5h10v2H7V9Zm0-3h10v2H7V6Zm0 6h6v2H7v-2Z"/></svg></span>';
+                if (hasConfidence) metaIcons += `<span class="meta-icon has-confidence" title="Confidence: ${metadata.confidence}%"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 1 9 9 9 9 0 0 1-9-9Zm8-5h2v6h-2V7Zm0 8h2v2h-2v-2Z"/></svg><span>${metadata.confidence}%</span></span>`;
                 metaIcons += '</div>';
             }
             
             return `
                 <div class="${tagClass}" data-score="${score}" 
-                     onclick="openMetadataEditor('${type}', '${safeId}', '${safePhaseKey}')">
-                    <span class="tag-header">
-                        <span class="id" onclick="event.stopPropagation(); selectEntity('${type}', '${safeId}')">${safeId}</span>
-                        <span class="name">${safeName}</span>
-                        <span class="remove" onclick="event.stopPropagation(); removeAssignment('${type}', '${safeId}', '${safePhaseKey}')">×</span>
+                     onclick="openEntityModal('${safeType}', '${safeIdAttr}', '${safePhaseKey}')">
+                    <span class="tag-header-row">
+                        <span class="id" onclick="event.stopPropagation(); selectEntity('${safeType}', '${safeIdAttr}')">${safeId}</span>
+                        <span class="remove" title="Remove" onclick="event.stopPropagation(); removeAssignment('${safeType}', '${safeIdAttr}', '${safePhaseKey}')">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M576 192C576 156.7 547.3 128 512 128L205.3 128C188.3 128 172 134.7 160 146.7L9.4 297.4C3.4 303.4 0 311.5 0 320C0 328.5 3.4 336.6 9.4 342.6L160 493.3C172 505.3 188.3 512 205.3 512L512 512C547.3 512 576 483.3 576 448L576 192zM284.1 252.1C293.5 242.7 308.7 242.7 318 252.1L351.9 286L385.8 252.1C395.2 242.7 410.4 242.7 419.7 252.1C429 261.5 429.1 276.7 419.7 286L385.8 319.9L419.7 353.8C429.1 363.2 429.1 378.4 419.7 387.7C410.3 397 395.1 397.1 385.8 387.7L351.9 353.8L318 387.7C308.6 397.1 293.4 397.1 284.1 387.7C274.8 378.3 274.7 363.1 284.1 353.8L318 319.9L284.1 286C274.7 276.6 274.7 261.4 284.1 252.1z"/></svg>
+                            </span>
+                        <span class="tag-actions">
+                            <button class="tag-action-btn explore" onclick="event.stopPropagation(); openEntityExplorer('${safeType}', '${safeIdAttr}')" title="Explore Entity Relationships">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M256 128C256 110.3 270.3 96 288 96L352 96C369.7 96 384 110.3 384 128L384 192C384 209.7 369.7 224 352 224L344 224L344 288L464 288C503.8 288 536 320.2 536 360L536 416L544 416C561.7 416 576 430.3 576 448L576 512C576 529.7 561.7 544 544 544L480 544C462.3 544 448 529.7 448 512L448 448C448 430.3 462.3 416 480 416L488 416L488 360C488 346.7 477.3 336 464 336L344 336L344 416L352 416C369.7 416 384 430.3 384 448L384 512C384 529.7 369.7 544 352 544L288 544C270.3 544 256 529.7 256 512L256 448C256 430.3 270.3 416 288 416L296 416L296 336L176 336C162.7 336 152 346.7 152 360L152 416L160 416C177.7 416 192 430.3 192 448L192 512C192 529.7 177.7 544 160 544L96 544C78.3 544 64 529.7 64 512L64 448C64 430.3 78.3 416 96 416L104 416L104 360C104 320.2 136.2 288 176 288L296 288L296 224L288 224C270.3 224 256 209.7 256 192L256 128z"/></svg>
+                            </button>
+                            <button class="tag-action-btn edit" onclick="event.stopPropagation(); closeEntityModal(); openMetadataEditor('${safeType}', '${safeIdAttr}', '${safePhaseKey}')" title="Edit Metadata">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17.25V21h3.75L17.8 9.95l-3.75-3.75L3 17.25Zm2.92 2.83H5v-.92l8.79-8.79.92.92-8.79 8.79ZM20.7 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83Z"/></svg>
+                            </button>
+                        </span>
                     </span>
-                    ${metaIcons}
+                    <div class="tag-body">
+                        <span class="name">${safeName}</span>
+                    </div>
+                    <div class="tag-footer">
+                        ${metaIcons}
+                    </div>
                 </div>
             `;
         }
@@ -3492,35 +3805,35 @@
                         <div class="relationship-cell capec">
                             <div class="relationship-cell-header">CAPEC</div>
                             ${chain.capec ? `
-                                <div class="relationship-item" onclick="selectEntity('capec', '${chain.capec.id}')">
-                                    <span class="id capec">${chain.capec.id}</span>
-                                    <span class="name">${chain.capec.name}</span>
+                                <div class="relationship-item" onclick="selectEntity('capec', '${escAttr(chain.capec.id)}')">
+                                    <span class="id capec">${esc(chain.capec.id)}</span>
+                                    <span class="name">${esc(chain.capec.name)}</span>
                                 </div>
                             ` : '<div class="list-info">—</div>'}
                         </div>
                         <div class="relationship-cell cwe">
                             <div class="relationship-cell-header">CWE</div>
                             ${chain.cwes.length > 0 ? chain.cwes.map(cwe => `
-                                <div class="relationship-item" onclick="selectEntity('cwe', '${cwe.id}')">
-                                    <span class="id cwe">${cwe.id}</span>
-                                    <span class="name">${cwe.name}</span>
+                                <div class="relationship-item" onclick="selectEntity('cwe', '${escAttr(cwe.id)}')">
+                                    <span class="id cwe">${esc(cwe.id)}</span>
+                                    <span class="name">${esc(cwe.name)}</span>
                                 </div>
                             `).join('') : '<div class="list-info">—</div>'}
                         </div>
                         <div class="relationship-cell attack">
                             <div class="relationship-cell-header">ATT&CK</div>
                             ${chain.techniques.map(tech => `
-                                <div class="relationship-item" onclick="selectEntity('attack', '${tech.id}')">
-                                    <span class="id attack">${tech.id}</span>
-                                    <span class="name">${tech.name}</span>
+                                <div class="relationship-item" onclick="selectEntity('attack', '${escAttr(tech.id)}')">
+                                    <span class="id attack">${esc(tech.id)}</span>
+                                    <span class="name">${esc(tech.name)}</span>
                                 </div>
                             `).join('')}
                         </div>
                         <div class="relationship-cell phase">
                             <div class="relationship-cell-header">Phase</div>
                             <div class="relationship-item">
-                                <span class="id phase">${chain.phase.key.split(':')[0]}</span>
-                                <span class="name">${chain.phase.name}</span>
+                                <span class="id phase">${esc(chain.phase.key.split(':')[0])}</span>
+                                <span class="name">${esc(chain.phase.name)}</span>
                             </div>
                         </div>
                     </div>
@@ -3600,7 +3913,6 @@
                 activeTab: state.activeTab,
                 filters: state.filters,
                 layers: state.layers,
-                groupByCapec: state.groupByCapec,
                 hideEmpty: state.hideEmpty,
                 assignments: state.assignments,
                 selection: state.selection
@@ -3841,10 +4153,6 @@
                 };
             }
 
-            if (typeof data.groupByCapec === 'boolean') {
-                sanitized.groupByCapec = data.groupByCapec;
-            }
-
             if (typeof data.hideEmpty === 'boolean') {
                 sanitized.hideEmpty = data.hideEmpty;
             }
@@ -3899,7 +4207,6 @@
 
                     // Restore sanitized view state
                     if (sanitized.layers) state.layers = sanitized.layers;
-                    if (sanitized.groupByCapec !== undefined) state.groupByCapec = sanitized.groupByCapec;
                     if (sanitized.hideEmpty !== undefined) state.hideEmpty = sanitized.hideEmpty;
                     if (sanitized.activeTab) state.activeTab = sanitized.activeTab;
 
@@ -3907,7 +4214,6 @@
                     document.getElementById('layer-attack').checked = !!state.layers.attack;
                     document.getElementById('layer-capec').checked = !!state.layers.capec;
                     document.getElementById('layer-cwe').checked = !!state.layers.cwe;
-                    document.getElementById('btn-group-capec').classList.toggle('active', !!state.groupByCapec);
                     document.getElementById('btn-hide-empty').classList.toggle('active', !!state.hideEmpty);
 
                     if (sanitized.view) {
@@ -4230,7 +4536,7 @@
             
             // Get CVE (with validation)
             const cveInput = document.getElementById('meta-cve-id');
-            const cveValue = InputSecurity.sanitize(cveInput.value, 50);
+            const cveValue = sanitizeForStorage(cveInput.value, 50);
             const cveError = document.getElementById('meta-cve-id-error');
             if (cveValue && !InputSecurity.validators.cveId(cveValue).valid) {
                 cveError.textContent = 'Invalid CVE format (CVE-YYYY-NNNNN)';
@@ -4242,7 +4548,7 @@
             
             // Get CVSS (with validation)
             const cvssInput = document.getElementById('meta-cvss-vector');
-            const cvssValue = InputSecurity.sanitize(cvssInput.value, 100);
+            const cvssValue = sanitizeForStorage(cvssInput.value, 100);
             const cvssError = document.getElementById('meta-cvss-vector-error');
             if (cvssValue && !InputSecurity.validators.cvssVector(cvssValue).valid) {
                 cvssError.textContent = 'Invalid CVSS 3.x vector';
@@ -4253,14 +4559,14 @@
             cvssInput.classList.remove('invalid');
             
             // Get comments
-            const comments = InputSecurity.sanitize(document.getElementById('meta-comments').value, 2000);
+            const comments = sanitizeForStorage(document.getElementById('meta-comments').value, 2000);
             
             // Get hyperlinks (with validation)
             const hyperlinks = [];
             document.querySelectorAll('#hyperlink-list .hyperlink-item').forEach(row => {
                 const inputs = row.querySelectorAll('input');
-                const label = InputSecurity.sanitize(inputs[0].value, 100);
-                const url = InputSecurity.sanitize(inputs[1].value, 500);
+                const label = sanitizeForStorage(inputs[0].value, 100);
+                const url = sanitizeForStorage(inputs[1].value, 500);
                 if (label && url) {
                     if (InputSecurity.validators.url(url).valid) {
                         hyperlinks.push({ label, url });
@@ -4275,7 +4581,7 @@
                 const select = row.querySelector('select');
                 const input = row.querySelector('input');
                 const obsType = select.value;
-                const obsValue = InputSecurity.sanitize(input.value, 500);
+                const obsValue = sanitizeForStorage(input.value, 500);
                 
                 if (obsValue) {
                     const validation = InputSecurity.validateObservable(obsType, obsValue);
@@ -4365,6 +4671,7 @@
             if (e.key === 'Escape') {
                 closeUsageGuide();
                 closeChangelog();
+                closeEntityModal();
                 closeMetadataEditor();
             }
         });
@@ -4384,10 +4691,28 @@
         }
 
         // ============================================================
+        // LEAVE SITE CONFIRMATION
+        // ============================================================
+        function enableLeaveSiteConfirmation() {
+            window.addEventListener('beforeunload', (e) => {
+                e.preventDefault();
+                e.returnValue = '';
+                return '';
+            });
+        }
+
+        // ============================================================
         // INITIALIZATION
         // ============================================================
         if (typeof applyConfigColors === 'function') {
             applyConfigColors();
+        }
+        if (typeof CONFIG !== 'undefined') {
+            if (CONFIG.navigation?.confirmOnLeave !== false) {
+                enableLeaveSiteConfirmation();
+            }
+        } else {
+            enableLeaveSiteConfirmation();
         }
         initAssignments();
         applyInputGuards();

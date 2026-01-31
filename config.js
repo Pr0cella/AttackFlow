@@ -70,6 +70,11 @@ const CONFIG = {
         maxDescLength: 800,      // Max description length in detail panel
         maxMitigations: 8,       // Max mitigations to show
         maxReferences: 3         // Max references to show
+    },
+
+    // Navigation behavior
+    navigation: {
+        confirmOnLeave: true     // Show confirmation dialog before leaving the page
     }
 };
 
