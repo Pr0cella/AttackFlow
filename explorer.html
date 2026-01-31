@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relationship Explorer - AttackFlow</title>
+    <style>
+        :root {
+            --bg-dark: #1a1a1a;
+            --bg-card: #242424;
+            --bg-panel: #2d2d2d;
+            --text-primary: #e5e5e5;
+            --text-secondary: #a3a3a3;
+            --border-color: #404040;
+            --accent: #71717a;
+            --attack: #3b82f6;
+            --capec: #8b5cf6;
+            --cwe: #f59e0b;
+            --mitigation: #10b981;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+        }
+
+        .app {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        .header-title {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .header-subtitle {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .header-search {
+            width: 380px;
+            position: relative;
+        }
+
+        .header-search input {
+            width: 100%;
+            padding: 8px 10px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 6px;
+            font-size: 0.8rem;
+        }
+
+        .search-suggestions {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            right: 0;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            max-height: 260px;
+            overflow: auto;
+            display: none;
+            z-index: 10;
+        }
+
+        .search-suggestions.visible { display: block; }
+
+        .suggestion-item {
+            padding: 8px 10px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+        }
+
+        .suggestion-item:last-child { border-bottom: none; }
+
+        .suggestion-item:hover { background: rgba(113, 113, 122, 0.2); }
+
+        .suggestion-id {
+            font-family: monospace;
+            font-weight: 600;
+            font-size: 0.75rem;
+        }
+
+        .suggestion-name {
+            font-size: 0.8rem;
+            color: var(--text-primary);
+            margin-top: 2px;
+        }
+
+        .main {
+            display: grid;
+            grid-template-columns: 320px 1fr 360px;
+            gap: 12px;
+            padding: 12px;
+            height: calc(100vh - 54px);
+        }
+
+        .panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .panel-header {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .panel-body {
+            padding: 10px;
+            overflow: auto;
+            flex: 1;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 6px;
+            padding: 10px 12px 0;
+        }
+
+        .tab {
+            padding: 6px 10px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+
+        .tab.active {
+            color: var(--text-primary);
+            border-color: var(--accent);
+            background: rgba(113, 113, 122, 0.15);
+        }
+
+        .search {
+            padding: 10px 12px;
+            display: flex;
+            gap: 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .search input {
+            width: 100%;
+            padding: 6px 8px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+
+        .entity-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .entity-item {
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-panel);
+            cursor: pointer;
+        }
+
+        .entity-item:hover { border-color: var(--accent); }
+        .entity-item.selected { border-color: var(--accent); background: rgba(113, 113, 122, 0.2); }
+
+        .entity-id {
+            font-family: monospace;
+            font-weight: 600;
+            font-size: 0.75rem;
+        }
+
+        .entity-name {
+            font-size: 0.8rem;
+            color: var(--text-primary);
+            margin-top: 4px;
+        }
+
+        .badge.attack { color: var(--attack); }
+        .badge.capec { color: var(--capec); }
+        .badge.cwe { color: var(--cwe); }
+        .badge.mitigation { color: var(--mitigation); }
+
+        .graph {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(180px, 1fr));
+            gap: 12px;
+        }
+
+        .graph-column {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .graph-header {
+            padding: 8px 10px;
+            font-size: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .graph-list {
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .graph-item {
+            padding: 6px 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            background: var(--bg-card);
+        }
+
+        .graph-item:hover { border-color: var(--accent); }
+
+        .detail-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .detail-id {
+            font-family: monospace;
+            font-weight: 600;
+            font-size: 0.8rem;
+            margin-top: 4px;
+        }
+
+        .detail-section {
+            margin-top: 12px;
+        }
+
+        .detail-section h4 {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin: 0 0 6px;
+        }
+
+        .detail-section p {
+            font-size: 0.8rem;
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        .detail-section a {
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+
+        .detail-section a:hover {
+            text-decoration: underline;
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            background: rgba(113, 113, 122, 0.2);
+            color: var(--text-secondary);
+            margin-right: 6px;
+            margin-bottom: 6px;
+        }
+
+        .pill.clickable { cursor: pointer; }
+        .pill.clickable:hover { color: var(--text-primary); }
+
+        .empty {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+        }
+
+        .status {
+            padding: 6px 12px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            border-top: 1px solid var(--border-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="header">
+            <div>
+                <div class="header-title">Relationship Explorer</div>
+            </div>
+            <div class="header-search">
+                <input id="global-search" type="search" placeholder="Search all entities..." />
+                <div class="search-suggestions" id="global-suggestions"></div>
+            </div>
+        </div>
+
+        <div class="main">
+            <div class="panel">
+                <div class="tabs" id="tabs"></div>
+                <div class="search">
+                    <input id="search" type="search" placeholder="Search..." />
+                </div>
+                <div class="panel-body">
+                    <div class="entity-list" id="entityList"></div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">Relationship Graph</div>
+                <div class="panel-body">
+                    <div class="graph" id="graph"></div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">Details</div>
+                <div class="panel-body" id="details"></div>
+                <div class="status" id="status">Loading data...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const state = {
+            data: {
+                techniques: {},
+                capecs: {},
+                cwes: {},
+                mitigations: {}
+            },
+            indices: {
+                capecsByTechnique: new Map(),
+                cwesByCapec: new Map(),
+                capecsByCwe: new Map(),
+                mitigationsByTechnique: new Map(),
+                techniquesByMitigation: new Map()
+            },
+            searchIndex: [],
+            activeTab: 'attack',
+            search: '',
+            selection: { type: null, id: null }
+        };
+
+        const SEARCH_LIMIT = 10;
+
+        const TAB_CONFIG = [
+            { key: 'attack', label: 'ATT&CK' },
+            { key: 'capec', label: 'CAPEC' },
+            { key: 'cwe', label: 'CWE' },
+            { key: 'mitigation', label: 'Mitigations' }
+        ];
+
+        function setStatus(text) {
+            document.getElementById('status').textContent = text;
+        }
+
+        function normalize(text) {
+            return String(text || '').toLowerCase();
+        }
+
+        function unique(arr) {
+            return Array.from(new Set(arr));
+        }
+
+        function buildSearchIndex() {
+            const items = [];
+
+            Object.values(state.data.techniques).forEach(t => {
+                items.push({
+                    id: t.id,
+                    name: t.name || '',
+                    description: t.description || '',
+                    type: 'attack'
+                });
+            });
+
+            Object.values(state.data.capecs).forEach(c => {
+                items.push({
+                    id: c.id,
+                    name: c.name || '',
+                    description: c.description || '',
+                    type: 'capec'
+                });
+            });
+
+            Object.values(state.data.cwes).forEach(c => {
+                items.push({
+                    id: c.id,
+                    name: c.name || '',
+                    description: c.description || '',
+                    type: 'cwe'
+                });
+            });
+
+            Object.values(state.data.mitigations).forEach(m => {
+                items.push({
+                    id: m.id,
+                    name: m.name || '',
+                    description: m.description || '',
+                    type: 'mitigation'
+                });
+            });
+
+            state.searchIndex = items.map(item => ({
+                ...item,
+                haystack: normalize(`${item.id} ${item.name} ${item.description}`)
+            }));
+        }
+
+        function getBadgeClass(type) {
+            return type === 'attack' ? 'attack' : type === 'capec' ? 'capec' : type === 'cwe' ? 'cwe' : 'mitigation';
+        }
+
+        function renderSuggestions(query) {
+            const box = document.getElementById('global-suggestions');
+            box.innerHTML = '';
+            if (!query) {
+                box.classList.remove('visible');
+                return;
+            }
+
+            const matches = state.searchIndex
+                .filter(item => item.haystack.includes(query))
+                .slice(0, SEARCH_LIMIT);
+
+            if (!matches.length) {
+                const empty = document.createElement('div');
+                empty.className = 'suggestion-item';
+                empty.textContent = 'No results found.';
+                box.appendChild(empty);
+                box.classList.add('visible');
+                return;
+            }
+
+            matches.forEach(item => {
+                const row = document.createElement('div');
+                row.className = 'suggestion-item';
+                row.addEventListener('click', () => {
+                    state.activeTab = item.type;
+                    selectEntity(item.type, item.id);
+                    document.getElementById('global-search').value = '';
+                    box.classList.remove('visible');
+                    renderTabs();
+                    renderList();
+                });
+
+                const id = document.createElement('div');
+                id.className = 'suggestion-id badge ' + getBadgeClass(item.type);
+                id.textContent = item.id;
+
+                const name = document.createElement('div');
+                name.className = 'suggestion-name';
+                name.textContent = item.name || '';
+
+                row.appendChild(id);
+                row.appendChild(name);
+                box.appendChild(row);
+            });
+
+            box.classList.add('visible');
+        }
+
+        function buildIndices() {
+            const { techniques, capecs, cwes } = state.data;
+            const capecsByTechnique = new Map();
+            const cwesByCapec = new Map();
+            const capecsByCwe = new Map();
+            const mitigationsByTechnique = new Map();
+            const techniquesByMitigation = new Map();
+            const mitigationStore = {};
+
+            Object.values(capecs).forEach(capec => {
+                (capec.techniques || []).forEach(techId => {
+                    if (!capecsByTechnique.has(techId)) capecsByTechnique.set(techId, []);
+                    capecsByTechnique.get(techId).push(capec.id);
+                });
+                cwesByCapec.set(capec.id, capec.cwes || []);
+            });
+
+            Object.values(cwes).forEach(cwe => {
+                capecsByCwe.set(cwe.id, cwe.capecs || []);
+            });
+
+            Object.values(techniques).forEach(tech => {
+                const mitigationList = (tech.mitigations || []).map(m => m.id);
+                mitigationsByTechnique.set(tech.id, mitigationList);
+                (tech.mitigations || []).forEach(m => {
+                    if (!mitigationStore[m.id]) {
+                        mitigationStore[m.id] = {
+                            id: m.id,
+                            name: m.name || m.id,
+                            description: m.description || '',
+                            techniques: []
+                        };
+                    }
+                    mitigationStore[m.id].techniques.push(tech.id);
+                });
+            });
+
+            Object.values(mitigationStore).forEach(mit => {
+                mit.techniques = unique(mit.techniques);
+                techniquesByMitigation.set(mit.id, mit.techniques);
+            });
+
+            state.data.mitigations = mitigationStore;
+            state.indices.capecsByTechnique = capecsByTechnique;
+            state.indices.cwesByCapec = cwesByCapec;
+            state.indices.capecsByCwe = capecsByCwe;
+            state.indices.mitigationsByTechnique = mitigationsByTechnique;
+            state.indices.techniquesByMitigation = techniquesByMitigation;
+        }
+
+        function createTabs() {
+            const tabsEl = document.getElementById('tabs');
+            tabsEl.innerHTML = '';
+            TAB_CONFIG.forEach(tab => {
+                const btn = document.createElement('button');
+                btn.className = 'tab' + (state.activeTab === tab.key ? ' active' : '');
+                btn.textContent = tab.label;
+                btn.addEventListener('click', () => {
+                    state.activeTab = tab.key;
+                    renderTabs();
+                    renderList();
+                });
+                tabsEl.appendChild(btn);
+            });
+        }
+
+        function renderTabs() {
+            createTabs();
+        }
+
+        function renderList() {
+            const listEl = document.getElementById('entityList');
+            listEl.innerHTML = '';
+            const search = normalize(state.search);
+            let items = [];
+
+            if (state.activeTab === 'attack') {
+                items = Object.values(state.data.techniques).map(t => ({ id: t.id, name: t.name, type: 'attack' }));
+            } else if (state.activeTab === 'capec') {
+                items = Object.values(state.data.capecs).map(c => ({ id: c.id, name: c.name, type: 'capec' }));
+            } else if (state.activeTab === 'cwe') {
+                items = Object.values(state.data.cwes).map(c => ({ id: c.id, name: c.name, type: 'cwe' }));
+            } else {
+                items = Object.values(state.data.mitigations).map(m => ({ id: m.id, name: m.name, type: 'mitigation' }));
+            }
+
+            items
+                .filter(item => !search || normalize(item.id).includes(search) || normalize(item.name).includes(search))
+                .slice(0, 200)
+                .forEach(item => {
+                    const el = document.createElement('div');
+                    el.className = 'entity-item' + (state.selection.type === item.type && state.selection.id === item.id ? ' selected' : '');
+                    el.addEventListener('click', () => selectEntity(item.type, item.id));
+
+                    const id = document.createElement('div');
+                    id.className = 'entity-id badge ' + item.type;
+                    id.textContent = item.id;
+
+                    const name = document.createElement('div');
+                    name.className = 'entity-name';
+                    name.textContent = item.name || '';
+
+                    el.appendChild(id);
+                    el.appendChild(name);
+                    listEl.appendChild(el);
+                });
+
+            if (!items.length) {
+                const empty = document.createElement('div');
+                empty.className = 'empty';
+                empty.textContent = 'No items found.';
+                listEl.appendChild(empty);
+            }
+        }
+
+        function selectEntity(type, id) {
+            state.selection = { type, id };
+            renderList();
+            renderGraph();
+            renderDetails();
+        }
+
+        function getMitreTechniqueUrl(tech) {
+            if (!tech?.id) return null;
+            const [parent, sub] = tech.id.split('.');
+            let base = 'https://attack.mitre.org/techniques/';
+            if (tech.domain === 'mobile') base = 'https://attack.mitre.org/techniques/mobile/';
+            if (tech.domain === 'ics') base = 'https://attack.mitre.org/techniques/ics/';
+            if (sub) return `${base}${parent}/${sub}/`;
+            return `${base}${tech.id}/`;
+        }
+
+        function getCapecUrl(id) {
+            if (!id) return null;
+            const num = id.replace('CAPEC-', '');
+            return `https://capec.mitre.org/data/definitions/${num}.html`;
+        }
+
+        function getCweUrl(id) {
+            if (!id) return null;
+            const num = id.replace('CWE-', '');
+            return `https://cwe.mitre.org/data/definitions/${num}.html`;
+        }
+
+        function getMitigationUrl(id) {
+            if (!id) return null;
+            return `https://attack.mitre.org/mitigations/${id}/`;
+        }
+
+        function buildRelatedForAttack(techId) {
+            const capecs = state.indices.capecsByTechnique.get(techId) || [];
+            const cwes = unique(capecs.flatMap(capecId => state.indices.cwesByCapec.get(capecId) || []));
+            const mitigations = state.indices.mitigationsByTechnique.get(techId) || [];
+            return { capecs, cwes, mitigations };
+        }
+
+        function buildRelatedForCapec(capecId) {
+            const capec = state.data.capecs[capecId];
+            const techniques = capec?.techniques || [];
+            const cwes = capec?.cwes || [];
+            const mitigations = unique(techniques.flatMap(tid => state.indices.mitigationsByTechnique.get(tid) || []));
+            return { techniques, cwes, mitigations };
+        }
+
+        function buildRelatedForCwe(cweId) {
+            const capecs = state.indices.capecsByCwe.get(cweId) || [];
+            const techniques = unique(capecs.flatMap(cid => state.data.capecs[cid]?.techniques || []));
+            const mitigations = unique(techniques.flatMap(tid => state.indices.mitigationsByTechnique.get(tid) || []));
+            return { capecs, techniques, mitigations };
+        }
+
+        function buildRelatedForMitigation(mitId) {
+            const techniques = state.indices.techniquesByMitigation.get(mitId) || [];
+            const capecs = unique(techniques.flatMap(tid => state.indices.capecsByTechnique.get(tid) || []));
+            const cwes = unique(capecs.flatMap(cid => state.indices.cwesByCapec.get(cid) || []));
+            return { techniques, capecs, cwes };
+        }
+
+        function renderGraphColumn(title, items, type) {
+            const col = document.createElement('div');
+            col.className = 'graph-column';
+            const header = document.createElement('div');
+            header.className = 'graph-header';
+            header.textContent = title;
+            const list = document.createElement('div');
+            list.className = 'graph-list';
+
+            if (!items.length) {
+                const empty = document.createElement('div');
+                empty.className = 'empty';
+                empty.textContent = 'No related items';
+                list.appendChild(empty);
+            } else {
+                items.slice(0, 80).forEach(id => {
+                    const item = document.createElement('div');
+                    item.className = 'graph-item';
+                    item.addEventListener('click', () => selectEntity(type, id));
+
+                    const label = document.createElement('div');
+                    label.className = 'entity-id badge ' + type;
+                    label.textContent = id;
+                    item.appendChild(label);
+
+                    const name = document.createElement('div');
+                    name.className = 'entity-name';
+                    if (type === 'attack') name.textContent = state.data.techniques[id]?.name || '';
+                    if (type === 'capec') name.textContent = state.data.capecs[id]?.name || '';
+                    if (type === 'cwe') name.textContent = state.data.cwes[id]?.name || '';
+                    if (type === 'mitigation') name.textContent = state.data.mitigations[id]?.name || '';
+                    item.appendChild(name);
+
+                    list.appendChild(item);
+                });
+            }
+
+            col.appendChild(header);
+            col.appendChild(list);
+            return col;
+        }
+
+        function renderGraph() {
+            const graph = document.getElementById('graph');
+            graph.innerHTML = '';
+            const { type, id } = state.selection;
+            if (!type || !id) {
+                const empty = document.createElement('div');
+                empty.className = 'empty';
+                empty.textContent = 'Select an entity to explore relationships.';
+                graph.appendChild(empty);
+                return;
+            }
+
+            if (type === 'attack') {
+                const rel = buildRelatedForAttack(id);
+                graph.appendChild(renderGraphColumn('Related CAPEC', rel.capecs, 'capec'));
+                graph.appendChild(renderGraphColumn('Related CWE', rel.cwes, 'cwe'));
+                graph.appendChild(renderGraphColumn('Mitigations', rel.mitigations, 'mitigation'));
+            } else if (type === 'capec') {
+                const rel = buildRelatedForCapec(id);
+                graph.appendChild(renderGraphColumn('Related Techniques', rel.techniques, 'attack'));
+                graph.appendChild(renderGraphColumn('Related CWE', rel.cwes, 'cwe'));
+                graph.appendChild(renderGraphColumn('Mitigations', rel.mitigations, 'mitigation'));
+            } else if (type === 'cwe') {
+                const rel = buildRelatedForCwe(id);
+                graph.appendChild(renderGraphColumn('Related CAPEC', rel.capecs, 'capec'));
+                graph.appendChild(renderGraphColumn('Related Techniques', rel.techniques, 'attack'));
+                graph.appendChild(renderGraphColumn('Mitigations', rel.mitigations, 'mitigation'));
+            } else if (type === 'mitigation') {
+                const rel = buildRelatedForMitigation(id);
+                graph.appendChild(renderGraphColumn('Related Techniques', rel.techniques, 'attack'));
+                graph.appendChild(renderGraphColumn('Related CAPEC', rel.capecs, 'capec'));
+                graph.appendChild(renderGraphColumn('Related CWE', rel.cwes, 'cwe'));
+            }
+        }
+
+        function renderDetails() {
+            const details = document.getElementById('details');
+            details.innerHTML = '';
+            const { type, id } = state.selection;
+            if (!type || !id) {
+                const empty = document.createElement('div');
+                empty.className = 'empty';
+                empty.textContent = 'Select an entity to see details.';
+                details.appendChild(empty);
+                return;
+            }
+
+            let entity = null;
+            if (type === 'attack') entity = state.data.techniques[id];
+            if (type === 'capec') entity = state.data.capecs[id];
+            if (type === 'cwe') entity = state.data.cwes[id];
+            if (type === 'mitigation') entity = state.data.mitigations[id];
+
+            const title = document.createElement('div');
+            title.className = 'detail-title';
+            title.textContent = entity?.name || 'Unknown';
+
+            const detailId = document.createElement('div');
+            detailId.className = 'detail-id badge ' + type;
+            detailId.textContent = entity?.id || id;
+
+            details.appendChild(title);
+            details.appendChild(detailId);
+
+            const desc = document.createElement('div');
+            desc.className = 'detail-section';
+            const descTitle = document.createElement('h4');
+            descTitle.textContent = 'Description';
+            const descText = document.createElement('p');
+            descText.textContent = entity?.description || 'No description available.';
+            desc.appendChild(descTitle);
+            desc.appendChild(descText);
+            details.appendChild(desc);
+
+            const links = document.createElement('div');
+            links.className = 'detail-section';
+            const linksTitle = document.createElement('h4');
+            linksTitle.textContent = 'Source Links';
+            links.appendChild(linksTitle);
+
+            const linkList = document.createElement('div');
+            let urls = [];
+            if (type === 'attack') {
+                const url = getMitreTechniqueUrl(entity);
+                if (url) urls.push({ label: 'MITRE ATT&CK Technique', url });
+            } else if (type === 'capec') {
+                const url = getCapecUrl(entity?.id);
+                if (url) urls.push({ label: 'CAPEC', url });
+            } else if (type === 'cwe') {
+                const url = getCweUrl(entity?.id);
+                if (url) urls.push({ label: 'CWE', url });
+            } else if (type === 'mitigation') {
+                const url = getMitigationUrl(entity?.id);
+                if (url) urls.push({ label: 'MITRE ATT&CK Mitigation', url });
+            }
+
+            const extraRefs = Array.isArray(entity?.references) ? entity.references : [];
+            extraRefs.slice(0, 6).forEach(ref => {
+                if (ref?.url) {
+                    urls.push({ label: ref.name || ref.url, url: ref.url });
+                }
+            });
+
+            if (!urls.length) {
+                const empty = document.createElement('p');
+                empty.textContent = 'No source links available.';
+                linkList.appendChild(empty);
+            } else {
+                urls.forEach(item => {
+                    const link = document.createElement('p');
+                    const a = document.createElement('a');
+                    a.href = item.url;
+                    a.target = '_blank';
+                    a.rel = 'noopener noreferrer';
+                    a.textContent = item.label;
+                    link.appendChild(a);
+                    linkList.appendChild(link);
+                });
+            }
+
+            links.appendChild(linkList);
+            details.appendChild(links);
+
+            if (type === 'attack') {
+                const meta = document.createElement('div');
+                meta.className = 'detail-section';
+                const metaTitle = document.createElement('h4');
+                metaTitle.textContent = 'Metadata';
+                meta.appendChild(metaTitle);
+
+                const pills = document.createElement('div');
+                (entity?.tactics || []).forEach(t => {
+                    const pill = document.createElement('span');
+                    pill.className = 'pill';
+                    pill.textContent = t;
+                    pills.appendChild(pill);
+                });
+                (entity?.platforms || []).forEach(p => {
+                    const pill = document.createElement('span');
+                    pill.className = 'pill';
+                    pill.textContent = p;
+                    pills.appendChild(pill);
+                });
+                meta.appendChild(pills);
+                details.appendChild(meta);
+            }
+
+            if (type === 'capec' || type === 'cwe') {
+                const meta = document.createElement('div');
+                meta.className = 'detail-section';
+                const metaTitle = document.createElement('h4');
+                metaTitle.textContent = 'Attributes';
+                meta.appendChild(metaTitle);
+
+                const text = document.createElement('p');
+                const parts = [];
+                if (entity?.status) parts.push(`Status: ${entity.status}`);
+                if (entity?.severity) parts.push(`Severity: ${entity.severity}`);
+                if (entity?.likelihood) parts.push(`Likelihood: ${entity.likelihood}`);
+                if (entity?.abstraction) parts.push(`Abstraction: ${entity.abstraction}`);
+                text.textContent = parts.join(' • ') || 'No attributes.';
+                meta.appendChild(text);
+                details.appendChild(meta);
+            }
+
+            if (type === 'mitigation') {
+                const meta = document.createElement('div');
+                meta.className = 'detail-section';
+                const metaTitle = document.createElement('h4');
+                metaTitle.textContent = 'Related Techniques';
+                meta.appendChild(metaTitle);
+
+                const techniques = state.data.mitigations[id]?.techniques || [];
+                if (!techniques.length) {
+                    const empty = document.createElement('p');
+                    empty.textContent = 'No techniques linked.';
+                    meta.appendChild(empty);
+                } else {
+                    techniques.slice(0, 12).forEach(tid => {
+                        const pill = document.createElement('span');
+                        pill.className = 'pill clickable';
+                        pill.textContent = tid;
+                        pill.addEventListener('click', () => selectEntity('attack', tid));
+                        meta.appendChild(pill);
+                    });
+                }
+                details.appendChild(meta);
+            }
+        }
+
+        function initEvents() {
+            document.getElementById('search').addEventListener('input', (e) => {
+                state.search = e.target.value;
+                renderList();
+            });
+
+            const globalSearch = document.getElementById('global-search');
+            const suggestionBox = document.getElementById('global-suggestions');
+
+            globalSearch.addEventListener('input', (e) => {
+                renderSuggestions(normalize(e.target.value));
+            });
+
+            globalSearch.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    const query = normalize(globalSearch.value);
+                    const match = state.searchIndex.find(item => item.haystack.includes(query));
+                    if (match) {
+                        state.activeTab = match.type;
+                        selectEntity(match.type, match.id);
+                        globalSearch.value = '';
+                        suggestionBox.classList.remove('visible');
+                        renderTabs();
+                        renderList();
+                    }
+                }
+                if (e.key === 'Escape') {
+                    suggestionBox.classList.remove('visible');
+                }
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.header-search')) {
+                    suggestionBox.classList.remove('visible');
+                }
+            });
+        }
+
+        async function loadData() {
+            setStatus('Loading data...');
+            const [attack, capec, cwe] = await Promise.all([
+                fetch('resources/attack-techniques.json').then(r => r.json()),
+                fetch('resources/capec-full.json').then(r => r.json()),
+                fetch('resources/cwe-full.json').then(r => r.json())
+            ]);
+
+            state.data.techniques = attack;
+            state.data.capecs = capec.patterns || {};
+            state.data.cwes = cwe.weaknesses || {};
+
+            buildIndices();
+            buildSearchIndex();
+            renderTabs();
+            renderList();
+            renderGraph();
+            renderDetails();
+            setStatus('Ready');
+
+            const params = new URLSearchParams(window.location.search);
+            const mitigationId = params.get('mitigation');
+            if (mitigationId && state.data.mitigations[mitigationId]) {
+                state.activeTab = 'mitigation';
+                selectEntity('mitigation', mitigationId);
+            }
+        }
+
+        initEvents();
+        loadData().catch(err => {
+            setStatus('Failed to load data');
+            console.error(err);
+        });
+    </script>
+</body>
+</html>
