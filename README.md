@@ -17,11 +17,14 @@ An editor for creating enriched Cyber Kill Chain assessments by mapping MITRE AT
 - **Multi-Domain ATT&CK** — 898 techniques across Enterprise, Mobile, and ICS
 - **CAPEC/CWE Integration** — Link attack patterns and weaknesses
 - **Drag & Drop** — Intuitive assignment of entities to phases
+- **Grouping** — Organize items into collapsible groups within phases
+- **Duplicates** — Allow multiple instances of the same entity
 - **Rich Metadata** — Comments, hyperlinks, observables, CVE/CVSS references
 - **Score & Confidence** — Rate items by severity and assessment confidence
 - **Visual Indicators** — Color-coded ribbons, CVE badges, and metadata icons
 - **Relationship Explorer** — Browse ATT&CK ↔ CAPEC ↔ CWE ↔ Mitigations in a dedicated view
 - **Hide Empty Phases** — Focus on active phases by hiding empty ones
+- **Collapsible Sidebar** — Toggle the left sidebar for more workspace
 - **Import/Export** — Lightweight JSON sharing and CSV exports with metadata
 - **Navigator Layers** — Import ATT&CK Navigator JSON exports
 
