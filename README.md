@@ -41,7 +41,8 @@ The Relationship Explorer is a second main view that lets you investigate ATT&CK
 
 ## Testing
 
-- **Demo kill chain**: Import [tests/demo.json](tests/demo.json) to exercise all metadata fields (CVE/CVSS, observables, links, confidence) and multi-phase coverage.
+- **Demo kill chain**: Import [examples/demo.json](examples/demo.json) to exercise all metadata fields (CVE/CVSS, observables, links, confidence) and multi-phase coverage.
+- **Grouping demo**: Import [examples/grouping-demo.json](examples/grouping-demo.json) for a ransomware-focused TTP mapping that showcases grouping.
 - **Import validation suite**: Open [tests/import-validation/test-runner.html](tests/import-validation/test-runner.html) in a browser to run validation, sanitization, and feature checks (includes the demo file).
 
 ## Project Structure
@@ -51,6 +52,9 @@ The Relationship Explorer is a second main view that lets you investigate ATT&CK
 ├── explorer.html                   # Relationship Explorer view
 ├── config.js                       # Centralized configuration (paths, colors, settings)
 ├── kill-chain-visualizer.js        # Core visualization component
+├── examples/                        # Sample kill chain exports
+│   ├── demo.json                    # Full-metadata demo mapping
+│   └── grouping-demo.json           # Grouped ransomware TTP example
 ├── scripts/
 │   ├── extract-attack.py           # ATT&CK STIX bundle parser
 │   ├── extract-data.py             # CAPEC/CWE XML parser
