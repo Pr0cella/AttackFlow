@@ -6,6 +6,24 @@ This changelog also serves as a development context document for AI agents conti
 
 ---
 
+## [2.5.1] - 2026-02-02
+
+### Added
+- Phase grouping with per-group collapse/expand.
+- Drag-and-drop for groups between phases and items into/out of groups.
+- Collapsible left sidebar toggle in the kill chain header.
+- Examples directory with grouped and full-metadata demo exports.
+- Delete confirmations for items and groups
+
+### Changed
+- Kill chain assignments now use per-instance IDs to allow duplicates and precise moves.
+- Sidebar items remain available after assignment to allow multiple instances.
+- Import/export now preserves group structure, layout order, and collapsed state.
+- Group headers animate on collapse/expand without a full re-render.
+- Import validation demo file moved to examples/.
+
+---
+
 ## [2.5.0] - 2026-01-31
 
 ### Added

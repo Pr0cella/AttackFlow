@@ -4,7 +4,7 @@ An editor for creating enriched Cyber Kill Chain assessments by mapping MITRE AT
 
 ### Work in progress 
 
-![Version](https://img.shields.io/badge/version-2.5.0-blue)
+![Version](https://img.shields.io/badge/version-2.5.1-blue)
 ![License](https://img.shields.io/badge/license-Apache%202.0-green)
 ![Dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)
 
@@ -17,11 +17,14 @@ An editor for creating enriched Cyber Kill Chain assessments by mapping MITRE AT
 - **Multi-Domain ATT&CK** — 898 techniques across Enterprise, Mobile, and ICS
 - **CAPEC/CWE Integration** — Link attack patterns and weaknesses
 - **Drag & Drop** — Intuitive assignment of entities to phases
+- **Grouping** — Organize items into collapsible groups within phases
+- **Duplicates** — Allow multiple instances of the same entity
 - **Rich Metadata** — Comments, hyperlinks, observables, CVE/CVSS references
 - **Score & Confidence** — Rate items by severity and assessment confidence
 - **Visual Indicators** — Color-coded ribbons, CVE badges, and metadata icons
 - **Relationship Explorer** — Browse ATT&CK ↔ CAPEC ↔ CWE ↔ Mitigations in a dedicated view
 - **Hide Empty Phases** — Focus on active phases by hiding empty ones
+- **Collapsible Sidebar** — Toggle the left sidebar for more workspace
 - **Import/Export** — Lightweight JSON sharing and CSV exports with metadata
 - **Navigator Layers** — Import ATT&CK Navigator JSON exports
 
@@ -41,7 +44,8 @@ The Relationship Explorer is a second main view that lets you investigate ATT&CK
 
 ## Testing
 
-- **Demo kill chain**: Import [tests/demo.json](tests/demo.json) to exercise all metadata fields (CVE/CVSS, observables, links, confidence) and multi-phase coverage.
+- **Demo kill chain**: Import [examples/demo.json](examples/demo.json) to exercise all metadata fields (CVE/CVSS, observables, links, confidence) and multi-phase coverage.
+- **Grouping demo**: Import [examples/grouping-demo.json](examples/grouping-demo.json) for a ransomware-focused TTP mapping that showcases grouping.
 - **Import validation suite**: Open [tests/import-validation/test-runner.html](tests/import-validation/test-runner.html) in a browser to run validation, sanitization, and feature checks (includes the demo file).
 
 ## Project Structure
@@ -51,6 +55,9 @@ The Relationship Explorer is a second main view that lets you investigate ATT&CK
 ├── explorer.html                   # Relationship Explorer view
 ├── config.js                       # Centralized configuration (paths, colors, settings)
 ├── kill-chain-visualizer.js        # Core visualization component
+├── examples/                        # Sample kill chain exports
+│   ├── demo.json                    # Full-metadata demo mapping
+│   └── grouping-demo.json           # Grouped ransomware TTP example
 ├── scripts/
 │   ├── extract-attack.py           # ATT&CK STIX bundle parser
 │   ├── extract-data.py             # CAPEC/CWE XML parser

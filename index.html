@@ -327,6 +327,15 @@
             display: block;
         }
 
+        .app.sidebar-collapsed .sidebar {
+            width: 44px;
+        }
+
+        .app.sidebar-collapsed .sidebar-tabs,
+        .app.sidebar-collapsed .sidebar-content {
+            display: none;
+        }
+
         /* Sidebar */
         .sidebar {
             width: 340px;
@@ -335,6 +344,47 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            transition: width 0.2s ease;
+        }
+
+        .sidebar-toggle {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background: rgba(17, 24, 39, 0.2);
+            color: var(--text-secondary);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .sidebar-toggle:hover {
+            color: var(--text-primary);
+            border-color: var(--accent);
+        }
+
+        .sidebar-toggle-icon {
+            font-size: 0.7rem;
+            transition: transform 0.2s;
+            display: inline-block;
+        }
+
+        .sidebar-toggle-icon svg {
+            width: 14px;
+            height: 14px;
+            display: block;
+            fill: currentColor;
+        }
+
+        .app.sidebar-collapsed .sidebar-toggle-icon { transform: rotate(180deg); }
+
+        .content-title-wrap {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .sidebar-tabs {
@@ -628,7 +678,6 @@
 
         .phase-header {
             display: flex;
-            justify-content: space-between;
             align-items: center;
             padding: 6px 8px;
             cursor: pointer;
@@ -642,13 +691,20 @@
             gap: 6px;
         }
 
-        .phase-name { font-weight: 500; font-size: 0.75rem; }
+        .phase-header-actions {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .phase-name { font-weight: 500; font-size: 1rem; }
 
         .phase-count {
             background: var(--border-color);
             padding: 1px 5px;
             border-radius: 8px;
-            font-size: 0.6rem;
+            font-size: 0.65rem;
             font-weight: 600;
         }
 
@@ -660,6 +716,18 @@
             transition: transform 0.2s;
         }
 
+        .phase-group-btn {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 2px;
+            cursor: pointer;
+        }
+
+        .phase-group-btn:hover { color: var(--text-primary); border-color: var(--accent); }
+
         .phase.minimized .phase-toggle { transform: rotate(-90deg); }
 
         .phase-content {
@@ -669,6 +737,80 @@
             gap: 4px;
             max-height: 300px;
             overflow-y: auto;
+        }
+
+        .phase-group {
+            border: 1px dashed rgba(113, 113, 122, 0.35);
+            border-radius: 6px;
+            padding: 4px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            background: rgba(17, 24, 39, 0.25);
+        }
+
+        .phase-group.collapsed .phase-group-content { display: none; }
+
+        .phase-group-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 6px;
+            border-radius: 4px;
+            background: rgba(15, 23, 42, 0.4);
+            cursor: pointer;
+        }
+
+        .phase-group-title { font-size: 0.9rem; font-weight: 600; color: var(--text-primary); }
+        .phase-group-count { font-size: 0.65rem; color: var(--text-secondary); }
+        .phase-group-toggle {
+            display: inline-block;
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            transition: transform 0.2s;
+        }
+
+        .phase-group.collapsed .phase-group-toggle { transform: rotate(-90deg); }
+
+        .group-header-actions {
+            margin-left: auto;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .group-actions {
+            display: inline-flex;
+            gap: 4px;
+        }
+
+        .group-action-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            background: rgba(17, 24, 39, 0.2);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .group-action-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+
+        .group-action-btn:hover { border-color: var(--accent); color: var(--text-primary); }
+        .group-action-btn.delete:hover { border-color: #f87171; color: #f87171; }
+
+        .phase-group-content {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
         }
 
         /* Technique Tag */
@@ -1646,32 +1788,6 @@
         .detail-list-item .id.capec { color: var(--capec-color); }
         .detail-list-item .id.cwe { color: var(--cwe-color); }
 
-        /* Assignment Panel */
-        .assignment-panel {
-            padding: 12px;
-            background: rgba(113, 113, 122, 0.1);
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .assignment-panel h4 {
-            font-size: 0.75rem;
-            margin-bottom: 8px;
-            color: var(--accent);
-        }
-
-        .phase-select {
-            width: 100%;
-            padding: 8px;
-            background: var(--bg-dark);
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            color: var(--text-primary);
-            font-size: 0.75rem;
-            cursor: pointer;
-        }
-
-        .phase-select:focus { outline: none; border-color: var(--accent); }
-
         /* Legend */
         .legend {
             display: flex;
@@ -2012,7 +2128,13 @@
             <!-- Content -->
             <div class="content" id="content">
                 <div class="content-header">
-                    <span style="font-size: 0.9rem; font-weight: 500;" id="content-title">Unified Kill Chain</span>
+                    <div class="content-title-wrap">
+                        <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle sidebar" title="Toggle sidebar">
+                            <span class="sidebar-toggle-icon">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M169.4 297.4C156.9 309.9 156.9 330.2 169.4 342.7L361.4 534.7C373.9 547.2 394.2 547.2 406.7 534.7C419.2 522.2 419.2 501.9 406.7 489.4L237.3 320L406.6 150.6C419.1 138.1 419.1 117.8 406.6 105.3C394.1 92.8 373.8 92.8 361.3 105.3L169.3 297.3z"/></svg>                            </span>
+                        </button>
+                        <span style="font-size: 0.9rem; font-weight: 500;" id="content-title">Unified Kill Chain</span>
+                    </div>
                     <div class="view-controls">
                         <button class="btn" id="btn-hide-empty" onclick="toggleHideEmpty()">Hide Empty</button>
                     </div>
@@ -2124,36 +2246,6 @@
                         <div class="detail-name" id="detail-name"></div>
                     </div>
                     <button class="detail-close" onclick="closeDetail()">×</button>
-                </div>
-                <div class="assignment-panel" id="assignment-panel">
-                    <h4>Assign to Phase</h4>
-                    <select class="phase-select" id="phase-select" onchange="assignSelectedEntity()">
-                        <option value="">-- Select Phase --</option>
-                        <optgroup label="IN - Initial Foothold">
-                            <option value="IN:reconnaissance">Reconnaissance</option>
-                            <option value="IN:resource-development">Resource Development</option>
-                            <option value="IN:delivery">Delivery</option>
-                            <option value="IN:social-engineering">Social Engineering</option>
-                            <option value="IN:exploitation">Exploitation</option>
-                            <option value="IN:persistence">Persistence</option>
-                            <option value="IN:defense-evasion">Defense Evasion</option>
-                            <option value="IN:command-control">Command & Control</option>
-                        </optgroup>
-                        <optgroup label="THROUGH - Network Propagation">
-                            <option value="THROUGH:pivoting">Pivoting</option>
-                            <option value="THROUGH:discovery">Discovery</option>
-                            <option value="THROUGH:privilege-escalation">Privilege Escalation</option>
-                            <option value="THROUGH:execution">Execution</option>
-                            <option value="THROUGH:credential-access">Credential Access</option>
-                            <option value="THROUGH:lateral-movement">Lateral Movement</option>
-                        </optgroup>
-                        <optgroup label="OUT - Action on Objectives">
-                            <option value="OUT:collection">Collection</option>
-                            <option value="OUT:exfiltration">Exfiltration</option>
-                            <option value="OUT:impact">Impact</option>
-                            <option value="OUT:objectives">Objectives</option>
-                        </optgroup>
-                    </select>
                 </div>
                 <div class="detail-content" id="detail-content"></div>
             </div>
@@ -2685,14 +2777,24 @@
             return 'high';
         }
 
+        let assignmentInstanceCounter = 0;
+
+        function createAssignmentInstanceId() {
+            assignmentInstanceCounter += 1;
+            return `itm-${Date.now().toString(36)}-${assignmentInstanceCounter}`;
+        }
+
         // Migrate old ID-only format to new object format
         function migrateAssignment(idOrObj) {
             if (typeof idOrObj === 'string') {
-                return { id: idOrObj, metadata: createDefaultMetadata() };
+                return { id: idOrObj, metadata: createDefaultMetadata(), instanceId: createAssignmentInstanceId() };
             }
             // Ensure metadata exists
             if (!idOrObj.metadata) {
                 idOrObj.metadata = createDefaultMetadata();
+            }
+            if (!idOrObj.instanceId) {
+                idOrObj.instanceId = createAssignmentInstanceId();
             }
             return idOrObj;
         }
@@ -2707,24 +2809,247 @@
             return typeof assignment === 'string' ? createDefaultMetadata() : (assignment.metadata || createDefaultMetadata());
         }
 
+        function getAssignmentInstanceId(assignment) {
+            return typeof assignment === 'string' ? null : assignment.instanceId;
+        }
+
+        function getPhaseUngroupedItems(phaseData, type) {
+            const key = type === 'attack' ? 'techniques' : type === 'capec' ? 'capecs' : 'cwes';
+            return phaseData?.[key] || [];
+        }
+
+        function getPhaseGroupedItems(phaseData, type) {
+            const groups = Array.isArray(phaseData?.groups) ? phaseData.groups : [];
+            return groups.flatMap(group => (group.items || []).filter(item => item.type === type));
+        }
+
+        function getAllPhaseItemsByType(phaseData, type) {
+            return [...getPhaseUngroupedItems(phaseData, type), ...getPhaseGroupedItems(phaseData, type)];
+        }
+
+        function ensurePhaseLayout(phaseKey, phaseData) {
+            if (!phaseData.layout || !Array.isArray(phaseData.layout)) {
+                phaseData.layout = [];
+            }
+
+            const existingItemIds = new Set(
+                phaseData.layout.filter(entry => entry.kind === 'item').map(entry => entry.instanceId)
+            );
+            const existingGroupIds = new Set(
+                phaseData.layout.filter(entry => entry.kind === 'group').map(entry => entry.groupId)
+            );
+
+            for (const type of ['capec', 'attack', 'cwe']) {
+                const items = getPhaseUngroupedItems(phaseData, type);
+                items.forEach(item => {
+                    const instanceId = getAssignmentInstanceId(item);
+                    if (instanceId && !existingItemIds.has(instanceId)) {
+                        phaseData.layout.push({ kind: 'item', type, instanceId });
+                        existingItemIds.add(instanceId);
+                    }
+                });
+            }
+
+            (phaseData.groups || []).forEach(group => {
+                if (group?.groupId && !existingGroupIds.has(group.groupId)) {
+                    phaseData.layout.push({ kind: 'group', groupId: group.groupId });
+                    existingGroupIds.add(group.groupId);
+                }
+            });
+
+            phaseData.layout = phaseData.layout.filter(entry => {
+                if (entry.kind === 'item') {
+                    const type = entry.type;
+                    return getPhaseUngroupedItems(phaseData, type)
+                        .some(item => getAssignmentInstanceId(item) === entry.instanceId);
+                }
+                if (entry.kind === 'group') {
+                    return (phaseData.groups || []).some(group => group.groupId === entry.groupId);
+                }
+                return false;
+            });
+        }
+
+        function generateGroupId() {
+            return `grp-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+        }
+
+        function createGroup(phaseKey) {
+            const phaseData = state.assignments[phaseKey];
+            if (!phaseData) return;
+            const group = {
+                groupId: generateGroupId(),
+                label: 'New Group',
+                collapsed: false,
+                items: []
+            };
+            phaseData.groups = phaseData.groups || [];
+            phaseData.groups.push(group);
+            ensurePhaseLayout(phaseKey, phaseData);
+            renderKillChain();
+            startRenameGroup(phaseKey, group.groupId);
+        }
+
+        function toggleGroupCollapse(phaseKey, groupId) {
+            const phaseData = state.assignments[phaseKey];
+            if (!phaseData) return;
+            const group = (phaseData.groups || []).find(g => g.groupId === groupId);
+            if (!group) return;
+            group.collapsed = !group.collapsed;
+            const escapedId = window.CSS && CSS.escape ? CSS.escape(groupId) : groupId.replace(/"/g, '\\"');
+            const groupEl = document.querySelector(`.phase-group[data-group-id="${escapedId}"]`);
+            if (groupEl) {
+                groupEl.classList.toggle('collapsed', group.collapsed);
+            } else {
+                renderKillChain();
+            }
+        }
+
+        function startRenameGroup(phaseKey, groupId) {
+            const phaseData = state.assignments[phaseKey];
+            if (!phaseData) return;
+            const group = (phaseData.groups || []).find(g => g.groupId === groupId);
+            if (!group) return;
+            group.editing = true;
+            renderKillChain();
+            setTimeout(() => {
+                const input = document.getElementById(`group-rename-${groupId}`);
+                if (input) {
+                    input.focus();
+                    input.select();
+                }
+            }, 0);
+        }
+
+        function commitRenameGroup(phaseKey, groupId, value, cancel = false) {
+            const phaseData = state.assignments[phaseKey];
+            if (!phaseData) return;
+            const group = (phaseData.groups || []).find(g => g.groupId === groupId);
+            if (!group) return;
+            group.editing = false;
+            if (!cancel) {
+                const sanitized = sanitizeForStorage(value || '', 80).trim();
+                group.label = sanitized || 'New Group';
+            }
+            renderKillChain();
+        }
+
+        function removeGroup(phaseKey, groupId) {
+            const phaseData = state.assignments[phaseKey];
+            if (!phaseData) return;
+            const groupIdx = (phaseData.groups || []).findIndex(g => g.groupId === groupId);
+            if (groupIdx === -1) return;
+
+            const group = phaseData.groups[groupIdx];
+            if (!window.confirm('Delete this group and move its items back to the phase?')) return;
+
+            const items = group.items || [];
+            items.forEach(item => {
+                const key = item.type === 'attack' ? 'techniques' : item.type === 'capec' ? 'capecs' : 'cwes';
+                phaseData[key].push(item);
+                phaseData.layout.push({ kind: 'item', type: item.type, instanceId: getAssignmentInstanceId(item) });
+            });
+
+            phaseData.groups.splice(groupIdx, 1);
+            phaseData.layout = (phaseData.layout || []).filter(entry => !(entry.kind === 'group' && entry.groupId === groupId));
+            renderKillChain();
+            filterEntities(state.activeTab);
+            if (state.view === 'relationship') {
+                renderRelationshipView();
+            }
+        }
+
+        function extractAssignmentInstance(phaseKey, type, instanceId) {
+            const phaseData = state.assignments[phaseKey];
+            if (!phaseData) return null;
+            const key = type === 'attack' ? 'techniques' : type === 'capec' ? 'capecs' : 'cwes';
+
+            const list = phaseData[key];
+            const idx = list.findIndex(a => getAssignmentInstanceId(a) === instanceId);
+            if (idx !== -1) {
+                const [removed] = list.splice(idx, 1);
+                phaseData.layout = phaseData.layout.filter(entry => !(entry.kind === 'item' && entry.instanceId === instanceId));
+                return removed;
+            }
+
+            for (const group of phaseData.groups || []) {
+                const gIdx = (group.items || []).findIndex(a => getAssignmentInstanceId(a) === instanceId);
+                if (gIdx !== -1) {
+                    const [removed] = group.items.splice(gIdx, 1);
+                    return removed;
+                }
+            }
+
+            return null;
+        }
+
+        function moveGroupBetweenPhases(fromPhase, toPhase, groupId) {
+            if (!fromPhase || !toPhase || fromPhase === toPhase) return;
+            const source = state.assignments[fromPhase];
+            const target = state.assignments[toPhase];
+            if (!source || !target) return;
+
+            const idx = (source.groups || []).findIndex(g => g.groupId === groupId);
+            if (idx === -1) return;
+            const [group] = source.groups.splice(idx, 1);
+            target.groups = target.groups || [];
+            target.groups.push(group);
+
+            source.layout = (source.layout || []).filter(entry => !(entry.kind === 'group' && entry.groupId === groupId));
+            ensurePhaseLayout(toPhase, target);
+        }
+
         // Find assignment object by ID in a phase
-        function findAssignment(phaseKey, entityType, id) {
+        function findAssignment(phaseKey, entityType, id, instanceId = null) {
             const key = entityType === 'attack' ? 'techniques' : entityType === 'capec' ? 'capecs' : 'cwes';
-            const assignments = state.assignments[phaseKey]?.[key] || [];
-            return assignments.find(a => getAssignmentId(a) === id);
+            const phaseData = state.assignments[phaseKey];
+            const assignments = phaseData?.[key] || [];
+            if (instanceId) {
+                const match = assignments.find(a => getAssignmentInstanceId(a) === instanceId);
+                if (match) return match;
+                for (const group of phaseData?.groups || []) {
+                    const groupMatch = (group.items || []).find(a => getAssignmentInstanceId(a) === instanceId);
+                    if (groupMatch) return groupMatch;
+                }
+                return null;
+            }
+
+            const match = assignments.find(a => getAssignmentId(a) === id);
+            if (match) return match;
+            for (const group of phaseData?.groups || []) {
+                const groupMatch = (group.items || []).find(a => getAssignmentId(a) === id && a.type === entityType);
+                if (groupMatch) return groupMatch;
+            }
+            return null;
         }
 
         // Update metadata for an assignment
-        function updateAssignmentMetadata(phaseKey, entityType, id, newMetadata) {
+        function updateAssignmentMetadata(phaseKey, entityType, id, newMetadata, instanceId = null) {
             const key = entityType === 'attack' ? 'techniques' : entityType === 'capec' ? 'capecs' : 'cwes';
-            const assignments = state.assignments[phaseKey]?.[key] || [];
-            const idx = assignments.findIndex(a => getAssignmentId(a) === id);
+            const phaseData = state.assignments[phaseKey];
+            if (!phaseData) return;
+            const assignments = phaseData[key] || [];
+
+            const idx = instanceId
+                ? assignments.findIndex(a => getAssignmentInstanceId(a) === instanceId)
+                : assignments.findIndex(a => getAssignmentId(a) === id);
             if (idx !== -1) {
-                // Ensure it's in object format
                 if (typeof assignments[idx] === 'string') {
-                    assignments[idx] = { id: assignments[idx], metadata: createDefaultMetadata() };
+                    assignments[idx] = { id: assignments[idx], metadata: createDefaultMetadata(), instanceId: createAssignmentInstanceId() };
                 }
                 assignments[idx].metadata = { ...assignments[idx].metadata, ...newMetadata };
+                return;
+            }
+
+            for (const group of phaseData.groups || []) {
+                const gIdx = (group.items || []).findIndex(a => instanceId
+                    ? getAssignmentInstanceId(a) === instanceId
+                    : (getAssignmentId(a) === id && a.type === entityType)
+                );
+                if (gIdx !== -1) {
+                    group.items[gIdx].metadata = { ...group.items[gIdx].metadata, ...newMetadata };
+                    return;
+                }
             }
         }
 
@@ -2814,7 +3139,7 @@
             for (const [superPhase, data] of Object.entries(KILL_CHAIN)) {
                 for (const phase of data.phases) {
                     const key = `${superPhase}:${phase}`;
-                    state.assignments[key] = { techniques: [], capecs: [], cwes: [] };
+                    state.assignments[key] = { techniques: [], capecs: [], cwes: [], groups: [], layout: [] };
                 }
             }
         }
@@ -3009,7 +3334,7 @@
             document.getElementById('view-explorer-group').classList.toggle('active', isExplorer);
             document.getElementById('kill-chain-container').classList.toggle('hidden', isExplorer || isRelationship);
             document.getElementById('relationship-container').classList.toggle('visible', isRelationship);
-            document.getElementById('content-title').textContent = isRelationship ? 'CAPEC → CWE → ATT&CK → Phase' : 'Unified Kill Chain';
+            document.getElementById('content-title').textContent = isRelationship ? 'Kill Chain Relationships' : 'Unified Kill Chain';
             document.getElementById('btn-hide-empty').style.display = !isExplorer && !isRelationship ? 'inline-block' : 'none';
             document.getElementById('stats-bar').style.display = isExplorer ? 'none' : 'flex';
             document.getElementById('legend-row').style.display = isExplorer ? 'none' : 'flex';
@@ -3017,6 +3342,12 @@
             if (isRelationship) {
                 renderRelationshipView();
             }
+        }
+
+        function toggleSidebar() {
+            const app = document.querySelector('.app');
+            if (!app) return;
+            app.classList.toggle('sidebar-collapsed');
         }
 
         function toggleLayer(layer) {
@@ -3117,14 +3448,13 @@
             let html = '';
             
             for (const entity of entities) {
-                const isAssigned = isEntityAssigned(type, entity.id);
                 const isSelected = state.selection.type === type && state.selection.id === entity.id;
                 
                 if (type === 'attack') {
                     const subIndicator = entity.isSubtechnique ? '↳ ' : '';
                     const tacticBadge = entity.tactics?.length ? `<span class="entity-badge">${esc(entity.tactics[0])}</span>` : '';
                     html += `
-                        <div class="entity-item attack ${isAssigned ? 'assigned' : ''} ${isSelected ? 'selected' : ''}" 
+                        <div class="entity-item attack ${isSelected ? 'selected' : ''}" 
                              onclick="selectEntity('attack', '${esc(entity.id)}')"
                              draggable="true"
                              ondragstart="handleDragStart(event, 'attack', '${esc(entity.id)}')"
@@ -3145,7 +3475,7 @@
                     const severityClass = entity.severity?.toLowerCase().includes('high') ? 'severity-high' : 
                                          entity.severity?.toLowerCase().includes('medium') ? 'severity-medium' : 'severity-low';
                     html += `
-                        <div class="entity-item capec ${isAssigned ? 'assigned' : ''} ${isSelected ? 'selected' : ''}"
+                        <div class="entity-item capec ${isSelected ? 'selected' : ''}"
                              onclick="selectEntity('capec', '${esc(entity.id)}')"
                              draggable="true"
                              ondragstart="handleDragStart(event, 'capec', '${esc(entity.id)}')"
@@ -3163,7 +3493,7 @@
                     `;
                 } else if (type === 'cwe') {
                     html += `
-                        <div class="entity-item cwe ${isAssigned ? 'assigned' : ''} ${isSelected ? 'selected' : ''}"
+                        <div class="entity-item cwe ${isSelected ? 'selected' : ''}"
                              onclick="selectEntity('cwe', '${esc(entity.id)}')"
                              draggable="true"
                              ondragstart="handleDragStart(event, 'cwe', '${esc(entity.id)}')"
@@ -3188,9 +3518,9 @@
         }
 
         function isEntityAssigned(type, id) {
-            const key = type === 'attack' ? 'techniques' : type === 'capec' ? 'capecs' : 'cwes';
             for (const phase of Object.values(state.assignments)) {
-                if (phase[key]?.some(a => getAssignmentId(a) === id)) return true;
+                const items = getAllPhaseItemsByType(phase, type);
+                if (items.some(a => getAssignmentId(a) === id)) return true;
             }
             return false;
         }
@@ -3372,8 +3702,8 @@
             return { id, name, html };
         }
 
-        function buildMetadataSummary(type, id, phaseKey) {
-            const assignment = phaseKey ? findAssignment(phaseKey, type, id) : null;
+        function buildMetadataSummary(type, id, phaseKey, instanceId) {
+            const assignment = phaseKey ? findAssignment(phaseKey, type, id, instanceId) : null;
             const metadata = assignment ? getAssignmentMetadata(assignment) : createDefaultMetadata();
             const score = metadata.score || 'unclassified';
             const scoreLabel = SCORE_LEVELS[score]?.label || 'Unclassified';
@@ -3433,13 +3763,13 @@
             `;
         }
 
-        function openEntityModal(type, id, phaseKey) {
+        function openEntityModal(type, id, phaseKey, instanceId) {
             if (!type || !id) return;
             const detail = buildEntityDetail(type, id);
             document.getElementById('entity-modal-id').textContent = detail.id;
             document.getElementById('entity-modal-name').textContent = detail.name;
             const content = document.getElementById('entity-modal-content');
-            content.innerHTML = detail.html + buildMetadataSummary(type, id, phaseKey);
+            content.innerHTML = detail.html + buildMetadataSummary(type, id, phaseKey, instanceId);
             document.getElementById('entity-modal').classList.add('visible');
             document.getElementById('detail-panel').classList.remove('visible');
             state.selection = { type, id };
@@ -3455,7 +3785,6 @@
             const idEl = document.getElementById('detail-id');
             const nameEl = document.getElementById('detail-name');
             const contentEl = document.getElementById('detail-content');
-            const selectEl = document.getElementById('phase-select');
             
             panel.classList.add('visible');
             idEl.className = `detail-id ${type}`;
@@ -3466,8 +3795,6 @@
             contentEl.innerHTML = detail.html;
             
             // Set current assignment in dropdown
-            const currentPhase = findEntityPhase(type, id);
-            selectEl.value = currentPhase || '';
         }
 
         function closeDetail() {
@@ -3477,53 +3804,20 @@
         }
 
         function findEntityPhase(type, id) {
-            const key = type === 'attack' ? 'techniques' : type === 'capec' ? 'capecs' : 'cwes';
             for (const [phase, data] of Object.entries(state.assignments)) {
-                if (data[key]?.includes(id)) return phase;
+                const items = getAllPhaseItemsByType(data, type);
+                if (items.some(a => getAssignmentId(a) === id)) return phase;
             }
             return null;
         }
 
         // ============================================================
-        // ASSIGNMENT LOGIC
-        // ============================================================
-        
-        // Manual single-phase assignment
-        function assignSelectedEntity() {
-            const { type, id } = state.selection;
-            if (!type || !id) return;
-            
-            const phaseValue = document.getElementById('phase-select').value;
-            const key = type === 'attack' ? 'techniques' : type === 'capec' ? 'capecs' : 'cwes';
-            
-            // Remove from all phases first
-            for (const phase of Object.values(state.assignments)) {
-                const idx = phase[key].indexOf(id);
-                if (idx !== -1) phase[key].splice(idx, 1);
-            }
-            
-            // Add to selected phase
-            if (phaseValue && state.assignments[phaseValue]) {
-                state.assignments[phaseValue][key].push(id);
-                showToast(`${id} → ${formatPhaseName(phaseValue.split(':')[1])}`);
-            } else {
-                showToast(`${id} unassigned`);
-            }
-            
-            renderKillChain();
-            filterEntities(state.activeTab);
-            if (state.view === 'relationship') {
-                renderRelationshipView();
-            }
-        }
-
-        // ============================================================
         // DRAG & DROP
         // ============================================================
-        let dragData = { type: null, id: null };
+        let dragData = { kind: null, type: null, id: null, fromPhase: null, instanceId: null, groupId: null, sourceGroupId: null };
 
         function handleDragStart(event, type, id) {
-            dragData = { type, id };
+            dragData = { kind: 'item', type, id, fromPhase: null, instanceId: null, groupId: null, sourceGroupId: null };
             event.target.classList.add('dragging');
             event.dataTransfer.effectAllowed = 'move';
             event.dataTransfer.setData('text/plain', `${type}:${id}`);
@@ -3536,7 +3830,7 @@
 
         function handleDragEnd(event) {
             event.target.classList.remove('dragging');
-            dragData = { type: null, id: null };
+            dragData = { kind: null, type: null, id: null, fromPhase: null, instanceId: null, groupId: null, sourceGroupId: null };
             
             // Remove drop target highlighting
             document.querySelectorAll('.phase').forEach(p => {
@@ -3558,18 +3852,32 @@
             event.preventDefault();
             event.currentTarget.style.background = '';
             
-            const { type, id } = dragData;
+            const { kind, type, id, fromPhase, instanceId, groupId, sourceGroupId } = dragData;
+            if (!kind) return;
+
+            if (kind === 'group') {
+                if (!fromPhase || !groupId) return;
+                moveGroupBetweenPhases(fromPhase, phaseKey, groupId);
+                renderKillChain();
+                filterEntities(state.activeTab);
+                if (state.view === 'relationship') {
+                    renderRelationshipView();
+                }
+                return;
+            }
+            
             if (!type || !id) return;
             
             const key = type === 'attack' ? 'techniques' : type === 'capec' ? 'capecs' : 'cwes';
-            
-            // Find existing assignment to preserve metadata
+            if (fromPhase && fromPhase === phaseKey && !sourceGroupId) {
+                return;
+            }
+
             let existingMetadata = null;
-            for (const phase of Object.values(state.assignments)) {
-                const idx = phase[key].findIndex(a => getAssignmentId(a) === id);
-                if (idx !== -1) {
-                    existingMetadata = getAssignmentMetadata(phase[key][idx]);
-                    phase[key].splice(idx, 1);
+            if (fromPhase && instanceId) {
+                const removed = extractAssignmentInstance(fromPhase, type, instanceId);
+                if (removed) {
+                    existingMetadata = getAssignmentMetadata(removed);
                 }
             }
             
@@ -3577,12 +3885,73 @@
             if (state.assignments[phaseKey]) {
                 const newAssignment = {
                     id: id,
-                    metadata: existingMetadata || createDefaultMetadata()
+                    metadata: existingMetadata || createDefaultMetadata(),
+                    instanceId: instanceId || createAssignmentInstanceId()
                 };
                 state.assignments[phaseKey][key].push(newAssignment);
+                ensurePhaseLayout(phaseKey, state.assignments[phaseKey]);
                 showToast(`${id} → ${formatPhaseName(phaseKey.split(':')[1])}`);
             }
             
+            renderKillChain();
+            filterEntities(state.activeTab);
+            if (state.view === 'relationship') {
+                renderRelationshipView();
+            }
+        }
+
+        function handleAssignmentDragStart(event, type, id, phaseKey, instanceId, sourceGroupId) {
+            dragData = { kind: 'item', type, id, fromPhase: phaseKey, instanceId, groupId: null, sourceGroupId };
+            event.target.classList.add('dragging');
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', `${type}:${id}`);
+
+            document.querySelectorAll('.phase').forEach(p => {
+                p.classList.add('drop-target');
+            });
+        }
+
+        function handleGroupDragStart(event, phaseKey, groupId) {
+            dragData = { kind: 'group', type: null, id: null, fromPhase: phaseKey, instanceId: null, groupId, sourceGroupId: null };
+            event.target.classList.add('dragging');
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', `group:${groupId}`);
+
+            document.querySelectorAll('.phase').forEach(p => {
+                p.classList.add('drop-target');
+            });
+        }
+
+        function handleGroupDrop(event, phaseKey, groupId) {
+            event.preventDefault();
+            event.stopPropagation();
+            event.currentTarget.classList.remove('drop-target');
+            
+            const { kind, type, id, fromPhase, instanceId, sourceGroupId } = dragData;
+            if (kind !== 'item' || !type || !id) return;
+            if (sourceGroupId && sourceGroupId === groupId) return;
+
+            let existingMetadata = null;
+            if (fromPhase && instanceId) {
+                const removed = extractAssignmentInstance(fromPhase, type, instanceId);
+                if (removed) {
+                    existingMetadata = getAssignmentMetadata(removed);
+                }
+            }
+
+            const phaseData = state.assignments[phaseKey];
+            if (!phaseData) return;
+            const group = (phaseData.groups || []).find(g => g.groupId === groupId);
+            if (!group) return;
+
+            const assignment = {
+                id,
+                metadata: existingMetadata || createDefaultMetadata(),
+                instanceId: instanceId || createAssignmentInstanceId(),
+                type
+            };
+            group.items = group.items || [];
+            group.items.push(assignment);
             renderKillChain();
             filterEntities(state.activeTab);
             if (state.view === 'relationship') {
@@ -3606,14 +3975,16 @@
                 
                 for (const phaseId of superPhase.phases) {
                     const phaseKey = `${superPhaseId}:${phaseId}`;
-                    const phaseData = state.assignments[phaseKey] || { techniques: [], capecs: [], cwes: [] };
+                    const phaseData = state.assignments[phaseKey] || { techniques: [], capecs: [], cwes: [], groups: [], layout: [] };
                     
-                    const techCount = state.layers.attack ? phaseData.techniques.length : 0;
-                    const capecCount = state.layers.capec ? phaseData.capecs.length : 0;
-                    const cweCount = state.layers.cwe ? phaseData.cwes.length : 0;
+                    const techCount = state.layers.attack ? getAllPhaseItemsByType(phaseData, 'attack').length : 0;
+                    const capecCount = state.layers.capec ? getAllPhaseItemsByType(phaseData, 'capec').length : 0;
+                    const cweCount = state.layers.cwe ? getAllPhaseItemsByType(phaseData, 'cwe').length : 0;
                     const totalCount = techCount + capecCount + cweCount;
                     const isHidden = state.hideEmpty && totalCount === 0;
                     
+                    ensurePhaseLayout(phaseKey, phaseData);
+
                     html += `
                         <div class="phase ${totalCount === 0 ? 'empty' : ''} ${isHidden ? 'hidden' : ''}" data-phase="${phaseKey}"
                              ondragover="handleDragOver(event)"
@@ -3624,38 +3995,86 @@
                                     <span class="phase-name">${formatPhaseName(phaseId)}</span>
                                     <span class="phase-count ${totalCount === 0 ? 'zero' : ''}">${totalCount}</span>
                                 </div>
-                                <span class="phase-toggle">▼</span>
+                                <div class="phase-header-actions">
+                                    <button class="phase-group-btn" onclick="event.stopPropagation(); createGroup('${phaseKey}')">+ Group</button>
+                                    <span class="phase-toggle">▼</span>
+                                </div>
                             </div>
                             <div class="phase-content">
                     `;
-                    
-                    // Render CAPECs
-                    if (state.layers.capec && phaseData.capecs.length > 0) {
-                        for (const capecAssignment of phaseData.capecs) {
-                            const capecId = getAssignmentId(capecAssignment);
-                            const capec = state.library.capecs[capecId];
-                            const meta = getAssignmentMetadata(capecAssignment);
-                            html += renderEntityTag('capec', capecId, capec?.name || '', meta, phaseKey);
+
+                    for (const entry of phaseData.layout) {
+                        if (entry.kind === 'item') {
+                            const list = getPhaseUngroupedItems(phaseData, entry.type);
+                            const assignment = list.find(a => getAssignmentInstanceId(a) === entry.instanceId);
+                            if (!assignment) continue;
+                            const id = getAssignmentId(assignment);
+                            const meta = getAssignmentMetadata(assignment);
+                            if (entry.type === 'capec' && state.layers.capec) {
+                                html += renderEntityTag('capec', id, state.library.capecs[id]?.name || '', meta, phaseKey, getAssignmentInstanceId(assignment), null);
+                            }
+                            if (entry.type === 'attack' && state.layers.attack) {
+                                html += renderEntityTag('attack', id, state.library.techniques[id]?.name || '', meta, phaseKey, getAssignmentInstanceId(assignment), null);
+                            }
+                            if (entry.type === 'cwe' && state.layers.cwe) {
+                                html += renderEntityTag('cwe', id, state.library.cwes[id]?.name || '', meta, phaseKey, getAssignmentInstanceId(assignment), null);
+                            }
                         }
-                    }
-                    
-                    // Render techniques
-                    if (state.layers.attack) {
-                        for (const techAssignment of phaseData.techniques) {
-                            const techId = getAssignmentId(techAssignment);
-                            const tech = state.library.techniques[techId];
-                            const meta = getAssignmentMetadata(techAssignment);
-                            html += renderEntityTag('attack', techId, tech?.name || '', meta, phaseKey);
-                        }
-                    }
-                    
-                    // Render CWEs
-                    if (state.layers.cwe && phaseData.cwes.length > 0) {
-                        for (const cweAssignment of phaseData.cwes) {
-                            const cweId = getAssignmentId(cweAssignment);
-                            const cwe = state.library.cwes[cweId];
-                            const meta = getAssignmentMetadata(cweAssignment);
-                            html += renderEntityTag('cwe', cweId, cwe?.name || '', meta, phaseKey);
+
+                        if (entry.kind === 'group') {
+                            const group = (phaseData.groups || []).find(g => g.groupId === entry.groupId);
+                            if (!group) continue;
+                            const collapsedClass = group.collapsed ? 'collapsed' : '';
+                            const groupItems = group.items || [];
+                            const safeGroupLabel = esc(group.label || 'Group');
+                            const groupHeaderClick = group.editing
+                                ? 'event.stopPropagation();'
+                                : `toggleGroupCollapse('${phaseKey}', '${group.groupId}')`;
+                            const groupDragStart = group.editing
+                                ? 'event.preventDefault();'
+                                : `handleGroupDragStart(event, '${phaseKey}', '${group.groupId}')`;
+                            html += `
+                                <div class="phase-group ${collapsedClass}" data-group-id="${escAttr(group.groupId)}" ondragover="event.stopPropagation(); handleDragOver(event)" ondragleave="event.stopPropagation(); handleDragLeave(event)" ondrop="handleGroupDrop(event, '${phaseKey}', '${group.groupId}')">
+                                    <div class="phase-group-header" draggable="${group.editing ? 'false' : 'true'}" ondragstart="${groupDragStart}" ondragend="handleDragEnd(event)" onclick="${groupHeaderClick}">
+                                        ${group.editing ? `
+                                            <input class="metadata-input" id="group-rename-${escAttr(group.groupId)}" value="${safeGroupLabel}"
+                                                onclick="event.stopPropagation()" onmousedown="event.stopPropagation()"
+                                                onblur="commitRenameGroup('${phaseKey}', '${escAttr(group.groupId)}', this.value)"
+                                                onkeydown="if (event.key === 'Enter') { event.preventDefault(); commitRenameGroup('${phaseKey}', '${escAttr(group.groupId)}', this.value); } if (event.key === 'Escape') { event.preventDefault(); commitRenameGroup('${phaseKey}', '${escAttr(group.groupId)}', this.value, true); }" />
+                                        ` : `<span class="phase-group-title">${safeGroupLabel}</span>`}
+                                        <span class="phase-group-count">${groupItems.length}</span>
+                                        <span class="group-header-actions">
+                                            <span class="group-actions">
+                                                <button class="group-action-btn rename" title="Rename" onclick="event.stopPropagation(); startRenameGroup('${phaseKey}', '${group.groupId}')">
+                                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17.25V21h3.75L17.8 9.95l-3.75-3.75L3 17.25Zm2.92 2.83H5v-.92l8.79-8.79.92.92-8.79 8.79ZM20.7 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83Z"/></svg>
+                                                </button>
+                                                <button class="group-action-btn delete" title="Delete Group" onclick="event.stopPropagation(); removeGroup('${phaseKey}', '${group.groupId}')">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M576 192C576 156.7 547.3 128 512 128L205.3 128C188.3 128 172 134.7 160 146.7L9.4 297.4C3.4 303.4 0 311.5 0 320C0 328.5 3.4 336.6 9.4 342.6L160 493.3C172 505.3 188.3 512 205.3 512L512 512C547.3 512 576 483.3 576 448L576 192zM284.1 252.1C293.5 242.7 308.7 242.7 318 252.1L351.9 286L385.8 252.1C395.2 242.7 410.4 242.7 419.7 252.1C429 261.5 429.1 276.7 419.7 286L385.8 319.9L419.7 353.8C429.1 363.2 429.1 378.4 419.7 387.7C410.3 397 395.1 397.1 385.8 387.7L351.9 353.8L318 387.7C308.6 397.1 293.4 397.1 284.1 387.7C274.8 378.3 274.7 363.1 284.1 353.8L318 319.9L284.1 286C274.7 276.6 274.7 261.4 284.1 252.1z"></path></svg>
+                                                </button>
+                                            </span>
+                                            <span class="phase-group-toggle">▼</span>
+                                        </span>
+                                    </div>
+                                    <div class="phase-group-content">
+                                        ${groupItems.map(item => {
+                                            const type = item.type;
+                                            const id = getAssignmentId(item);
+                                            const meta = getAssignmentMetadata(item);
+                                            const instanceId = getAssignmentInstanceId(item);
+                                            if (type === 'capec' && state.layers.capec) {
+                                                return renderEntityTag('capec', id, state.library.capecs[id]?.name || '', meta, phaseKey, instanceId, group.groupId);
+                                            }
+                                            if (type === 'attack' && state.layers.attack) {
+                                                return renderEntityTag('attack', id, state.library.techniques[id]?.name || '', meta, phaseKey, instanceId, group.groupId);
+                                            }
+                                            if (type === 'cwe' && state.layers.cwe) {
+                                                return renderEntityTag('cwe', id, state.library.cwes[id]?.name || '', meta, phaseKey, instanceId, group.groupId);
+                                            }
+                                            return '';
+                                        }).join('')}
+                                    </div>
+                                </div>
+                            `;
                         }
                     }
                     
@@ -3674,7 +4093,7 @@
         }
 
         // Render a single entity tag with metadata indicators
-        function renderEntityTag(type, id, name, metadata, phaseKey) {
+        function renderEntityTag(type, id, name, metadata, phaseKey, instanceId, sourceGroupId = null) {
             const tagClass = type === 'attack' ? 'technique-tag' : type === 'capec' ? 'capec-tag' : 'cwe-tag';
             const score = metadata.score || 'unclassified';
             const safeId = InputSecurity.escapeHtml(id);
@@ -3683,6 +4102,8 @@
             const safeType = InputSecurity.sanitizeAttr(type, 20);
             const safeIdAttr = InputSecurity.sanitizeAttr(id);
             const safePhaseKey = InputSecurity.sanitizeAttr(phaseKey);
+            const safeInstanceId = InputSecurity.sanitizeAttr(instanceId || '');
+            const safeGroupId = InputSecurity.sanitizeAttr(sourceGroupId || '');
             
             // Build metadata icons
             let metaIcons = '';
@@ -3707,17 +4128,20 @@
             
             return `
                 <div class="${tagClass}" data-score="${score}" 
-                     onclick="openEntityModal('${safeType}', '${safeIdAttr}', '${safePhaseKey}')">
+                     draggable="true"
+                     ondragstart="handleAssignmentDragStart(event, '${safeType}', '${safeIdAttr}', '${safePhaseKey}', '${safeInstanceId}', '${safeGroupId}')"
+                     ondragend="handleDragEnd(event)"
+                     onclick="openEntityModal('${safeType}', '${safeIdAttr}', '${safePhaseKey}', '${safeInstanceId}')">
                     <span class="tag-header-row">
                         <span class="id" onclick="event.stopPropagation(); selectEntity('${safeType}', '${safeIdAttr}')">${safeId}</span>
-                        <span class="remove" title="Remove" onclick="event.stopPropagation(); removeAssignment('${safeType}', '${safeIdAttr}', '${safePhaseKey}')">
+                        <span class="remove" title="Remove" onclick="event.stopPropagation(); removeAssignment('${safeType}', '${safeIdAttr}', '${safePhaseKey}', '${safeInstanceId}')">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M576 192C576 156.7 547.3 128 512 128L205.3 128C188.3 128 172 134.7 160 146.7L9.4 297.4C3.4 303.4 0 311.5 0 320C0 328.5 3.4 336.6 9.4 342.6L160 493.3C172 505.3 188.3 512 205.3 512L512 512C547.3 512 576 483.3 576 448L576 192zM284.1 252.1C293.5 242.7 308.7 242.7 318 252.1L351.9 286L385.8 252.1C395.2 242.7 410.4 242.7 419.7 252.1C429 261.5 429.1 276.7 419.7 286L385.8 319.9L419.7 353.8C429.1 363.2 429.1 378.4 419.7 387.7C410.3 397 395.1 397.1 385.8 387.7L351.9 353.8L318 387.7C308.6 397.1 293.4 397.1 284.1 387.7C274.8 378.3 274.7 363.1 284.1 353.8L318 319.9L284.1 286C274.7 276.6 274.7 261.4 284.1 252.1z"/></svg>
                             </span>
                         <span class="tag-actions">
                             <button class="tag-action-btn explore" onclick="event.stopPropagation(); openEntityExplorer('${safeType}', '${safeIdAttr}')" title="Explore Entity Relationships">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M256 128C256 110.3 270.3 96 288 96L352 96C369.7 96 384 110.3 384 128L384 192C384 209.7 369.7 224 352 224L344 224L344 288L464 288C503.8 288 536 320.2 536 360L536 416L544 416C561.7 416 576 430.3 576 448L576 512C576 529.7 561.7 544 544 544L480 544C462.3 544 448 529.7 448 512L448 448C448 430.3 462.3 416 480 416L488 416L488 360C488 346.7 477.3 336 464 336L344 336L344 416L352 416C369.7 416 384 430.3 384 448L384 512C384 529.7 369.7 544 352 544L288 544C270.3 544 256 529.7 256 512L256 448C256 430.3 270.3 416 288 416L296 416L296 336L176 336C162.7 336 152 346.7 152 360L152 416L160 416C177.7 416 192 430.3 192 448L192 512C192 529.7 177.7 544 160 544L96 544C78.3 544 64 529.7 64 512L64 448C64 430.3 78.3 416 96 416L104 416L104 360C104 320.2 136.2 288 176 288L296 288L296 224L288 224C270.3 224 256 209.7 256 192L256 128z"/></svg>
                             </button>
-                            <button class="tag-action-btn edit" onclick="event.stopPropagation(); closeEntityModal(); openMetadataEditor('${safeType}', '${safeIdAttr}', '${safePhaseKey}')" title="Edit Metadata">
+                            <button class="tag-action-btn edit" onclick="event.stopPropagation(); closeEntityModal(); openMetadataEditor('${safeType}', '${safeIdAttr}', '${safePhaseKey}', '${safeInstanceId}')" title="Edit Metadata">
                                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17.25V21h3.75L17.8 9.95l-3.75-3.75L3 17.25Zm2.92 2.83H5v-.92l8.79-8.79.92.92-8.79 8.79ZM20.7 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83Z"/></svg>
                             </button>
                         </span>
@@ -3743,7 +4167,8 @@
             
             for (const [phaseKey, phaseData] of Object.entries(state.assignments)) {
                 // For each assigned CAPEC
-                for (const capecAssignment of phaseData.capecs) {
+                const capecAssignments = getAllPhaseItemsByType(phaseData, 'capec');
+                for (const capecAssignment of capecAssignments) {
                     const capecId = getAssignmentId(capecAssignment);
                     const capec = state.library.capecs[capecId];
                     if (!capec) continue;
@@ -3752,7 +4177,7 @@
                     const relatedCwes = capec.cwes || [];
                     
                     // Get techniques related to this CAPEC that are in this phase
-                    const assignedTechIds = phaseData.techniques.map(t => getAssignmentId(t));
+                    const assignedTechIds = getAllPhaseItemsByType(phaseData, 'attack').map(t => getAssignmentId(t));
                     const relatedTechs = (capec.techniques || []).filter(t => 
                         assignedTechIds.includes(t) || state.library.techniques[t]
                     );
@@ -3766,8 +4191,9 @@
                 }
                 
                 // For assigned techniques without CAPEC, create partial chains
-                const assignedCapecIds = phaseData.capecs.map(c => getAssignmentId(c));
-                for (const techAssignment of phaseData.techniques) {
+                const assignedCapecIds = getAllPhaseItemsByType(phaseData, 'capec').map(c => getAssignmentId(c));
+                const techAssignments = getAllPhaseItemsByType(phaseData, 'attack');
+                for (const techAssignment of techAssignments) {
                     const techId = getAssignmentId(techAssignment);
                     const relatedCapecs = state.techniqueToCapec[techId] || [];
                     // Only show if technique has no assigned CAPEC in this phase
@@ -3850,10 +4276,13 @@
             const techSet = new Set(), capecSet = new Set(), cweSet = new Set();
             
             for (const phase of Object.values(state.assignments)) {
-                if (phase.techniques.length + phase.capecs.length + phase.cwes.length > 0) phasesUsed++;
-                phase.techniques.forEach(t => techSet.add(getAssignmentId(t)));
-                phase.capecs.forEach(c => capecSet.add(getAssignmentId(c)));
-                phase.cwes.forEach(w => cweSet.add(getAssignmentId(w)));
+                const allTechs = getAllPhaseItemsByType(phase, 'attack');
+                const allCapecs = getAllPhaseItemsByType(phase, 'capec');
+                const allCwes = getAllPhaseItemsByType(phase, 'cwe');
+                if (allTechs.length + allCapecs.length + allCwes.length > 0) phasesUsed++;
+                allTechs.forEach(t => techSet.add(getAssignmentId(t)));
+                allCapecs.forEach(c => capecSet.add(getAssignmentId(c)));
+                allCwes.forEach(w => cweSet.add(getAssignmentId(w)));
             }
             
             statsEl.innerHTML = `
@@ -3868,18 +4297,39 @@
             header.parentElement.classList.toggle('minimized');
         }
 
-        function removeAssignment(type, id, phaseKey) {
+        function removeAssignment(type, id, phaseKey, instanceId) {
             const key = type === 'attack' ? 'techniques' : type === 'capec' ? 'capecs' : 'cwes';
-            const assignments = state.assignments[phaseKey][key];
-            const idx = assignments.findIndex(a => getAssignmentId(a) === id);
+            const phaseData = state.assignments[phaseKey];
+            if (!phaseData) return;
+            if (!window.confirm('Remove this item?')) return;
+            const assignments = phaseData[key];
+            const idx = instanceId
+                ? assignments.findIndex(a => getAssignmentInstanceId(a) === instanceId)
+                : assignments.findIndex(a => getAssignmentId(a) === id);
             if (idx !== -1) {
                 assignments.splice(idx, 1);
+                phaseData.layout = phaseData.layout.filter(entry => !(entry.kind === 'item' && entry.instanceId === instanceId));
                 renderKillChain();
                 filterEntities(state.activeTab);
                 if (state.view === 'relationship') {
                     renderRelationshipView();
                 }
-                showToast(`Removed ${id}`);
+                showToast('Item removed.');
+                return;
+            }
+
+            for (const group of phaseData.groups || []) {
+                const gIdx = (group.items || []).findIndex(item => getAssignmentInstanceId(item) === instanceId);
+                if (gIdx !== -1) {
+                    group.items.splice(gIdx, 1);
+                    renderKillChain();
+                    filterEntities(state.activeTab);
+                    if (state.view === 'relationship') {
+                        renderRelationshipView();
+                    }
+                    showToast('Item removed.');
+                    return;
+                }
             }
         }
 
@@ -3936,17 +4386,39 @@
         function ensureAssignmentShape(assignments) {
             for (const [phaseKey, phaseData] of Object.entries(assignments)) {
                 if (!phaseData) continue;
+                phaseData.groups = Array.isArray(phaseData.groups) ? phaseData.groups : [];
+                phaseData.layout = Array.isArray(phaseData.layout) ? phaseData.layout : [];
+
                 for (const key of ['techniques', 'capecs', 'cwes']) {
                     const list = Array.isArray(phaseData[key]) ? phaseData[key] : [];
                     phaseData[key] = list.map(a => migrateAssignment(a));
                 }
+
+                phaseData.groups = phaseData.groups.map(group => {
+                    const items = Array.isArray(group.items) ? group.items : [];
+                    return {
+                        groupId: group.groupId || generateGroupId(),
+                        label: sanitizeImportedString(group.label || 'Group', 80),
+                        collapsed: !!group.collapsed,
+                        items: items.map(item => ({
+                            ...migrateAssignment(item),
+                            type: item.type || 'attack'
+                        }))
+                    };
+                });
+
+                ensurePhaseLayout(phaseKey, phaseData);
                 assignments[phaseKey] = phaseData;
             }
         }
 
         function ensureLibraryFallbacks(assignments) {
             for (const phaseData of Object.values(assignments)) {
-                for (const tech of phaseData.techniques || []) {
+                const allTechs = getAllPhaseItemsByType(phaseData, 'attack');
+                const allCapecs = getAllPhaseItemsByType(phaseData, 'capec');
+                const allCwes = getAllPhaseItemsByType(phaseData, 'cwe');
+
+                for (const tech of allTechs) {
                     const id = getAssignmentId(tech);
                     if (!state.library.techniques[id]) {
                         state.library.techniques[id] = {
@@ -3956,13 +4428,13 @@
                         };
                     }
                 }
-                for (const capec of phaseData.capecs || []) {
+                for (const capec of allCapecs) {
                     const id = getAssignmentId(capec);
                     if (!state.library.capecs[id]) {
                         state.library.capecs[id] = { id, name: id };
                     }
                 }
-                for (const cwe of phaseData.cwes || []) {
+                for (const cwe of allCwes) {
                     const id = getAssignmentId(cwe);
                     if (!state.library.cwes[id]) {
                         state.library.cwes[id] = { id, name: id };
@@ -4013,6 +4485,10 @@
                     if (list && list.length > KILLCHAIN_IMPORT_LIMITS.maxAssignmentsPerPhase) {
                         return { valid: false, error: `Too many ${key} in ${phaseKey} (max ${KILLCHAIN_IMPORT_LIMITS.maxAssignmentsPerPhase})` };
                     }
+                }
+
+                if (phaseData.groups && !Array.isArray(phaseData.groups)) {
+                    return { valid: false, error: `groups must be an array in ${phaseKey}` };
                 }
             }
 
@@ -4120,7 +4596,7 @@
                     .filter(o => o.value);
             }
 
-            return { id: id, metadata: metadata };
+            return { id: id, metadata: metadata, instanceId: assignment.instanceId || createAssignmentInstanceId() };
         }
 
         function sanitizeImportedData(data) {
@@ -4133,7 +4609,9 @@
                 sanitized.assignments[phaseKey] = {
                     techniques: [],
                     capecs: [],
-                    cwes: []
+                    cwes: [],
+                    groups: [],
+                    layout: Array.isArray(phaseData.layout) ? phaseData.layout : []
                 };
 
                 for (const key of ['techniques', 'capecs', 'cwes']) {
@@ -4141,6 +4619,30 @@
                     sanitized.assignments[phaseKey][key] = list
                         .map(a => sanitizeImportedAssignment(a))
                         .filter(a => a !== null);
+                }
+
+                if (Array.isArray(phaseData.groups)) {
+                    sanitized.assignments[phaseKey].groups = phaseData.groups
+                        .filter(g => g && typeof g === 'object')
+                        .map(g => {
+                            const rawItems = Array.isArray(g.items) ? g.items : [];
+                            const items = rawItems
+                                .map(item => {
+                                    const sanitizedItem = sanitizeImportedAssignment(item);
+                                    if (!sanitizedItem) return null;
+                                    const type = ['attack', 'capec', 'cwe'].includes(item.type) ? item.type : null;
+                                    if (!type) return null;
+                                    return { ...sanitizedItem, type };
+                                })
+                                .filter(item => item && item.id && item.type);
+
+                            return {
+                                groupId: typeof g.groupId === 'string' ? g.groupId : generateGroupId(),
+                                label: sanitizeImportedString(g.label || 'Group', 80),
+                                collapsed: !!g.collapsed,
+                                items
+                            };
+                        });
                 }
             }
 
@@ -4247,21 +4749,25 @@
             const allCwes = new Map();
             
             for (const [phaseKey, phase] of Object.entries(state.assignments)) {
-                phase.techniques.forEach(t => {
+                const techs = getAllPhaseItemsByType(phase, 'attack');
+                const capecs = getAllPhaseItemsByType(phase, 'capec');
+                const cwes = getAllPhaseItemsByType(phase, 'cwe');
+
+                techs.forEach(t => {
                     const id = getAssignmentId(t);
                     if (!allTechs.has(id)) {
                         allTechs.set(id, { phases: new Set(), metadata: getAssignmentMetadata(t) });
                     }
                     allTechs.get(id).phases.add(phaseKey);
                 });
-                phase.capecs.forEach(c => {
+                capecs.forEach(c => {
                     const id = getAssignmentId(c);
                     if (!allCapecs.has(id)) {
                         allCapecs.set(id, { phases: new Set(), metadata: getAssignmentMetadata(c) });
                     }
                     allCapecs.get(id).phases.add(phaseKey);
                 });
-                phase.cwes.forEach(w => {
+                cwes.forEach(w => {
                     const id = getAssignmentId(w);
                     if (!allCwes.has(id)) {
                         allCwes.set(id, { phases: new Set(), metadata: getAssignmentMetadata(w) });
@@ -4391,13 +4897,13 @@
         // ============================================================
         // METADATA EDITOR
         // ============================================================
-        let currentMetadataEdit = { type: null, id: null, phaseKey: null };
+        let currentMetadataEdit = { type: null, id: null, phaseKey: null, instanceId: null };
 
-        function openMetadataEditor(type, id, phaseKey) {
-            currentMetadataEdit = { type, id, phaseKey };
+        function openMetadataEditor(type, id, phaseKey, instanceId) {
+            currentMetadataEdit = { type, id, phaseKey, instanceId };
             
             // Find the assignment
-            const assignment = findAssignment(phaseKey, type, id);
+            const assignment = findAssignment(phaseKey, type, id, instanceId);
             const metadata = assignment ? getAssignmentMetadata(assignment) : createDefaultMetadata();
             
             // Populate form
@@ -4446,7 +4952,7 @@
         function closeMetadataEditor(event) {
             if (event && event.target !== event.currentTarget) return;
             document.getElementById('metadata-editor-modal').classList.remove('visible');
-            currentMetadataEdit = { type: null, id: null, phaseKey: null };
+            currentMetadataEdit = { type: null, id: null, phaseKey: null, instanceId: null };
         }
 
         function selectScore(value) {
@@ -4522,7 +5028,7 @@
         }
 
         function saveMetadata() {
-            const { type, id, phaseKey } = currentMetadataEdit;
+            const { type, id, phaseKey, instanceId } = currentMetadataEdit;
             if (!type || !id || !phaseKey) return;
             
             // Get score (renamed from confidence)
@@ -4612,18 +5118,7 @@
             };
             
             // Update the assignment
-            const key = type === 'attack' ? 'techniques' : type === 'capec' ? 'capecs' : 'cwes';
-            const assignments = state.assignments[phaseKey]?.[key] || [];
-            const idx = assignments.findIndex(a => getAssignmentId(a) === id);
-            
-            if (idx !== -1) {
-                // Migrate to object format if needed
-                if (typeof assignments[idx] === 'string') {
-                    assignments[idx] = { id: assignments[idx], metadata: newMetadata };
-                } else {
-                    assignments[idx].metadata = newMetadata;
-                }
-            }
+            updateAssignmentMetadata(phaseKey, type, id, newMetadata, instanceId);
             
             // Close and re-render
             closeMetadataEditor();
