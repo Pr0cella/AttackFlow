@@ -13,10 +13,12 @@ This changelog also serves as a development context document for AI agents conti
 - Theme auto-detection option via OS preference (`CONFIG.themeMode = 'auto'`).
 - Configurable metadata badge/icon colors with theme-aware tuning.
 - Multi-CVE metadata support with `CVE (N)` badges and CSV export lists.
+- Compact mode for dense kill chain layouts with ID-only tags, hover actions, and auto-hidden empty phases.
 
 ### Changed
 - Default theme set to light in config, with dark available via toggle.
 - Theme switching now stays synchronized between editor and explorer views.
+- Compact mode now prioritizes viewport fitting by tightening spacing and allowing container scrolling only when necessary.
 
 ---
 

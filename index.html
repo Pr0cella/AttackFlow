@@ -256,6 +256,10 @@
 
         .btn:hover { background: #3a3a3a; }
         .btn.active { background: var(--accent); border-color: var(--accent); }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
 
         /* Dropdown */
         .dropdown {
@@ -622,6 +626,14 @@
             padding: 16px;
         }
 
+        .app.compact-mode .kill-chain-container {
+            overflow: hidden;
+        }
+
+        .app.compact-mode.compact-scroll .kill-chain-container {
+            overflow: auto;
+        }
+
         .kill-chain-container.hidden { display: none; }
 
         .kill-chain {
@@ -699,6 +711,10 @@
             gap: 6px;
         }
 
+        .app.compact-mode .phase-header-actions {
+            gap: 4px;
+        }
+
         .phase-name { font-weight: 500; font-size: 1rem; }
 
         .phase-count {
@@ -738,6 +754,47 @@
             gap: 4px;
             max-height: 300px;
             overflow-y: auto;
+        }
+
+        .app.compact-mode .phase-header {
+            padding: 4px 6px;
+        }
+
+        .app.compact-mode .phase-content {
+            padding: 2px 4px 4px;
+            gap: 3px;
+            max-height: none;
+            overflow: visible;
+        }
+
+        .app.compact-mode .phase-name { font-size: 0.85rem; }
+        .app.compact-mode .phase-count { font-size: 0.6rem; padding: 1px 4px; }
+
+        .app.compact-mode .phase-group-btn {
+            font-size: 0.6rem;
+            padding: 1px 4px;
+        }
+
+        .app.compact-mode .phase-group {
+            padding: 2px;
+            gap: 3px;
+        }
+
+        .app.compact-mode .phase-group-header {
+            padding: 2px 4px;
+        }
+
+        .app.compact-mode .phase-group-title { font-size: 0.8rem; }
+        .app.compact-mode .phase-group-count { font-size: 0.6rem; }
+
+        .app.compact-mode .group-actions {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .app.compact-mode .phase-group:hover .group-actions {
+            opacity: 1;
+            pointer-events: auto;
         }
 
         .phase-group {
@@ -814,6 +871,10 @@
             gap: 4px;
         }
 
+        .app.compact-mode .phase-group-content {
+            gap: 2px;
+        }
+
         /* Technique Tag */
         .technique-tag {
             display: inline-flex;
@@ -836,6 +897,12 @@
             gap: 6px;
         }
 
+        .app.compact-mode .technique-tag .tag-header-row,
+        .app.compact-mode .capec-tag .tag-header-row,
+        .app.compact-mode .cwe-tag .tag-header-row {
+            gap: 4px;
+        }
+
         .technique-tag .id {
             font-family: monospace;
             font-weight: 600;
@@ -845,6 +912,13 @@
             border-radius: 2px;
             cursor: pointer;
             font-size: 0.8rem;
+        }
+
+        .app.compact-mode .technique-tag .id,
+        .app.compact-mode .capec-tag .id,
+        .app.compact-mode .cwe-tag .id {
+            font-size: 0.7rem;
+            padding: 1px 3px;
         }
 
         .technique-tag .id:hover {
@@ -864,8 +938,8 @@
             color: #ef4444;
             font-weight: bold;
             font-size: 1rem;
-            width: 18px;
-            height: 18px;
+            /* width: 18px;
+            height: 18px; */
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -931,8 +1005,8 @@
             color: #ef4444;
             font-weight: bold;
             font-size: 1rem;
-            width: 18px;
-            height: 18px;
+            /* width: 18px;
+            height: 18px; */
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -1009,8 +1083,8 @@
             color: #ef4444;
             font-weight: bold;
             font-size: 1rem;
-            width: 18px;
-            height: 18px;
+            /* width: 18px;
+            height: 18px; */
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -1045,12 +1119,38 @@
             margin-left: auto;
         }
 
+        .app.compact-mode .tag-actions {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .app.compact-mode .technique-tag:hover .tag-actions,
+        .app.compact-mode .capec-tag:hover .tag-actions,
+        .app.compact-mode .cwe-tag:hover .tag-actions {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
         .tag-body {
             margin-top: 4px;
         }
 
         .tag-footer {
             margin-top: 4px;
+        }
+
+        .app.compact-mode .technique-tag,
+        .app.compact-mode .capec-tag,
+        .app.compact-mode .cwe-tag {
+            padding: 3px 5px;
+        }
+
+        .app.compact-mode .tag-body {
+            display: none;
+        }
+
+        .app.compact-mode .tag-footer {
+            margin-top: 2px;
         }
 
         .tag-action-btn {
@@ -1063,6 +1163,10 @@
             cursor: pointer;
             transition: all 0.15s;
             line-height: 1.1;
+        }
+
+        .app.compact-mode .tag-action-btn {
+            padding: 1px 3px;
         }
 
         .tag-action-btn:hover {
@@ -1110,6 +1214,15 @@
             margin-top: 4px;
             flex-wrap: wrap;
         }
+
+        .app.compact-mode .metadata-icons {
+            gap: 3px;
+            margin-top: 2px;
+        }
+
+        .app.compact-mode .tag-header-row .metadata-icons {
+            margin-top: 0;
+        }
         
         .metadata-icons .meta-icon {
             min-width: 16px;
@@ -1126,6 +1239,13 @@
             white-space: nowrap;
             gap: 4px;
             filter: brightness(var(--meta-icon-brightness, 1));
+        }
+
+        .app.compact-mode .metadata-icons .meta-icon {
+            min-width: 14px;
+            height: 14px;
+            padding: 0 3px;
+            font-size: 10px;
         }
 
         .meta-icon svg,
@@ -2184,6 +2304,7 @@
                     </div>
                     <div class="view-controls">
                         <button class="btn" id="btn-hide-empty" onclick="toggleHideEmpty()">Hide Empty</button>
+                        <button class="btn" id="btn-compact" onclick="toggleCompactMode()">Compact</button>
                     </div>
                 </div>
 
@@ -3170,6 +3291,7 @@
             view: 'killchain',  // 'killchain' | 'relationship'
             layers: { attack: true, capec: true, cwe: true },
             hideEmpty: false,
+            compactMode: false,
             activeTab: 'attack',
             filters: { attack: 'all', capec: 'all', cwe: 'all' },
             
@@ -3413,6 +3535,7 @@
         const THEME_STORAGE_KEYS = {
             mode: 'af-theme-mode'
         };
+        const COMPACT_STORAGE_KEY = 'af-compact-mode';
         let currentTheme = {
             mode: CONFIG?.themeDefaults?.mode || 'light',
             scheme: 'default'
@@ -3513,18 +3636,23 @@
             document.getElementById('relationship-container').classList.toggle('visible', isRelationship);
             document.getElementById('content-title').textContent = isRelationship ? 'Kill Chain Relationships' : 'Unified Kill Chain';
             document.getElementById('btn-hide-empty').style.display = !isExplorer && !isRelationship ? 'inline-block' : 'none';
+            document.getElementById('btn-compact').style.display = !isExplorer && !isRelationship ? 'inline-block' : 'none';
             document.getElementById('stats-bar').style.display = isExplorer ? 'none' : 'flex';
             document.getElementById('legend-row').style.display = isExplorer ? 'none' : 'flex';
             document.querySelector('.app').classList.toggle('explorer-view', isExplorer);
             if (isRelationship) {
                 renderRelationshipView();
             }
+            updateHideEmptyControl();
+            updateCompactControls();
+            applyCompactLayout();
         }
 
         function toggleSidebar() {
             const app = document.querySelector('.app');
             if (!app) return;
             app.classList.toggle('sidebar-collapsed');
+            applyCompactLayout();
         }
 
         function toggleLayer(layer) {
@@ -3535,9 +3663,92 @@
             }
         }
 
+        function updateHideEmptyControl() {
+            const btn = document.getElementById('btn-hide-empty');
+            if (!btn) return;
+            btn.classList.toggle('active', state.hideEmpty);
+            btn.disabled = state.compactMode;
+        }
+
+        function updateCompactControls() {
+            const btn = document.getElementById('btn-compact');
+            if (!btn) return;
+            btn.classList.toggle('active', state.compactMode);
+            btn.textContent = state.compactMode ? 'Compact On' : 'Compact';
+        }
+
+        function setCompactMode(enabled, persist = true) {
+            state.compactMode = !!enabled;
+            const app = document.querySelector('.app');
+            if (app) {
+                app.classList.toggle('compact-mode', state.compactMode);
+                app.classList.remove('compact-scroll');
+            }
+
+            if (state.compactMode) {
+                state.hideEmpty = true;
+            } else {
+                state.hideEmpty = false;
+            }
+
+            updateHideEmptyControl();
+            updateCompactControls();
+
+            if (persist) {
+                try {
+                    localStorage.setItem(COMPACT_STORAGE_KEY, state.compactMode ? 'true' : 'false');
+                } catch (e) {
+                    console.warn('Compact mode preference could not be saved:', e);
+                }
+            }
+
+            renderKillChain();
+        }
+
+        function toggleCompactMode() {
+            setCompactMode(!state.compactMode);
+        }
+
+        function initCompactMode() {
+            let stored = null;
+            try {
+                stored = localStorage.getItem(COMPACT_STORAGE_KEY);
+            } catch (e) {
+                console.warn('Compact mode preference could not be read:', e);
+            }
+            const enabled = stored === 'true';
+            state.compactMode = enabled;
+            const app = document.querySelector('.app');
+            if (app) {
+                app.classList.toggle('compact-mode', state.compactMode);
+            }
+            state.hideEmpty = state.compactMode ? true : false;
+            updateHideEmptyControl();
+            updateCompactControls();
+        }
+
+        function applyCompactLayout() {
+            const container = document.getElementById('kill-chain-container');
+            if (!container) return;
+            const app = document.querySelector('.app');
+            if (!state.compactMode || state.view !== 'killchain') {
+                if (app) app.classList.remove('compact-scroll');
+                container.style.removeProperty('overflow');
+                return;
+            }
+            const killChain = document.getElementById('kill-chain');
+            if (!killChain) return;
+            const allowScroll = killChain.scrollHeight > container.clientHeight + 4;
+            if (app) app.classList.toggle('compact-scroll', allowScroll);
+        }
+
         function toggleHideEmpty() {
+            if (state.compactMode) {
+                showToast('Disable compact mode to change Hide Empty');
+                return;
+            }
             state.hideEmpty = !state.hideEmpty;
-            document.getElementById('btn-hide-empty').classList.toggle('active', state.hideEmpty);
+            updateHideEmptyControl();
             renderKillChain();
         }
 
@@ -4166,7 +4377,7 @@
                     const capecCount = state.layers.capec ? getAllPhaseItemsByType(phaseData, 'capec').length : 0;
                     const cweCount = state.layers.cwe ? getAllPhaseItemsByType(phaseData, 'cwe').length : 0;
                     const totalCount = techCount + capecCount + cweCount;
-                    const isHidden = state.hideEmpty && totalCount === 0;
+                    const isHidden = (state.hideEmpty || state.compactMode) && totalCount === 0;
                     
                     ensurePhaseLayout(phaseKey, phaseData);
 
@@ -4263,7 +4474,7 @@
                         }
                     }
                     
-                    if (totalCount === 0) {
+                    if (totalCount === 0 && !state.compactMode) {
                         html += `<div class="list-info">Empty</div>`;
                     }
                     
@@ -4275,6 +4486,7 @@
             
             container.innerHTML = html;
             renderStats();
+            applyCompactLayout();
         }
 
         // Render a single entity tag with metadata indicators
@@ -4289,6 +4501,8 @@
             const safePhaseKey = InputSecurity.sanitizeAttr(phaseKey);
             const safeInstanceId = InputSecurity.sanitizeAttr(instanceId || '');
             const safeGroupId = InputSecurity.sanitizeAttr(sourceGroupId || '');
+            const isCompact = state.compactMode && state.view === 'killchain';
+            const compactTitle = isCompact ? `title="${InputSecurity.sanitizeAttr(`${id} — ${displayName}`)}"` : '';
             let domainBadge = '';
             if (type === 'attack') {
                 const domain = state.library.techniques[id]?.domain || detectDomain(id);
@@ -4330,8 +4544,16 @@
                 metaIcons += '</div>';
             }
             
+            const tagBody = isCompact ? '' : `
+                    <div class="tag-body">
+                        <span class="name">${safeName}</span>
+                    </div>`;
+
+            const headerMetaIcons = isCompact ? metaIcons : '';
+            const footerMetaIcons = isCompact ? '' : metaIcons;
+
             return `
-                <div class="${tagClass}" data-score="${score}" 
+                <div class="${tagClass}" data-score="${score}" ${compactTitle}
                      draggable="true"
                      ondragstart="handleAssignmentDragStart(event, '${safeType}', '${safeIdAttr}', '${safePhaseKey}', '${safeInstanceId}', '${safeGroupId}')"
                      ondragend="handleDragEnd(event)"
@@ -4339,10 +4561,12 @@
                     <span class="tag-header-row">
                         <span class="id" onclick="event.stopPropagation(); selectEntity('${safeType}', '${safeIdAttr}')">${safeId}</span>
                         ${domainBadge}
-                        <span class="remove" title="Remove" onclick="event.stopPropagation(); removeAssignment('${safeType}', '${safeIdAttr}', '${safePhaseKey}', '${safeInstanceId}')">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M576 192C576 156.7 547.3 128 512 128L205.3 128C188.3 128 172 134.7 160 146.7L9.4 297.4C3.4 303.4 0 311.5 0 320C0 328.5 3.4 336.6 9.4 342.6L160 493.3C172 505.3 188.3 512 205.3 512L512 512C547.3 512 576 483.3 576 448L576 192zM284.1 252.1C293.5 242.7 308.7 242.7 318 252.1L351.9 286L385.8 252.1C395.2 242.7 410.4 242.7 419.7 252.1C429 261.5 429.1 276.7 419.7 286L385.8 319.9L419.7 353.8C429.1 363.2 429.1 378.4 419.7 387.7C410.3 397 395.1 397.1 385.8 387.7L351.9 353.8L318 387.7C308.6 397.1 293.4 397.1 284.1 387.7C274.8 378.3 274.7 363.1 284.1 353.8L318 319.9L284.1 286C274.7 276.6 274.7 261.4 284.1 252.1z"/></svg>
-                            </span>
+                        ${headerMetaIcons}
+                        
                         <span class="tag-actions">
+                            <span class="tag-action-btn remove" title="Remove" onclick="event.stopPropagation(); removeAssignment('${safeType}', '${safeIdAttr}', '${safePhaseKey}', '${safeInstanceId}')">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M576 192C576 156.7 547.3 128 512 128L205.3 128C188.3 128 172 134.7 160 146.7L9.4 297.4C3.4 303.4 0 311.5 0 320C0 328.5 3.4 336.6 9.4 342.6L160 493.3C172 505.3 188.3 512 205.3 512L512 512C547.3 512 576 483.3 576 448L576 192zM284.1 252.1C293.5 242.7 308.7 242.7 318 252.1L351.9 286L385.8 252.1C395.2 242.7 410.4 242.7 419.7 252.1C429 261.5 429.1 276.7 419.7 286L385.8 319.9L419.7 353.8C429.1 363.2 429.1 378.4 419.7 387.7C410.3 397 395.1 397.1 385.8 387.7L351.9 353.8L318 387.7C308.6 397.1 293.4 397.1 284.1 387.7C274.8 378.3 274.7 363.1 284.1 353.8L318 319.9L284.1 286C274.7 276.6 274.7 261.4 284.1 252.1z"/></svg>
+                            </span>
                             <button class="tag-action-btn explore" onclick="event.stopPropagation(); openEntityExplorer('${safeType}', '${safeIdAttr}')" title="Explore Entity Relationships">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M256 128C256 110.3 270.3 96 288 96L352 96C369.7 96 384 110.3 384 128L384 192C384 209.7 369.7 224 352 224L344 224L344 288L464 288C503.8 288 536 320.2 536 360L536 416L544 416C561.7 416 576 430.3 576 448L576 512C576 529.7 561.7 544 544 544L480 544C462.3 544 448 529.7 448 512L448 448C448 430.3 462.3 416 480 416L488 416L488 360C488 346.7 477.3 336 464 336L344 336L344 416L352 416C369.7 416 384 430.3 384 448L384 512C384 529.7 369.7 544 352 544L288 544C270.3 544 256 529.7 256 512L256 448C256 430.3 270.3 416 288 416L296 416L296 336L176 336C162.7 336 152 346.7 152 360L152 416L160 416C177.7 416 192 430.3 192 448L192 512C192 529.7 177.7 544 160 544L96 544C78.3 544 64 529.7 64 512L64 448C64 430.3 78.3 416 96 416L104 416L104 360C104 320.2 136.2 288 176 288L296 288L296 224L288 224C270.3 224 256 209.7 256 192L256 128z"/></svg>
                             </button>
@@ -4351,11 +4575,9 @@
                             </button>
                         </span>
                     </span>
-                    <div class="tag-body">
-                        <span class="name">${safeName}</span>
-                    </div>
+                    ${tagBody}
                     <div class="tag-footer">
-                        ${metaIcons}
+                        ${footerMetaIcons}
                     </div>
                 </div>
             `;
@@ -4957,12 +5179,13 @@
                     if (sanitized.layers) state.layers = sanitized.layers;
                     if (sanitized.hideEmpty !== undefined) state.hideEmpty = sanitized.hideEmpty;
                     if (sanitized.activeTab) state.activeTab = sanitized.activeTab;
+                    if (state.compactMode) state.hideEmpty = true;
 
                     // Apply UI state
                     document.getElementById('layer-attack').checked = !!state.layers.attack;
                     document.getElementById('layer-capec').checked = !!state.layers.capec;
                     document.getElementById('layer-cwe').checked = !!state.layers.cwe;
-                    document.getElementById('btn-hide-empty').classList.toggle('active', !!state.hideEmpty);
+                    updateHideEmptyControl();
 
                     if (sanitized.view) {
                         setView(sanitized.view);
@@ -5547,6 +5770,12 @@
             enableLeaveSiteConfirmation();
         }
         initAssignments();
+        initCompactMode();
+        window.addEventListener('resize', () => {
+            if (state.compactMode) {
+                applyCompactLayout();
+            }
+        });
         applyInputGuards();
         loadVersion();
         loadData();

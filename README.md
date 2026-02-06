@@ -23,6 +23,7 @@ An editor for creating enriched Cyber Kill Chain assessments by mapping MITRE AT
 - **Score & Confidence** — Rate items by severity and assessment confidence
 - **Visual Indicators** — Color-coded ribbons, CVE badges, and metadata icons
 - **Light/Dark Theme** — Toggle theme with shared settings across views
+- **Compact Mode** — Dense ID-only tags to fit large kill chains
 - **Relationship Explorer** — Browse ATT&CK ↔ CAPEC ↔ CWE ↔ Mitigations in a dedicated view
 - **Hide Empty Phases** — Focus on active phases by hiding empty ones
 - **Collapsible Sidebar** — Toggle the left sidebar for more workspace
@@ -42,7 +43,8 @@ The Relationship Explorer is a second main view that lets you investigate ATT&CK
 5. Click items in the diagram to add metadata
 6. Use the header navigation to switch to Relationship Explorer
 7. Toggle light/dark theme in the header as needed
-8. Export your attack chain as JSON or CSV
+8. Enable compact mode for dense layouts when needed
+9. Export your attack chain as JSON or CSV
 
 ## Testing
 
@@ -103,7 +105,8 @@ Each assigned item supports:
 | **Score** | Severity rating: Unclassified, Low, Medium, High, Critical |
 | **Confidence** | Assessment confidence: 0% (Unknown) to 100% (High) |
 | **CVE-ID(s)** | Vulnerability references (e.g., CVE-2024-12345) |
-| **CVSS Vector** | CVSS 3.1 vector string |
+| **CVE Score** | Optional per-CVE score (0.0–10.0) |
+| **CVSS Vector** | Optional per-CVE CVSS 3.1 vector string |
 | **Comments** | Free-text notes |
 | **Hyperlinks** | External references with labels |
 | **Observables** | Threat indicators (IPs, hashes, domains, etc.) |
