@@ -1498,6 +1498,35 @@
         .hyperlink-item input:nth-child(2) {
             flex: 1;
         }
+
+        /* CVE list */
+        .cve-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .cve-item {
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .cve-item input.cve-id-input {
+            width: 180px;
+            flex-shrink: 0;
+        }
+
+        .cve-item input.cve-score-input {
+            width: 110px;
+            flex-shrink: 0;
+        }
+
+        .cve-item input.cve-vector-input {
+            flex: 1;
+            min-width: 220px;
+        }
         
         .metadata-editor-footer {
             display: flex;
@@ -2337,17 +2366,10 @@
                 
                 <!-- CVE & CVSS -->
                 <div class="metadata-section">
-                    <div class="metadata-section-title">Vulnerability Reference</div>
-                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                        <div style="flex: 1; min-width: 180px;">
-                            <input type="text" class="metadata-input" id="meta-cve-id" placeholder="CVE-2024-12345">
-                            <div class="metadata-input-error" id="meta-cve-id-error"></div>
-                        </div>
-                        <div style="flex: 2; min-width: 280px;">
-                            <input type="text" class="metadata-input" id="meta-cvss-vector" placeholder="CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H">
-                            <div class="metadata-input-error" id="meta-cvss-vector-error"></div>
-                        </div>
-                    </div>
+                    <div class="metadata-section-title">Vulnerability References</div>
+                    <div class="cve-list" id="cve-list"></div>
+                    <button class="add-btn" onclick="addCveRow()">+ Add CVE</button>
+                    <div class="metadata-input-error" id="meta-cve-list-error"></div>
                 </div>
                 
                 <!-- Comments -->
@@ -2410,10 +2432,10 @@
                     <ul>
                         <li>Click assigned entities in the diagram to open the metadata editor</li>
                         <li>Add <strong>Score</strong> (severity) and <strong>Confidence</strong> (assessment certainty)</li>
-                        <li>Link <strong>CVE-IDs</strong> and <strong>CVSS vectors</strong> to vulnerabilities</li>
+                        <li>Add multiple <strong>CVE-ID(s)</strong> with optional <strong>scores</strong> and <strong>CVSS vectors</strong></li>
                         <li>Add <strong>Observables</strong>: IPs, hashes, domains, URLs, file names</li>
                         <li>Attach <strong>Hyperlinks</strong> and <strong>Comments</strong> for context</li>
-                        <li>CVE-IDs display as badges on phase items</li>
+                        <li>CVE badges show full IDs or <strong>CVE (N)</strong> for multiples</li>
                     </ul>
                 </div>
 
@@ -2772,11 +2794,56 @@
                 score: 'unclassified',     // Color-coded severity: unclassified|low|medium|high|critical
                 confidence: null,           // Percentage: null (Unknown) or 1-100
                 comments: '',
+                cveEntries: [],
                 cveId: '',
-                cvssVector: '',
+                cveIds: [],
                 hyperlinks: [],    // [{ label, url }]
                 observables: []    // [{ type, value }]
             };
+        }
+
+        function getCveEntries(metadata) {
+            const entries = [];
+            if (Array.isArray(metadata?.cveEntries)) {
+                metadata.cveEntries.forEach(entry => {
+                    const id = (entry?.id || entry?.cveId || '').toString().trim().toUpperCase();
+                    const vector = (entry?.vector || entry?.cvssVector || '').toString().trim();
+                    const scoreRaw = entry?.score;
+                    const score = typeof scoreRaw === 'number' ? scoreRaw : (scoreRaw ? parseFloat(scoreRaw) : null);
+                    if (id) {
+                        entries.push({ id, score: Number.isFinite(score) ? score : null, vector: vector || '' });
+                    }
+                });
+            }
+
+            if (!entries.length) {
+                const rawIds = Array.isArray(metadata?.cveIds)
+                    ? metadata.cveIds
+                    : (metadata?.cveId ? [metadata.cveId] : []);
+                const normalized = rawIds
+                    .map(value => (value || '').trim().toUpperCase())
+                    .filter(Boolean);
+                normalized.forEach(id => {
+                    entries.push({ id, score: null, vector: (metadata?.cvssVector || '').trim() });
+                });
+            }
+
+            return entries;
+        }
+
+        function getCveList(metadata) {
+            const entries = getCveEntries(metadata);
+            const ids = entries.map(entry => entry.id).filter(Boolean);
+            return [...new Set(ids)];
+        }
+
+        function normalizeCveMetadata(metadata) {
+            if (!metadata || typeof metadata !== 'object') return createDefaultMetadata();
+            const entries = getCveEntries(metadata);
+            metadata.cveEntries = entries;
+            metadata.cveIds = entries.map(entry => entry.id);
+            metadata.cveId = metadata.cveIds[0] || '';
+            return metadata;
         }
 
         // Get confidence label from percentage value
@@ -2811,6 +2878,7 @@
             if (!idOrObj.metadata) {
                 idOrObj.metadata = createDefaultMetadata();
             }
+            idOrObj.metadata = normalizeCveMetadata(idOrObj.metadata);
             if (!idOrObj.instanceId) {
                 idOrObj.instanceId = createAssignmentInstanceId();
             }
@@ -2824,7 +2892,8 @@
 
         // Get metadata from assignment
         function getAssignmentMetadata(assignment) {
-            return typeof assignment === 'string' ? createDefaultMetadata() : (assignment.metadata || createDefaultMetadata());
+            if (typeof assignment === 'string') return createDefaultMetadata();
+            return normalizeCveMetadata(assignment.metadata || createDefaultMetadata());
         }
 
         function getAssignmentInstanceId(assignment) {
@@ -3817,6 +3886,15 @@
             const scoreLabel = SCORE_LEVELS[score]?.label || 'Unclassified';
             const confidence = metadata.confidence ? `${metadata.confidence}% (${getConfidenceLabel(metadata.confidence)})` : 'Unknown';
             const safePhase = phaseKey ? `${phaseKey.split(':')[0]} — ${formatPhaseName(phaseKey.split(':')[1])}` : '';
+            const cveEntries = getCveEntries(metadata);
+            const cveDisplay = cveEntries.length
+                ? cveEntries.map(entry => {
+                    const parts = [];
+                    if (entry.score !== null && entry.score !== undefined) parts.push(`Score ${entry.score}`);
+                    if (entry.vector) parts.push(entry.vector);
+                    return parts.length ? `${entry.id} (${parts.join(', ')})` : entry.id;
+                })
+                : [];
 
             const links = (metadata.hyperlinks || []).filter(l => l?.url && /^https?:\/\//i.test(l.url));
             const linksHtml = links.length
@@ -3846,8 +3924,7 @@
                         <div class="detail-list-item"><span>Score:</span><span>${esc(scoreLabel)}</span></div>
                         <div class="detail-list-item"><span>Confidence:</span><span>${esc(confidence)}</span></div>
                         ${safePhase ? `<div class="detail-list-item"><span>Phase:</span><span>${esc(safePhase)}</span></div>` : ''}
-                        ${metadata.cveId ? `<div class="detail-list-item"><span>CVE:</span><span>${esc(metadata.cveId)}</span></div>` : ''}
-                        ${metadata.cvssVector ? `<div class="detail-list-item"><span>CVSS:</span><span>${esc(metadata.cvssVector)}</span></div>` : ''}
+                        ${cveDisplay.length ? cveDisplay.map(entry => `<div class="detail-list-item"><span>CVE:</span><span>${esc(entry)}</span></div>`).join('') : ''}
                     </div>
                 </div>
                 ${metadata.comments ? `
@@ -4223,18 +4300,29 @@
             
             // Build metadata icons
             let metaIcons = '';
+            const cveEntries = getCveEntries(metadata);
+            const cveList = cveEntries.map(entry => entry.id);
             const hasComment = metadata.comments && metadata.comments.trim().length > 0;
             const hasLinks = metadata.hyperlinks && metadata.hyperlinks.length > 0;
             const hasObservables = metadata.observables && metadata.observables.length > 0;
-            const hasCve = metadata.cveId && metadata.cveId.trim().length > 0;
+            const hasCve = cveList.length > 0;
             const hasConfidence = metadata.confidence !== null && metadata.confidence !== undefined && metadata.confidence > 0;
             
             if (hasCve || hasObservables || hasLinks || hasComment || hasConfidence) {
                 metaIcons = '<div class="metadata-icons">';
-                if (hasCve) metaIcons += `<span class="meta-icon has-cve" title="${esc(metadata.cveId)}">
+                if (hasCve) {
+                    const cveLabel = cveList.length === 1 ? cveList[0] : `CVE (${cveList.length})`;
+                    const cveTitle = cveEntries.map(entry => {
+                        const parts = [];
+                        if (entry.score !== null && entry.score !== undefined) parts.push(`Score ${entry.score}`);
+                        if (entry.vector) parts.push(entry.vector);
+                        return parts.length ? `${entry.id} (${parts.join(', ')})` : entry.id;
+                    }).join(', ');
+                    metaIcons += `<span class="meta-icon has-cve" title="${esc(cveTitle)}">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v7a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-7a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5Zm-3 8V7a3 3 0 1 1 6 0v3H9Zm3 3a2 2 0 0 1 1 3.732V18h-2v-1.268A2 2 0 0 1 12 13Z"/></svg>
-                    <span>${esc(metadata.cveId)}</span>
+                    <span>${esc(cveLabel)}</span>
                 </span>`;
+                }
                 if (hasObservables) metaIcons += '<span class="meta-icon has-observable" title="Has Observables"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5c-4.5 0-8.1 2.6-10 7 1.9 4.4 5.5 7 10 7s8.1-2.6 10-7c-1.9-4.4-5.5-7-10-7Zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm0-6a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z"/></svg></span>';
                 if (hasLinks) metaIcons += '<span class="meta-icon has-link" title="Has Links"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.6 13.4a1 1 0 0 0 1.4 1.4l3.5-3.5a3 3 0 1 0-4.2-4.2l-1.3 1.3a1 1 0 1 0 1.4 1.4l1.3-1.3a1 1 0 0 1 1.4 1.4l-3.5 3.5Zm2.8-2.8a1 1 0 0 0-1.4-1.4L8.5 12.7a3 3 0 1 0 4.2 4.2l1.3-1.3a1 1 0 1 0-1.4-1.4l-1.3 1.3a1 1 0 0 1-1.4-1.4l3.5-3.5Z"/></svg></span>';
                 if (hasComment) metaIcons += '<span class="meta-icon has-comment" title="Has Comments"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H9l-5 4v-4H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm3 5h10v2H7V9Zm0-3h10v2H7V6Zm0 6h6v2H7v-2Z"/></svg></span>';
@@ -4645,8 +4733,9 @@
                 score: 'unclassified',
                 confidence: null,
                 comments: '',
+                cveEntries: [],
                 cveId: '',
-                cvssVector: '',
+                cveIds: [],
                 hyperlinks: [],
                 observables: []
             };
@@ -4662,23 +4751,63 @@
                 metadata.confidence = Math.max(0, Math.min(100, Math.floor(sourceMeta.confidence)));
             }
 
-            // Sanitize CVE - must match pattern (handle both cveId and cve field names)
-            const cveSource = sourceMeta.cveId || sourceMeta.cve;
-            if (cveSource && typeof cveSource === 'string') {
-                const cve = cveSource.trim();
-                if (/^CVE-\d{4}-\d{4,}$/.test(cve)) {
-                    metadata.cveId = cve;
-                }
+            // Sanitize CVE entries (handle cveEntries, cveIds, legacy cveId/cve + cvssVector)
+            const cveEntries = [];
+            if (Array.isArray(sourceMeta.cveEntries)) {
+                sourceMeta.cveEntries.forEach(entry => {
+                    if (!entry || typeof entry !== 'object') return;
+                    const id = typeof entry.id === 'string' ? entry.id.trim().toUpperCase() : '';
+                    if (!/^CVE-\d{4}-\d{4,}$/.test(id)) return;
+                    let score = null;
+                    if (entry.score !== null && entry.score !== undefined && entry.score !== '') {
+                        const scoreValue = parseFloat(entry.score);
+                        if (Number.isFinite(scoreValue) && scoreValue >= 0 && scoreValue <= 10) {
+                            score = Math.round(scoreValue * 10) / 10;
+                        }
+                    }
+                    let vector = '';
+                    const vectorRaw = typeof entry.vector === 'string' ? entry.vector : (typeof entry.cvssVector === 'string' ? entry.cvssVector : '');
+                    if (vectorRaw) {
+                        const cvss = vectorRaw.trim();
+                        if (/^CVSS:3\.[01]\/AV:[NALP]\/AC:[LH]\/PR:[NLH]\/UI:[NR]\/S:[UC]\/C:[NLH]\/I:[NLH]\/A:[NLH]/.test(cvss)) {
+                            vector = cvss;
+                        }
+                    }
+                    cveEntries.push({ id, score, vector });
+                });
             }
 
-            // Sanitize CVSS vector (handle both cvssVector and cvss field names)
-            const cvssSource = sourceMeta.cvssVector || sourceMeta.cvss;
-            if (cvssSource && typeof cvssSource === 'string') {
-                const cvss = cvssSource.trim();
-                if (/^CVSS:3\.[01]\/AV:[NALP]\/AC:[LH]\/PR:[NLH]\/UI:[NR]\/S:[UC]\/C:[NLH]\/I:[NLH]\/A:[NLH]/.test(cvss)) {
-                    metadata.cvssVector = cvss;
-                }
+            const cveValues = [];
+            if (Array.isArray(sourceMeta.cveIds)) {
+                cveValues.push(...sourceMeta.cveIds);
+            } else if (typeof sourceMeta.cveIds === 'string') {
+                cveValues.push(...sourceMeta.cveIds.split(/[\s,]+/));
             }
+            const cveSource = sourceMeta.cveId || sourceMeta.cve;
+            if (cveSource && typeof cveSource === 'string') {
+                cveValues.push(cveSource);
+            }
+
+            const cvssSource = sourceMeta.cvssVector || sourceMeta.cvss;
+            const legacyVector = (typeof cvssSource === 'string' && /^CVSS:3\.[01]\/AV:[NALP]\/AC:[LH]\/PR:[NLH]\/UI:[NR]\/S:[UC]\/C:[NLH]\/I:[NLH]\/A:[NLH]/.test(cvssSource.trim()))
+                ? cvssSource.trim()
+                : '';
+
+            const normalizedCves = [...new Set(
+                cveValues
+                    .map(value => (value || '').trim().toUpperCase())
+                    .filter(value => /^CVE-\d{4}-\d{4,}$/.test(value))
+            )];
+
+            normalizedCves.forEach(id => {
+                if (!cveEntries.some(entry => entry.id === id)) {
+                    cveEntries.push({ id, score: null, vector: legacyVector });
+                }
+            });
+
+            metadata.cveEntries = cveEntries;
+            metadata.cveIds = cveEntries.map(entry => entry.id);
+            metadata.cveId = metadata.cveIds[0] || '';
 
             // Sanitize comments
             if (sourceMeta.comments) {
@@ -4857,7 +4986,7 @@
             // Build CSV with phases as header columns
             // Format: Entity Type, Entity ID, Entity Name, Score, Confidence, CVE, Comments, Phase1, Phase2, ...
             
-            const headers = ['Type', 'ID', 'Name', 'Score', 'Confidence', 'CVE', 'Comments', ...ALL_PHASES.map(p => formatPhaseName(p.split(':')[1]))];
+            const headers = ['Type', 'ID', 'Name', 'Score', 'Confidence', 'CVE(s)', 'Comments', ...ALL_PHASES.map(p => formatPhaseName(p.split(':')[1]))];
             const rows = [headers];
             
             // Collect all unique entities with their metadata
@@ -4898,6 +5027,17 @@
                 if (meta.confidence === null || meta.confidence === undefined) return '';
                 return `${meta.confidence}% (${getConfidenceLabel(meta.confidence)})`;
             };
+
+            const formatCveList = (meta) => {
+                const cveEntries = getCveEntries(meta);
+                if (!cveEntries.length) return '';
+                return cveEntries.map(entry => {
+                    const parts = [];
+                    if (entry.score !== null && entry.score !== undefined) parts.push(`Score ${entry.score}`);
+                    if (entry.vector) parts.push(entry.vector);
+                    return parts.length ? `${entry.id} (${parts.join(', ')})` : entry.id;
+                }).join('; ');
+            };
             
             // Add technique rows
             for (const [techId, data] of allTechs) {
@@ -4909,7 +5049,7 @@
                     tech?.name || 'Unknown',
                     meta.score || '',
                     formatConfidence(meta),
-                    meta.cveId || '',
+                    formatCveList(meta),
                     (meta.comments || '').slice(0, 100).replace(/\n/g, ' ')
                 ];
                 for (const phaseKey of ALL_PHASES) {
@@ -4928,7 +5068,7 @@
                     capec?.name || 'Unknown',
                     meta.score || '',
                     formatConfidence(meta),
-                    meta.cveId || '',
+                    formatCveList(meta),
                     (meta.comments || '').slice(0, 100).replace(/\n/g, ' ')
                 ];
                 for (const phaseKey of ALL_PHASES) {
@@ -4947,7 +5087,7 @@
                     cwe?.name || 'Unknown',
                     meta.score || '',
                     formatConfidence(meta),
-                    meta.cveId || '',
+                    formatCveList(meta),
                     (meta.comments || '').slice(0, 100).replace(/\n/g, ' ')
                 ];
                 for (const phaseKey of ALL_PHASES) {
@@ -5039,11 +5179,14 @@
             updateConfidenceLabel(confidenceValue);
             confidenceSlider.oninput = (e) => updateConfidenceLabel(parseInt(e.target.value));
             
-            // CVE and CVSS
-            document.getElementById('meta-cve-id').value = metadata.cveId || '';
-            document.getElementById('meta-cve-id-error').textContent = '';
-            document.getElementById('meta-cvss-vector').value = metadata.cvssVector || '';
-            document.getElementById('meta-cvss-vector-error').textContent = '';
+            // CVE entries
+            const cveListEl = document.getElementById('cve-list');
+            cveListEl.innerHTML = '';
+            const cveEntries = getCveEntries(metadata);
+            if (cveEntries.length) {
+                cveEntries.forEach(entry => addCveRow(entry.id, entry.score, entry.vector));
+            }
+            document.getElementById('meta-cve-list-error').textContent = '';
             
             // Comments
             document.getElementById('meta-comments').value = metadata.comments || '';
@@ -5084,6 +5227,41 @@
             const labelClass = getConfidenceClass(value);
             label.textContent = value === 0 ? 'Unknown' : `${value}% (${labelText})`;
             label.className = `confidence-label ${labelClass}`;
+        }
+
+        function addCveRow(id = '', score = '', vector = '') {
+            const list = document.getElementById('cve-list');
+            const row = document.createElement('div');
+            row.className = 'cve-item';
+
+            const idInput = document.createElement('input');
+            idInput.type = 'text';
+            idInput.className = 'metadata-input cve-id-input';
+            idInput.placeholder = 'CVE-2024-12345';
+            idInput.value = id || '';
+
+            const scoreInput = document.createElement('input');
+            scoreInput.type = 'text';
+            scoreInput.className = 'metadata-input cve-score-input';
+            scoreInput.placeholder = 'Score (0-10)';
+            scoreInput.value = (score === null || score === undefined) ? '' : String(score);
+
+            const vectorInput = document.createElement('input');
+            vectorInput.type = 'text';
+            vectorInput.className = 'metadata-input cve-vector-input';
+            vectorInput.placeholder = 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H';
+            vectorInput.value = vector || '';
+
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'observable-remove';
+            removeBtn.innerHTML = '&times;';
+            removeBtn.onclick = () => row.remove();
+
+            row.appendChild(idInput);
+            row.appendChild(scoreInput);
+            row.appendChild(vectorInput);
+            row.appendChild(removeBtn);
+            list.appendChild(row);
         }
 
         function addHyperlinkRow(label = '', url = '') {
@@ -5157,29 +5335,66 @@
             const confidenceValue = parseInt(confidenceSlider.value) || 0;
             const confidence = confidenceValue === 0 ? null : confidenceValue;
             
-            // Get CVE (with validation)
-            const cveInput = document.getElementById('meta-cve-id');
-            const cveValue = sanitizeForStorage(cveInput.value, 50);
-            const cveError = document.getElementById('meta-cve-id-error');
-            if (cveValue && !InputSecurity.validators.cveId(cveValue).valid) {
-                cveError.textContent = 'Invalid CVE format (CVE-YYYY-NNNNN)';
-                cveInput.classList.add('invalid');
-                return;
-            }
+            // Get CVE entries (with validation)
+            const cveError = document.getElementById('meta-cve-list-error');
             cveError.textContent = '';
-            cveInput.classList.remove('invalid');
-            
-            // Get CVSS (with validation)
-            const cvssInput = document.getElementById('meta-cvss-vector');
-            const cvssValue = sanitizeForStorage(cvssInput.value, 100);
-            const cvssError = document.getElementById('meta-cvss-vector-error');
-            if (cvssValue && !InputSecurity.validators.cvssVector(cvssValue).valid) {
-                cvssError.textContent = 'Invalid CVSS 3.x vector';
-                cvssInput.classList.add('invalid');
+            const cveEntries = [];
+            const cveEntryMap = new Map();
+            let hasInvalidCve = false;
+            document.querySelectorAll('#cve-list .cve-item').forEach(row => {
+                const inputs = row.querySelectorAll('input');
+                const idRaw = sanitizeForStorage(inputs[0].value, 50).toUpperCase();
+                const scoreRaw = sanitizeForStorage(inputs[1].value, 10);
+                const vectorRaw = sanitizeForStorage(inputs[2].value, 200);
+
+                inputs.forEach(input => input.classList.remove('invalid'));
+
+                if (!idRaw && !scoreRaw && !vectorRaw) {
+                    return;
+                }
+
+                if (!idRaw || !InputSecurity.validators.cveId(idRaw).valid) {
+                    inputs[0].classList.add('invalid');
+                    hasInvalidCve = true;
+                    return;
+                }
+
+                let score = null;
+                if (scoreRaw) {
+                    const scoreValue = parseFloat(scoreRaw);
+                    if (!Number.isFinite(scoreValue) || scoreValue < 0 || scoreValue > 10) {
+                        inputs[1].classList.add('invalid');
+                        hasInvalidCve = true;
+                        return;
+                    }
+                    score = Math.round(scoreValue * 10) / 10;
+                }
+
+                let vector = '';
+                if (vectorRaw) {
+                    if (!InputSecurity.validators.cvssVector(vectorRaw).valid) {
+                        inputs[2].classList.add('invalid');
+                        hasInvalidCve = true;
+                        return;
+                    }
+                    vector = vectorRaw;
+                }
+
+                if (!cveEntryMap.has(idRaw)) {
+                    const entry = { id: idRaw, score, vector };
+                    cveEntryMap.set(idRaw, entry);
+                    cveEntries.push(entry);
+                } else {
+                    const existing = cveEntryMap.get(idRaw);
+                    if (existing.score === null && score !== null) existing.score = score;
+                    if (!existing.vector && vector) existing.vector = vector;
+                }
+            });
+
+            if (hasInvalidCve) {
+                cveError.textContent = 'Fix invalid CVE entries (format, score 0-10, or CVSS vector).';
                 return;
             }
-            cvssError.textContent = '';
-            cvssInput.classList.remove('invalid');
             
             // Get comments
             const comments = sanitizeForStorage(document.getElementById('meta-comments').value, 2000);
@@ -5224,11 +5439,13 @@
             }
             
             // Build new metadata
+            const cveIds = cveEntries.map(entry => entry.id);
             const newMetadata = {
                 score,
                 confidence,
-                cveId: cveValue,
-                cvssVector: cvssValue,
+                cveEntries,
+                cveId: cveIds[0] || '',
+                cveIds,
                 comments,
                 hyperlinks,
                 observables

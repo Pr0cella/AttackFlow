@@ -4,7 +4,7 @@ An editor for creating enriched Cyber Kill Chain assessments by mapping MITRE AT
 
 ### Work in progress 
 
-![Version](https://img.shields.io/badge/version-2.5.1-blue)
+![Version](https://img.shields.io/badge/version-2.5.2-blue)
 ![License](https://img.shields.io/badge/license-Apache%202.0-green)
 ![Dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)
 
@@ -19,7 +19,7 @@ An editor for creating enriched Cyber Kill Chain assessments by mapping MITRE AT
 - **Drag & Drop** — Intuitive assignment of entities to phases
 - **Grouping** — Organize items into collapsible groups within phases
 - **Duplicates** — Allow multiple instances of the same entity
-- **Rich Metadata** — Comments, hyperlinks, observables, CVE/CVSS references
+- **Rich Metadata** — Comments, hyperlinks, observables, multi-CVE/CVSS references
 - **Score & Confidence** — Rate items by severity and assessment confidence
 - **Visual Indicators** — Color-coded ribbons, CVE badges, and metadata icons
 - **Light/Dark Theme** — Toggle theme with shared settings across views
@@ -102,7 +102,7 @@ Each assigned item supports:
 |-------|-------------|
 | **Score** | Severity rating: Unclassified, Low, Medium, High, Critical |
 | **Confidence** | Assessment confidence: 0% (Unknown) to 100% (High) |
-| **CVE-ID** | Vulnerability reference (e.g., CVE-2024-12345) |
+| **CVE-ID(s)** | Vulnerability references (e.g., CVE-2024-12345) |
 | **CVSS Vector** | CVSS 3.1 vector string |
 | **Comments** | Free-text notes |
 | **Hyperlinks** | External references with labels |
