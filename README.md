@@ -22,6 +22,7 @@ An editor for creating enriched Cyber Kill Chain assessments by mapping MITRE AT
 - **Rich Metadata** — Comments, hyperlinks, observables, CVE/CVSS references
 - **Score & Confidence** — Rate items by severity and assessment confidence
 - **Visual Indicators** — Color-coded ribbons, CVE badges, and metadata icons
+- **Light/Dark Theme** — Toggle theme with shared settings across views
 - **Relationship Explorer** — Browse ATT&CK ↔ CAPEC ↔ CWE ↔ Mitigations in a dedicated view
 - **Hide Empty Phases** — Focus on active phases by hiding empty ones
 - **Collapsible Sidebar** — Toggle the left sidebar for more workspace
@@ -40,7 +41,8 @@ The Relationship Explorer is a second main view that lets you investigate ATT&CK
 4. Drag items onto kill chain phases
 5. Click items in the diagram to add metadata
 6. Use the header navigation to switch to Relationship Explorer
-7. Export your attack chain as JSON or CSV
+7. Toggle light/dark theme in the header as needed
+8. Export your attack chain as JSON or CSV
 
 ## Testing
 

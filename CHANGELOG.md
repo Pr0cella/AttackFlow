@@ -6,6 +6,19 @@ This changelog also serves as a development context document for AI agents conti
 
 ---
 
+## [2.5.2] - 2026-02-06
+
+### Added
+- Light/dark theme toggle shared across the Kill Chain Editor and Relationship Explorer.
+- Theme auto-detection option via OS preference (`CONFIG.themeMode = 'auto'`).
+- Configurable metadata badge/icon colors with theme-aware tuning.
+
+### Changed
+- Default theme set to light in config, with dark available via toggle.
+- Theme switching now stays synchronized between editor and explorer views.
+
+---
+
 ## [2.5.1] - 2026-02-02
 
 ### Added
