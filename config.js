@@ -20,7 +20,8 @@ const CONFIG = {
         // CWE XML files
         cwe: {
             hardware: 'frameworks/CWE/HARDWARE.xml',
-            software: 'frameworks/CWE/SOFTWARE.xml'
+            software: 'frameworks/CWE/SOFTWARE.xml',
+            all: 'frameworks/CWE/ALL.xml'
         },
         // ATT&CK STIX bundles (v18.1 as of 01/2026)
         attack: {
