@@ -58,7 +58,6 @@ The Relationship Explorer is a second main view that lets you investigate ATT&CK
 ├── index.html                      # Main application
 ├── explorer.html                   # Relationship Explorer view
 ├── config.js                       # Centralized configuration (paths, colors, settings)
-├── kill-chain-visualizer.js        # Core visualization component
 ├── examples/                        # Sample kill chain exports
 │   ├── demo.json                    # Full-metadata demo mapping
 │   └── grouping-demo.json           # Grouped ransomware TTP example

@@ -20,6 +20,10 @@ This changelog also serves as a development context document for AI agents conti
 - Theme switching now stays synchronized between editor and explorer views.
 - Compact mode now prioritizes viewport fitting by tightening spacing and allowing container scrolling only when necessary.
 
+### Removed
+- Legacy visualizer script include and fallback name lookup from the editor.
+- Documentation references to the deprecated visualizer module.
+
 ---
 
 ## [2.5.1] - 2026-02-02
@@ -116,7 +120,7 @@ Security audit remediation implementing defense-in-depth protections across the 
 - Created `BLOCKED_INPUT_CHARS` set blocking ``< > [ ] { } " ' ` ; --`` at input level
 - Added `applyInputGuards()` to all text inputs with `keydown`, `beforeinput`, `paste`, `drop` handlers
 - Replaced `innerHTML` with DOM APIs (`textContent`, `createElement`) where user values appear
-- Hardened `kill-chain-visualizer.js` render methods to use safe DOM construction
+- Hardened legacy visualizer render methods to use safe DOM construction
 - Applied HTML output encoding to all dynamic content rendering
 - Added shorthand utilities for consistent escaping throughout the codebase
 - Strengthened input validation patterns for structured data fields
@@ -635,7 +639,6 @@ handleDrop(event, phaseKey)       // Performs assignment
   - Full MITRE ATT&CK sample data
 
 ### Technical Context for Agents
-- `KillChainVisualizer` class in `kill-chain-visualizer.js`
 - Techniques stored as `{ technique_id: technique_name }` object
 - Mapped techniques in `this.mappedTechniques[superPhase][phaseId]` arrays
 - Rendering via DOM manipulation in `render()`, `createSuperPhase()`, `createPhase()`, `createTechnique()`
@@ -646,7 +649,6 @@ handleDrop(event, phaseKey)       // Performs assignment
 
 ### File Structure Understanding
 ```
-kill-chain-visualizer.js   - Main class, all logic
 index.html                 - Standalone visualizer with sample data
 demo.html                  - Interactive demo, scenario presets
 demo-advanced.html         - Advanced mode with manual mapping

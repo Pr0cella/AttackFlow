@@ -2620,7 +2620,6 @@
         </div>
     </div>
 
-    <script src="kill-chain-visualizer.js"></script>
     <script>
         // ============================================================
         // VERSION - Loaded dynamically from changelog
@@ -3506,7 +3505,7 @@
             event.target.value = '';  // Reset input
         }
 
-        // Domain detection (from visualizer)
+        // Domain detection
         function detectDomain(techId) {
             if (techId.startsWith('T0')) return 'ics';
             const num = parseInt(techId.replace(/^T/, '').split('.')[0], 10);
@@ -3519,12 +3518,6 @@
             // First, check our loaded technique library
             if (state.library.techniques[techId]) {
                 return state.library.techniques[techId].name;
-            }
-            // Fallback to visualizer if available
-            if (typeof KillChainVisualizer !== 'undefined') {
-                const viz = new KillChainVisualizer(null, null);
-                const name = viz.getTechniqueName(techId);
-                if (name) return name;
             }
             return `Technique ${techId}`;
         }
