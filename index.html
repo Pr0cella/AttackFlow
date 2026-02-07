@@ -2284,11 +2284,8 @@
                     <div class="tab-panel active" id="tab-attack">
                         <div class="import-section">
                             <div class="import-btns">
-                                <button class="import-btn" onclick="loadNavigator('enterprise')">Enterprise</button>
-                                <button class="import-btn" onclick="loadNavigator('mobile')">Mobile</button>
-                                <button class="import-btn" onclick="loadNavigator('ics')">ICS</button>
                                 <label class="import-btn" style="cursor: pointer;">
-                                    Import JSON
+                                    Import ATT&CK Navigator Layer
                                     <input type="file" accept=".json" onchange="importNavigator(event)" style="display: none;">
                                 </label>
                             </div>
@@ -3412,6 +3409,10 @@
                     state.assignments[key] = { techniques: [], capecs: [], cwes: [], groups: [], layout: [] };
                 }
             }
+            // Restore full technique library from base data
+            if (state._baseTechniques) {
+                state.library.techniques = { ...state._baseTechniques };
+            }
             state.title = '';
             syncTitleToDOM();
         }
@@ -3461,6 +3462,9 @@
                 
                 console.log(`Loaded: ${Object.keys(state.library.techniques).length} techniques, ${Object.keys(state.library.capecs).length} CAPECs, ${Object.keys(state.library.cwes).length} CWEs`);
                 
+                // Preserve full technique library for Navigator import enrichment
+                state._baseTechniques = { ...state.library.techniques };
+                
                 document.getElementById('loading').classList.add('hidden');
                 renderAll();
             } catch (err) {
@@ -3472,30 +3476,31 @@
             }
         }
 
-        // Load Navigator layer (techniques become searchable, not auto-assigned)
+        // Load Navigator layer (replaces technique library; preserves mappings & CAPEC/CWE)
         async function loadNavigator(domain) {
             try {
                 const res = await fetch(`resources/Nav_Layer_${domain.toUpperCase()}.json`);
                 const layer = stripAngleBracketsFromJson(await res.json());
                 
-                let added = 0, existing = 0;
+                // Replace technique library (mappings & CAPEC/CWE stay intact)
+                // Enrich from base library when available for full metadata
+                const base = state._baseTechniques || {};
+                const newTechniques = {};
+                let count = 0;
                 for (const tech of layer.techniques || []) {
                     if (tech.enabled === false) continue;
                     const id = tech.techniqueID;
-                    if (state.library.techniques[id]) {
-                        existing++;
-                    } else {
-                        // Add technique with minimal info (not in our technique library)
-                        state.library.techniques[id] = {
-                            id,
-                            name: getTechniqueName(id),
-                            domain: detectDomain(id)
-                        };
-                        added++;
-                    }
+                    if (!id) continue;
+                    newTechniques[id] = base[id] || {
+                        id,
+                        name: `Technique ${id}`,
+                        domain: detectDomain(id)
+                    };
+                    count++;
                 }
+                state.library.techniques = newTechniques;
                 
-                showToast(`Navigator: ${existing} techniques found in library, ${added} new`);
+                showToast(`Loaded ${count} techniques (library replaced)`);
                 filterEntities('attack');
             } catch (err) {
                 showToast('Error: ' + err.message);
@@ -3541,7 +3546,12 @@
                         throw new Error(`Too many techniques: ${techniques.length} (max ${IMPORT_LIMITS.maxTechniques})`);
                     }
                     
-                    let added = 0, existing = 0, skipped = 0;
+                    let count = 0, skipped = 0;
+                    
+                    // Replace technique library (mappings & CAPEC/CWE stay intact)
+                    // Enrich from base library when available for full metadata
+                    const base = state._baseTechniques || {};
+                    const newTechniques = {};
                     
                     for (const tech of techniques) {
                         if (tech.enabled === false) continue;
@@ -3559,19 +3569,17 @@
                             continue;
                         }
                         
-                        if (state.library.techniques[id]) {
-                            existing++;
-                        } else {
-                            state.library.techniques[id] = {
-                                id,
-                                name: getTechniqueName(id),
-                                domain: detectDomain(id)
-                            };
-                            added++;
-                        }
+                        newTechniques[id] = base[id] || {
+                            id,
+                            name: `Technique ${id}`,
+                            domain: detectDomain(id)
+                        };
+                        count++;
                     }
                     
-                    let msg = `Import: ${existing} in library, ${added} new techniques`;
+                    state.library.techniques = newTechniques;
+                    
+                    let msg = `Loaded ${count} techniques (library replaced)`;
                     if (skipped > 0) msg += `, ${skipped} skipped (invalid ID)`;
                     showToast(msg);
                     filterEntities('attack');
@@ -3593,9 +3601,12 @@
 
         // Technique name lookup
         function getTechniqueName(techId) {
-            // First, check our loaded technique library
+            // Check active library, then base library
             if (state.library.techniques[techId]) {
                 return state.library.techniques[techId].name;
+            }
+            if (state._baseTechniques?.[techId]) {
+                return state._baseTechniques[techId].name;
             }
             return `Technique ${techId}`;
         }
@@ -4001,7 +4012,7 @@
             let entity, html = '', name = 'Unknown';
 
             if (type === 'attack') {
-                entity = state.library.techniques[id];
+                entity = state.library.techniques[id] || state._baseTechniques?.[id];
                 name = entity?.name || 'Unknown';
 
                 const relatedCapecs = state.techniqueToCapec[id] || [];

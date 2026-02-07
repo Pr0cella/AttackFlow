@@ -20,6 +20,9 @@ This changelog also serves as a development context document for AI agents conti
 ### Changed
 - `extract-data.py` now reads CWE/ALL.xml in addition to HARDWARE.xml and SOFTWARE.xml, with deduplication across all three sources.
 - `config.js` includes `sources.cwe.all` path for the full CWE list.
+- Navigator import now **replaces** the ATT&CK technique library instead of merging, preventing stale techniques from accumulating across imports.
+- Three domain buttons (Enterprise/Mobile/ICS) replaced with a single "Import Navigator" file picker in the ATT&CK sidebar tab.
+- Relationship mappings (`techniqueToCapec`, `capecToTechnique`, `cweToCapec`) and CAPEC/CWE libraries are preserved across Navigator imports so the Explorer remains fully functional.
 
 ---
 
