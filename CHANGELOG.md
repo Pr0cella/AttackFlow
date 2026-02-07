@@ -6,6 +6,18 @@ This changelog also serves as a development context document for AI agents conti
 
 ---
 
+## [2.5.3] - 2026-02-07
+
+### Added
+- CWE `ALL.xml` full list as a third CWE source alongside HARDWARE.xml and SOFTWARE.xml.
+- Improved CWE coverage by parsing the complete CWE catalogue, capturing weaknesses not present in the hardware/software-only views.
+
+### Changed
+- `extract-data.py` now reads CWE/ALL.xml in addition to HARDWARE.xml and SOFTWARE.xml, with deduplication across all three sources.
+- `config.js` includes `sources.cwe.all` path for the full CWE list.
+
+---
+
 ## [2.5.2] - 2026-02-06
 
 ### Added

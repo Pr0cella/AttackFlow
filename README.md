@@ -4,7 +4,7 @@ An editor for creating enriched Cyber Kill Chain assessments by mapping MITRE AT
 
 ### Work in progress 
 
-![Version](https://img.shields.io/badge/version-2.5.2-blue)
+![Version](https://img.shields.io/badge/version-2.5.3-blue)
 ![License](https://img.shields.io/badge/license-Apache%202.0-green)
 ![Dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)
 
@@ -74,6 +74,7 @@ The Relationship Explorer is a second main view that lets you investigate ATT&CK
 │   │   ├── DOMAINS.xml             # CAPEC domains view
 │   │   └── MECHANISMS.xml          # CAPEC mechanisms view
 │   └── CWE/
+│       ├── ALL.xml                 # Full CWE list
 │       ├── HARDWARE.xml            # CWE hardware design weaknesses
 │       └── SOFTWARE.xml            # CWE software development weaknesses
 └── resources/                      # Generated data (do not edit directly)
@@ -150,7 +151,7 @@ Download the latest framework data and run the extraction scripts:
 # Place in frameworks/CAPEC/ as DOMAINS.xml, MECHANISMS.xml
 
 # Download CWE XML views from https://cwe.mitre.org/data/
-# Place in frameworks/CWE/ as SOFTWARE.xml, HARDWARE.xml
+# Place in frameworks/CWE/ as ALL.xml, SOFTWARE.xml, HARDWARE.xml
 
 # Run extraction scripts
 python3 scripts/extract-attack.py    # Parse ATT&CK techniques
