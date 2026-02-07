@@ -10,6 +10,11 @@ This changelog also serves as a development context document for AI agents conti
 
 ### Added
 - CWE `ALL.xml` full list as a third CWE source alongside HARDWARE.xml and SOFTWARE.xml.
+- Editable kill chain title displayed centered in the content-header bar above the stats.
+- Title persists through JSON export/import round-trips and appears in CSV export as a metadata row.
+- Title sanitized via `sanitizeForStorage()` and capped at 200 characters (`CONFIG.display.maxTitleLength`).
+- Export filenames derived from the title when set (e.g. `My-Analysis.json`).
+- Compact-mode variant with smaller title font.
 - Improved CWE coverage by parsing the complete CWE catalogue, capturing weaknesses not present in the hardware/software-only views.
 
 ### Changed

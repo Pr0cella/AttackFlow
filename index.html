@@ -591,6 +591,53 @@
             align-items: center;
             padding: 8px 16px;
             border-bottom: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        .kill-chain-title-wrap {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 50%;
+        }
+
+        .kill-chain-title {
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-weight: 600;
+            text-align: center;
+            padding: 2px 8px;
+            width: 100%;
+            min-width: 180px;
+            max-width: 400px;
+            outline: none;
+            text-overflow: ellipsis;
+        }
+
+        .kill-chain-title::placeholder {
+            color: var(--text-secondary);
+            font-weight: 400;
+            font-style: italic;
+            opacity: 0.7;
+        }
+
+        .kill-chain-title:hover {
+            border-color: var(--border-color);
+        }
+
+        .kill-chain-title:focus {
+            border-color: var(--accent);
+            background: var(--bg-card);
+        }
+
+        .app.compact-mode .kill-chain-title {
+            font-size: 0.85rem;
+            padding: 1px 6px;
+            min-width: 140px;
         }
 
         .view-controls {
@@ -2302,6 +2349,14 @@
                         </button>
                         <span style="font-size: 0.9rem; font-weight: 500;" id="content-title">Unified Kill Chain</span>
                     </div>
+                    <div class="kill-chain-title-wrap">
+                        <input type="text" class="kill-chain-title" id="kill-chain-title"
+                               placeholder="Untitled Kill Chain"
+                               maxlength="200"
+                               spellcheck="false"
+                               onblur="commitKillChainTitle(this)"
+                               onkeydown="if(event.key==='Enter'){this.blur();}">
+                    </div>
                     <div class="view-controls">
                         <button class="btn" id="btn-hide-empty" onclick="toggleHideEmpty()">Hide Empty</button>
                         <button class="btn" id="btn-compact" onclick="toggleCompactMode()">Compact</button>
@@ -2875,6 +2930,10 @@
             document.addEventListener('input', (e) => {
                 const target = e.target;
                 if (!isTextInputElement(target)) return;
+                // Skip live sanitization for the title input — trimming on every
+                // keystroke prevents trailing spaces.  Full sanitization happens
+                // on blur in commitKillChainTitle().
+                if (target.id === 'kill-chain-title') return;
                 const value = target.value || '';
                 const sanitized = sanitizeUserInputText(value);
                 if (sanitized !== value) {
@@ -3306,6 +3365,9 @@
             cweToCapec: {},
             capecToTechnique: {},
             
+            // Kill chain title
+            title: '',
+
             // Assigned entities (by phase)
             assignments: {},
             
@@ -3350,6 +3412,22 @@
                     state.assignments[key] = { techniques: [], capecs: [], cwes: [], groups: [], layout: [] };
                 }
             }
+            state.title = '';
+            syncTitleToDOM();
+        }
+
+        // Kill-chain title helpers
+        function commitKillChainTitle(el) {
+            const maxLen = CONFIG.display?.maxTitleLength || 200;
+            const raw = el.value;
+            const clean = sanitizeForStorage(raw, maxLen);
+            state.title = clean;
+            el.value = clean;
+        }
+
+        function syncTitleToDOM() {
+            const el = document.getElementById('kill-chain-title');
+            if (el) el.value = state.title || '';
         }
 
         // ============================================================
@@ -4779,6 +4857,7 @@
                 version: APP_VERSION,
                 schema: 'killchain-export-lite',
                 exportedAt: new Date().toISOString(),
+                title: state.title || '',
                 view: state.view,
                 activeTab: state.activeTab,
                 filters: state.filters,
@@ -4792,7 +4871,8 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'attack-chain-export.json';
+            const slug = state.title ? state.title.replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/-+$/,'').substring(0, 60) : 'attack-chain-export';
+            a.download = slug + '.json';
             a.click();
             URL.revokeObjectURL(url);
             showToast('Exported JSON');
@@ -4909,6 +4989,16 @@
 
                 if (phaseData.groups && !Array.isArray(phaseData.groups)) {
                     return { valid: false, error: `groups must be an array in ${phaseKey}` };
+                }
+            }
+
+            // Validate optional title
+            if (data.title !== undefined && data.title !== null) {
+                if (typeof data.title !== 'string') {
+                    return { valid: false, error: 'title must be a string' };
+                }
+                if (data.title.length > (CONFIG.display?.maxTitleLength || 200)) {
+                    return { valid: false, error: 'title is too long' };
                 }
             }
 
@@ -5128,6 +5218,11 @@
                 sanitized.activeTab = data.activeTab;
             }
 
+            // Sanitize optional title
+            if (typeof data.title === 'string') {
+                sanitized.title = sanitizeImportedString(data.title, CONFIG.display?.maxTitleLength || 200);
+            }
+
             return sanitized;
         }
 
@@ -5169,6 +5264,10 @@
                     ensureLibraryFallbacks(state.assignments);
 
                     // Restore sanitized view state
+                    if (typeof sanitized.title === 'string') {
+                        state.title = sanitizeForStorage(sanitized.title, CONFIG.display?.maxTitleLength || 200);
+                    }
+                    syncTitleToDOM();
                     if (sanitized.layers) state.layers = sanitized.layers;
                     if (sanitized.hideEmpty !== undefined) state.hideEmpty = sanitized.hideEmpty;
                     if (sanitized.activeTab) state.activeTab = sanitized.activeTab;
@@ -5202,8 +5301,11 @@
             // Build CSV with phases as header columns
             // Format: Entity Type, Entity ID, Entity Name, Score, Confidence, CVE, Comments, Phase1, Phase2, ...
             
+            // Title metadata row
+            const titleRow = ['Title', state.title || 'Untitled Kill Chain'];
+
             const headers = ['Type', 'ID', 'Name', 'Score', 'Confidence', 'CVE(s)', 'Comments', ...ALL_PHASES.map(p => formatPhaseName(p.split(':')[1]))];
-            const rows = [headers];
+            const rows = [titleRow, headers];
             
             // Collect all unique entities with their metadata
             const allTechs = new Map();  // id -> { phases: Set, metadata }
@@ -5338,7 +5440,8 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'attack-chain-export.csv';
+            const csvSlug = state.title ? state.title.replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/-+$/,'').substring(0, 60) : 'attack-chain-export';
+            a.download = csvSlug + '.csv';
             a.click();
             URL.revokeObjectURL(url);
             showToast('Exported CSV');
@@ -5733,6 +5836,7 @@
             filterEntities('capec');
             filterEntities('cwe');
             renderKillChain();
+            syncTitleToDOM();
         }
 
         // ============================================================

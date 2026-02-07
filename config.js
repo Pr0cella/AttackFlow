@@ -156,7 +156,8 @@ const CONFIG = {
         maxNameLength: 200,      // Max width for entity names in tags
         maxDescLength: 800,      // Max description length in detail panel
         maxMitigations: 8,       // Max mitigations to show
-        maxReferences: 3         // Max references to show
+        maxReferences: 3,        // Max references to show
+        maxTitleLength: 200      // Max kill chain title length
     },
 
     // Navigation behavior
