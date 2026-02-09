@@ -6,6 +6,100 @@ This changelog also serves as a development context document for AI agents conti
 
 ---
 
+## [2.7.0] - 2026-02-09
+
+### Added
+- **STIX Bundle Import**: New "Import STIX Bundle" button in the STIX sidebar tab — parse any STIX 2.1 bundle JSON and extract all supported SDOs into the STIX item library.
+  - Supports all 18 SDO types plus `x-custom`: attack-pattern, campaign, course-of-action, grouping, identity, indicator, infrastructure, intrusion-set, location, malware, malware-analysis, note, observed-data, opinion, report, threat-actor, tool, vulnerability.
+  - Relationships, sightings, and marking-definitions are silently skipped.
+  - Full spec-defined property import using `STIX_OBJECTS` type definitions from `stix-config.js` (e.g., `threat_actor_types`, `aliases`, `goals`, `pattern`, `malware_types`).
+  - Duplicate detection: objects already in the library (by STIX ID) are skipped with a count.
+  - Toast summary reports imported, duplicate, and invalid counts.
+- **STIX Property Import on Kill Chain Import**: `sanitizeImportedData()` now preserves all STIX spec-defined fields from `customLibrary` entries (previously only core fields were kept).
+- **Edit STIX Properties**: Full STIX editor modal now reads and writes all spec-defined fields for each SDO type (required + optional), using appropriate controls per field type.
+- **STIX Property Display**: Entity detail modal (`openEntityModal`) shows all populated STIX spec fields for custom items via `buildStixPropertySummary()`.
+- **Closable Loading Overlay**: When data fails to load (e.g., opening via `file://` protocol), the loading screen shows a "Continue Without Data" button and hint text so users can still import Navigator layers, create STIX objects, and import saved kill chains.
+- **`stix-config.js`**: Comprehensive STIX 2.1 configuration with all 19 SDO type definitions, field descriptors (type, label, vocabulary, required/optional), vocabulary lists, relationship defaults, and helper functions.
+- **`examples/stix-demo.json`**: Full showcase kill chain ("Operation Midnight Eclipse") with all 19 STIX object types, realistic field values, distributed across UKC phases.
+- **`examples/APT1.json`**: Mandiant APT1 Report as STIX 2.1 bundle for import testing.
+
+### Changed
+- Sidebar tab renamed from "Custom" to **STIX** throughout the UI.
+- Layer toggle checkbox renamed from "Custom" to **STIX**.
+- Create button renamed from "+ Create Custom Item" to **+ Create STIX Item**.
+- Search placeholder updated to **Search STIX items...**.
+- `TYPE_LABELS.custom` changed from `'Custom'` to `'STIX'`.
+- Footer legend includes **STIX Object** entry with teal color swatch.
+- Kill chain title now uses flexbox layout instead of absolute positioning for responsive behavior — no longer overlaps sidebar toggle or view controls on narrow viewports.
+- Kill chain title input width scales with available space (`flex: 1`) up to 700px max, with ellipsis on overflow.
+- Compact mode no longer shrinks the title input.
+- Usage guide modal updated with STIX sections.
+
+### Fixed
+- **STIX ID mangling**: `sanitizeAttr()` was stripping `--` from STIX IDs in sidebar detail panel, tag rendering, delete buttons, and compact tooltips. Replaced with `esc()`/`encodeHtmlEntities()`.
+- **Modal nesting**: Create Custom Item modal was erroneously nested inside the Metadata Editor overlay with `visibility: hidden`. Moved to be a sibling.
+- **Spaces bug**: Global `input` event listener ran `sanitizeUserInputText()` → `normalize()` → `.trim()` on every keystroke, removing spaces mid-typing. Added exemption for Create and Edit STIX modal inputs.
+- **Drag copy-instead-of-move**: STIX items were copied instead of moved when dragged between phases because `extractAssignmentInstance`, `findAssignment`, and `updateAssignmentMetadata` hardcoded type-to-key mappings without `custom` → `customItems`. Switched all three to use `TYPE_KEYS[type]`.
+- **Long STIX ID overflow**: STIX IDs caused horizontal scroll in phases. Changed all 4 tag types from `inline-flex` to `flex` with `min-width: 0`, added ellipsis on `.id` spans, `flex-shrink: 0` on `.tag-actions` and `.domain-badge`.
+- **Entity modal wrong metadata**: `openEntityModal` always appended ATT&CK metadata summary (Score, CVE, Hyperlinks, Observables) even for STIX items. Now shows STIX spec properties via `buildStixPropertySummary()` for custom type items.
+- **STIX properties lost on import**: `sanitizeImportedData()` `customLibrary` sanitizer only kept 8 core fields, discarding all STIX-specific properties. Now imports all spec-defined fields with type-appropriate sanitization.
+
+### Security
+- STIX bundle import validates: file size (25 MB max), bundle structure (`type: "bundle"`, `objects` array), object count (5000 max), STIX ID format, type prefix matching, type whitelist.
+- All imported STIX strings sanitized via `sanitizeImportedString()` — strips control chars, `<script>` tags, event handlers, angle brackets, SQL comment sequences.
+- All imported STIX strings pass through `stripAngleBracketsFromJson()` on the raw JSON parse.
+- Boolean, integer, list, and string fields handled separately with type-appropriate validation.
+- List fields bounded to 100 items max.
+
+---
+
+## [2.6.0] - 2026-02-08
+
+### Added
+- **Custom STIX Objects**: New fourth sidebar tab "Custom" for creating, browsing, and managing user-defined STIX 2.1 objects.
+- All 18 STIX Domain Objects supported: attack-pattern, campaign, course-of-action, grouping, identity, indicator, infrastructure, intrusion-set, location, malware, malware-analysis, note, observed-data, opinion, report, threat-actor, tool, vulnerability — plus free-form `x-custom` type.
+- Create modal with STIX type picker, name, description, labels, and optional custom type name for `x-custom`.
+- Custom items are draggable to kill chain phases and groups alongside ATT&CK/CAPEC/CWE entities.
+- Teal-colored entity tags with STIX type badge in kill chain view.
+- Custom layer toggle checkbox to show/hide custom items in the kill chain.
+- Sidebar search and STIX type filter dropdown for custom items.
+- Detail panel for custom items showing STIX attributes, labels, creation/modification dates.
+- **STIX 2.1 Bundle Export**: Dedicated "STIX Bundle" option in the Export dropdown generating a standalone `bundle` with SDOs and relationship SROs.
+- Embedded STIX bundle in JSON export when custom items are present.
+- Relationship SROs auto-generated for co-located custom items in the same phase/group, using `STIX_RELATIONSHIP_MAP` for semantically accurate relationship types.
+- CSV export includes custom STIX items with `STIX: {type}` in the Type column.
+- Import validation accepts `customItems[]` arrays, `customLibrary` object, STIX ID format validation (`{type}--{uuid}`), and type whitelist enforcement.
+- `TYPE_KEYS` / `TAG_CLASSES` / `TYPE_LABELS` / `ALL_ENTITY_TYPES` lookup constants replacing ~10 hardcoded ternary chains, enabling future entity types.
+- `STIX_ID_PATTERN` regex, `VALID_STIX_TYPES` set, `STIX_RELATIONSHIP_MAP` for secure validation.
+- `generateUUID()` and `generateStixId()` utility functions.
+- `STIX.md` implementation plan document.
+- `CONFIG.stixTypes` array with all 19 STIX type definitions.
+- `CONFIG.display.maxCustomLabels`, `maxLabelLength`, `maxCustomDescLength` limits.
+- `CONFIG.frameworks.custom` teal color (`#14b8a6`) with CSS variable.
+
+### Changed
+- `renderKillChain()` layout rendering refactored from 3 separate type if-blocks to unified `state.layers[type]` + `getEntityName()` lookup.
+- Group item rendering similarly unified to support all four entity types.
+- `renderAll()` now includes `filterEntities('custom')`.
+- `ensureAssignmentShape()` processes `customItems` arrays.
+- `ensureLibraryFallbacks()` creates stub entries for orphaned custom item IDs.
+- `sanitizeImportedData()` accepts `customItems`, `customLibrary`, and `custom` in layers/activeTab whitelists.
+- Explore button hidden for custom items (not supported in Relationship Explorer).
+- Compact mode CSS selectors extended to include `.custom-tag`.
+- Import/export round-trips preserve full custom item state.
+
+### Security
+- Custom item names sanitized via `InputSecurity.sanitize()` with length cap.
+- STIX IDs validated against strict regex pattern before import.
+- STIX types validated against `VALID_STIX_TYPES` whitelist (no arbitrary type strings).
+- Labels array bounded by `maxCustomLabels` with per-label sanitization.
+- Description length bounded by `maxCustomDescLength`.
+- All custom item rendering uses `InputSecurity.escapeHtml()`.
+- Import path uses separate `sanitizeImportedCustomAssignment()` function with STIX-specific validation.
+- CSV export applies formula injection protection to custom item fields.
+
+---
+
 ## [2.5.3] - 2026-02-07
 
 ### Added

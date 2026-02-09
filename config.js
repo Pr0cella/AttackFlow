@@ -7,7 +7,7 @@
 
 const CONFIG = {
     // Application info
-    version: '2.5.3',
+    version: '2.7.0',
     changelogUrl: 'CHANGELOG.md',
     
     // Framework source files (for extraction scripts)
@@ -47,12 +47,36 @@ const CONFIG = {
         out: '#ef4444'       // Red - impact/action on objectives
     },
     
-    // Framework colors (ATT&CK/CAPEC/CWE)
+    // Framework colors (ATT&CK/CAPEC/CWE/Custom)
     frameworks: {
         attack: '#3b82f6',   // Blue
         capec: '#8b5cf6',    // Purple
-        cwe: '#f59e0b'       // Orange
+        cwe: '#f59e0b',      // Orange
+        custom: '#14b8a6'    // Teal
     },
+
+    // STIX 2.1 SDO types available for custom items
+    stixTypes: [
+        { value: 'attack-pattern',   label: 'Attack Pattern' },
+        { value: 'campaign',         label: 'Campaign' },
+        { value: 'course-of-action', label: 'Course of Action' },
+        { value: 'grouping',         label: 'Grouping' },
+        { value: 'identity',         label: 'Identity' },
+        { value: 'indicator',        label: 'Indicator' },
+        { value: 'infrastructure',   label: 'Infrastructure' },
+        { value: 'intrusion-set',    label: 'Intrusion Set' },
+        { value: 'location',         label: 'Location' },
+        { value: 'malware',          label: 'Malware' },
+        { value: 'malware-analysis', label: 'Malware Analysis' },
+        { value: 'note',             label: 'Note' },
+        { value: 'observed-data',    label: 'Observed Data' },
+        { value: 'opinion',          label: 'Opinion' },
+        { value: 'report',           label: 'Report' },
+        { value: 'threat-actor',     label: 'Threat Actor' },
+        { value: 'tool',             label: 'Tool' },
+        { value: 'vulnerability',    label: 'Vulnerability' },
+        { value: 'x-custom',         label: 'Custom' }
+    ],
     
     // UI colors (fallbacks, match default light theme)
     ui: {
@@ -157,7 +181,10 @@ const CONFIG = {
         maxDescLength: 800,      // Max description length in detail panel
         maxMitigations: 8,       // Max mitigations to show
         maxReferences: 3,        // Max references to show
-        maxTitleLength: 200      // Max kill chain title length
+        maxTitleLength: 200,     // Max kill chain title length
+        maxCustomLabels: 20,     // Max labels per custom STIX item
+        maxLabelLength: 50,      // Max chars per label
+        maxCustomDescLength: 2000 // Max description length for custom items
     },
 
     // Navigation behavior
@@ -193,6 +220,7 @@ function applyConfigColors(theme) {
     root.style.setProperty('--attack-color', resolved.frameworks.attack);
     root.style.setProperty('--capec-color', resolved.frameworks.capec);
     root.style.setProperty('--cwe-color', resolved.frameworks.cwe);
+    root.style.setProperty('--custom-color', resolved.frameworks.custom);
     
     // UI colors
     root.style.setProperty('--bg-dark', resolved.ui.bgDark);
