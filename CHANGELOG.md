@@ -6,7 +6,51 @@ This changelog also serves as a development context document for AI agents conti
 
 ---
 
-## [2.4.3] - 2026-01-30
+## [2.5.1] - 2026-02-02
+
+### Added
+- Phase grouping with per-group collapse/expand.
+- Drag-and-drop for groups between phases and items into/out of groups.
+- Collapsible left sidebar toggle in the kill chain header.
+- Examples directory with grouped and full-metadata demo exports.
+- Delete confirmations for items and groups
+
+### Changed
+- Kill chain assignments now use per-instance IDs to allow duplicates and precise moves.
+- Sidebar items remain available after assignment to allow multiple instances.
+- Import/export now preserves group structure, layout order, and collapsed state.
+- Group headers animate on collapse/expand without a full re-render.
+- Import validation demo file moved to examples/.
+
+---
+
+## [2.5.0] - 2026-01-31
+
+### Added
+- Embedded Relationship Explorer view alongside the Kill Chain Editor with breadcrumbed tab navigation.
+- Entity deep-linking for the explorer via URL parameters.
+- Phase item action buttons (Explore, Edit, Remove) plus a detail modal for quick review.
+- Metadata icon badges and a legend row for CVE, observables, links, comments, and confidence.
+- Demo kill chain mapping with full-metadata coverage for import testing.
+
+### Changed
+- Mitigation clicks now open the embedded explorer in the current tab to preserve editor state.
+- Leave-site confirmation behavior is configurable via `CONFIG.navigation.confirmOnLeave`.
+- Phase item layout updated to header/body/footer rows with improved truncation rules.
+- Relationship view rendering now escapes IDs and names using safe helpers.
+
+### Fixed
+- Metadata storage no longer double-encodes values on save.
+- SVG icon hover state now follows `currentColor` for consistent theming.
+- Import validation tests now align with the current metadata model and validate demo feature coverage.
+
+### Removed
+- Group-by-CAPEC feature and related UI/state logic.
+- Legacy Group-by-CAPEC test fixtures and export schema references.
+
+---
+
+## [2.4.3] - 2026-01-31
 
 ### Fixed - Import & Visual Corrections
 
@@ -27,6 +71,20 @@ This changelog also serves as a development context document for AI agents conti
 - **NEW**: Clicking the ID badge on any phase item (ATT&CK, CAPEC, CWE) now opens the right sidebar with full entity details
 - ID badges show pointer cursor and highlight on hover
 - Clicking the rest of the phase item still opens the metadata editor as before
+
+### Added - Relationship Explorer Integration
+
+- **NEW**: Relationship Explorer integrated as a second main view
+- Header navigation now shows AttackFlow branding with primary view buttons
+- Explorer embedded via `explorer.html` with full-screen layout
+- Mitigation items in the detail panel open the explorer in a new tab, deep-linked to the mitigation
+
+### Changed - Navigation & Safety
+
+- **CHANGED**: Mitigation clicks now open the embedded Relationship Explorer in the current tab (preserves kill chain state)
+- **NEW**: Leave-site confirmation dialog to prevent accidental data loss
+- **NEW**: Confirmation behavior configurable via `CONFIG.navigation.confirmOnLeave` (default enabled)
+- **CHANGED**: Editor view now renders a breadcrumbed Relationships sub-tab with Explorer as a separate tab group
 
 ---
 

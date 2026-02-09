@@ -7,7 +7,7 @@
 
 const CONFIG = {
     // Application info
-    version: '2.4.3',
+    version: '2.5.1',
     changelogUrl: 'CHANGELOG.md',
     
     // Framework source files (for extraction scripts)
@@ -70,6 +70,11 @@ const CONFIG = {
         maxDescLength: 800,      // Max description length in detail panel
         maxMitigations: 8,       // Max mitigations to show
         maxReferences: 3         // Max references to show
+    },
+
+    // Navigation behavior
+    navigation: {
+        confirmOnLeave: true     // Show confirmation dialog before leaving the page
     }
 };
 

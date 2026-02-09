@@ -1,0 +1,501 @@
+{
+  "version": "2.4.3",
+  "schema": "killchain-export-lite",
+  "exportedAt": "2026-02-02T22:35:00.000Z",
+  "view": "killchain",
+  "activeTab": "attack",
+  "layers": { "attack": true, "capec": true, "cwe": true },
+  "hideEmpty": false,
+  "assignments": {
+    "IN:reconnaissance": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "groups": [
+        {
+          "groupId": "grp-recon-ext",
+          "label": "External Reconnaissance",
+          "collapsed": false,
+          "items": [
+            {
+              "type": "attack",
+              "id": "T1595",
+              "instanceId": "itm-recon-1595",
+              "metadata": {
+                "score": "medium",
+                "confidence": 42,
+                "comments": "Active scanning against public-facing infrastructure consistent with an APT-style intrusion.",
+                "hyperlinks": [
+                  { "label": "Recon overview", "url": "https://example.com/advisory/recon" }
+                ],
+                "observables": [
+                  { "type": "ipv4-addr", "value": "192.0.2.10" },
+                  { "type": "domain-name", "value": "vpn-gateway.example.com" },
+                  { "type": "url", "value": "https://vpn-gateway.example.com/" }
+                ]
+              }
+            },
+            {
+              "type": "attack",
+              "id": "T1592",
+              "instanceId": "itm-recon-1592",
+              "metadata": {
+                "score": "low",
+                "confidence": 20,
+                "comments": "Harvested host information and exposed services from public sources.",
+                "observables": [
+                  { "type": "domain-name", "value": "docs.example.org" }
+                ]
+              }
+            },
+            {
+              "type": "capec",
+              "id": "CAPEC-169",
+              "instanceId": "itm-recon-capec169",
+              "metadata": {
+                "score": "low",
+                "comments": "Reconnaissance and footprinting activity prior to initial access."
+              }
+            }
+          ]
+        }
+      ],
+      "layout": [
+        { "kind": "group", "groupId": "grp-recon-ext" }
+      ]
+    },
+    "IN:resource-development": {
+      "techniques": [
+        {
+          "id": "T1583.001",
+          "metadata": {
+            "score": "medium",
+            "confidence": 35,
+            "comments": "Registered look-alike domains for staging and phishing.",
+            "observables": [
+              { "type": "domain-name", "value": "login-update.example.net" }
+            ]
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": []
+    },
+    "IN:delivery": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "groups": [
+        {
+          "groupId": "grp-delivery-phish",
+          "label": "Phishing Delivery",
+          "collapsed": false,
+          "items": [
+            {
+              "type": "attack",
+              "id": "T1566.002",
+              "instanceId": "itm-delivery-1566",
+              "metadata": {
+                "score": "high",
+                "confidence": 70,
+                "comments": "Spearphishing link used to deliver a staged loader.",
+                "observables": [
+                  { "type": "email-addr", "value": "it-support@example.com" },
+                  { "type": "url", "value": "https://login-update.example.net/portal" }
+                ]
+              }
+            },
+            {
+              "type": "capec",
+              "id": "CAPEC-98",
+              "instanceId": "itm-delivery-capec98",
+              "metadata": {
+                "score": "medium",
+                "comments": "Phishing used for initial access and credential theft."
+              }
+            }
+          ]
+        }
+      ],
+      "layout": [
+        { "kind": "group", "groupId": "grp-delivery-phish" }
+      ]
+    },
+    "IN:social-engineering": {
+      "techniques": [
+        {
+          "id": "T1204.001",
+          "metadata": {
+            "score": "medium",
+            "confidence": 55,
+            "comments": "User execution of a malicious link disguised as an SSO update notice."
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": []
+    },
+    "IN:exploitation": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "groups": [
+        {
+          "groupId": "grp-exploit-web",
+          "label": "Initial Access Exploit",
+          "collapsed": false,
+          "items": [
+            {
+              "type": "attack",
+              "id": "T1190",
+              "instanceId": "itm-exploit-1190",
+              "metadata": {
+                "score": "critical",
+                "confidence": 88,
+                "cveId": "CVE-2021-44228",
+                "cvssVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+                "comments": "Public-facing app exploit for initial foothold (Log4Shell-style tradecraft).",
+                "observables": [
+                  { "type": "url", "value": "https://app.example.com/" }
+                ]
+              }
+            },
+            {
+              "type": "capec",
+              "id": "CAPEC-242",
+              "instanceId": "itm-exploit-capec242",
+              "metadata": {
+                "score": "high",
+                "comments": "Code injection technique aligned with exploitation of exposed services."
+              }
+            },
+            {
+              "type": "cwe",
+              "id": "CWE-78",
+              "instanceId": "itm-exploit-cwe78",
+              "metadata": {
+                "score": "high",
+                "comments": "OS command injection risk in exposed services."
+              }
+            }
+          ]
+        }
+      ],
+      "layout": [
+        { "kind": "group", "groupId": "grp-exploit-web" }
+      ]
+    },
+    "IN:persistence": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "groups": [
+        {
+          "groupId": "grp-persist-task",
+          "label": "Persistence Mechanisms",
+          "collapsed": false,
+          "items": [
+            {
+              "type": "attack",
+              "id": "T1053.005",
+              "instanceId": "itm-persist-1053",
+              "metadata": {
+                "score": "high",
+                "confidence": 75,
+                "comments": "Scheduled task persists a loader across reboots.",
+                "observables": [
+                  { "type": "file-name", "value": "sysupdate.ps1" },
+                  { "type": "file-hash-sha256", "value": "d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2" }
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "layout": [
+        { "kind": "group", "groupId": "grp-persist-task" }
+      ]
+    },
+    "IN:defense-evasion": {
+      "techniques": [
+        {
+          "id": "T1070.004",
+          "metadata": {
+            "score": "medium",
+            "confidence": 60,
+            "comments": "Cleared log artifacts to reduce detection surface."
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": []
+    },
+    "IN:command-control": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "groups": [
+        {
+          "groupId": "grp-c2-https",
+          "label": "C2 over HTTPS",
+          "collapsed": false,
+          "items": [
+            {
+              "type": "attack",
+              "id": "T1071.001",
+              "instanceId": "itm-c2-1071",
+              "metadata": {
+                "score": "high",
+                "confidence": 80,
+                "comments": "C2 over HTTPS with domain-fronted infrastructure.",
+                "observables": [
+                  { "type": "domain-name", "value": "cdn-updates.example.com" },
+                  { "type": "url", "value": "https://cdn-updates.example.com/api" }
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "layout": [
+        { "kind": "group", "groupId": "grp-c2-https" }
+      ]
+    },
+    "THROUGH:pivoting": {
+      "techniques": [
+        {
+          "id": "T1090.003",
+          "metadata": {
+            "score": "medium",
+            "confidence": 50,
+            "comments": "Multi-hop proxying used to reach segmented environments."
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": []
+    },
+    "THROUGH:discovery": {
+      "techniques": [
+        {
+          "id": "T1082",
+          "metadata": {
+            "score": "low",
+            "confidence": 35,
+            "comments": "System information discovery to map target assets."
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": []
+    },
+    "THROUGH:privilege-escalation": {
+      "techniques": [
+        {
+          "id": "T1068",
+          "metadata": {
+            "score": "high",
+            "confidence": 72,
+            "cveId": "CVE-2021-34527",
+            "cvssVector": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+            "comments": "Privilege escalation leveraging a known print spooler vulnerability."
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [
+        {
+          "id": "CWE-269",
+          "metadata": {
+            "score": "medium",
+            "comments": "Improper privilege management enabling escalation."
+          }
+        }
+      ]
+    },
+    "THROUGH:execution": {
+      "techniques": [
+        {
+          "id": "T1059.001",
+          "metadata": {
+            "score": "high",
+            "confidence": 78,
+            "comments": "PowerShell used to execute staging scripts.",
+            "observables": [
+              { "type": "file-name", "value": "stage.ps1" },
+              { "type": "file-hash-md5", "value": "1a2b3c4d5e6f78901a2b3c4d5e6f7890" }
+            ]
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": []
+    },
+    "THROUGH:credential-access": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "groups": [
+        {
+          "groupId": "grp-cred-access",
+          "label": "Credential Access",
+          "collapsed": false,
+          "items": [
+            {
+              "type": "attack",
+              "id": "T1003.001",
+              "instanceId": "itm-cred-1003",
+              "metadata": {
+                "score": "critical",
+                "confidence": 90,
+                "comments": "Credential dumping from LSASS memory."
+              }
+            },
+            {
+              "type": "capec",
+              "id": "CAPEC-112",
+              "instanceId": "itm-cred-capec112",
+              "metadata": {
+                "score": "medium",
+                "comments": "Password guessing and credential access activity."
+              }
+            },
+            {
+              "type": "cwe",
+              "id": "CWE-522",
+              "instanceId": "itm-cred-cwe522",
+              "metadata": {
+                "score": "low",
+                "comments": "Weak credential management noted in the environment."
+              }
+            }
+          ]
+        }
+      ],
+      "layout": [
+        { "kind": "group", "groupId": "grp-cred-access" }
+      ]
+    },
+    "THROUGH:lateral-movement": {
+      "techniques": [
+        {
+          "id": "T1021.001",
+          "metadata": {
+            "score": "high",
+            "confidence": 65,
+            "comments": "Remote services used to move laterally across hosts.",
+            "observables": [
+              { "type": "ipv4-addr", "value": "198.51.100.25" }
+            ]
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": []
+    },
+    "OUT:collection": {
+      "techniques": [
+        {
+          "id": "T1114.001",
+          "metadata": {
+            "score": "medium",
+            "confidence": 52,
+            "comments": "Email collection from local clients."
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": []
+    },
+    "OUT:exfiltration": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "groups": [
+        {
+          "groupId": "grp-exfil",
+          "label": "Data Exfiltration",
+          "collapsed": false,
+          "items": [
+            {
+              "type": "attack",
+              "id": "T1041",
+              "instanceId": "itm-exfil-1041",
+              "metadata": {
+                "score": "high",
+                "confidence": 82,
+                "comments": "Exfiltration over the existing C2 channel.",
+                "observables": [
+                  { "type": "url", "value": "https://cdn-updates.example.com/exfil" }
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "layout": [
+        { "kind": "group", "groupId": "grp-exfil" }
+      ]
+    },
+    "OUT:impact": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "groups": [
+        {
+          "groupId": "grp-impact-ransom",
+          "label": "Ransomware Impact",
+          "collapsed": false,
+          "items": [
+            {
+              "type": "attack",
+              "id": "T1486",
+              "instanceId": "itm-impact-1486",
+              "metadata": {
+                "score": "critical",
+                "confidence": 85,
+                "comments": "Ransomware encryption used to disrupt operations.",
+                "observables": [
+                  { "type": "file-name", "value": "README-RECOVER.txt" }
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "layout": [
+        { "kind": "group", "groupId": "grp-impact-ransom" }
+      ]
+    },
+    "OUT:objectives": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "groups": [
+        {
+          "groupId": "grp-objectives-recovery",
+          "label": "Recovery Inhibition",
+          "collapsed": false,
+          "items": [
+            {
+              "type": "attack",
+              "id": "T1490",
+              "instanceId": "itm-objectives-1490",
+              "metadata": {
+                "score": "high",
+                "confidence": 70,
+                "comments": "Inhibited system recovery to pressure ransom payment.",
+                "observables": [
+                  { "type": "threat-actor", "value": "LockBit" }
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "layout": [
+        { "kind": "group", "groupId": "grp-objectives-recovery" }
+      ]
+    }
+  }
+}
