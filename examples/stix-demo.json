@@ -1,0 +1,853 @@
+{
+  "version": "2.5.0",
+  "schema": "killchain-export-lite",
+  "exportedAt": "2026-02-09T12:00:00.000Z",
+  "title": "Operation Midnight Eclipse — Full STIX 2.1 Showcase",
+  "view": "killchain",
+  "activeTab": "custom",
+  "filters": {},
+  "layers": { "attack": true, "capec": true, "cwe": true, "custom": true },
+  "hideEmpty": false,
+  "selection": { "type": null, "id": null },
+  "customLibrary": {
+    "threat-actor--e5f1b5d0-1a2b-4c3d-8e4f-567890abcdef": {
+      "id": "threat-actor--e5f1b5d0-1a2b-4c3d-8e4f-567890abcdef",
+      "stixType": "threat-actor",
+      "name": "Midnight Typhoon",
+      "description": "Nation-state threat actor attributed to a foreign intelligence service, active since 2019. Focuses on government, defense, and critical infrastructure targets across NATO-aligned nations. Known for patient, low-and-slow operations with sophisticated custom tooling.",
+      "labels": ["nation-state", "espionage", "apt"],
+      "created": "2026-01-15T08:30:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "threat_actor_types": ["nation-state", "spy"],
+      "aliases": ["Cozy Typhoon", "UNC4491", "BRONZE ECLIPSE"],
+      "first_seen": "2019-03-14T00:00:00.000Z",
+      "last_seen": "2026-01-28T00:00:00.000Z",
+      "roles": ["agent", "infrastructure-operator", "malware-author"],
+      "goals": ["Exfiltrate classified defense intelligence", "Maintain persistent access to government networks", "Monitor diplomatic communications"],
+      "sophistication": "expert",
+      "resource_level": "government",
+      "primary_motivation": "organizational-gain",
+      "secondary_motivations": ["dominance", "ideology"]
+    },
+    "intrusion-set--a1b2c3d4-5678-9abc-def0-111111111111": {
+      "id": "intrusion-set--a1b2c3d4-5678-9abc-def0-111111111111",
+      "stixType": "intrusion-set",
+      "name": "Operation Midnight Eclipse",
+      "description": "A coordinated cyber-espionage campaign targeting European government ministries and defense contractors between Q3 2025 and Q1 2026. The intrusion set leveraged spearphishing, zero-day exploitation of Palo Alto PAN-OS, and custom backdoors for long-term access.",
+      "labels": ["cyber-espionage", "government-targeting", "zero-day"],
+      "created": "2026-01-20T14:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "aliases": ["Eclipse Campaign", "NIGHTFALL-25"],
+      "first_seen": "2025-07-01T00:00:00.000Z",
+      "last_seen": "2026-01-28T00:00:00.000Z",
+      "goals": ["Establish persistent access in government networks", "Exfiltrate classified defense documents", "Compromise VPN infrastructure"],
+      "resource_level": "government",
+      "primary_motivation": "organizational-gain",
+      "secondary_motivations": ["dominance"]
+    },
+    "campaign--b2c3d4e5-6789-abcd-ef01-222222222222": {
+      "id": "campaign--b2c3d4e5-6789-abcd-ef01-222222222222",
+      "stixType": "campaign",
+      "name": "NIGHTFALL Phase 2 — Lateral Expansion",
+      "description": "Second phase of Operation Midnight Eclipse focused on lateral movement across segmented government networks. Utilized credential theft via Mimikatz and RDP pivoting through compromised jump servers. Active between Oct 2025 and Jan 2026.",
+      "labels": ["lateral-movement", "credential-theft", "phase-2"],
+      "created": "2026-01-22T09:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "aliases": ["NIGHTFALL-P2"],
+      "first_seen": "2025-10-15T00:00:00.000Z",
+      "last_seen": "2026-01-15T00:00:00.000Z",
+      "objective": "Expand access from the initial DMZ compromise to internal classified network segments and Active Directory domain controllers."
+    },
+    "identity--c3d4e5f6-789a-bcde-f012-333333333333": {
+      "id": "identity--c3d4e5f6-789a-bcde-f012-333333333333",
+      "stixType": "identity",
+      "name": "Ministry of Defence — Republic of Exemplia",
+      "description": "Primary victim organization. The Ministry of Defence of the Republic of Exemplia, responsible for national defense policy, military procurement, and allied intelligence coordination.",
+      "labels": ["victim", "government", "defense"],
+      "created": "2026-01-15T08:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "identity_class": "organization",
+      "sectors": ["government", "defense"],
+      "contact_information": "CSIRT: csirt@mod.exemplia.gov | +00-123-456-7890",
+      "roles": ["victim"]
+    },
+    "identity--d4e5f6a7-89ab-cdef-0123-444444444444": {
+      "id": "identity--d4e5f6a7-89ab-cdef-0123-444444444444",
+      "stixType": "identity",
+      "name": "NovaTech Defense Systems",
+      "description": "Secondary victim. Major defense contractor supplying advanced radar systems to NATO member states. Compromised through supply-chain access via a shared SharePoint instance with the Ministry.",
+      "labels": ["victim", "defense-contractor", "supply-chain"],
+      "created": "2026-01-18T11:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "identity_class": "organization",
+      "sectors": ["defense", "aerospace", "technology"],
+      "roles": ["victim"]
+    },
+    "malware--e5f6a7b8-9abc-def0-1234-555555555555": {
+      "id": "malware--e5f6a7b8-9abc-def0-1234-555555555555",
+      "stixType": "malware",
+      "name": "EclipseRAT",
+      "description": "Custom remote access trojan attributed to Midnight Typhoon. Communicates over DNS-over-HTTPS to CloudFlare resolvers for C2, with fallback to HTTPS beaconing. Supports file exfiltration, keylogging, screen capture, and arbitrary command execution. Written in C++ with anti-analysis features including VM detection and debug-trap evasion.",
+      "labels": ["remote-access-trojan", "custom", "dns-over-https"],
+      "created": "2026-01-16T10:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "is_family": true,
+      "malware_types": ["remote-access-trojan", "backdoor", "spyware"],
+      "aliases": ["Eclipse.RAT", "DarkMoon", "NIGHTDOOR"],
+      "first_seen": "2024-08-20T00:00:00.000Z",
+      "last_seen": "2026-01-25T00:00:00.000Z",
+      "architecture_execution_envs": ["x86-64"],
+      "implementation_languages": ["c++"],
+      "capabilities": ["communicates-with-c2", "exfiltrates-data", "captures-input-peripherals", "captures-output-peripherals", "anti-debugging", "anti-sandbox", "anti-virus-evasion", "persists-after-system-reboot", "escalates-privileges"]
+    },
+    "malware--f6a7b8c9-abcd-ef01-2345-666666666666": {
+      "id": "malware--f6a7b8c9-abcd-ef01-2345-666666666666",
+      "stixType": "malware",
+      "name": "CrashLoader",
+      "description": "First-stage loader dropped via spearphishing. Highly obfuscated .NET assembly that decrypts and reflectively loads EclipseRAT from an encrypted payload blob embedded in a PNG steganographic carrier. Self-deletes after successful injection.",
+      "labels": ["dropper", "loader", "first-stage"],
+      "created": "2026-01-16T10:30:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "is_family": false,
+      "malware_types": ["dropper", "downloader"],
+      "first_seen": "2025-07-01T00:00:00.000Z",
+      "last_seen": "2025-12-10T00:00:00.000Z",
+      "implementation_languages": ["c#"],
+      "architecture_execution_envs": ["x86-64"],
+      "capabilities": ["installs-other-components", "cleans-traces-of-infection", "anti-debugging", "hides-executing-code"]
+    },
+    "tool--a7b8c9d0-bcde-f012-3456-777777777777": {
+      "id": "tool--a7b8c9d0-bcde-f012-3456-777777777777",
+      "stixType": "tool",
+      "name": "Mimikatz",
+      "description": "Open-source credential dumping tool used post-compromise to extract plaintext passwords, NTLM hashes, and Kerberos tickets from Windows LSASS memory. In this operation, a modified version was deployed via PsExec to domain controllers.",
+      "labels": ["credential-theft", "post-exploitation"],
+      "created": "2026-01-22T09:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "tool_types": ["credential-exploitation", "information-gathering"],
+      "aliases": ["sekurlsa"],
+      "tool_version": "2.2.0-custom"
+    },
+    "tool--b8c9d0e1-cdef-0123-4567-888888888888": {
+      "id": "tool--b8c9d0e1-cdef-0123-4567-888888888888",
+      "stixType": "tool",
+      "name": "Cobalt Strike",
+      "description": "Commercial adversary simulation framework abused by the threat actor for C2 and lateral movement. Beacon implants configured with malleable C2 profiles mimicking Microsoft 365 traffic patterns. License confirmed stolen from a compromised security consultancy.",
+      "labels": ["c2-framework", "red-team", "commercial"],
+      "created": "2026-01-22T09:30:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "tool_types": ["remote-access", "exploitation"],
+      "aliases": ["CS Beacon"],
+      "tool_version": "4.9"
+    },
+    "vulnerability--c9d0e1f2-def0-1234-5678-999999999999": {
+      "id": "vulnerability--c9d0e1f2-def0-1234-5678-999999999999",
+      "stixType": "vulnerability",
+      "name": "CVE-2024-3400 — PAN-OS Command Injection",
+      "description": "Critical command injection vulnerability in Palo Alto Networks PAN-OS GlobalProtect feature, CVSS 10.0. Allows unauthenticated remote code execution via crafted HTTP requests to the SSL VPN endpoint. Exploited as a zero-day by Midnight Typhoon for initial access in this operation.",
+      "labels": ["zero-day", "rce", "critical", "cve-2024-3400"],
+      "created": "2026-01-15T08:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z"
+    },
+    "attack-pattern--d0e1f2a3-ef01-2345-6789-aaaaaaaaaaaa": {
+      "id": "attack-pattern--d0e1f2a3-ef01-2345-6789-aaaaaaaaaaaa",
+      "stixType": "attack-pattern",
+      "name": "DNS-over-HTTPS C2 Tunneling",
+      "description": "EclipseRAT encodes C2 commands and exfiltrated data within DNS TXT queries routed through legitimate DoH providers (Cloudflare 1.1.1.1, Google 8.8.8.8). This abuses trusted HTTPS connections to bypass network monitoring that does not perform TLS inspection on known-good domains.",
+      "labels": ["c2", "dns-over-https", "evasion"],
+      "created": "2026-01-20T12:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "aliases": ["DoH Tunneling", "DNS Covert Channel"]
+    },
+    "infrastructure--e1f2a3b4-f012-3456-789a-bbbbbbbbbbbb": {
+      "id": "infrastructure--e1f2a3b4-f012-3456-789a-bbbbbbbbbbbb",
+      "stixType": "infrastructure",
+      "name": "Eclipse C2 Network",
+      "description": "Distributed command-and-control infrastructure spanning compromised WordPress sites, bulletproof hosting in Moldova, and CloudFlare Workers for DNS-over-HTTPS relay. At least 14 active C2 nodes identified, rotating on a 72-hour cycle with domain generation algorithm (DGA) fallback.",
+      "labels": ["c2", "bulletproof-hosting", "dga"],
+      "created": "2026-01-18T14:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "infrastructure_types": ["command-and-control", "hosting-malware"],
+      "aliases": ["Eclipse C2 Mesh", "NIGHTFALL Infra"],
+      "first_seen": "2025-06-15T00:00:00.000Z",
+      "last_seen": "2026-01-28T00:00:00.000Z"
+    },
+    "infrastructure--f2a3b4c5-0123-4567-89ab-cccccccccccc": {
+      "id": "infrastructure--f2a3b4c5-0123-4567-89ab-cccccccccccc",
+      "stixType": "infrastructure",
+      "name": "Phishing Infrastructure — login-mod-exemplia.org",
+      "description": "Credential harvesting infrastructure mimicking the Ministry of Defence SSO login portal. Hosted on compromised AWS EC2 instance with a valid Let's Encrypt TLS certificate. Captured credentials relayed in real-time to threat actor via Telegram bot API.",
+      "labels": ["phishing", "credential-harvesting"],
+      "created": "2026-01-17T09:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "infrastructure_types": ["phishing", "staging"],
+      "first_seen": "2025-07-10T00:00:00.000Z",
+      "last_seen": "2025-09-30T00:00:00.000Z"
+    },
+    "indicator--a3b4c5d6-1234-5678-9abc-dddddddddddd": {
+      "id": "indicator--a3b4c5d6-1234-5678-9abc-dddddddddddd",
+      "stixType": "indicator",
+      "name": "EclipseRAT SHA-256 Hash",
+      "description": "SHA-256 file hash of the EclipseRAT v3.2 payload DLL dropped by CrashLoader. Observed on multiple victim endpoints in the Ministry network between Nov 2025 and Jan 2026.",
+      "labels": ["malicious-activity", "file-hash"],
+      "created": "2026-01-17T13:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "pattern": "[file:hashes.'SHA-256' = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855']",
+      "pattern_type": "stix",
+      "valid_from": "2025-11-01T00:00:00.000Z",
+      "indicator_types": ["malicious-activity"],
+      "valid_until": "2027-01-01T00:00:00.000Z"
+    },
+    "indicator--b4c5d6e7-2345-6789-abcd-eeeeeeeeeeee": {
+      "id": "indicator--b4c5d6e7-2345-6789-abcd-eeeeeeeeeeee",
+      "stixType": "indicator",
+      "name": "Eclipse C2 Domain — update-service-cdn.com",
+      "description": "Primary C2 domain used by EclipseRAT Beacon variant. DNS resolved to rotating IPs in AS12345 (Bulletproof Hosting Ltd, Moldova). Active Nov 2025 – Jan 2026.",
+      "labels": ["malicious-activity", "c2-domain"],
+      "created": "2026-01-19T15:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "pattern": "[domain-name:value = 'update-service-cdn.com']",
+      "pattern_type": "stix",
+      "valid_from": "2025-11-01T00:00:00.000Z",
+      "indicator_types": ["malicious-activity", "attribution"],
+      "valid_until": "2026-06-01T00:00:00.000Z"
+    },
+    "course-of-action--c5d6e7f8-3456-789a-bcde-ffffffffffff": {
+      "id": "course-of-action--c5d6e7f8-3456-789a-bcde-ffffffffffff",
+      "stixType": "course-of-action",
+      "name": "Patch PAN-OS to 10.2.9-h1 or Later",
+      "description": "Immediately upgrade all Palo Alto Networks GlobalProtect appliances to PAN-OS version 10.2.9-h1 or later, which contains the fix for CVE-2024-3400. If immediate patching is not possible, apply the vendor-provided mitigation by disabling GlobalProtect device telemetry. Conduct forensic triage of all PAN-OS appliances for signs of exploitation.",
+      "labels": ["patch", "critical", "immediate"],
+      "created": "2026-01-16T10:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z"
+    },
+    "course-of-action--d6e7f8a9-4567-89ab-cdef-000000000001": {
+      "id": "course-of-action--d6e7f8a9-4567-89ab-cdef-000000000001",
+      "stixType": "course-of-action",
+      "name": "Block Eclipse C2 Infrastructure",
+      "description": "Add all identified Eclipse C2 domains, IPs, and JA3 fingerprints to network perimeter deny lists. Configure DNS sinkholing for the identified DGA patterns. Enable TLS inspection for DoH traffic to Cloudflare and Google resolvers to detect tunneled C2.",
+      "labels": ["network", "blocking", "detection"],
+      "created": "2026-01-20T11:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z"
+    },
+    "malware-analysis--e7f8a9b0-5678-9abc-def0-000000000002": {
+      "id": "malware-analysis--e7f8a9b0-5678-9abc-def0-000000000002",
+      "stixType": "malware-analysis",
+      "name": "EclipseRAT v3.2 Dynamic Analysis",
+      "description": "Automated and manual dynamic analysis of EclipseRAT v3.2 payload in an isolated sandbox. Observed DNS-over-HTTPS beaconing, anti-VM checks (CPUID, registry keys), and encrypted file staging in %APPDATA%\\Microsoft\\Crypto\\.",
+      "labels": ["sandbox", "dynamic-analysis", "eclipserat"],
+      "created": "2026-01-21T16:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "product": "Any.Run Enterprise",
+      "result": "malicious",
+      "version": "3.8.1",
+      "analysis_engine_version": "3.8.1.4420",
+      "analysis_definition_version": "2026.01.21",
+      "submitted": "2026-01-21T14:00:00.000Z",
+      "analysis_started": "2026-01-21T14:02:30.000Z",
+      "analysis_ended": "2026-01-21T14:12:45.000Z",
+      "result_name": "Trojan.Win64.EclipseRAT.gen",
+      "operating_system_ref": "Windows 10 Pro 22H2 x64",
+      "modules": ["Behavioral Analysis", "Memory Forensics", "Network Capture"]
+    },
+    "report--f8a9b0c1-6789-abcd-ef01-000000000003": {
+      "id": "report--f8a9b0c1-6789-abcd-ef01-000000000003",
+      "stixType": "report",
+      "name": "Midnight Eclipse Threat Intelligence Report — Q1 2026",
+      "description": "Comprehensive threat intelligence report covering the Operation Midnight Eclipse campaign, including TTPs, IOCs, victim analysis, attribution to Midnight Typhoon, and recommended mitigations. Classification: TLP:AMBER+STRICT.",
+      "labels": ["threat-report", "tlp-amber", "apt"],
+      "created": "2026-02-01T08:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "published": "2026-02-05T00:00:00.000Z",
+      "report_types": ["threat-report", "campaign", "intrusion-set", "malware"]
+    },
+    "location--a9b0c1d2-789a-bcde-f012-000000000004": {
+      "id": "location--a9b0c1d2-789a-bcde-f012-000000000004",
+      "stixType": "location",
+      "name": "C2 Hosting — Chișinău, Moldova",
+      "description": "Primary bulletproof hosting location for Eclipse C2 infrastructure. Multiple VPS instances rented through cryptocurrency payments from a hosting provider operating out of a data center in Chișinău.",
+      "labels": ["c2-hosting", "bulletproof"],
+      "created": "2026-01-19T09:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "region": "eastern-europe",
+      "country": "MD",
+      "city": "Chișinău",
+      "latitude": "47.0105",
+      "longitude": "28.8638"
+    },
+    "grouping--b0c1d2e3-89ab-cdef-0123-000000000005": {
+      "id": "grouping--b0c1d2e3-89ab-cdef-0123-000000000005",
+      "stixType": "grouping",
+      "name": "Eclipse IOC Cluster — January 2026",
+      "description": "Grouping of all indicators, infrastructure, and malware samples identified during the January 2026 incident response engagement at the Ministry of Defence.",
+      "labels": ["ioc-cluster", "incident-response"],
+      "created": "2026-01-28T10:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "context": "suspicious-activity"
+    },
+    "note--c1d2e3f4-9abc-def0-1234-000000000006": {
+      "id": "note--c1d2e3f4-9abc-def0-1234-000000000006",
+      "stixType": "note",
+      "name": "Analyst Note — Attribution Confidence",
+      "description": "Internal analyst note regarding attribution confidence and intelligence gaps.",
+      "labels": ["analyst-note", "attribution"],
+      "created": "2026-02-03T14:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "content": "Attribution to Midnight Typhoon is assessed with HIGH confidence based on: (1) overlap of EclipseRAT C2 infrastructure with previously attributed campaigns NIGHTFALL-23 and DUSK-24, (2) code-level similarities in EclipseRAT with the MoonlightRAT family documented by Mandiant (UNC4491), (3) operational tempo matching Moscow business hours (UTC+3), and (4) target selection consistent with known national intelligence priorities. GAP: No HUMINT corroboration available. SIGINT partially supports via allied partner reporting (TLP:RED, not included in this report).",
+      "abstract": "High-confidence attribution to Midnight Typhoon (UNC4491) based on infrastructure, code, and behavioral overlaps.",
+      "authors": ["Senior Analyst J. Kovalenko", "CTI Lead M. Santos"]
+    },
+    "observed-data--d2e3f4a5-abcd-ef01-2345-000000000007": {
+      "id": "observed-data--d2e3f4a5-abcd-ef01-2345-000000000007",
+      "stixType": "observed-data",
+      "name": "C2 Beaconing — 15 Jan 2026",
+      "description": "Network telemetry capturing EclipseRAT DNS-over-HTTPS beaconing from an infected workstation (10.50.23.117) at the Ministry to Cloudflare resolvers. Beacon interval: 300 seconds. 847 DNS queries observed in 72-hour capture window.",
+      "labels": ["network-telemetry", "c2-beaconing"],
+      "created": "2026-01-25T08:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "first_observed": "2026-01-15T06:12:00.000Z",
+      "last_observed": "2026-01-18T06:12:00.000Z",
+      "number_observed": 847
+    },
+    "opinion--e3f4a5b6-bcde-f012-3456-000000000008": {
+      "id": "opinion--e3f4a5b6-bcde-f012-3456-000000000008",
+      "stixType": "opinion",
+      "name": "Concurrence on Attribution Assessment",
+      "description": "Peer review opinion from allied CERT partner on the Midnight Typhoon attribution assessment.",
+      "labels": ["peer-review", "attribution", "allied"],
+      "created": "2026-02-07T10:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "opinion": "agree",
+      "explanation": "Our independent analysis of the EclipseRAT samples, C2 infrastructure overlaps, and SIGINT indicators corroborates the HIGH confidence attribution to UNC4491 / Midnight Typhoon. We note additional overlapping indicators from our own case STORM-2491 (TLP:AMBER) that strengthen the assessment.",
+      "authors": ["Allied CERT — Nordic Cyber Defence Centre"]
+    },
+    "x-custom--f4a5b6c7-cdef-0123-4567-000000000009": {
+      "id": "x-custom--f4a5b6c7-cdef-0123-4567-000000000009",
+      "stixType": "x-custom",
+      "name": "Incident Timeline Marker — Initial Compromise Detected",
+      "description": "Custom marker indicating when the SOC first detected anomalous DNS-over-HTTPS traffic patterns from the Ministry network, triggering the incident response engagement. Detection was via a Sigma rule for excessive DoH queries to non-standard resolvers.",
+      "labels": ["timeline", "detection", "soc"],
+      "customTypeName": "Incident Timeline Event",
+      "created": "2026-01-25T09:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z"
+    }
+  },
+  "assignments": {
+    "IN:reconnaissance": {
+      "techniques": [
+        {
+          "id": "T1595",
+          "metadata": {
+            "score": "medium",
+            "confidence": 55,
+            "comments": "Active scanning of Ministry external IP ranges detected via honeypot logs. Source IPs traced to TOR exit nodes and VPS in Moldova.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": [
+              { "type": "ipv4-addr", "value": "185.220.101.42" },
+              { "type": "ipv4-addr", "value": "185.220.101.58" }
+            ]
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [
+        {
+          "id": "threat-actor--e5f1b5d0-1a2b-4c3d-8e4f-567890abcdef",
+          "instanceId": "itm-stix-demo-001",
+          "type": "custom",
+          "metadata": {}
+        },
+        {
+          "id": "intrusion-set--a1b2c3d4-5678-9abc-def0-111111111111",
+          "instanceId": "itm-stix-demo-002",
+          "type": "custom",
+          "metadata": {}
+        }
+      ],
+      "groups": [],
+      "layout": [
+        { "kind": "item", "instanceId": "itm-stix-demo-001" },
+        { "kind": "item", "instanceId": "itm-stix-demo-002" }
+      ]
+    },
+    "IN:resource-development": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [
+        {
+          "id": "infrastructure--e1f2a3b4-f012-3456-789a-bbbbbbbbbbbb",
+          "instanceId": "itm-stix-demo-003",
+          "type": "custom",
+          "metadata": {}
+        },
+        {
+          "id": "infrastructure--f2a3b4c5-0123-4567-89ab-cccccccccccc",
+          "instanceId": "itm-stix-demo-004",
+          "type": "custom",
+          "metadata": {}
+        },
+        {
+          "id": "location--a9b0c1d2-789a-bcde-f012-000000000004",
+          "instanceId": "itm-stix-demo-005",
+          "type": "custom",
+          "metadata": {}
+        }
+      ],
+      "groups": [],
+      "layout": [
+        { "kind": "item", "instanceId": "itm-stix-demo-003" },
+        { "kind": "item", "instanceId": "itm-stix-demo-004" },
+        { "kind": "item", "instanceId": "itm-stix-demo-005" }
+      ]
+    },
+    "IN:delivery": {
+      "techniques": [
+        {
+          "id": "T1566.002",
+          "metadata": {
+            "score": "high",
+            "confidence": 80,
+            "comments": "Spearphishing emails with links to credential harvesting site login-mod-exemplia.org sent to 12 Ministry personnel in the procurement division.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": [
+              { "type": "email-addr", "value": "hr-update@mod-exemplia-portal.org" },
+              { "type": "url", "value": "https://login-mod-exemplia.org/sso/auth" },
+              { "type": "domain-name", "value": "login-mod-exemplia.org" }
+            ]
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [
+        {
+          "id": "malware--f6a7b8c9-abcd-ef01-2345-666666666666",
+          "instanceId": "itm-stix-demo-006",
+          "type": "custom",
+          "metadata": {}
+        }
+      ],
+      "groups": [],
+      "layout": [
+        { "kind": "item", "instanceId": "itm-stix-demo-006" }
+      ]
+    },
+    "IN:social-engineering": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "IN:exploitation": {
+      "techniques": [
+        {
+          "id": "T1190",
+          "metadata": {
+            "score": "critical",
+            "confidence": 95,
+            "comments": "Zero-day exploitation of CVE-2024-3400 on Ministry PAN-OS GlobalProtect appliance for initial code execution.",
+            "cves": [
+              { "id": "CVE-2024-3400", "score": "10.0", "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H" }
+            ],
+            "hyperlinks": [
+              { "label": "Palo Alto Advisory", "url": "https://security.paloaltonetworks.com/CVE-2024-3400" }
+            ],
+            "observables": []
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [
+        {
+          "id": "vulnerability--c9d0e1f2-def0-1234-5678-999999999999",
+          "instanceId": "itm-stix-demo-007",
+          "type": "custom",
+          "metadata": {}
+        },
+        {
+          "id": "attack-pattern--d0e1f2a3-ef01-2345-6789-aaaaaaaaaaaa",
+          "instanceId": "itm-stix-demo-008",
+          "type": "custom",
+          "metadata": {}
+        }
+      ],
+      "groups": [],
+      "layout": [
+        { "kind": "item", "instanceId": "itm-stix-demo-007" },
+        { "kind": "item", "instanceId": "itm-stix-demo-008" }
+      ]
+    },
+    "IN:persistence": {
+      "techniques": [
+        {
+          "id": "T1547.001",
+          "metadata": {
+            "score": "high",
+            "confidence": 75,
+            "comments": "EclipseRAT persists via a registry Run key disguised as a Windows Update service.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": [
+              { "type": "windows-registry-key", "value": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\WinUpdateSvc" }
+            ]
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [
+        {
+          "id": "malware--e5f6a7b8-9abc-def0-1234-555555555555",
+          "instanceId": "itm-stix-demo-009",
+          "type": "custom",
+          "metadata": {}
+        }
+      ],
+      "groups": [],
+      "layout": [
+        { "kind": "item", "instanceId": "itm-stix-demo-009" }
+      ]
+    },
+    "IN:defense-evasion": {
+      "techniques": [
+        {
+          "id": "T1070.004",
+          "metadata": {
+            "score": "medium",
+            "confidence": 60,
+            "comments": "CrashLoader self-deletes after injecting EclipseRAT. Event logs selectively cleared.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": []
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [
+        {
+          "id": "malware-analysis--e7f8a9b0-5678-9abc-def0-000000000002",
+          "instanceId": "itm-stix-demo-010",
+          "type": "custom",
+          "metadata": {}
+        }
+      ],
+      "groups": [],
+      "layout": [
+        { "kind": "item", "instanceId": "itm-stix-demo-010" }
+      ]
+    },
+    "IN:command-control": {
+      "techniques": [
+        {
+          "id": "T1071.004",
+          "metadata": {
+            "score": "high",
+            "confidence": 90,
+            "comments": "EclipseRAT beacons via DNS-over-HTTPS to Cloudflare (1.1.1.1) and Google (8.8.8.8) resolvers. C2 commands encoded in TXT record responses.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": [
+              { "type": "domain-name", "value": "update-service-cdn.com" },
+              { "type": "ipv4-addr", "value": "104.21.45.67" },
+              { "type": "url", "value": "https://cloudflare-dns.com/dns-query" }
+            ]
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [
+        {
+          "id": "indicator--a3b4c5d6-1234-5678-9abc-dddddddddddd",
+          "instanceId": "itm-stix-demo-011",
+          "type": "custom",
+          "metadata": {}
+        },
+        {
+          "id": "indicator--b4c5d6e7-2345-6789-abcd-eeeeeeeeeeee",
+          "instanceId": "itm-stix-demo-012",
+          "type": "custom",
+          "metadata": {}
+        },
+        {
+          "id": "observed-data--d2e3f4a5-abcd-ef01-2345-000000000007",
+          "instanceId": "itm-stix-demo-013",
+          "type": "custom",
+          "metadata": {}
+        }
+      ],
+      "groups": [],
+      "layout": [
+        { "kind": "item", "instanceId": "itm-stix-demo-011" },
+        { "kind": "item", "instanceId": "itm-stix-demo-012" },
+        { "kind": "item", "instanceId": "itm-stix-demo-013" }
+      ]
+    },
+    "THROUGH:pivoting": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "THROUGH:discovery": {
+      "techniques": [
+        {
+          "id": "T1087.002",
+          "metadata": {
+            "score": "medium",
+            "confidence": 65,
+            "comments": "Domain account enumeration via net group 'Domain Admins' /domain and bloodhound-python.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": []
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "THROUGH:privilege-escalation": {
+      "techniques": [
+        {
+          "id": "T1078.002",
+          "metadata": {
+            "score": "high",
+            "confidence": 85,
+            "comments": "Compromised domain admin credentials used to escalate privileges across the Ministry network.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": []
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "THROUGH:execution": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "THROUGH:credential-access": {
+      "techniques": [
+        {
+          "id": "T1003.001",
+          "metadata": {
+            "score": "high",
+            "confidence": 90,
+            "comments": "Mimikatz (sekurlsa::logonpasswords) used to dump LSASS on domain controllers.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": [
+              { "type": "file-hash-sha256", "value": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2" }
+            ]
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [
+        {
+          "id": "tool--a7b8c9d0-bcde-f012-3456-777777777777",
+          "instanceId": "itm-stix-demo-014",
+          "type": "custom",
+          "metadata": {}
+        }
+      ],
+      "groups": [],
+      "layout": [
+        { "kind": "item", "instanceId": "itm-stix-demo-014" }
+      ]
+    },
+    "THROUGH:lateral-movement": {
+      "techniques": [
+        {
+          "id": "T1021.001",
+          "metadata": {
+            "score": "high",
+            "confidence": 80,
+            "comments": "RDP lateral movement via compromised jump servers to reach classified network segment.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": [
+              { "type": "ipv4-addr", "value": "10.50.23.117" },
+              { "type": "ipv4-addr", "value": "10.50.24.5" }
+            ]
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [
+        {
+          "id": "campaign--b2c3d4e5-6789-abcd-ef01-222222222222",
+          "instanceId": "itm-stix-demo-015",
+          "type": "custom",
+          "metadata": {}
+        },
+        {
+          "id": "tool--b8c9d0e1-cdef-0123-4567-888888888888",
+          "instanceId": "itm-stix-demo-016",
+          "type": "custom",
+          "metadata": {}
+        }
+      ],
+      "groups": [],
+      "layout": [
+        { "kind": "item", "instanceId": "itm-stix-demo-015" },
+        { "kind": "item", "instanceId": "itm-stix-demo-016" }
+      ]
+    },
+    "OUT:collection": {
+      "techniques": [
+        {
+          "id": "T1560.001",
+          "metadata": {
+            "score": "high",
+            "confidence": 75,
+            "comments": "Classified documents staged in encrypted 7z archives in %APPDATA%\\Microsoft\\Crypto\\ prior to exfiltration.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": [
+              { "type": "file-name", "value": "svc_update_cache.7z" },
+              { "type": "directory", "value": "%APPDATA%\\Microsoft\\Crypto\\" }
+            ]
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [
+        {
+          "id": "identity--c3d4e5f6-789a-bcde-f012-333333333333",
+          "instanceId": "itm-stix-demo-017",
+          "type": "custom",
+          "metadata": {}
+        },
+        {
+          "id": "identity--d4e5f6a7-89ab-cdef-0123-444444444444",
+          "instanceId": "itm-stix-demo-018",
+          "type": "custom",
+          "metadata": {}
+        }
+      ],
+      "groups": [],
+      "layout": [
+        { "kind": "item", "instanceId": "itm-stix-demo-017" },
+        { "kind": "item", "instanceId": "itm-stix-demo-018" }
+      ]
+    },
+    "OUT:exfiltration": {
+      "techniques": [
+        {
+          "id": "T1048.002",
+          "metadata": {
+            "score": "critical",
+            "confidence": 85,
+            "comments": "Exfiltration via DNS-over-HTTPS tunneling. Estimated 2.3 GB exfiltrated over 14 days.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": [
+              { "type": "domain-name", "value": "update-service-cdn.com" }
+            ]
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [
+        {
+          "id": "grouping--b0c1d2e3-89ab-cdef-0123-000000000005",
+          "instanceId": "itm-stix-demo-019",
+          "type": "custom",
+          "metadata": {}
+        }
+      ],
+      "groups": [],
+      "layout": [
+        { "kind": "item", "instanceId": "itm-stix-demo-019" }
+      ]
+    },
+    "OUT:impact": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [
+        {
+          "id": "report--f8a9b0c1-6789-abcd-ef01-000000000003",
+          "instanceId": "itm-stix-demo-020",
+          "type": "custom",
+          "metadata": {}
+        },
+        {
+          "id": "note--c1d2e3f4-9abc-def0-1234-000000000006",
+          "instanceId": "itm-stix-demo-021",
+          "type": "custom",
+          "metadata": {}
+        },
+        {
+          "id": "opinion--e3f4a5b6-bcde-f012-3456-000000000008",
+          "instanceId": "itm-stix-demo-022",
+          "type": "custom",
+          "metadata": {}
+        }
+      ],
+      "groups": [],
+      "layout": [
+        { "kind": "item", "instanceId": "itm-stix-demo-020" },
+        { "kind": "item", "instanceId": "itm-stix-demo-021" },
+        { "kind": "item", "instanceId": "itm-stix-demo-022" }
+      ]
+    },
+    "OUT:objectives": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [
+        {
+          "id": "course-of-action--c5d6e7f8-3456-789a-bcde-ffffffffffff",
+          "instanceId": "itm-stix-demo-023",
+          "type": "custom",
+          "metadata": {}
+        },
+        {
+          "id": "course-of-action--d6e7f8a9-4567-89ab-cdef-000000000001",
+          "instanceId": "itm-stix-demo-024",
+          "type": "custom",
+          "metadata": {}
+        },
+        {
+          "id": "x-custom--f4a5b6c7-cdef-0123-4567-000000000009",
+          "instanceId": "itm-stix-demo-025",
+          "type": "custom",
+          "metadata": {}
+        }
+      ],
+      "groups": [],
+      "layout": [
+        { "kind": "item", "instanceId": "itm-stix-demo-023" },
+        { "kind": "item", "instanceId": "itm-stix-demo-024" },
+        { "kind": "item", "instanceId": "itm-stix-demo-025" }
+      ]
+    }
+  }
+}

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AttackFlow - Kill Chain Editor</title>
     <script src="config.js"></script>
+    <script src="stix-config.js"></script>
     <style>
         :root {
             --phase-in: #10b981;
@@ -390,6 +391,7 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
+            flex-shrink: 0;
         }
 
         .sidebar-tabs {
@@ -415,6 +417,7 @@
         .sidebar-tab.attack.active { border-bottom-color: var(--attack-color); }
         .sidebar-tab.capec.active { border-bottom-color: var(--capec-color); }
         .sidebar-tab.cwe.active { border-bottom-color: var(--cwe-color); }
+        .sidebar-tab.custom.active { border-bottom-color: var(--custom-color); }
 
         .sidebar-content {
             flex: 1;
@@ -591,15 +594,14 @@
             align-items: center;
             padding: 8px 16px;
             border-bottom: 1px solid var(--border-color);
-            position: relative;
+            gap: 8px;
         }
 
         .kill-chain-title-wrap {
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            max-width: 50%;
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            justify-content: center;
         }
 
         .kill-chain-title {
@@ -612,8 +614,8 @@
             text-align: center;
             padding: 2px 8px;
             width: 100%;
-            min-width: 180px;
-            max-width: 400px;
+            min-width: 0;
+            max-width: 700px;
             outline: none;
             text-overflow: ellipsis;
         }
@@ -635,14 +637,15 @@
         }
 
         .app.compact-mode .kill-chain-title {
-            font-size: 0.85rem;
-            padding: 1px 6px;
-            min-width: 140px;
+            font-size: 1rem;
+            padding: 2px 8px;
+            min-width: 0;
         }
 
         .view-controls {
             display: flex;
             gap: 6px;
+            flex-shrink: 0;
         }
 
         /* Stats Bar */
@@ -924,8 +927,9 @@
 
         /* Technique Tag */
         .technique-tag {
-            display: inline-flex;
+            display: flex;
             flex-direction: column;
+            min-width: 0;
             padding: 4px 6px;
             background: rgba(59, 130, 246, 0.15);
             border: 1px solid rgba(59, 130, 246, 0.3);
@@ -942,11 +946,13 @@
             align-items: center;
             justify-content: space-between;
             gap: 6px;
+            min-width: 0;
         }
 
         .app.compact-mode .technique-tag .tag-header-row,
         .app.compact-mode .capec-tag .tag-header-row,
-        .app.compact-mode .cwe-tag .tag-header-row {
+        .app.compact-mode .cwe-tag .tag-header-row,
+        .app.compact-mode .custom-tag .tag-header-row {
             gap: 4px;
         }
 
@@ -959,11 +965,16 @@
             border-radius: 2px;
             cursor: pointer;
             font-size: 0.8rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            min-width: 0;
         }
 
         .app.compact-mode .technique-tag .id,
         .app.compact-mode .capec-tag .id,
-        .app.compact-mode .cwe-tag .id {
+        .app.compact-mode .cwe-tag .id,
+        .app.compact-mode .custom-tag .id {
             font-size: 0.7rem;
             padding: 1px 3px;
         }
@@ -1004,8 +1015,9 @@
 
         /* CWE Tag */
         .cwe-tag {
-            display: inline-flex;
+            display: flex;
             flex-direction: column;
+            min-width: 0;
             padding: 4px 6px;
             background: rgba(245, 158, 11, 0.1);
             border: 1px solid rgba(245, 158, 11, 0.25);
@@ -1022,6 +1034,7 @@
             align-items: center;
             justify-content: space-between;
             gap: 6px;
+            min-width: 0;
         }
 
         .cwe-tag .id {
@@ -1033,6 +1046,10 @@
             border-radius: 2px;
             cursor: pointer;
             font-size: 0.8rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            min-width: 0;
         }
 
         .cwe-tag .id:hover {
@@ -1071,8 +1088,9 @@
 
         /* CAPEC Tag */
         .capec-tag {
-            display: inline-flex;
+            display: flex;
             flex-direction: column;
+            min-width: 0;
             padding: 4px 6px;
             background: rgba(139, 92, 246, 0.1);
             border: 1px solid rgba(139, 92, 246, 0.25);
@@ -1089,6 +1107,7 @@
             align-items: center;
             justify-content: space-between;
             gap: 6px;
+            min-width: 0;
         }
 
         .domain-badge {
@@ -1100,6 +1119,7 @@
             background: var(--bg-phase);
             letter-spacing: 0.3px;
             text-transform: uppercase;
+            flex-shrink: 0;
         }
 
         .capec-tag .id {
@@ -1111,6 +1131,10 @@
             border-radius: 2px;
             cursor: pointer;
             font-size: 0.8rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            min-width: 0;
         }
 
         .capec-tag .id:hover {
@@ -1151,9 +1175,323 @@
 
         .capec-tag:hover .remove { opacity: 1; }
 
+        /* Custom/STIX Tag */
+        .custom-tag {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            padding: 4px 6px;
+            background: rgba(20, 184, 166, 0.1);
+            border: 1px solid rgba(20, 184, 166, 0.25);
+            border-radius: 3px;
+            font-size: 0.65rem;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .custom-tag:hover { border-color: var(--custom-color); background: rgba(20, 184, 166, 0.2); }
+
+        .custom-tag .tag-header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+            min-width: 0;
+        }
+
+        .custom-tag .id {
+            font-family: monospace;
+            color: #fff;
+            font-weight: 600;
+            background: rgba(20, 184, 166, 0.5);
+            padding: 1px 4px;
+            border-radius: 2px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            min-width: 0;
+        }
+
+        .custom-tag .id:hover {
+            background: rgba(0, 0, 0, 0.32);
+        }
+
+        .custom-tag .name {
+            color: var(--text-primary);
+            max-width: 260px;
+            white-space: normal;
+            overflow: visible;
+            text-overflow: initial;
+            word-break: break-word;
+        }
+
+        .custom-tag .remove {
+            color: #ef4444;
+            font-weight: bold;
+            font-size: 1rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 3px;
+            opacity: 0;
+            transition: all 0.15s;
+            cursor: pointer;
+        }
+
+        .custom-tag .remove:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        .custom-tag:hover .remove { opacity: 1; }
+
+        .stix-type-badge {
+            font-size: 0.55rem;
+            padding: 1px 4px;
+            border-radius: 999px;
+            border: 1px solid rgba(20, 184, 166, 0.4);
+            color: var(--custom-color);
+            background: rgba(20, 184, 166, 0.1);
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        /* Create Custom Item Modal */
+        .create-custom-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .create-custom-modal.visible { display: flex; }
+        .create-custom-form {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 24px;
+            width: min(480px, 90vw);
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .create-custom-form h3 {
+            margin: 0 0 16px;
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+        .create-custom-form label {
+            display: block;
+            margin-bottom: 4px;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+        .create-custom-form select,
+        .create-custom-form input,
+        .create-custom-form textarea {
+            width: 100%;
+            padding: 6px 8px;
+            margin-bottom: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-phase);
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+        .create-custom-form textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+        .create-custom-form .form-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: 8px;
+        }
+        .create-custom-form .form-actions button {
+            padding: 6px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        .create-custom-form .form-actions .btn-create {
+            background: var(--custom-color);
+            color: #fff;
+            border-color: var(--custom-color);
+        }
+        .create-custom-form .form-actions .btn-cancel {
+            background: var(--bg-phase);
+            color: var(--text-primary);
+        }
+        #custom-typename-group { display: none; }
+
+        /* Edit STIX Item Modal */
+        .edit-stix-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+        .edit-stix-modal.visible { display: flex; }
+        .edit-stix-form {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            width: min(600px, 92vw);
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .edit-stix-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .edit-stix-header h3 {
+            margin: 0;
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+        .edit-stix-header .stix-type-badge {
+            background: var(--custom-color);
+            color: #fff;
+            padding: 2px 10px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            margin-left: 10px;
+        }
+        .edit-stix-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.4rem;
+            cursor: pointer;
+            padding: 0 4px;
+            line-height: 1;
+        }
+        .edit-stix-close:hover { color: var(--text-primary); }
+        .edit-stix-body {
+            overflow-y: auto;
+            padding: 16px 20px;
+            flex: 1;
+        }
+        .edit-stix-body .stix-field-group {
+            margin-bottom: 14px;
+        }
+        .edit-stix-body .stix-field-group label {
+            display: block;
+            margin-bottom: 3px;
+            color: var(--text-secondary);
+            font-size: 0.78rem;
+        }
+        .edit-stix-body .stix-field-group label .field-required {
+            color: #ef4444;
+            margin-left: 2px;
+        }
+        .edit-stix-body .stix-field-group input,
+        .edit-stix-body .stix-field-group select,
+        .edit-stix-body .stix-field-group textarea {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-phase);
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+        .edit-stix-body .stix-field-group textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+        .edit-stix-body .stix-field-group .field-hint {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+        .edit-stix-body .stix-field-group input:read-only {
+            opacity: 0.6;
+            cursor: default;
+        }
+        .edit-stix-section-title {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 18px 0 8px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .edit-stix-section-title:first-child { margin-top: 0; }
+        .edit-stix-footer {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            padding: 12px 20px;
+            border-top: 1px solid var(--border-color);
+        }
+        .edit-stix-footer button {
+            padding: 6px 18px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        .edit-stix-footer .btn-stix-save {
+            background: var(--custom-color);
+            color: #fff;
+            border-color: var(--custom-color);
+        }
+        .edit-stix-footer .btn-stix-cancel {
+            background: var(--bg-phase);
+            color: var(--text-primary);
+        }
+        #edit-stix-error {
+            color: #ef4444;
+            font-size: 0.8rem;
+            margin-bottom: 8px;
+        }
+
+        /* Custom item sidebar entry */
+        .entity-item.custom {
+            border-left-color: var(--custom-color);
+        }
+        .entity-item.custom .entity-id {
+            color: var(--custom-color);
+        }
+        .entity-badge.stix-badge {
+            background: rgba(20, 184, 166, 0.15);
+            color: var(--custom-color);
+            border: 1px solid rgba(20, 184, 166, 0.3);
+        }
+
+        /* Filter dropdown for custom tab */
+        .filter-select {
+            padding: 4px 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-phase);
+            color: var(--text-primary);
+            font-size: 0.75rem;
+            cursor: pointer;
+            max-width: 140px;
+        }
+
         .technique-tag .name,
         .capec-tag .name,
-        .cwe-tag .name {
+        .cwe-tag .name,
+        .custom-tag .name {
             flex: 1;
             min-width: 0;
             font-size: 0.8rem;
@@ -1164,6 +1502,7 @@
             align-items: center;
             gap: 4px;
             margin-left: auto;
+            flex-shrink: 0;
         }
 
         .app.compact-mode .tag-actions {
@@ -1173,7 +1512,8 @@
 
         .app.compact-mode .technique-tag:hover .tag-actions,
         .app.compact-mode .capec-tag:hover .tag-actions,
-        .app.compact-mode .cwe-tag:hover .tag-actions {
+        .app.compact-mode .cwe-tag:hover .tag-actions,
+        .app.compact-mode .custom-tag:hover .tag-actions {
             opacity: 1;
             pointer-events: auto;
         }
@@ -1188,7 +1528,8 @@
 
         .app.compact-mode .technique-tag,
         .app.compact-mode .capec-tag,
-        .app.compact-mode .cwe-tag {
+        .app.compact-mode .cwe-tag,
+        .app.compact-mode .custom-tag {
             padding: 3px 5px;
         }
 
@@ -2025,6 +2366,7 @@
         .legend-color.attack { background: var(--attack-color); }
         .legend-color.capec { background: var(--capec-color); }
         .legend-color.cwe { background: var(--cwe-color); }
+        .legend-color.custom { background: var(--custom-color); }
         .legend-color.in { background: var(--phase-in); }
         .legend-color.through { background: var(--phase-through); }
         .legend-color.out { background: var(--phase-out); }
@@ -2178,6 +2520,8 @@
             align-items: center;
             justify-content: center;
             z-index: 2000;
+            flex-direction: column;
+            gap: 16px;
         }
 
         .loading.hidden { display: none; }
@@ -2185,6 +2529,34 @@
         .loading-text {
             color: var(--text-primary);
             font-size: 1rem;
+            text-align: center;
+            max-width: 500px;
+            line-height: 1.5;
+        }
+
+        .loading-dismiss {
+            display: none;
+            padding: 8px 24px;
+            background: var(--accent, #3b82f6);
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .loading-dismiss:hover {
+            background: #2563eb;
+        }
+
+        .loading-hint {
+            display: none;
+            color: var(--text-secondary, #a1a1aa);
+            font-size: 0.75rem;
+            text-align: center;
+            max-width: 440px;
+            line-height: 1.4;
         }
 
         /* Scrollbar */
@@ -2197,6 +2569,8 @@
 <body>
     <div class="loading" id="loading">
         <div class="loading-text">Loading data...</div>
+        <button class="loading-dismiss" id="loading-dismiss" onclick="document.getElementById('loading').classList.add('hidden'); renderAll();">Continue Without Data</button>
+        <div class="loading-hint" id="loading-hint">You can still import ATT&CK Navigator layers, create STIX objects, and import saved kill chains.</div>
     </div>
 
     <div class="app">
@@ -2249,6 +2623,11 @@
                             <span class="checkbox"></span>
                             <span>CWE</span>
                         </label>
+                        <label class="layer-toggle custom">
+                            <input type="checkbox" id="layer-custom" checked onchange="toggleLayer('custom')">
+                            <span class="checkbox"></span>
+                            <span>STIX</span>
+                        </label>
                     </div>
                 </div>
 
@@ -2261,6 +2640,7 @@
                         <div class="dropdown-content">
                             <button class="dropdown-item" onclick="exportJSON(); closeDropdowns()">JSON</button>
                             <button class="dropdown-item" onclick="exportCSV(); closeDropdowns()">CSV</button>
+                            <button class="dropdown-item" onclick="exportSTIXBundle(); closeDropdowns()">STIX Bundle</button>
                         </div>
                     </div>
                     <button class="btn" onclick="triggerImportKillChain()">Import</button>
@@ -2277,6 +2657,7 @@
                     <button class="sidebar-tab attack active" onclick="switchTab('attack')">ATT&CK</button>
                     <button class="sidebar-tab capec" onclick="switchTab('capec')">CAPEC</button>
                     <button class="sidebar-tab cwe" onclick="switchTab('cwe')">CWE</button>
+                    <button class="sidebar-tab custom" onclick="switchTab('custom')">STIX</button>
                 </div>
 
                 <div class="sidebar-content">
@@ -2328,6 +2709,29 @@
                             <button class="filter-btn" data-filter="base" onclick="setFilter('cwe', 'base')">Base</button>
                         </div>
                         <div class="entity-list" id="list-cwe"></div>
+                    </div>
+
+                    <!-- STIX Tab -->
+                    <div class="tab-panel" id="tab-custom">
+                        <div class="import-section">
+                            <div class="import-btns">
+                                <button class="import-btn" onclick="openCreateCustomModal()">+ Create STIX Item</button>
+                                <label class="import-btn" style="cursor: pointer;">
+                                    Import STIX Bundle
+                                    <input type="file" accept=".json" onchange="importStixBundle(event)" style="display: none;">
+                                </label>
+                            </div>
+                        </div>
+                        <div class="search-bar">
+                            <input type="text" class="search-input" id="search-custom" placeholder="Search STIX items..." oninput="filterEntities('custom')">
+                        </div>
+                        <div class="filter-row" id="filter-custom">
+                            <button class="filter-btn active" data-filter="all" onclick="setFilter('custom', 'all')">All</button>
+                            <select class="filter-select" id="filter-custom-type" onchange="setFilter('custom', this.value)">
+                                <option value="all">All Types</option>
+                            </select>
+                        </div>
+                        <div class="entity-list" id="list-custom"></div>
                     </div>
                 </div>
             </div>
@@ -2450,6 +2854,7 @@
                     <div class="legend-item"><div class="legend-color attack"></div><span>ATT&CK Technique</span></div>
                     <div class="legend-item"><div class="legend-color capec"></div><span>CAPEC Pattern</span></div>
                     <div class="legend-item"><div class="legend-color cwe"></div><span>CWE Weakness</span></div>
+                    <div class="legend-item"><div class="legend-color custom"></div><span>STIX Object</span></div>
                     <div class="legend-item" style="margin-left: 16px; padding-left: 16px; border-left: 1px solid var(--border-color);">
                         <div class="legend-color in"></div><span>IN</span>
                     </div>
@@ -2485,6 +2890,51 @@
                 <button class="modal-close" onclick="closeEntityModal()">×</button>
             </div>
             <div class="modal-body" id="entity-modal-content"></div>
+        </div>
+    </div>
+
+    <!-- Create STIX Item Modal -->
+    <div class="create-custom-modal" id="create-custom-modal" onclick="closeCreateCustomModal(event)">
+        <div class="create-custom-form" onclick="event.stopPropagation()">
+            <h3>Create STIX Item</h3>
+            <label for="custom-stix-type">STIX Type</label>
+            <select id="custom-stix-type" onchange="toggleCustomTypeName()"></select>
+            <div id="custom-typename-group">
+                <label for="custom-typename">Custom Type Name</label>
+                <input type="text" id="custom-typename" placeholder="e.g. APT Group Profile" maxlength="80" spellcheck="false">
+            </div>
+            <label for="custom-name">Name <span style="color:#ef4444;">*</span></label>
+            <input type="text" id="custom-name" placeholder="e.g. Emotet, APT29, Cobalt Strike" maxlength="200" spellcheck="false">
+            <label for="custom-description">Description</label>
+            <textarea id="custom-description" placeholder="Optional description..." maxlength="2000" rows="3"></textarea>
+            <label for="custom-labels">Labels <span style="color:var(--text-secondary); font-weight:normal;">(comma-separated, max 20)</span></label>
+            <input type="text" id="custom-labels" placeholder="e.g. trojan, botnet, ransomware" maxlength="1200" spellcheck="false">
+            <div id="create-custom-error" style="color:#ef4444; font-size:0.8rem; margin-bottom:8px;"></div>
+            <div class="form-actions">
+                <button class="btn-cancel" onclick="closeCreateCustomModal()">Cancel</button>
+                <button class="btn-create" onclick="createCustomItem()">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit STIX Item Modal -->
+    <div class="edit-stix-modal" id="edit-stix-modal" onclick="closeStixEditor(event)">
+        <div class="edit-stix-form" onclick="event.stopPropagation()">
+            <div class="edit-stix-header">
+                <div style="display:flex;align-items:center;">
+                    <h3>Edit STIX Object</h3>
+                    <span class="stix-type-badge" id="edit-stix-type-badge"></span>
+                </div>
+                <button class="edit-stix-close" onclick="closeStixEditor()">&times;</button>
+            </div>
+            <div class="edit-stix-body" id="edit-stix-body">
+                <!-- Dynamically populated by openStixEditor() -->
+            </div>
+            <div id="edit-stix-error"></div>
+            <div class="edit-stix-footer">
+                <button class="btn-stix-cancel" onclick="closeStixEditor()">Cancel</button>
+                <button class="btn-stix-save" onclick="saveStixEditor()">Save</button>
+            </div>
         </div>
     </div>
 
@@ -2583,10 +3033,22 @@
                 <div class="guide-section">
                     <h4>Getting Started</h4>
                     <ul>
-                        <li>Browse <span class="guide-key">ATT&CK</span>, <span class="guide-key">CAPEC</span>, and <span class="guide-key">CWE</span> tabs in the left sidebar</li>
-                        <li>Use the search bar to find specific techniques, patterns, or weaknesses</li>
+                        <li>Browse <span class="guide-key">ATT&CK</span>, <span class="guide-key">CAPEC</span>, <span class="guide-key">CWE</span>, and <span class="guide-key">STIX</span> tabs in the left sidebar</li>
+                        <li>Use the search bar to find specific techniques, patterns, weaknesses, or STIX objects</li>
                         <li>Click any entity to view detailed information in the right panel</li>
                         <li>Switch to <span class="guide-key">Relationship Explorer</span> to investigate ATT&CK ↔ CAPEC ↔ CWE ↔ Mitigations without assigning items</li>
+                    </ul>
+                </div>
+
+                <div class="guide-section">
+                    <h4>STIX 2.1 Objects</h4>
+                    <ul>
+                        <li>Open the <span class="guide-key">STIX</span> tab to create or import STIX Domain Objects</li>
+                        <li>Click <strong>+ Create STIX Item</strong> to manually create any of the 18 SDO types (plus custom)</li>
+                        <li>Click <strong>Import STIX Bundle</strong> to load a STIX 2.1 bundle JSON — all SDOs are extracted with full properties</li>
+                        <li>Use the type filter dropdown to browse by STIX type (Threat Actor, Malware, Indicator, etc.)</li>
+                        <li>Drag STIX items onto kill chain phases just like ATT&CK/CAPEC/CWE entities</li>
+                        <li>Click the <span class="guide-key">✎</span> button on assigned STIX items to edit all spec-defined properties</li>
                     </ul>
                 </div>
 
@@ -2603,7 +3065,7 @@
                 <div class="guide-section">
                     <h4>Metadata & Enrichment</h4>
                     <ul>
-                        <li>Click assigned entities in the diagram to open the metadata editor</li>
+                        <li>Click assigned ATT&CK/CAPEC/CWE entities in the diagram to open the metadata editor</li>
                         <li>Add <strong>Score</strong> (severity) and <strong>Confidence</strong> (assessment certainty)</li>
                         <li>Add multiple <strong>CVE-ID(s)</strong> with optional <strong>scores</strong> and <strong>CVSS vectors</strong></li>
                         <li>Add <strong>Observables</strong>: IPs, hashes, domains, URLs, file names</li>
@@ -2624,7 +3086,7 @@
                 <div class="guide-section">
                     <h4>View Controls</h4>
                     <ul>
-                        <li>Toggle <span class="guide-key">ATT&CK</span> <span class="guide-key">CAPEC</span> <span class="guide-key">CWE</span> layers to show/hide entity types</li>
+                        <li>Toggle <span class="guide-key">ATT&CK</span> <span class="guide-key">CAPEC</span> <span class="guide-key">CWE</span> <span class="guide-key">STIX</span> layers to show/hide entity types</li>
                         <li>Use domain filters (All / Enterprise / Mobile / ICS) for techniques</li>
                         <li>Use abstraction filters for CAPECs and CWEs</li>
                         <li>Enable <span class="guide-key">Hide Empty</span> to focus on phases with assignments</li>
@@ -2640,6 +3102,8 @@
                         <li><strong>JSON Export</strong> — Lightweight kill chain state for sharing</li>
                         <li><strong>JSON Import</strong> — Restore exported kill chains</li>
                         <li><strong>CSV Export</strong> — Spreadsheet format with all metadata</li>
+                        <li><strong>STIX Bundle Export</strong> — Generate a STIX 2.1 bundle with SDOs and relationship SROs</li>
+                        <li><strong>STIX Bundle Import</strong> — Load external STIX bundles (e.g., CTI reports) into the STIX library</li>
                         <li><strong>Navigator Import</strong> — Load ATT&CK Navigator layer files</li>
                         <li>Use <span class="guide-key">Clear All</span> to reset the workspace</li>
                     </ul>
@@ -2653,6 +3117,7 @@
                         <li>Score colors appear as left border ribbons on items</li>
                         <li>Related CAPECs and CWEs are shown in the detail panel</li>
                         <li>Click the version number to view the changelog</li>
+                        <li>The app works offline from <code>file://</code> — click "Continue Without Data" on the loading screen</li>
                     </ul>
                 </div>
             </div>
@@ -2931,6 +3396,9 @@
                 // keystroke prevents trailing spaces.  Full sanitization happens
                 // on blur in commitKillChainTitle().
                 if (target.id === 'kill-chain-title') return;
+                // Skip live sanitization for modal inputs — .trim() in normalize()
+                // strips trailing spaces while typing.  Sanitization happens on submit.
+                if (target.closest('.create-custom-modal') || target.closest('.edit-stix-modal')) return;
                 const value = target.value || '';
                 const sanitized = sanitizeUserInputText(value);
                 if (sanitized !== value) {
@@ -3076,8 +3544,81 @@
             return typeof assignment === 'string' ? null : assignment.instanceId;
         }
 
+        // ============================================================
+        // TYPE MAPPING CONSTANTS
+        // ============================================================
+        // Canonical mapping from entity type string to assignment array key
+        const TYPE_KEYS = {
+            attack:  'techniques',
+            capec:   'capecs',
+            cwe:     'cwes',
+            custom:  'customItems'
+        };
+
+        // CSS class mapping for entity tags
+        const TAG_CLASSES = {
+            attack:  'technique-tag',
+            capec:   'capec-tag',
+            cwe:     'cwe-tag',
+            custom:  'custom-tag'
+        };
+
+        // Entity type labels for display
+        const TYPE_LABELS = {
+            attack: 'ATT&CK',
+            capec: 'CAPEC',
+            cwe: 'CWE',
+            custom: 'STIX'
+        };
+
+        // All entity type keys for iteration
+        const ALL_ENTITY_TYPES = Object.keys(TYPE_KEYS);
+
+        // STIX 2.1 ID format: {type}--{uuid}
+        const STIX_ID_PATTERN = /^[a-z][a-z0-9-]*--[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+        // Valid STIX SDO type values
+        const VALID_STIX_TYPES = new Set((typeof CONFIG !== 'undefined' && CONFIG.stixTypes || []).map(t => t.value));
+
+        // STIX relationship type defaults by source SDO type
+        const STIX_RELATIONSHIP_MAP = {
+            'malware': 'uses',
+            'tool': 'uses',
+            'threat-actor': 'uses',
+            'campaign': 'uses',
+            'intrusion-set': 'uses',
+            'indicator': 'indicates',
+            'course-of-action': 'mitigates',
+            'infrastructure': 'supports',
+            'malware-analysis': 'analysis-of',
+            'identity': 'related-to',
+            'location': 'related-to',
+            'note': 'related-to',
+            'observed-data': 'related-to',
+            'opinion': 'related-to',
+            'report': 'related-to',
+            'attack-pattern': 'related-to',
+            'grouping': 'related-to',
+            'vulnerability': 'related-to',
+            'x-custom': 'related-to'
+        };
+
+        // Generate a UUIDv4
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+                const r = Math.random() * 16 | 0;
+                return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+            });
+        }
+
+        // Generate a STIX 2.1 compliant ID
+        function generateStixId(stixType) {
+            return `${stixType}--${generateUUID()}`;
+        }
+
         function getPhaseUngroupedItems(phaseData, type) {
-            const key = type === 'attack' ? 'techniques' : type === 'capec' ? 'capecs' : 'cwes';
+            const key = TYPE_KEYS[type];
+            if (!key) return [];
             return phaseData?.[key] || [];
         }
 
@@ -3102,7 +3643,7 @@
                 phaseData.layout.filter(entry => entry.kind === 'group').map(entry => entry.groupId)
             );
 
-            for (const type of ['capec', 'attack', 'cwe']) {
+            for (const type of ALL_ENTITY_TYPES) {
                 const items = getPhaseUngroupedItems(phaseData, type);
                 items.forEach(item => {
                     const instanceId = getAssignmentInstanceId(item);
@@ -3225,7 +3766,8 @@
         function extractAssignmentInstance(phaseKey, type, instanceId) {
             const phaseData = state.assignments[phaseKey];
             if (!phaseData) return null;
-            const key = type === 'attack' ? 'techniques' : type === 'capec' ? 'capecs' : 'cwes';
+            const key = TYPE_KEYS[type];
+            if (!key) return null;
 
             const list = phaseData[key];
             const idx = list.findIndex(a => getAssignmentInstanceId(a) === instanceId);
@@ -3264,7 +3806,8 @@
 
         // Find assignment object by ID in a phase
         function findAssignment(phaseKey, entityType, id, instanceId = null) {
-            const key = entityType === 'attack' ? 'techniques' : entityType === 'capec' ? 'capecs' : 'cwes';
+            const key = TYPE_KEYS[entityType];
+            if (!key) return null;
             const phaseData = state.assignments[phaseKey];
             const assignments = phaseData?.[key] || [];
             if (instanceId) {
@@ -3288,7 +3831,8 @@
 
         // Update metadata for an assignment
         function updateAssignmentMetadata(phaseKey, entityType, id, newMetadata, instanceId = null) {
-            const key = entityType === 'attack' ? 'techniques' : entityType === 'capec' ? 'capecs' : 'cwes';
+            const key = TYPE_KEYS[entityType];
+            if (!key) return;
             const phaseData = state.assignments[phaseKey];
             if (!phaseData) return;
             const assignments = phaseData[key] || [];
@@ -3344,17 +3888,18 @@
         // ============================================================
         const state = {
             view: 'killchain',  // 'killchain' | 'relationship'
-            layers: { attack: true, capec: true, cwe: true },
+            layers: { attack: true, capec: true, cwe: true, custom: true },
             hideEmpty: false,
             compactMode: false,
             activeTab: 'attack',
-            filters: { attack: 'all', capec: 'all', cwe: 'all' },
+            filters: { attack: 'all', capec: 'all', cwe: 'all', custom: 'all' },
             
             // Full data libraries (loaded from JSON)
             library: {
                 techniques: {},  // T1566 -> { id, name, domain }
                 capecs: {},      // CAPEC-98 -> { id, name, severity, ... }
-                cwes: {}         // CWE-89 -> { id, name, ... }
+                cwes: {},        // CWE-89 -> { id, name, ... }
+                custom: {}       // malware--uuid -> { id, stixType, name, description, labels, created, modified }
             },
             
             // Mappings
@@ -3406,7 +3951,7 @@
             for (const [superPhase, data] of Object.entries(KILL_CHAIN)) {
                 for (const phase of data.phases) {
                     const key = `${superPhase}:${phase}`;
-                    state.assignments[key] = { techniques: [], capecs: [], cwes: [], groups: [], layout: [] };
+                    state.assignments[key] = { techniques: [], capecs: [], cwes: [], customItems: [], groups: [], layout: [] };
                 }
             }
             // Restore full technique library from base data
@@ -3471,8 +4016,11 @@
                 console.error('Failed to load data:', err);
                 // KCE-SEC-009: Use textContent instead of innerHTML for error messages
                 const loadingEl = document.getElementById('loading');
-                loadingEl.innerHTML = '<div class="loading-text"></div>';
-                loadingEl.querySelector('.loading-text').textContent = 'Error loading data: ' + err.message;
+                const loadingText = loadingEl.querySelector('.loading-text');
+                loadingText.textContent = 'Error loading data: ' + err.message;
+                // Show dismiss button and hint so user can still use the app
+                document.getElementById('loading-dismiss').style.display = 'inline-block';
+                document.getElementById('loading-hint').style.display = 'block';
             }
         }
 
@@ -3908,6 +4456,13 @@
                     if (filter !== 'all' && w.abstraction?.toLowerCase() !== filter) return false;
                     return true;
                 });
+            } else if (type === 'custom') {
+                entities = Object.values(state.library.custom).filter(c => {
+                    if (searchTerm && !c.name.toLowerCase().includes(searchTerm) && !c.id.toLowerCase().includes(searchTerm)
+                        && !(c.description || '').toLowerCase().includes(searchTerm)) return false;
+                    if (filter !== 'all' && c.stixType !== filter) return false;
+                    return true;
+                });
             }
             
             // Limit display for performance
@@ -3975,13 +4530,33 @@
                             <div class="entity-name">${esc(entity.name)}</div>
                         </div>
                     `;
+                } else if (type === 'custom') {
+                    const stixLabel = (typeof CONFIG !== 'undefined' && CONFIG.stixTypes || []).find(t => t.value === entity.stixType)?.label || entity.stixType;
+                    const customTypeName = entity.stixType === 'x-custom' && entity.customTypeName ? ` (${esc(entity.customTypeName)})` : '';
+                    const shortId = entity.id.length > 20 ? entity.id.substring(0, 18) + '...' : entity.id;
+                    html += `
+                        <div class="entity-item custom ${isSelected ? 'selected' : ''}"
+                             onclick="selectEntity('custom', '${esc(entity.id)}')"
+                             draggable="true"
+                             ondragstart="handleDragStart(event, 'custom', '${esc(entity.id)}')"
+                             ondragend="handleDragEnd(event)"
+                             title="${escAttr(entity.description ? entity.description.substring(0, 200) : '')}">
+                            <div class="entity-header">
+                                <span class="entity-id">${esc(shortId)}</span>
+                                <span class="entity-badge stix-badge">${esc(stixLabel)}${customTypeName}</span>
+                            </div>
+                            <div class="entity-name">${esc(entity.name)}</div>
+                            ${entity.labels?.length ? `<div class="entity-meta">${entity.labels.slice(0,3).map(l => `<span class="entity-badge">${esc(l)}</span>`).join('')}</div>` : ''}
+                        </div>
+                    `;
                 }
             }
             
             if (total > maxDisplay) {
                 html += `<div class="list-info">Showing ${maxDisplay} of ${total}. Refine your search.</div>`;
             } else if (entities.length === 0) {
-                html += `<div class="list-info">No ${type === 'attack' ? 'techniques' : type === 'capec' ? 'patterns' : 'weaknesses'} found</div>`;
+                const typeLabels = { attack: 'techniques', capec: 'patterns', cwe: 'weaknesses', custom: 'STIX items' };
+                html += `<div class="list-info">No ${typeLabels[type] || 'items'} found</div>`;
             }
             
             listEl.innerHTML = html;
@@ -3993,6 +4568,599 @@
                 if (items.some(a => getAssignmentId(a) === id)) return true;
             }
             return false;
+        }
+
+        // ============================================================
+        // CUSTOM ITEM MANAGEMENT (STIX 2.1)
+        // ============================================================
+
+        // --- STIX Bundle Import ---
+        const STIX_BUNDLE_IMPORT_LIMITS = {
+            maxFileSize: 25 * 1024 * 1024,  // 25 MB
+            maxObjects: 5000,
+            maxStringLength: 5000,
+            maxListItems: 100,
+            maxNameLength: 200,
+            maxDescLength: 10000
+        };
+
+        function importStixBundle(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (file.size > STIX_BUNDLE_IMPORT_LIMITS.maxFileSize) {
+                showToast(`File too large: ${(file.size / 1024 / 1024).toFixed(1)}MB (max ${STIX_BUNDLE_IMPORT_LIMITS.maxFileSize / 1024 / 1024}MB)`);
+                event.target.value = '';
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const rawData = JSON.parse(e.target.result);
+                    const data = stripAngleBracketsFromJson(rawData);
+
+                    // Validate top-level bundle structure
+                    if (typeof data !== 'object' || data === null || Array.isArray(data)) {
+                        throw new Error('Invalid STIX bundle: expected JSON object');
+                    }
+                    if (data.type !== 'bundle') {
+                        throw new Error('Invalid STIX bundle: top-level type must be "bundle"');
+                    }
+                    if (!Array.isArray(data.objects)) {
+                        throw new Error('Invalid STIX bundle: missing objects array');
+                    }
+                    if (data.objects.length > STIX_BUNDLE_IMPORT_LIMITS.maxObjects) {
+                        throw new Error(`Too many objects: ${data.objects.length} (max ${STIX_BUNDLE_IMPORT_LIMITS.maxObjects})`);
+                    }
+
+                    let imported = 0, skipped = 0, duplicates = 0;
+
+                    for (const obj of data.objects) {
+                        // Basic object validation
+                        if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
+                            skipped++;
+                            continue;
+                        }
+
+                        const objType = obj.type;
+                        if (typeof objType !== 'string') { skipped++; continue; }
+
+                        // Skip relationships to catch and SROs — only import SDOs
+                        if (objType === 'relationship' || objType === 'sighting' || objType === 'marking-definition') {
+                            continue;
+                        }
+
+                        // Validate type is in our supported SDO list
+                        if (!VALID_STIX_TYPES.has(objType)) {
+                            skipped++;
+                            continue;
+                        }
+
+                        // Validate STIX ID format
+                        const objId = obj.id;
+                        if (typeof objId !== 'string' || !STIX_ID_PATTERN.test(objId)) {
+                            skipped++;
+                            continue;
+                        }
+
+                        // Verify ID prefix matches declared type
+                        if (objId.split('--')[0] !== objType) {
+                            skipped++;
+                            continue;
+                        }
+
+                        // Skip if already exists in library
+                        if (state.library.custom[objId]) {
+                            duplicates++;
+                            continue;
+                        }
+
+                        // Validate name exists (most SDOs require it)
+                        const rawName = obj.name;
+                        if (typeof rawName !== 'string' || rawName.trim().length === 0) {
+                            // Some SDOs (observed-data, opinion, note) may lack name — synthesize one
+                            if (!['observed-data', 'opinion', 'note', 'report'].includes(objType)) {
+                                skipped++;
+                                continue;
+                            }
+                        }
+
+                        // Build sanitized library entry
+                        const entry = sanitizeStixBundleObject(obj, objType, objId);
+                        if (!entry) { skipped++; continue; }
+
+                        state.library.custom[objId] = entry;
+                        imported++;
+                    }
+
+                    // Build result message
+                    let msg = `Imported ${imported} STIX object${imported !== 1 ? 's' : ''}`;
+                    if (duplicates > 0) msg += `, ${duplicates} duplicate${duplicates !== 1 ? 's' : ''} skipped`;
+                    if (skipped > 0) msg += `, ${skipped} invalid skipped`;
+
+                    switchTab('custom');
+                    filterEntities('custom');
+                    showToast(msg);
+                } catch (err) {
+                    showToast('STIX import failed: ' + InputSecurity.escapeHtml(err.message));
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function sanitizeStixBundleObject(obj, stixType, stixId) {
+            const L = STIX_BUNDLE_IMPORT_LIMITS;
+
+            // Core fields — sanitized as untrusted input
+            const name = sanitizeImportedString(
+                typeof obj.name === 'string' ? obj.name : (stixType + ' ' + stixId.split('--')[1].slice(0, 8)),
+                L.maxNameLength
+            );
+
+            const description = sanitizeImportedString(
+                typeof obj.description === 'string' ? obj.description : '',
+                L.maxDescLength
+            );
+
+            const labels = Array.isArray(obj.labels)
+                ? obj.labels
+                    .slice(0, L.maxListItems)
+                    .filter(l => typeof l === 'string')
+                    .map(l => sanitizeImportedString(l, 100))
+                : [];
+
+            const created = typeof obj.created === 'string'
+                ? obj.created.slice(0, 30)
+                : new Date().toISOString();
+            const modified = typeof obj.modified === 'string'
+                ? obj.modified.slice(0, 30)
+                : new Date().toISOString();
+
+            const entry = {
+                id: stixId,
+                stixType: stixType,
+                name: name,
+                description: description,
+                labels: labels,
+                customTypeName: '',
+                created: created,
+                modified: modified
+            };
+
+            // Import spec-defined fields from stix-config.js
+            const typeDef = (typeof STIX_OBJECTS !== 'undefined') ? STIX_OBJECTS[stixType] : null;
+            if (typeDef) {
+                const coreKeys = new Set(['name', 'description', 'labels']);
+                const specFields = [...(typeDef.required || []), ...(typeDef.optional || [])].filter(f => !coreKeys.has(f.key));
+                for (const field of specFields) {
+                    if (!(field.key in obj)) continue;
+                    const raw = obj[field.key];
+                    if (field.type === 'boolean') {
+                        entry[field.key] = !!raw;
+                    } else if (field.type === 'integer') {
+                        const num = parseInt(raw, 10);
+                        if (!isNaN(num)) entry[field.key] = num;
+                    } else if (field.type === 'list' || field.type === 'list:open-vocab') {
+                        if (Array.isArray(raw)) {
+                            entry[field.key] = raw
+                                .slice(0, L.maxListItems)
+                                .filter(v => typeof v === 'string')
+                                .map(v => sanitizeImportedString(v, 200));
+                        }
+                    } else {
+                        // string, text, enum, open-vocab, timestamp, identifier
+                        if (typeof raw === 'string') {
+                            entry[field.key] = sanitizeImportedString(raw, L.maxStringLength);
+                        }
+                    }
+                }
+            }
+
+            return entry;
+        }
+        function populateStixTypeDropdown() {
+            const select = document.getElementById('custom-stix-type');
+            const filterSelect = document.getElementById('filter-custom-type');
+            if (!select) return;
+            select.innerHTML = '';
+            if (filterSelect) filterSelect.innerHTML = '<option value="all">All Types</option>';
+            const types = (typeof CONFIG !== 'undefined' && CONFIG.stixTypes) || [];
+            for (const t of types) {
+                const opt = document.createElement('option');
+                opt.value = t.value;
+                opt.textContent = t.label;
+                select.appendChild(opt);
+                if (filterSelect) {
+                    const fopt = document.createElement('option');
+                    fopt.value = t.value;
+                    fopt.textContent = t.label;
+                    filterSelect.appendChild(fopt);
+                }
+            }
+        }
+
+        function toggleCustomTypeName() {
+            const typeVal = document.getElementById('custom-stix-type').value;
+            const group = document.getElementById('custom-typename-group');
+            if (group) group.style.display = typeVal === 'x-custom' ? 'block' : 'none';
+        }
+
+        function openCreateCustomModal() {
+            populateStixTypeDropdown();
+            document.getElementById('custom-name').value = '';
+            document.getElementById('custom-description').value = '';
+            document.getElementById('custom-labels').value = '';
+            document.getElementById('custom-typename').value = '';
+            document.getElementById('create-custom-error').textContent = '';
+            toggleCustomTypeName();
+            document.getElementById('create-custom-modal').classList.add('visible');
+        }
+
+        function closeCreateCustomModal(event) {
+            if (event && event.target !== event.currentTarget) return;
+            document.getElementById('create-custom-modal').classList.remove('visible');
+        }
+
+        function createCustomItem() {
+            const errorEl = document.getElementById('create-custom-error');
+            errorEl.textContent = '';
+
+            const stixType = document.getElementById('custom-stix-type').value;
+            const rawName = document.getElementById('custom-name').value;
+            const rawDesc = document.getElementById('custom-description').value;
+            const rawLabels = document.getElementById('custom-labels').value;
+            const rawTypeName = document.getElementById('custom-typename').value;
+
+            // Validate STIX type
+            if (!VALID_STIX_TYPES.has(stixType)) {
+                errorEl.textContent = 'Invalid STIX type selected.';
+                return;
+            }
+
+            // Sanitize name
+            const name = sanitizeForStorage(rawName, CONFIG.display?.maxNameLength || 200);
+            if (!name || name.trim().length === 0) {
+                errorEl.textContent = 'Name is required.';
+                return;
+            }
+
+            // Sanitize description
+            const description = sanitizeForStorage(rawDesc, CONFIG.display?.maxCustomDescLength || 2000);
+
+            // Sanitize labels
+            const maxLabels = CONFIG.display?.maxCustomLabels || 20;
+            const maxLabelLen = CONFIG.display?.maxLabelLength || 50;
+            const labels = rawLabels
+                .split(',')
+                .map(l => sanitizeForStorage(l.trim(), maxLabelLen))
+                .filter(l => l.length > 0)
+                .slice(0, maxLabels);
+
+            // Sanitize custom type name (for x-custom only)
+            let customTypeName = '';
+            if (stixType === 'x-custom') {
+                customTypeName = sanitizeForStorage(rawTypeName, 80);
+            }
+
+            // Generate STIX ID
+            const id = generateStixId(stixType);
+            const now = new Date().toISOString();
+
+            // Store in library
+            state.library.custom[id] = {
+                id,
+                stixType,
+                name,
+                description,
+                labels,
+                customTypeName,
+                created: now,
+                modified: now
+            };
+
+            closeCreateCustomModal();
+            switchTab('custom');
+            filterEntities('custom');
+            showToast(`Created: ${name}`);
+        }
+
+        function deleteCustomItem(id) {
+            if (!id || !state.library.custom[id]) return;
+            if (!window.confirm('Delete this STIX item? It will also be removed from all phase assignments.')) return;
+
+            // Remove from library
+            delete state.library.custom[id];
+
+            // Remove from all phase assignments
+            for (const [phaseKey, phaseData] of Object.entries(state.assignments)) {
+                phaseData.customItems = (phaseData.customItems || []).filter(a => getAssignmentId(a) !== id);
+                for (const group of phaseData.groups || []) {
+                    group.items = (group.items || []).filter(item => !(item.type === 'custom' && getAssignmentId(item) === id));
+                }
+                ensurePhaseLayout(phaseKey, phaseData);
+            }
+
+            filterEntities('custom');
+            renderKillChain();
+            showToast('STIX item deleted');
+        }
+
+        // ============================================================
+        // STIX EDITOR MODAL
+        // ============================================================
+        let currentStixEdit = { id: null, phaseKey: null, instanceId: null };
+
+        function openStixEditor(id, phaseKey, instanceId) {
+            const item = state.library.custom[id];
+            if (!item) { showToast('Item not found', 'error'); return; }
+
+            currentStixEdit = { id, phaseKey: phaseKey || null, instanceId: instanceId || null };
+            const stixType = item.stixType || 'x-custom';
+            const typeDef = (typeof STIX_OBJECTS !== 'undefined') ? STIX_OBJECTS[stixType] : null;
+
+            // Header
+            const badgeEl = document.getElementById('edit-stix-type-badge');
+            badgeEl.textContent = typeDef ? typeDef.label : stixType;
+
+            // Build form fields
+            const body = document.getElementById('edit-stix-body');
+            body.innerHTML = '';
+            const errorEl = document.getElementById('edit-stix-error');
+            errorEl.textContent = '';
+
+            // -- Common read-only fields --
+            body.innerHTML += '<div class="edit-stix-section-title">Identity</div>';
+            body.innerHTML += buildStixReadonlyField('ID', item.id);
+            body.innerHTML += buildStixReadonlyField('Type', stixType);
+            body.innerHTML += buildStixReadonlyField('Created', item.created || '—');
+            body.innerHTML += buildStixReadonlyField('Modified', item.modified || '—');
+
+            // -- Core editable fields (always present) --
+            body.innerHTML += '<div class="edit-stix-section-title">Core Properties</div>';
+            body.innerHTML += buildStixTextField('stix-edit-name', 'Name', item.name || '', true, 200, 'Display name');
+            body.innerHTML += buildStixTextareaField('stix-edit-description', 'Description', item.description || '', false, 2000, 'Optional description...');
+            body.innerHTML += buildStixTextField('stix-edit-labels', 'Labels (comma-separated)', (item.labels || []).join(', '), false, 1200, 'e.g. trojan, botnet');
+
+            if (stixType === 'x-custom') {
+                body.innerHTML += buildStixTextField('stix-edit-typename', 'Custom Type Name', item.customTypeName || '', false, 80, 'e.g. APT Group Profile');
+            }
+
+            // -- Spec-defined fields from stix-config.js --
+            if (typeDef) {
+                const existingKeys = new Set(['name', 'description', 'labels']);
+
+                // Required fields
+                const reqFields = (typeDef.required || []).filter(f => !existingKeys.has(f.key));
+                if (reqFields.length > 0) {
+                    body.innerHTML += '<div class="edit-stix-section-title">Required Fields</div>';
+                    for (const field of reqFields) {
+                        body.innerHTML += buildStixFieldFromSpec(field, item, true);
+                    }
+                }
+
+                // Optional fields
+                const optFields = (typeDef.optional || []).filter(f => !existingKeys.has(f.key));
+                if (optFields.length > 0) {
+                    body.innerHTML += '<div class="edit-stix-section-title">Optional Fields</div>';
+                    for (const field of optFields) {
+                        body.innerHTML += buildStixFieldFromSpec(field, item, false);
+                    }
+                }
+            }
+
+            document.getElementById('edit-stix-modal').classList.add('visible');
+        }
+
+        function closeStixEditor(event) {
+            if (event && event.target !== event.currentTarget) return;
+            document.getElementById('edit-stix-modal').classList.remove('visible');
+            currentStixEdit = { id: null, phaseKey: null, instanceId: null };
+        }
+
+        function saveStixEditor() {
+            const { id } = currentStixEdit;
+            const item = state.library.custom[id];
+            if (!item) { closeStixEditor(); return; }
+
+            const errorEl = document.getElementById('edit-stix-error');
+            errorEl.textContent = '';
+
+            // Read core fields
+            const nameEl = document.getElementById('stix-edit-name');
+            const descEl = document.getElementById('stix-edit-description');
+            const labelsEl = document.getElementById('stix-edit-labels');
+            const typeNameEl = document.getElementById('stix-edit-typename');
+
+            const rawName = nameEl ? nameEl.value : '';
+            const name = sanitizeForStorage(rawName, CONFIG.display?.maxNameLength || 200);
+            if (!name || name.trim().length === 0) {
+                errorEl.textContent = 'Name is required.';
+                return;
+            }
+
+            item.name = name;
+            item.description = sanitizeForStorage(descEl ? descEl.value : '', CONFIG.display?.maxCustomDescLength || 2000);
+
+            const maxLabels = CONFIG.display?.maxCustomLabels || 20;
+            const maxLabelLen = CONFIG.display?.maxLabelLength || 50;
+            item.labels = (labelsEl ? labelsEl.value : '')
+                .split(',')
+                .map(l => sanitizeForStorage(l.trim(), maxLabelLen))
+                .filter(l => l.length > 0)
+                .slice(0, maxLabels);
+
+            if (typeNameEl) {
+                item.customTypeName = sanitizeForStorage(typeNameEl.value, 80);
+            }
+
+            // Read spec-defined fields
+            const stixType = item.stixType || 'x-custom';
+            const typeDef = (typeof STIX_OBJECTS !== 'undefined') ? STIX_OBJECTS[stixType] : null;
+            if (typeDef) {
+                const existingKeys = new Set(['name', 'description', 'labels']);
+                const allFields = [...(typeDef.required || []), ...(typeDef.optional || [])].filter(f => !existingKeys.has(f.key));
+                for (const field of allFields) {
+                    const fieldEl = document.getElementById('stix-edit-' + field.key);
+                    if (!fieldEl) continue;
+                    const rawVal = fieldEl.value || '';
+                    if (field.type === 'boolean') {
+                        item[field.key] = fieldEl.checked;
+                    } else if (field.type === 'integer') {
+                        const num = parseInt(rawVal, 10);
+                        item[field.key] = isNaN(num) ? undefined : num;
+                    } else if (field.type === 'list' || field.type === 'list:open-vocab') {
+                        item[field.key] = rawVal.split(',').map(s => sanitizeForStorage(s.trim(), 200)).filter(s => s.length > 0);
+                    } else {
+                        item[field.key] = sanitizeForStorage(rawVal, 2000);
+                    }
+                }
+            }
+
+            item.modified = new Date().toISOString();
+            closeStixEditor();
+            filterEntities('custom');
+            renderKillChain();
+            showToast('STIX item updated');
+        }
+
+        // -- STIX Editor field builders --
+        function buildStixReadonlyField(label, value) {
+            return `<div class="stix-field-group">
+                <label>${esc(label)}</label>
+                <input type="text" value="${esc(value)}" readonly>
+            </div>`;
+        }
+
+        function buildStixTextField(id, label, value, required, maxLen, placeholder) {
+            const reqMark = required ? '<span class="field-required">*</span>' : '';
+            return `<div class="stix-field-group">
+                <label>${esc(label)}${reqMark}</label>
+                <input type="text" id="${esc(id)}" value="${esc(value)}" maxlength="${maxLen || 200}" placeholder="${esc(placeholder || '')}" spellcheck="false">
+            </div>`;
+        }
+
+        function buildStixTextareaField(id, label, value, required, maxLen, placeholder) {
+            const reqMark = required ? '<span class="field-required">*</span>' : '';
+            return `<div class="stix-field-group">
+                <label>${esc(label)}${reqMark}</label>
+                <textarea id="${esc(id)}" maxlength="${maxLen || 2000}" rows="3" placeholder="${esc(placeholder || '')}">${esc(value)}</textarea>
+            </div>`;
+        }
+
+        function buildStixFieldFromSpec(field, item, required) {
+            const fieldId = 'stix-edit-' + field.key;
+            const reqMark = required ? '<span class="field-required">*</span>' : '';
+            const currentVal = item[field.key];
+            const hint = field.description ? `<div class="field-hint">${esc(field.description)}</div>` : '';
+
+            switch (field.type) {
+                case 'string':
+                    return `<div class="stix-field-group">
+                        <label>${esc(field.label)}${reqMark}</label>
+                        <input type="text" id="${esc(fieldId)}" value="${esc(currentVal || '')}" maxlength="2000" placeholder="${esc(field.placeholder || '')}" spellcheck="false">
+                        ${hint}
+                    </div>`;
+
+                case 'text':
+                    return `<div class="stix-field-group">
+                        <label>${esc(field.label)}${reqMark}</label>
+                        <textarea id="${esc(fieldId)}" maxlength="5000" rows="3" placeholder="${esc(field.placeholder || '')}">${esc(currentVal || '')}</textarea>
+                        ${hint}
+                    </div>`;
+
+                case 'enum':
+                case 'open-vocab': {
+                    const vocabValues = field.vocabulary ? getStixVocabulary(field.vocabulary) : [];
+                    let opts = '<option value="">— Select —</option>';
+                    for (const v of vocabValues) {
+                        const sel = (currentVal === v) ? ' selected' : '';
+                        opts += `<option value="${esc(v)}"${sel}>${esc(v)}</option>`;
+                    }
+                    if (field.type === 'open-vocab') {
+                        // If current value is not in vocab, add it as option
+                        if (currentVal && !vocabValues.includes(currentVal)) {
+                            opts += `<option value="${esc(currentVal)}" selected>${esc(currentVal)} (custom)</option>`;
+                        }
+                    }
+                    return `<div class="stix-field-group">
+                        <label>${esc(field.label)}${reqMark}</label>
+                        <select id="${esc(fieldId)}">${opts}</select>
+                        ${hint}
+                    </div>`;
+                }
+
+                case 'list':
+                case 'list:open-vocab': {
+                    const arrVal = Array.isArray(currentVal) ? currentVal.join(', ') : (currentVal || '');
+                    const vocabHint = (field.type === 'list:open-vocab' && field.vocabulary)
+                        ? `<div class="field-hint">Values: ${getStixVocabulary(field.vocabulary).join(', ')}</div>`
+                        : '';
+                    return `<div class="stix-field-group">
+                        <label>${esc(field.label)} <span style="color:var(--text-secondary);font-weight:normal;">(comma-separated)</span>${reqMark}</label>
+                        <input type="text" id="${esc(fieldId)}" value="${esc(arrVal)}" maxlength="2000" spellcheck="false">
+                        ${hint}${vocabHint}
+                    </div>`;
+                }
+
+                case 'integer':
+                    return `<div class="stix-field-group">
+                        <label>${esc(field.label)}${reqMark}</label>
+                        <input type="number" id="${esc(fieldId)}" value="${currentVal != null ? currentVal : ''}" spellcheck="false">
+                        ${hint}
+                    </div>`;
+
+                case 'boolean':
+                    return `<div class="stix-field-group">
+                        <label style="display:inline-flex;align-items:center;gap:6px;">
+                            <input type="checkbox" id="${esc(fieldId)}" ${currentVal ? 'checked' : ''} style="width:auto;">
+                            ${esc(field.label)}${reqMark}
+                        </label>
+                        ${hint}
+                    </div>`;
+
+                case 'timestamp':
+                    return `<div class="stix-field-group">
+                        <label>${esc(field.label)}${reqMark}</label>
+                        <input type="text" id="${esc(fieldId)}" value="${esc(currentVal || '')}" placeholder="YYYY-MM-DDThh:mm:ss.sssZ" spellcheck="false">
+                        ${hint}
+                    </div>`;
+
+                case 'identifier':
+                    return `<div class="stix-field-group">
+                        <label>${esc(field.label)}${reqMark}</label>
+                        <input type="text" id="${esc(fieldId)}" value="${esc(currentVal || '')}" placeholder="${esc(field.placeholder || 'type--uuid')}" spellcheck="false">
+                        ${hint}
+                    </div>`;
+
+                case 'kill-chain-phases':
+                case 'external-references':
+                case 'dictionary':
+                    // Complex types: render as JSON textarea for now
+                    const jsonVal = currentVal ? JSON.stringify(currentVal, null, 2) : '';
+                    return `<div class="stix-field-group">
+                        <label>${esc(field.label)} <span style="color:var(--text-secondary);font-weight:normal;">(JSON)</span>${reqMark}</label>
+                        <textarea id="${esc(fieldId)}" rows="3" placeholder="${esc(field.description || '')}">${esc(jsonVal)}</textarea>
+                        ${hint}
+                    </div>`;
+
+                default:
+                    return `<div class="stix-field-group">
+                        <label>${esc(field.label)}${reqMark}</label>
+                        <input type="text" id="${esc(fieldId)}" value="${esc(currentVal || '')}" spellcheck="false">
+                        ${hint}
+                    </div>`;
+            }
+        }
+
+        // Get display name for an entity by type
+        function getEntityName(type, id) {
+            if (type === 'attack') return state.library.techniques[id]?.name || '';
+            if (type === 'capec') return state.library.capecs[id]?.name || '';
+            if (type === 'cwe') return state.library.cwes[id]?.name || '';
+            if (type === 'custom') return state.library.custom[id]?.name || '';
+            return '';
         }
 
         // ============================================================
@@ -4167,9 +5335,83 @@
                         <a href="https://cwe.mitre.org/data/definitions/${esc(id.replace('CWE-', ''))}.html" target="_blank" rel="noopener noreferrer" style="color: var(--cwe-color);">View on MITRE CWE →</a>
                     </div>
                 `;
+            } else if (type === 'custom') {
+                entity = state.library.custom[id];
+                name = entity?.name || 'Unknown';
+                const stixLabel = (typeof CONFIG !== 'undefined' && CONFIG.stixTypes || []).find(t => t.value === entity?.stixType)?.label || entity?.stixType || 'Unknown';
+                const customTypeName = entity?.stixType === 'x-custom' && entity?.customTypeName ? esc(entity.customTypeName) : '';
+                const labelsHtml = (entity?.labels || []).map(l => `<span class="entity-badge">${esc(l)}</span>`).join(' ');
+
+                html = `
+                    <div class="detail-section">
+                        <h4>Description</h4>
+                        <p>${esc(entity?.description || 'No description available.')}</p>
+                    </div>
+                    <div class="detail-section">
+                        <h4>Attributes</h4>
+                        <div class="detail-list">
+                            <div class="detail-list-item"><span>STIX Type:</span><span>${esc(stixLabel)}</span></div>
+                            ${customTypeName ? `<div class="detail-list-item"><span>Custom Type:</span><span>${customTypeName}</span></div>` : ''}
+                            <div class="detail-list-item"><span>STIX ID:</span><span style="font-family:monospace; font-size:0.7rem; word-break:break-all;">${esc(entity?.id || id)}</span></div>
+                            <div class="detail-list-item"><span>Created:</span><span>${esc(entity?.created ? new Date(entity.created).toLocaleDateString() : 'Unknown')}</span></div>
+                            <div class="detail-list-item"><span>Modified:</span><span>${esc(entity?.modified ? new Date(entity.modified).toLocaleDateString() : 'Unknown')}</span></div>
+                        </div>
+                    </div>
+                    ${labelsHtml ? `
+                    <div class="detail-section">
+                        <h4>Labels</h4>
+                        <div style="display: flex; flex-wrap: wrap; gap: 4px;">${labelsHtml}</div>
+                    </div>
+                    ` : ''}
+                    <div class="detail-section">
+                        <button class="btn" style="margin-right:8px;" onclick="openStixEditor('${esc(id)}')">Edit Item</button>
+                        <button class="btn" style="color: #ef4444; border-color: #ef4444;" onclick="deleteCustomItem('${esc(id)}')">Delete Item</button>
+                    </div>
+                `;
             }
 
             return { id, name, html };
+        }
+
+        function buildStixPropertySummary(id) {
+            const item = state.library.custom[id];
+            if (!item) return '';
+            const stixType = item.stixType || 'x-custom';
+            const typeDef = (typeof STIX_OBJECTS !== 'undefined') ? STIX_OBJECTS[stixType] : null;
+            if (!typeDef) return '';
+
+            const skipKeys = new Set(['name', 'description', 'labels', 'id', 'stixType', 'customTypeName', 'created', 'modified']);
+            const allFields = [...(typeDef.required || []), ...(typeDef.optional || [])].filter(f => !skipKeys.has(f.key));
+
+            // Collect fields that have values
+            const rows = [];
+            for (const field of allFields) {
+                const val = item[field.key];
+                if (val === undefined || val === null || val === '') continue;
+                let display;
+                if (field.type === 'boolean') {
+                    display = val ? 'Yes' : 'No';
+                } else if (Array.isArray(val)) {
+                    if (val.length === 0) continue;
+                    display = val.map(v => typeof v === 'object' ? JSON.stringify(v) : String(v)).join(', ');
+                } else if (typeof val === 'object') {
+                    display = JSON.stringify(val, null, 2);
+                } else {
+                    display = String(val);
+                }
+                rows.push({ label: field.label, value: display });
+            }
+
+            if (rows.length === 0) return '';
+
+            return `
+                <div class="detail-section">
+                    <h4>STIX Properties</h4>
+                    <div class="detail-list">
+                        ${rows.map(r => `<div class="detail-list-item"><span>${esc(r.label)}:</span><span style="word-break:break-word;">${esc(r.value)}</span></div>`).join('')}
+                    </div>
+                </div>
+            `;
         }
 
         function buildMetadataSummary(type, id, phaseKey, instanceId) {
@@ -4247,7 +5489,11 @@
             document.getElementById('entity-modal-id').textContent = detail.id;
             document.getElementById('entity-modal-name').textContent = detail.name;
             const content = document.getElementById('entity-modal-content');
-            content.innerHTML = detail.html + buildMetadataSummary(type, id, phaseKey, instanceId);
+            // STIX custom objects show their own properties; ATT&CK/CAPEC/CWE show metadata summary
+            const supplementary = type === 'custom'
+                ? buildStixPropertySummary(id)
+                : buildMetadataSummary(type, id, phaseKey, instanceId);
+            content.innerHTML = detail.html + supplementary;
             document.getElementById('entity-modal').classList.add('visible');
             document.getElementById('detail-panel').classList.remove('visible');
             state.selection = { type, id };
@@ -4346,7 +5592,8 @@
             
             if (!type || !id) return;
             
-            const key = type === 'attack' ? 'techniques' : type === 'capec' ? 'capecs' : 'cwes';
+            const key = TYPE_KEYS[type];
+            if (!key) return;
             if (fromPhase && fromPhase === phaseKey && !sourceGroupId) {
                 return;
             }
@@ -4453,12 +5700,13 @@
                 
                 for (const phaseId of superPhase.phases) {
                     const phaseKey = `${superPhaseId}:${phaseId}`;
-                    const phaseData = state.assignments[phaseKey] || { techniques: [], capecs: [], cwes: [], groups: [], layout: [] };
+                    const phaseData = state.assignments[phaseKey] || { techniques: [], capecs: [], cwes: [], customItems: [], groups: [], layout: [] };
                     
                     const techCount = state.layers.attack ? getAllPhaseItemsByType(phaseData, 'attack').length : 0;
                     const capecCount = state.layers.capec ? getAllPhaseItemsByType(phaseData, 'capec').length : 0;
                     const cweCount = state.layers.cwe ? getAllPhaseItemsByType(phaseData, 'cwe').length : 0;
-                    const totalCount = techCount + capecCount + cweCount;
+                    const customCount = state.layers.custom ? getAllPhaseItemsByType(phaseData, 'custom').length : 0;
+                    const totalCount = techCount + capecCount + cweCount + customCount;
                     const isHidden = (state.hideEmpty || state.compactMode) && totalCount === 0;
                     
                     ensurePhaseLayout(phaseKey, phaseData);
@@ -4488,14 +5736,8 @@
                             if (!assignment) continue;
                             const id = getAssignmentId(assignment);
                             const meta = getAssignmentMetadata(assignment);
-                            if (entry.type === 'capec' && state.layers.capec) {
-                                html += renderEntityTag('capec', id, state.library.capecs[id]?.name || '', meta, phaseKey, getAssignmentInstanceId(assignment), null);
-                            }
-                            if (entry.type === 'attack' && state.layers.attack) {
-                                html += renderEntityTag('attack', id, state.library.techniques[id]?.name || '', meta, phaseKey, getAssignmentInstanceId(assignment), null);
-                            }
-                            if (entry.type === 'cwe' && state.layers.cwe) {
-                                html += renderEntityTag('cwe', id, state.library.cwes[id]?.name || '', meta, phaseKey, getAssignmentInstanceId(assignment), null);
+                            if (state.layers[entry.type]) {
+                                html += renderEntityTag(entry.type, id, getEntityName(entry.type, id), meta, phaseKey, getAssignmentInstanceId(assignment), null);
                             }
                         }
 
@@ -4539,14 +5781,8 @@
                                             const id = getAssignmentId(item);
                                             const meta = getAssignmentMetadata(item);
                                             const instanceId = getAssignmentInstanceId(item);
-                                            if (type === 'capec' && state.layers.capec) {
-                                                return renderEntityTag('capec', id, state.library.capecs[id]?.name || '', meta, phaseKey, instanceId, group.groupId);
-                                            }
-                                            if (type === 'attack' && state.layers.attack) {
-                                                return renderEntityTag('attack', id, state.library.techniques[id]?.name || '', meta, phaseKey, instanceId, group.groupId);
-                                            }
-                                            if (type === 'cwe' && state.layers.cwe) {
-                                                return renderEntityTag('cwe', id, state.library.cwes[id]?.name || '', meta, phaseKey, instanceId, group.groupId);
+                                            if (state.layers[type]) {
+                                                return renderEntityTag(type, id, getEntityName(type, id), meta, phaseKey, instanceId, group.groupId);
                                             }
                                             return '';
                                         }).join('')}
@@ -4573,18 +5809,18 @@
 
         // Render a single entity tag with metadata indicators
         function renderEntityTag(type, id, name, metadata, phaseKey, instanceId, sourceGroupId = null) {
-            const tagClass = type === 'attack' ? 'technique-tag' : type === 'capec' ? 'capec-tag' : 'cwe-tag';
+            const tagClass = TAG_CLASSES[type] || 'custom-tag';
             const score = metadata.score || 'unclassified';
             const safeId = InputSecurity.escapeHtml(id);
             const displayName = truncateAtBoundary(name || '', 500);
             const safeName = InputSecurity.escapeHtml(displayName || '');
             const safeType = InputSecurity.sanitizeAttr(type, 20);
-            const safeIdAttr = InputSecurity.sanitizeAttr(id);
+            const safeIdAttr = InputSecurity.encodeHtmlEntities(id);
             const safePhaseKey = InputSecurity.sanitizeAttr(phaseKey);
             const safeInstanceId = InputSecurity.sanitizeAttr(instanceId || '');
             const safeGroupId = InputSecurity.sanitizeAttr(sourceGroupId || '');
             const isCompact = state.compactMode && state.view === 'killchain';
-            const compactTitle = isCompact ? `title="${InputSecurity.sanitizeAttr(`${id} — ${displayName}`)}"` : '';
+            const compactTitle = isCompact ? `title="${InputSecurity.encodeHtmlEntities(`${id} — ${displayName}`)}"` : '';
             let domainBadge = '';
             if (type === 'attack') {
                 const domain = state.library.techniques[id]?.domain || detectDomain(id);
@@ -4592,6 +5828,11 @@
                 if (label) {
                     domainBadge = `<span class="domain-badge">${label}</span>`;
                 }
+            }
+            if (type === 'custom') {
+                const stixType = state.library.custom[id]?.stixType || 'x-custom';
+                const stixLabel = InputSecurity.escapeHtml(stixType.replace(/-/g, ' '));
+                domainBadge = `<span class="stix-type-badge">${stixLabel}</span>`;
             }
             
             // Build metadata icons
@@ -4633,6 +5874,14 @@
 
             const headerMetaIcons = isCompact ? metaIcons : '';
             const footerMetaIcons = isCompact ? '' : metaIcons;
+            const exploreBtn = type === 'custom' ? '' : `<button class="tag-action-btn explore" onclick="event.stopPropagation(); openEntityExplorer('${safeType}', '${safeIdAttr}')" title="Explore Entity Relationships">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M256 128C256 110.3 270.3 96 288 96L352 96C369.7 96 384 110.3 384 128L384 192C384 209.7 369.7 224 352 224L344 224L344 288L464 288C503.8 288 536 320.2 536 360L536 416L544 416C561.7 416 576 430.3 576 448L576 512C576 529.7 561.7 544 544 544L480 544C462.3 544 448 529.7 448 512L448 448C448 430.3 462.3 416 480 416L488 416L488 360C488 346.7 477.3 336 464 336L344 336L344 416L352 416C369.7 416 384 430.3 384 448L384 512C384 529.7 369.7 544 352 544L288 544C270.3 544 256 529.7 256 512L256 448C256 430.3 270.3 416 288 416L296 416L296 336L176 336C162.7 336 152 346.7 152 360L152 416L160 416C177.7 416 192 430.3 192 448L192 512C192 529.7 177.7 544 160 544L96 544C78.3 544 64 529.7 64 512L64 448C64 430.3 78.3 416 96 416L104 416L104 360C104 320.2 136.2 288 176 288L296 288L296 224L288 224C270.3 224 256 209.7 256 192L256 128z"/></svg>
+                            </button>`;
+
+            const editBtnAction = type === 'custom'
+                ? `event.stopPropagation(); closeEntityModal(); openStixEditor('${safeIdAttr}', '${safePhaseKey}', '${safeInstanceId}')`
+                : `event.stopPropagation(); closeEntityModal(); openMetadataEditor('${safeType}', '${safeIdAttr}', '${safePhaseKey}', '${safeInstanceId}')`;
+            const editBtnTitle = type === 'custom' ? 'Edit STIX Item' : 'Edit Metadata';
 
             return `
                 <div class="${tagClass}" data-score="${score}" ${compactTitle}
@@ -4649,10 +5898,8 @@
                             <span class="tag-action-btn remove" title="Remove" onclick="event.stopPropagation(); removeAssignment('${safeType}', '${safeIdAttr}', '${safePhaseKey}', '${safeInstanceId}')">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M576 192C576 156.7 547.3 128 512 128L205.3 128C188.3 128 172 134.7 160 146.7L9.4 297.4C3.4 303.4 0 311.5 0 320C0 328.5 3.4 336.6 9.4 342.6L160 493.3C172 505.3 188.3 512 205.3 512L512 512C547.3 512 576 483.3 576 448L576 192zM284.1 252.1C293.5 242.7 308.7 242.7 318 252.1L351.9 286L385.8 252.1C395.2 242.7 410.4 242.7 419.7 252.1C429 261.5 429.1 276.7 419.7 286L385.8 319.9L419.7 353.8C429.1 363.2 429.1 378.4 419.7 387.7C410.3 397 395.1 397.1 385.8 387.7L351.9 353.8L318 387.7C308.6 397.1 293.4 397.1 284.1 387.7C274.8 378.3 274.7 363.1 284.1 353.8L318 319.9L284.1 286C274.7 276.6 274.7 261.4 284.1 252.1z"/></svg>
                             </span>
-                            <button class="tag-action-btn explore" onclick="event.stopPropagation(); openEntityExplorer('${safeType}', '${safeIdAttr}')" title="Explore Entity Relationships">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M256 128C256 110.3 270.3 96 288 96L352 96C369.7 96 384 110.3 384 128L384 192C384 209.7 369.7 224 352 224L344 224L344 288L464 288C503.8 288 536 320.2 536 360L536 416L544 416C561.7 416 576 430.3 576 448L576 512C576 529.7 561.7 544 544 544L480 544C462.3 544 448 529.7 448 512L448 448C448 430.3 462.3 416 480 416L488 416L488 360C488 346.7 477.3 336 464 336L344 336L344 416L352 416C369.7 416 384 430.3 384 448L384 512C384 529.7 369.7 544 352 544L288 544C270.3 544 256 529.7 256 512L256 448C256 430.3 270.3 416 288 416L296 416L296 336L176 336C162.7 336 152 346.7 152 360L152 416L160 416C177.7 416 192 430.3 192 448L192 512C192 529.7 177.7 544 160 544L96 544C78.3 544 64 529.7 64 512L64 448C64 430.3 78.3 416 96 416L104 416L104 360C104 320.2 136.2 288 176 288L296 288L296 224L288 224C270.3 224 256 209.7 256 192L256 128z"/></svg>
-                            </button>
-                            <button class="tag-action-btn edit" onclick="event.stopPropagation(); closeEntityModal(); openMetadataEditor('${safeType}', '${safeIdAttr}', '${safePhaseKey}', '${safeInstanceId}')" title="Edit Metadata">
+                            ${exploreBtn}
+                            <button class="tag-action-btn edit" onclick="${editBtnAction}" title="${editBtnTitle}">
                                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17.25V21h3.75L17.8 9.95l-3.75-3.75L3 17.25Zm2.92 2.83H5v-.92l8.79-8.79.92.92-8.79 8.79ZM20.7 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83Z"/></svg>
                             </button>
                         </span>
@@ -4782,22 +6029,26 @@
             const statsEl = document.getElementById('stats-bar');
             
             let phasesUsed = 0;
-            const techSet = new Set(), capecSet = new Set(), cweSet = new Set();
+            const techSet = new Set(), capecSet = new Set(), cweSet = new Set(), customSet = new Set();
             
             for (const phase of Object.values(state.assignments)) {
                 const allTechs = getAllPhaseItemsByType(phase, 'attack');
                 const allCapecs = getAllPhaseItemsByType(phase, 'capec');
                 const allCwes = getAllPhaseItemsByType(phase, 'cwe');
-                if (allTechs.length + allCapecs.length + allCwes.length > 0) phasesUsed++;
+                const allCustom = getAllPhaseItemsByType(phase, 'custom');
+                if (allTechs.length + allCapecs.length + allCwes.length + allCustom.length > 0) phasesUsed++;
                 allTechs.forEach(t => techSet.add(getAssignmentId(t)));
                 allCapecs.forEach(c => capecSet.add(getAssignmentId(c)));
                 allCwes.forEach(w => cweSet.add(getAssignmentId(w)));
+                allCustom.forEach(x => customSet.add(getAssignmentId(x)));
             }
             
+            const customStat = customSet.size > 0 ? `<div class="stat"><div class="stat-value">${customSet.size}</div><div class="stat-label">STIX Objects</div></div>` : '';
             statsEl.innerHTML = `
                 <div class="stat"><div class="stat-value">${techSet.size}</div><div class="stat-label">Techniques</div></div>
                 <div class="stat"><div class="stat-value">${capecSet.size}</div><div class="stat-label">CAPECs</div></div>
                 <div class="stat"><div class="stat-value">${cweSet.size}</div><div class="stat-label">CWEs</div></div>
+                ${customStat}
                 <div class="stat"><div class="stat-value">${phasesUsed}/18</div><div class="stat-label">Phases</div></div>
             `;
         }
@@ -4807,7 +6058,8 @@
         }
 
         function removeAssignment(type, id, phaseKey, instanceId) {
-            const key = type === 'attack' ? 'techniques' : type === 'capec' ? 'capecs' : 'cwes';
+            const key = TYPE_KEYS[type];
+            if (!key) return;
             const phaseData = state.assignments[phaseKey];
             if (!phaseData) return;
             if (!window.confirm('Remove this item?')) return;
@@ -4875,8 +6127,15 @@
                 layers: state.layers,
                 hideEmpty: state.hideEmpty,
                 assignments: state.assignments,
-                selection: state.selection
+                selection: state.selection,
+                customLibrary: state.library.custom
             };
+
+            // Generate embedded STIX bundle if custom items exist
+            const customIds = Object.keys(state.library.custom);
+            if (customIds.length > 0) {
+                exportData.stixBundle = buildSTIXBundle();
+            }
             
             const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
@@ -4887,6 +6146,112 @@
             a.click();
             URL.revokeObjectURL(url);
             showToast('Exported JSON');
+        }
+
+        // Build STIX 2.1 bundle from custom items + phase relationships
+        function buildSTIXBundle() {
+            const objects = [];
+            const now = new Date().toISOString();
+
+            // Add SDOs from custom library
+            for (const [id, item] of Object.entries(state.library.custom)) {
+                const sdo = {
+                    type: item.stixType,
+                    spec_version: '2.1',
+                    id: id,
+                    created: item.created || now,
+                    modified: item.modified || now,
+                    name: item.name || ''
+                };
+                if (item.description) sdo.description = item.description;
+                if (item.labels && item.labels.length > 0) sdo.labels = item.labels;
+                objects.push(sdo);
+            }
+
+            // Generate SROs for co-located items in same phase/group
+            const relationshipSet = new Set();
+            for (const [phaseKey, phaseData] of Object.entries(state.assignments)) {
+                if (!phaseData) continue;
+
+                // Ungrouped custom items in this phase
+                const ungroupedCustom = (phaseData.customItems || []).map(a => getAssignmentId(a));
+                // All other ungrouped items
+                const ungroupedOther = [
+                    ...(phaseData.techniques || []).map(a => ({ type: 'attack', id: getAssignmentId(a) })),
+                    ...(phaseData.capecs || []).map(a => ({ type: 'capec', id: getAssignmentId(a) })),
+                    ...(phaseData.cwes || []).map(a => ({ type: 'cwe', id: getAssignmentId(a) }))
+                ];
+
+                // Build phase-level relationships between custom↔custom
+                for (let i = 0; i < ungroupedCustom.length; i++) {
+                    for (let j = i + 1; j < ungroupedCustom.length; j++) {
+                        addRelationship(objects, relationshipSet, ungroupedCustom[i], ungroupedCustom[j], phaseKey, now);
+                    }
+                }
+
+                // Grouped items
+                for (const group of (phaseData.groups || [])) {
+                    const groupCustom = (group.items || []).filter(it => it.type === 'custom').map(it => getAssignmentId(it));
+                    const groupOther = (group.items || []).filter(it => it.type !== 'custom');
+
+                    // Custom↔custom within group
+                    for (let i = 0; i < groupCustom.length; i++) {
+                        for (let j = i + 1; j < groupCustom.length; j++) {
+                            addRelationship(objects, relationshipSet, groupCustom[i], groupCustom[j], phaseKey, now);
+                        }
+                    }
+                }
+            }
+
+            return {
+                type: 'bundle',
+                id: `bundle--${generateUUID()}`,
+                spec_version: '2.1',
+                objects: objects
+            };
+        }
+
+        function addRelationship(objects, seen, sourceId, targetId, phaseKey, timestamp) {
+            const sourceType = sourceId.split('--')[0] || '';
+            const targetType = targetId.split('--')[0] || '';
+            if (!sourceType || !targetType) return;
+
+            // Look up relationship type from STIX_RELATIONSHIP_MAP
+            const relType = STIX_RELATIONSHIP_MAP[sourceType]?.[targetType] || 'related-to';
+            const key = `${sourceId}|${targetId}|${relType}`;
+            const reverseKey = `${targetId}|${sourceId}|${relType}`;
+            if (seen.has(key) || seen.has(reverseKey)) return;
+            seen.add(key);
+
+            objects.push({
+                type: 'relationship',
+                spec_version: '2.1',
+                id: `relationship--${generateUUID()}`,
+                created: timestamp,
+                modified: timestamp,
+                relationship_type: relType,
+                source_ref: sourceId,
+                target_ref: targetId,
+                description: `Co-located in phase ${phaseKey}`
+            });
+        }
+
+        function exportSTIXBundle() {
+            const customIds = Object.keys(state.library.custom);
+            if (customIds.length === 0) {
+                showToast('No custom STIX objects to export');
+                return;
+            }
+            const bundle = buildSTIXBundle();
+            const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const slug = state.title ? state.title.replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/-+$/,'').substring(0, 60) : 'stix-bundle';
+            a.download = slug + '-stix-bundle.json';
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Exported STIX 2.1 Bundle');
         }
 
         function triggerImportKillChain() {
@@ -4900,7 +6265,7 @@
                 phaseData.groups = Array.isArray(phaseData.groups) ? phaseData.groups : [];
                 phaseData.layout = Array.isArray(phaseData.layout) ? phaseData.layout : [];
 
-                for (const key of ['techniques', 'capecs', 'cwes']) {
+                for (const key of ['techniques', 'capecs', 'cwes', 'customItems']) {
                     const list = Array.isArray(phaseData[key]) ? phaseData[key] : [];
                     phaseData[key] = list.map(a => migrateAssignment(a));
                 }
@@ -4951,6 +6316,21 @@
                         state.library.cwes[id] = { id, name: id };
                     }
                 }
+                const allCustom = getAllPhaseItemsByType(phaseData, 'custom');
+                for (const custom of allCustom) {
+                    const id = getAssignmentId(custom);
+                    if (!state.library.custom[id]) {
+                        state.library.custom[id] = {
+                            id,
+                            stixType: id.split('--')[0] || 'x-custom',
+                            name: id,
+                            description: '',
+                            labels: [],
+                            created: new Date().toISOString(),
+                            modified: new Date().toISOString()
+                        };
+                    }
+                }
             }
         }
 
@@ -4988,7 +6368,7 @@
                 }
 
                 // Check assignment counts
-                for (const key of ['techniques', 'capecs', 'cwes']) {
+                for (const key of ['techniques', 'capecs', 'cwes', 'customItems']) {
                     const list = phaseData[key];
                     if (list && !Array.isArray(list)) {
                         return { valid: false, error: `${key} must be an array in ${phaseKey}` };
@@ -5043,7 +6423,32 @@
                 return null;  // Reject invalid ID patterns
             }
 
-            // Extract metadata from either nested or flat structure
+            // Extract metadata
+            const metadata = sanitizeAssignmentMetadata(assignment);
+
+            return { id: id, metadata: metadata, instanceId: assignment.instanceId || createAssignmentInstanceId() };
+        }
+
+        function sanitizeImportedCustomAssignment(assignment) {
+            if (!assignment || typeof assignment !== 'object') return null;
+
+            const id = assignment.id || assignment.entityId;
+            if (typeof id !== 'string') return null;
+
+            // Validate STIX ID format: {type}--{uuid}
+            if (!STIX_ID_PATTERN.test(id)) return null;
+
+            // Extract and validate STIX type from ID
+            const stixType = id.split('--')[0];
+            if (!VALID_STIX_TYPES.has(stixType)) return null;
+
+            // Extract metadata
+            const metadata = sanitizeAssignmentMetadata(assignment);
+
+            return { id: id, metadata: metadata, instanceId: assignment.instanceId || createAssignmentInstanceId() };
+        }
+
+        function sanitizeAssignmentMetadata(assignment) {
             const sourceMeta = assignment.metadata || assignment;
             const metadata = {
                 score: 'unclassified',
@@ -5158,7 +6563,7 @@
                     .filter(o => o.value);
             }
 
-            return { id: id, metadata: metadata, instanceId: assignment.instanceId || createAssignmentInstanceId() };
+            return metadata;
         }
 
         function sanitizeImportedData(data) {
@@ -5172,6 +6577,7 @@
                     techniques: [],
                     capecs: [],
                     cwes: [],
+                    customItems: [],
                     groups: [],
                     layout: Array.isArray(phaseData.layout) ? phaseData.layout : []
                 };
@@ -5183,6 +6589,13 @@
                         .filter(a => a !== null);
                 }
 
+                // Sanitize custom items separately (STIX ID format)
+                if (Array.isArray(phaseData.customItems)) {
+                    sanitized.assignments[phaseKey].customItems = phaseData.customItems
+                        .map(a => sanitizeImportedCustomAssignment(a))
+                        .filter(a => a !== null);
+                }
+
                 if (Array.isArray(phaseData.groups)) {
                     sanitized.assignments[phaseKey].groups = phaseData.groups
                         .filter(g => g && typeof g === 'object')
@@ -5190,6 +6603,11 @@
                             const rawItems = Array.isArray(g.items) ? g.items : [];
                             const items = rawItems
                                 .map(item => {
+                                    if (item.type === 'custom') {
+                                        const sanitizedItem = sanitizeImportedCustomAssignment(item);
+                                        if (!sanitizedItem) return null;
+                                        return { ...sanitizedItem, type: 'custom' };
+                                    }
                                     const sanitizedItem = sanitizeImportedAssignment(item);
                                     if (!sanitizedItem) return null;
                                     const type = ['attack', 'capec', 'cwe'].includes(item.type) ? item.type : null;
@@ -5213,7 +6631,8 @@
                 sanitized.layers = {
                     attack: !!data.layers.attack,
                     capec: !!data.layers.capec,
-                    cwe: !!data.layers.cwe
+                    cwe: !!data.layers.cwe,
+                    custom: !!data.layers.custom
                 };
             }
 
@@ -5225,13 +6644,77 @@
                 sanitized.view = data.view;
             }
 
-            if (typeof data.activeTab === 'string' && ['attack', 'capec', 'cwe'].includes(data.activeTab)) {
+            if (typeof data.activeTab === 'string' && ['attack', 'capec', 'cwe', 'custom'].includes(data.activeTab)) {
                 sanitized.activeTab = data.activeTab;
             }
 
             // Sanitize optional title
             if (typeof data.title === 'string') {
                 sanitized.title = sanitizeImportedString(data.title, CONFIG.display?.maxTitleLength || 200);
+            }
+
+            // Sanitize custom library
+            if (data.customLibrary && typeof data.customLibrary === 'object') {
+                sanitized.customLibrary = {};
+                const maxItems = 500;
+                let count = 0;
+                for (const [id, item] of Object.entries(data.customLibrary)) {
+                    if (count >= maxItems) break;
+                    if (!STIX_ID_PATTERN.test(id)) continue;
+                    if (!item || typeof item !== 'object') continue;
+                    const stixType = id.split('--')[0];
+                    if (!VALID_STIX_TYPES.has(stixType)) continue;
+
+                    const entry = {
+                        id: id,
+                        stixType: stixType,
+                        name: sanitizeImportedString(item.name || '', CONFIG.display?.maxLabelLength || 50),
+                        description: sanitizeImportedString(item.description || '', CONFIG.display?.maxCustomDescLength || 2000),
+                        labels: Array.isArray(item.labels)
+                            ? item.labels
+                                .slice(0, CONFIG.display?.maxCustomLabels || 20)
+                                .filter(l => typeof l === 'string')
+                                .map(l => sanitizeImportedString(l, CONFIG.display?.maxLabelLength || 50))
+                            : [],
+                        customTypeName: stixType === 'x-custom' && typeof item.customTypeName === 'string'
+                            ? sanitizeImportedString(item.customTypeName, CONFIG.display?.maxLabelLength || 50)
+                            : '',
+                        created: typeof item.created === 'string' ? item.created.slice(0, 30) : new Date().toISOString(),
+                        modified: typeof item.modified === 'string' ? item.modified.slice(0, 30) : new Date().toISOString()
+                    };
+
+                    // Preserve STIX spec-defined properties from stix-config.js
+                    const typeDef = (typeof STIX_OBJECTS !== 'undefined') ? STIX_OBJECTS[stixType] : null;
+                    if (typeDef) {
+                        const coreKeys = new Set(['name', 'description', 'labels']);
+                        const specFields = [...(typeDef.required || []), ...(typeDef.optional || [])].filter(f => !coreKeys.has(f.key));
+                        for (const field of specFields) {
+                            if (!(field.key in item)) continue;
+                            const raw = item[field.key];
+                            if (field.type === 'boolean') {
+                                entry[field.key] = !!raw;
+                            } else if (field.type === 'integer') {
+                                const num = parseInt(raw, 10);
+                                if (!isNaN(num)) entry[field.key] = num;
+                            } else if (field.type === 'list' || field.type === 'list:open-vocab') {
+                                if (Array.isArray(raw)) {
+                                    entry[field.key] = raw
+                                        .slice(0, 50)
+                                        .filter(v => typeof v === 'string')
+                                        .map(v => sanitizeImportedString(v, 200));
+                                }
+                            } else {
+                                // string, enum, open-vocab, timestamp
+                                if (typeof raw === 'string') {
+                                    entry[field.key] = sanitizeImportedString(raw, 2000);
+                                }
+                            }
+                        }
+                    }
+
+                    sanitized.customLibrary[id] = entry;
+                    count++;
+                }
             }
 
             return sanitized;
@@ -5274,6 +6757,13 @@
                     ensureAssignmentShape(state.assignments);
                     ensureLibraryFallbacks(state.assignments);
 
+                    // Restore custom library from sanitized data
+                    if (sanitized.customLibrary) {
+                        for (const [id, item] of Object.entries(sanitized.customLibrary)) {
+                            state.library.custom[id] = item;
+                        }
+                    }
+
                     // Restore sanitized view state
                     if (typeof sanitized.title === 'string') {
                         state.title = sanitizeForStorage(sanitized.title, CONFIG.display?.maxTitleLength || 200);
@@ -5288,6 +6778,7 @@
                     document.getElementById('layer-attack').checked = !!state.layers.attack;
                     document.getElementById('layer-capec').checked = !!state.layers.capec;
                     document.getElementById('layer-cwe').checked = !!state.layers.cwe;
+                    document.getElementById('layer-custom').checked = !!state.layers.custom;
                     updateHideEmptyControl();
 
                     if (sanitized.view) {
@@ -5322,11 +6813,13 @@
             const allTechs = new Map();  // id -> { phases: Set, metadata }
             const allCapecs = new Map();
             const allCwes = new Map();
+            const allCustom = new Map();
             
             for (const [phaseKey, phase] of Object.entries(state.assignments)) {
                 const techs = getAllPhaseItemsByType(phase, 'attack');
                 const capecs = getAllPhaseItemsByType(phase, 'capec');
                 const cwes = getAllPhaseItemsByType(phase, 'cwe');
+                const customs = getAllPhaseItemsByType(phase, 'custom');
 
                 techs.forEach(t => {
                     const id = getAssignmentId(t);
@@ -5348,6 +6841,13 @@
                         allCwes.set(id, { phases: new Set(), metadata: getAssignmentMetadata(w) });
                     }
                     allCwes.get(id).phases.add(phaseKey);
+                });
+                customs.forEach(x => {
+                    const id = getAssignmentId(x);
+                    if (!allCustom.has(id)) {
+                        allCustom.set(id, { phases: new Set(), metadata: getAssignmentMetadata(x) });
+                    }
+                    allCustom.get(id).phases.add(phaseKey);
                 });
             }
             
@@ -5414,6 +6914,26 @@
                     'CWE', 
                     cweId, 
                     cwe?.name || 'Unknown',
+                    meta.score || '',
+                    formatConfidence(meta),
+                    formatCveList(meta),
+                    (meta.comments || '').slice(0, 100).replace(/\n/g, ' ')
+                ];
+                for (const phaseKey of ALL_PHASES) {
+                    row.push(data.phases.has(phaseKey) ? 'X' : '');
+                }
+                rows.push(row);
+            }
+
+            // Add Custom STIX rows
+            for (const [customId, data] of allCustom) {
+                const item = state.library.custom[customId];
+                const meta = data.metadata;
+                const stixLabel = (item?.stixType || 'x-custom').replace(/-/g, ' ');
+                const row = [
+                    'STIX: ' + stixLabel,
+                    customId,
+                    item?.name || 'Unknown',
                     meta.score || '',
                     formatConfidence(meta),
                     formatCveList(meta),
@@ -5846,6 +7366,7 @@
             filterEntities('attack');
             filterEntities('capec');
             filterEntities('cwe');
+            filterEntities('custom');
             renderKillChain();
             syncTitleToDOM();
         }
@@ -5885,6 +7406,7 @@
             }
         });
         applyInputGuards();
+        populateStixTypeDropdown();
         loadVersion();
         loadData();
     </script>
