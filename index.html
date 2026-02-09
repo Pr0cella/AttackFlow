@@ -6106,6 +6106,7 @@
         }
 
         function clearAssignments() {
+            if (!confirm('Clear all assignments from the kill chain? This cannot be undone.')) return;
             initAssignments();
             renderKillChain();
             filterEntities(state.activeTab);
