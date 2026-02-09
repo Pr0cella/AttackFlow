@@ -8,6 +8,7 @@ An editor for creating enriched Cyber Kill Chain assessments by mapping MITRE AT
 ![License](https://img.shields.io/badge/license-Apache%202.0-green)
 ![Dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)
 
+## Main Editor
 ![Preview](preview.png)
 
 ## Features
@@ -34,7 +35,11 @@ An editor for creating enriched Cyber Kill Chain assessments by mapping MITRE AT
 - **Navigator Layers** — Import ATT&CK Navigator JSON exports
 - **Offline Operation** — No CDN, no remote requests, no third-party dependencies
 
+## Relations View
 ![Relations View](relations.png)
+
+## Explorer View
+![Explorer View](explorer.png)
 
 ## Quick Start
 
@@ -46,7 +51,7 @@ The Relationship Explorer is a second main view that lets you investigate ATT&CK
 4. Drag items onto kill chain phases
 5. Click items in the diagram to add metadata
 6. Switch to the **STIX** tab to create or import STIX 2.1 objects
-7. Click **Import STIX Bundle** to load a STIX 2.1 bundle JSON (e.g., APT1 report)
+7. Click **Import STIX Bundle** to load a STIX 2.1 bundle JSON (e.g., Operation Midnight Eclipse bundle)
 8. Use the header navigation to switch to Relationship Explorer
 9. Toggle light/dark theme in the header as needed
 10. Enable compact mode for dense layouts when needed
@@ -57,8 +62,7 @@ The Relationship Explorer is a second main view that lets you investigate ATT&CK
 - **Demo kill chain**: Import [examples/demo.json](examples/demo.json) to exercise all metadata fields (CVE/CVSS, observables, links, confidence) and multi-phase coverage.
 - **Grouping demo**: Import [examples/grouping-demo.json](examples/grouping-demo.json) for a ransomware-focused TTP mapping that showcases grouping.
 - **STIX demo**: Import [examples/stix-demo.json](examples/stix-demo.json) for a full STIX 2.1 showcase with all 19 SDO types across UKC phases.
-- **STIX bundle**: Import [examples/APT1.json](examples/APT1.json) via the STIX tab's "Import STIX Bundle" button to test STIX bundle parsing (Mandiant's APT1 Report).
-- **Import validation suite**: Open [tests/import-validation/test-runner.html](tests/import-validation/test-runner.html) in a browser to run validation, sanitization, and feature checks (includes the demo file).
+- **STIX bundle**: Import [examples/Operation-Midnight-Eclipse-stix-bundle.json](examples/Operation-Midnight-Eclipse-stix-bundle.json) via the STIX tab's "Import STIX Bundle" button to test STIX bundle parsing (25 SDOs across 19 types + 18 phase-relationship SROs).
 
 ## Project Structure
 
@@ -71,7 +75,7 @@ The Relationship Explorer is a second main view that lets you investigate ATT&CK
 │   ├── demo.json                    # Full-metadata demo mapping
 │   ├── grouping-demo.json           # Grouped ransomware TTP example
 │   ├── stix-demo.json               # All 19 STIX SDO types showcase
-│   └── APT1.json                    # Mandiant APT1 STIX 2.1 bundle
+│   └── Operation-Midnight-Eclipse-stix-bundle.json  # Exported STIX 2.1 bundle
 ├── scripts/
 │   ├── extract-attack.py           # ATT&CK STIX bundle parser
 │   ├── extract-data.py             # CAPEC/CWE XML parser

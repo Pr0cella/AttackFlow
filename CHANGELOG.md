@@ -1,9 +1,4 @@
 # Changelog
-
-All notable changes to the AttackFlow application are documented here.
-
-This changelog also serves as a development context document for AI agents continuing this project.
-
 ---
 
 ## [2.7.0] - 2026-02-09
@@ -21,7 +16,7 @@ This changelog also serves as a development context document for AI agents conti
 - **Closable Loading Overlay**: When data fails to load (e.g., opening via `file://` protocol), the loading screen shows a "Continue Without Data" button and hint text so users can still import Navigator layers, create STIX objects, and import saved kill chains.
 - **`stix-config.js`**: Comprehensive STIX 2.1 configuration with all 19 SDO type definitions, field descriptors (type, label, vocabulary, required/optional), vocabulary lists, relationship defaults, and helper functions.
 - **`examples/stix-demo.json`**: Full showcase kill chain ("Operation Midnight Eclipse") with all 19 STIX object types, realistic field values, distributed across UKC phases.
-- **`examples/APT1.json`**: Mandiant APT1 Report as STIX 2.1 bundle for import testing.
+- **`examples/Operation-Midnight-Eclipse-stix-bundle.json`**: Exported STIX 2.1 bundle of the stix-demo scenario (25 SDOs + 18 relationships) for bundle import testing.
 
 ### Changed
 - Sidebar tab renamed from "Custom" to **STIX** throughout the UI.
