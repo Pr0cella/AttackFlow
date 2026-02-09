@@ -6,13 +6,13 @@
     <title>AttackFlow - Relationship Explorer</title>
     <style>
         :root {
-            --bg-dark: #1a1a1a;
-            --bg-card: #242424;
-            --bg-panel: #2d2d2d;
-            --text-primary: #e5e5e5;
-            --text-secondary: #a3a3a3;
-            --border-color: #404040;
-            --accent: #71717a;
+            --bg-dark: #f8fafc;
+            --bg-card: #ffffff;
+            --bg-panel: #f1f5f9;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --border-color: #e2e8f0;
+            --accent: #94a3b8;
             --attack: #3b82f6;
             --capec: #8b5cf6;
             --cwe: #f59e0b;
@@ -41,6 +41,7 @@
             background: var(--bg-card);
             border-bottom: 1px solid var(--border-color);
             position: relative;
+            gap: 16px;
         }
 
         .header-title {
@@ -67,6 +68,42 @@
             border-radius: 6px;
             font-size: 0.8rem;
         }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .control-label {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn {
+            padding: 6px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-panel);
+            color: var(--text-secondary);
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .btn:hover {
+            color: var(--text-primary);
+            border-color: var(--accent);
+        }
+
 
         .search-suggestions {
             position: absolute;
@@ -325,6 +362,12 @@
                 <input id="global-search" type="search" placeholder="Search all entities..." />
                 <div class="search-suggestions" id="global-suggestions"></div>
             </div>
+            <div class="header-controls">
+                <div class="control-group">
+                    <span class="control-label">Theme</span>
+                    <button class="btn" id="theme-mode-toggle" onclick="toggleThemeMode()">Light</button>
+                </div>
+            </div>
         </div>
 
         <div class="main">
@@ -353,7 +396,97 @@
         </div>
     </div>
 
+    <script src="config.js"></script>
     <script>
+        const THEME_STORAGE_KEYS = {
+            mode: 'af-theme-mode'
+        };
+        let currentTheme = {
+            mode: CONFIG?.themeDefaults?.mode || 'light',
+            scheme: 'default'
+        };
+
+        function getPreferredThemeMode() {
+            const configured = CONFIG?.themeMode || CONFIG?.themeDefaults?.mode || 'light';
+            if (configured !== 'auto') return configured;
+            if (typeof window === 'undefined') return CONFIG?.themeDefaults?.mode || 'light';
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+                return 'light';
+            }
+            return 'dark';
+        }
+
+        function normalizeThemeMode(mode) {
+            return mode === 'light' || mode === 'dark' ? mode : (CONFIG?.themeDefaults?.mode || 'light');
+        }
+
+        function normalizeThemeScheme(mode, scheme) {
+            const schemes = CONFIG?.themes?.[mode] || {};
+            if (scheme && schemes[scheme]) return scheme;
+            if (schemes.default) return 'default';
+            const first = Object.keys(schemes)[0];
+            return first || 'default';
+        }
+
+        function applyTheme(mode, scheme, persist = true) {
+            const resolvedMode = normalizeThemeMode(mode);
+            const resolvedScheme = normalizeThemeScheme(resolvedMode, scheme);
+            const theme = typeof resolveTheme === 'function'
+                ? resolveTheme(resolvedMode, resolvedScheme)
+                : null;
+            if (typeof applyConfigColors === 'function') {
+                applyConfigColors(theme || undefined);
+            }
+            document.documentElement.dataset.theme = resolvedMode;
+            currentTheme = { mode: resolvedMode, scheme: resolvedScheme };
+            updateThemeControls();
+            if (persist) {
+                try {
+                    localStorage.setItem(THEME_STORAGE_KEYS.mode, resolvedMode);
+                } catch (e) {
+                    console.warn('Theme preference could not be saved:', e);
+                }
+            }
+        }
+
+        function updateThemeControls() {
+            const modeBtn = document.getElementById('theme-mode-toggle');
+            if (modeBtn) {
+                modeBtn.textContent = currentTheme.mode === 'dark' ? 'Dark' : 'Light';
+            }
+        }
+
+        function toggleThemeMode() {
+            const nextMode = currentTheme.mode === 'dark' ? 'light' : 'dark';
+            const nextScheme = normalizeThemeScheme(nextMode, currentTheme.scheme);
+            applyTheme(nextMode, nextScheme);
+        }
+
+        function initThemeControls() {
+            let storedMode = null;
+            try {
+                storedMode = localStorage.getItem(THEME_STORAGE_KEYS.mode);
+            } catch (e) {
+                console.warn('Theme preference could not be read:', e);
+            }
+
+            const mode = normalizeThemeMode(storedMode || getPreferredThemeMode());
+            applyTheme(mode, 'default', false);
+        }
+
+        function syncThemeFromStorage() {
+            let storedMode = null;
+            try {
+                storedMode = localStorage.getItem(THEME_STORAGE_KEYS.mode);
+            } catch (e) {
+                return;
+            }
+
+            const mode = normalizeThemeMode(storedMode || currentTheme.mode);
+            if (mode !== currentTheme.mode) {
+                applyTheme(mode, 'default', false);
+            }
+        }
         const state = {
             data: {
                 techniques: {},
@@ -988,6 +1121,12 @@
             }
         }
 
+        initThemeControls();
+        window.addEventListener('storage', (e) => {
+            if (e.key === THEME_STORAGE_KEYS.mode) {
+                syncThemeFromStorage();
+            }
+        });
         initEvents();
         loadData().catch(err => {
             setStatus('Failed to load data');

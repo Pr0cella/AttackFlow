@@ -246,16 +246,34 @@ def extract_cwe(xml_files):
                                 parent = f'CWE-{parent_id}'
                             break
                 
-                weaknesses[cwe_id] = {
-                    'id': cwe_id,
-                    'name': name,
-                    'description': description,
-                    'abstraction': abstraction,
-                    'status': status,
-                    'capecs': capecs,
-                    'parent': parent,
-                    'children': []
-                }
+                if cwe_id in weaknesses:
+                    existing = weaknesses[cwe_id]
+                    stub_name = f"CWE {cwe_id.replace('CWE-', '')}"
+                    stub_description = 'This CWE is referenced by CAPEC patterns but detailed information is not available in the current CWE view.'
+
+                    if (not existing.get('name') or existing.get('name') == stub_name) and name:
+                        existing['name'] = name
+                    if (not existing.get('description') or existing.get('description') == stub_description) and description:
+                        existing['description'] = description
+                    if (not existing.get('abstraction') or existing.get('abstraction') == 'Unknown') and abstraction:
+                        existing['abstraction'] = abstraction
+                    if (not existing.get('status') or existing.get('status') == 'Referenced') and status:
+                        existing['status'] = status
+                    if not existing.get('parent') and parent:
+                        existing['parent'] = parent
+                    if capecs:
+                        existing['capecs'] = list({*existing.get('capecs', []), *capecs})
+                else:
+                    weaknesses[cwe_id] = {
+                        'id': cwe_id,
+                        'name': name,
+                        'description': description,
+                        'abstraction': abstraction,
+                        'status': status,
+                        'capecs': capecs,
+                        'parent': parent,
+                        'children': []
+                    }
         
         # Find Categories
         categories_el = root.find('cwe:Categories', CWE_NS)
@@ -380,7 +398,8 @@ def load_config(project_dir):
             },
             'cwe': {
                 'hardware': 'frameworks/CWE/HARDWARE.xml',
-                'software': 'frameworks/CWE/SOFTWARE.xml'
+                'software': 'frameworks/CWE/SOFTWARE.xml',
+                'all': 'frameworks/CWE/ALL.xml'
             }
         }
     }
@@ -406,6 +425,9 @@ def load_config(project_dir):
             m = re.search(r"software:\s*['\"]([^'\"]+)['\"]", content)
             if m:
                 config['sources']['cwe']['software'] = m.group(1)
+            m = re.search(r"all:\s*['\"]([^'\"]+)['\"]", content)
+            if m:
+                config['sources']['cwe']['all'] = m.group(1)
     
     return config
 
@@ -440,7 +462,8 @@ def main():
     
     cwe_files = [
         project_dir / config['sources']['cwe']['software'],
-        project_dir / config['sources']['cwe']['hardware']
+        project_dir / config['sources']['cwe']['hardware'],
+        project_dir / config['sources']['cwe']['all']
     ]
     cwe_files = [f for f in cwe_files if f.exists()]
     

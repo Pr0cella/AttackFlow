@@ -1,0 +1,526 @@
+{
+  "type": "bundle",
+  "id": "bundle--3a7ddb4f-47f5-4f39-98d2-1507b37667d8",
+  "spec_version": "2.1",
+  "objects": [
+    {
+      "type": "threat-actor",
+      "spec_version": "2.1",
+      "id": "threat-actor--e5f1b5d0-1a2b-4c3d-8e4f-567890abcdef",
+      "created": "2026-01-15T08:30:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "name": "Midnight Typhoon",
+      "description": "Nation-state threat actor attributed to a foreign intelligence service, active since 2019. Focuses on government, defense, and critical infrastructure targets across NATO-aligned nations. Known for patient, low-and-slow operations with sophisticated custom tooling.",
+      "labels": [
+        "nation-state",
+        "espionage",
+        "apt"
+      ]
+    },
+    {
+      "type": "intrusion-set",
+      "spec_version": "2.1",
+      "id": "intrusion-set--a1b2c3d4-5678-9abc-def0-111111111111",
+      "created": "2026-01-20T14:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "name": "Operation Midnight Eclipse",
+      "description": "A coordinated cyber-espionage campaign targeting European government ministries and defense contractors between Q3 2025 and Q1 2026. The intrusion set leveraged spearphishing, zero-day exploitation of Palo Alto PAN-OS, and custom backdoors for long-term access.",
+      "labels": [
+        "cyber-espionage",
+        "government-targeting",
+        "zero-day"
+      ]
+    },
+    {
+      "type": "infrastructure",
+      "spec_version": "2.1",
+      "id": "infrastructure--e1f2a3b4-f012-3456-789a-bbbbbbbbbbbb",
+      "created": "2026-01-18T14:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "name": "Eclipse C2 Network",
+      "description": "Distributed command-and-control infrastructure spanning compromised WordPress sites, bulletproof hosting in Moldova, and CloudFlare Workers for DNS-over-HTTPS relay. At least 14 active C2 nodes identified, rotating on a 72-hour cycle with domain generation algorithm (DGA) fallback.",
+      "labels": [
+        "c2",
+        "bulletproof-hosting",
+        "dga"
+      ]
+    },
+    {
+      "type": "infrastructure",
+      "spec_version": "2.1",
+      "id": "infrastructure--f2a3b4c5-0123-4567-89ab-cccccccccccc",
+      "created": "2026-01-17T09:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "name": "Phishing Infrastructure — login-mod-exemplia.org",
+      "description": "Credential harvesting infrastructure mimicking the Ministry of Defence SSO login portal. Hosted on compromised AWS EC2 instance with a valid Lets Encrypt TLS certificate. Captured credentials relayed in real-time to threat actor via Telegram bot API.",
+      "labels": [
+        "phishing",
+        "credential-harvesting"
+      ]
+    },
+    {
+      "type": "location",
+      "spec_version": "2.1",
+      "id": "location--a9b0c1d2-789a-bcde-f012-000000000004",
+      "created": "2026-01-19T09:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "name": "C2 Hosting — Chișinău, Moldova",
+      "description": "Primary bulletproof hosting location for Eclipse C2 infrastructure. Multiple VPS instances rented through cryptocurrency payments from a hosting provider operating out of a data center in Chișinău.",
+      "labels": [
+        "c2-hosting",
+        "bulletproof"
+      ]
+    },
+    {
+      "type": "malware",
+      "spec_version": "2.1",
+      "id": "malware--f6a7b8c9-abcd-ef01-2345-666666666666",
+      "created": "2026-01-16T10:30:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "name": "CrashLoader",
+      "description": "First-stage loader dropped via spearphishing. Highly obfuscated .NET assembly that decrypts and reflectively loads EclipseRAT from an encrypted payload blob embedded in a PNG steganographic carrier. Self-deletes after successful injection.",
+      "labels": [
+        "dropper",
+        "loader",
+        "first-stage"
+      ]
+    },
+    {
+      "type": "vulnerability",
+      "spec_version": "2.1",
+      "id": "vulnerability--c9d0e1f2-def0-1234-5678-999999999999",
+      "created": "2026-01-15T08:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "name": "CVE-2024-3400 — PAN-OS Command Injection",
+      "description": "Critical command injection vulnerability in Palo Alto Networks PAN-OS GlobalProtect feature, CVSS 10.0. Allows unauthenticated remote code execution via crafted HTTP requests to the SSL VPN endpoint. Exploited as a zero-day by Midnight Typhoon for initial access in this operation.",
+      "labels": [
+        "zero-day",
+        "rce",
+        "critical",
+        "cve-2024-3400"
+      ]
+    },
+    {
+      "type": "attack-pattern",
+      "spec_version": "2.1",
+      "id": "attack-pattern--d0e1f2a3-ef01-2345-6789-aaaaaaaaaaaa",
+      "created": "2026-01-20T12:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "name": "DNS-over-HTTPS C2 Tunneling",
+      "description": "EclipseRAT encodes C2 commands and exfiltrated data within DNS TXT queries routed through legitimate DoH providers (Cloudflare 1.1.1.1, Google 8.8.8.8). This abuses trusted HTTPS connections to bypass network monitoring that does not perform TLS inspection on known-good domains.",
+      "labels": [
+        "c2",
+        "dns-over-https",
+        "evasion"
+      ]
+    },
+    {
+      "type": "malware",
+      "spec_version": "2.1",
+      "id": "malware--e5f6a7b8-9abc-def0-1234-555555555555",
+      "created": "2026-01-16T10:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "name": "EclipseRAT",
+      "description": "Custom remote access trojan attributed to Midnight Typhoon. Communicates over DNS-over-HTTPS to CloudFlare resolvers for C2, with fallback to HTTPS beaconing. Supports file exfiltration, keylogging, screen capture, and arbitrary command execution. Written in C++ with anti-analysis features including VM detection and debug-trap evasion.",
+      "labels": [
+        "remote-access-trojan",
+        "custom",
+        "dns-over-https"
+      ]
+    },
+    {
+      "type": "malware-analysis",
+      "spec_version": "2.1",
+      "id": "malware-analysis--e7f8a9b0-5678-9abc-def0-000000000002",
+      "created": "2026-01-21T16:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "name": "EclipseRAT v3.2 Dynamic Analysis",
+      "description": "Automated and manual dynamic analysis of EclipseRAT v3.2 payload in an isolated sandbox. Observed DNS-over-HTTPS beaconing, anti-VM checks (CPUID, registry keys), and encrypted file staging in %APPDATA%\\Microsoft\\Crypto\\.",
+      "labels": [
+        "sandbox",
+        "dynamic-analysis",
+        "eclipserat"
+      ]
+    },
+    {
+      "type": "indicator",
+      "spec_version": "2.1",
+      "id": "indicator--a3b4c5d6-1234-5678-9abc-dddddddddddd",
+      "created": "2026-01-17T13:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "name": "EclipseRAT SHA-256 Hash",
+      "description": "SHA-256 file hash of the EclipseRAT v3.2 payload DLL dropped by CrashLoader. Observed on multiple victim endpoints in the Ministry network between Nov 2025 and Jan 2026.",
+      "labels": [
+        "malicious-activity",
+        "file-hash"
+      ]
+    },
+    {
+      "type": "indicator",
+      "spec_version": "2.1",
+      "id": "indicator--b4c5d6e7-2345-6789-abcd-eeeeeeeeeeee",
+      "created": "2026-01-19T15:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "name": "Eclipse C2 Domain — update-service-cdn.com",
+      "description": "Primary C2 domain used by EclipseRAT Beacon variant. DNS resolved to rotating IPs in AS12345 (Bulletproof Hosting Ltd, Moldova). Active Nov 2025 – Jan 2026.",
+      "labels": [
+        "malicious-activity",
+        "c2-domain"
+      ]
+    },
+    {
+      "type": "observed-data",
+      "spec_version": "2.1",
+      "id": "observed-data--d2e3f4a5-abcd-ef01-2345-000000000007",
+      "created": "2026-01-25T08:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "name": "C2 Beaconing — 15 Jan 2026",
+      "description": "Network telemetry capturing EclipseRAT DNS-over-HTTPS beaconing from an infected workstation (10.50.23.117) at the Ministry to Cloudflare resolvers. Beacon interval: 300 seconds. 847 DNS queries observed in 72-hour capture window.",
+      "labels": [
+        "network-telemetry",
+        "c2-beaconing"
+      ]
+    },
+    {
+      "type": "tool",
+      "spec_version": "2.1",
+      "id": "tool--a7b8c9d0-bcde-f012-3456-777777777777",
+      "created": "2026-01-22T09:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "name": "Mimikatz",
+      "description": "Open-source credential dumping tool used post-compromise to extract plaintext passwords, NTLM hashes, and Kerberos tickets from Windows LSASS memory. In this operation, a modified version was deployed via PsExec to domain controllers.",
+      "labels": [
+        "credential-theft",
+        "post-exploitation"
+      ]
+    },
+    {
+      "type": "campaign",
+      "spec_version": "2.1",
+      "id": "campaign--b2c3d4e5-6789-abcd-ef01-222222222222",
+      "created": "2026-01-22T09:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "name": "NIGHTFALL Phase 2 — Lateral Expansion",
+      "description": "Second phase of Operation Midnight Eclipse focused on lateral movement across segmented government networks. Utilized credential theft via Mimikatz and RDP pivoting through compromised jump servers. Active between Oct 2025 and Jan 2026.",
+      "labels": [
+        "lateral-movement",
+        "credential-theft",
+        "phase-2"
+      ]
+    },
+    {
+      "type": "tool",
+      "spec_version": "2.1",
+      "id": "tool--b8c9d0e1-cdef-0123-4567-888888888888",
+      "created": "2026-01-22T09:30:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "name": "Cobalt Strike",
+      "description": "Commercial adversary simulation framework abused by the threat actor for C2 and lateral movement. Beacon implants configured with malleable C2 profiles mimicking Microsoft 365 traffic patterns. License confirmed stolen from a compromised security consultancy.",
+      "labels": [
+        "c2-framework",
+        "red-team",
+        "commercial"
+      ]
+    },
+    {
+      "type": "identity",
+      "spec_version": "2.1",
+      "id": "identity--c3d4e5f6-789a-bcde-f012-333333333333",
+      "created": "2026-01-15T08:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "name": "Ministry of Defence — Republic of Exemplia",
+      "description": "Primary victim organization. The Ministry of Defence of the Republic of Exemplia, responsible for national defense policy, military procurement, and allied intelligence coordination.",
+      "labels": [
+        "victim",
+        "government",
+        "defense"
+      ]
+    },
+    {
+      "type": "identity",
+      "spec_version": "2.1",
+      "id": "identity--d4e5f6a7-89ab-cdef-0123-444444444444",
+      "created": "2026-01-18T11:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "name": "NovaTech Defense Systems",
+      "description": "Secondary victim. Major defense contractor supplying advanced radar systems to NATO member states. Compromised through supply-chain access via a shared SharePoint instance with the Ministry.",
+      "labels": [
+        "victim",
+        "defense-contractor",
+        "supply-chain"
+      ]
+    },
+    {
+      "type": "grouping",
+      "spec_version": "2.1",
+      "id": "grouping--b0c1d2e3-89ab-cdef-0123-000000000005",
+      "created": "2026-01-28T10:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "name": "Eclipse IOC Cluster — January 2026",
+      "description": "Grouping of all indicators, infrastructure, and malware samples identified during the January 2026 incident response engagement at the Ministry of Defence.",
+      "labels": [
+        "ioc-cluster",
+        "incident-response"
+      ]
+    },
+    {
+      "type": "report",
+      "spec_version": "2.1",
+      "id": "report--f8a9b0c1-6789-abcd-ef01-000000000003",
+      "created": "2026-02-01T08:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "name": "Midnight Eclipse Threat Intelligence Report — Q1 2",
+      "description": "Comprehensive threat intelligence report covering the Operation Midnight Eclipse campaign, including TTPs, IOCs, victim analysis, attribution to Midnight Typhoon, and recommended mitigations. Classification: TLP:AMBER+STRICT.",
+      "labels": [
+        "threat-report",
+        "tlp-amber",
+        "apt"
+      ]
+    },
+    {
+      "type": "note",
+      "spec_version": "2.1",
+      "id": "note--c1d2e3f4-9abc-def0-1234-000000000006",
+      "created": "2026-02-03T14:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "name": "Analyst Note — Attribution Confidence",
+      "description": "Internal analyst note regarding attribution confidence and intelligence gaps.",
+      "labels": [
+        "analyst-note",
+        "attribution"
+      ]
+    },
+    {
+      "type": "opinion",
+      "spec_version": "2.1",
+      "id": "opinion--e3f4a5b6-bcde-f012-3456-000000000008",
+      "created": "2026-02-07T10:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "name": "Concurrence on Attribution Assessment",
+      "description": "Peer review opinion from allied CERT partner on the Midnight Typhoon attribution assessment.",
+      "labels": [
+        "peer-review",
+        "attribution",
+        "allied"
+      ]
+    },
+    {
+      "type": "course-of-action",
+      "spec_version": "2.1",
+      "id": "course-of-action--c5d6e7f8-3456-789a-bcde-ffffffffffff",
+      "created": "2026-01-16T10:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "name": "Patch PAN-OS to 10.2.9-h1 or Later",
+      "description": "Immediately upgrade all Palo Alto Networks GlobalProtect appliances to PAN-OS version 10.2.9-h1 or later, which contains the fix for CVE-2024-3400. If immediate patching is not possible, apply the vendor-provided mitigation by disabling GlobalProtect device telemetry. Conduct forensic triage of all PAN-OS appliances for signs of exploitation.",
+      "labels": [
+        "patch",
+        "critical",
+        "immediate"
+      ]
+    },
+    {
+      "type": "course-of-action",
+      "spec_version": "2.1",
+      "id": "course-of-action--d6e7f8a9-4567-89ab-cdef-000000000001",
+      "created": "2026-01-20T11:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "name": "Block Eclipse C2 Infrastructure",
+      "description": "Add all identified Eclipse C2 domains, IPs, and JA3 fingerprints to network perimeter deny lists. Configure DNS sinkholing for the identified DGA patterns. Enable TLS inspection for DoH traffic to Cloudflare and Google resolvers to detect tunneled C2.",
+      "labels": [
+        "network",
+        "blocking",
+        "detection"
+      ]
+    },
+    {
+      "type": "x-custom",
+      "spec_version": "2.1",
+      "id": "x-custom--f4a5b6c7-cdef-0123-4567-000000000009",
+      "created": "2026-01-25T09:00:00.000Z",
+      "modified": "2026-02-09T10:00:00.000Z",
+      "name": "Incident Timeline Marker — Initial Compromise Dete",
+      "description": "Custom marker indicating when the SOC first detected anomalous DNS-over-HTTPS traffic patterns from the Ministry network, triggering the incident response engagement. Detection was via a Sigma rule for excessive DoH queries to non-standard resolvers.",
+      "labels": [
+        "timeline",
+        "detection",
+        "soc"
+      ]
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--be99d817-bbb0-4e7e-b9c9-15e03603d727",
+      "created": "2026-02-09T20:11:07.897Z",
+      "modified": "2026-02-09T20:11:07.897Z",
+      "relationship_type": "related-to",
+      "source_ref": "threat-actor--e5f1b5d0-1a2b-4c3d-8e4f-567890abcdef",
+      "target_ref": "intrusion-set--a1b2c3d4-5678-9abc-def0-111111111111",
+      "description": "Co-located in phase IN:reconnaissance"
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--58109c10-7b55-4702-baf1-8b777f32d3bc",
+      "created": "2026-02-09T20:11:07.897Z",
+      "modified": "2026-02-09T20:11:07.897Z",
+      "relationship_type": "related-to",
+      "source_ref": "infrastructure--e1f2a3b4-f012-3456-789a-bbbbbbbbbbbb",
+      "target_ref": "infrastructure--f2a3b4c5-0123-4567-89ab-cccccccccccc",
+      "description": "Co-located in phase IN:resource-development"
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--05c4e42e-dcd7-4f5b-af4a-5f35395dcef8",
+      "created": "2026-02-09T20:11:07.897Z",
+      "modified": "2026-02-09T20:11:07.897Z",
+      "relationship_type": "related-to",
+      "source_ref": "infrastructure--e1f2a3b4-f012-3456-789a-bbbbbbbbbbbb",
+      "target_ref": "location--a9b0c1d2-789a-bcde-f012-000000000004",
+      "description": "Co-located in phase IN:resource-development"
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--4a829bff-75dc-4bbf-8508-d137dbb66c5d",
+      "created": "2026-02-09T20:11:07.897Z",
+      "modified": "2026-02-09T20:11:07.897Z",
+      "relationship_type": "related-to",
+      "source_ref": "infrastructure--f2a3b4c5-0123-4567-89ab-cccccccccccc",
+      "target_ref": "location--a9b0c1d2-789a-bcde-f012-000000000004",
+      "description": "Co-located in phase IN:resource-development"
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--5e523cf2-1604-4191-baad-eb52c01c14db",
+      "created": "2026-02-09T20:11:07.897Z",
+      "modified": "2026-02-09T20:11:07.897Z",
+      "relationship_type": "related-to",
+      "source_ref": "vulnerability--c9d0e1f2-def0-1234-5678-999999999999",
+      "target_ref": "attack-pattern--d0e1f2a3-ef01-2345-6789-aaaaaaaaaaaa",
+      "description": "Co-located in phase IN:exploitation"
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--4a63e6f2-ed69-4b7f-8ae8-1d2f612636e3",
+      "created": "2026-02-09T20:11:07.897Z",
+      "modified": "2026-02-09T20:11:07.897Z",
+      "relationship_type": "related-to",
+      "source_ref": "indicator--a3b4c5d6-1234-5678-9abc-dddddddddddd",
+      "target_ref": "indicator--b4c5d6e7-2345-6789-abcd-eeeeeeeeeeee",
+      "description": "Co-located in phase IN:command-control"
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--c2664438-f0de-48f5-a59d-1611e9a8f3fc",
+      "created": "2026-02-09T20:11:07.897Z",
+      "modified": "2026-02-09T20:11:07.897Z",
+      "relationship_type": "related-to",
+      "source_ref": "indicator--a3b4c5d6-1234-5678-9abc-dddddddddddd",
+      "target_ref": "observed-data--d2e3f4a5-abcd-ef01-2345-000000000007",
+      "description": "Co-located in phase IN:command-control"
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--3f3910df-aeff-4a27-87b5-89d71f44d78e",
+      "created": "2026-02-09T20:11:07.897Z",
+      "modified": "2026-02-09T20:11:07.897Z",
+      "relationship_type": "related-to",
+      "source_ref": "indicator--b4c5d6e7-2345-6789-abcd-eeeeeeeeeeee",
+      "target_ref": "observed-data--d2e3f4a5-abcd-ef01-2345-000000000007",
+      "description": "Co-located in phase IN:command-control"
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--372f2456-dc3e-4d1c-bb82-8f3d6e73b6dc",
+      "created": "2026-02-09T20:11:07.897Z",
+      "modified": "2026-02-09T20:11:07.897Z",
+      "relationship_type": "related-to",
+      "source_ref": "campaign--b2c3d4e5-6789-abcd-ef01-222222222222",
+      "target_ref": "tool--b8c9d0e1-cdef-0123-4567-888888888888",
+      "description": "Co-located in phase THROUGH:lateral-movement"
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--193a0ea7-70f9-4d94-83ef-951b7bc5c2d0",
+      "created": "2026-02-09T20:11:07.897Z",
+      "modified": "2026-02-09T20:11:07.897Z",
+      "relationship_type": "related-to",
+      "source_ref": "identity--c3d4e5f6-789a-bcde-f012-333333333333",
+      "target_ref": "identity--d4e5f6a7-89ab-cdef-0123-444444444444",
+      "description": "Co-located in phase OUT:collection"
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--a66f1c0a-c9a7-4160-8664-2a78ed0cf371",
+      "created": "2026-02-09T20:11:07.897Z",
+      "modified": "2026-02-09T20:11:07.897Z",
+      "relationship_type": "related-to",
+      "source_ref": "report--f8a9b0c1-6789-abcd-ef01-000000000003",
+      "target_ref": "note--c1d2e3f4-9abc-def0-1234-000000000006",
+      "description": "Co-located in phase OUT:impact"
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--57c683c3-1779-443f-9cf4-8797cbbd0c47",
+      "created": "2026-02-09T20:11:07.897Z",
+      "modified": "2026-02-09T20:11:07.897Z",
+      "relationship_type": "related-to",
+      "source_ref": "report--f8a9b0c1-6789-abcd-ef01-000000000003",
+      "target_ref": "opinion--e3f4a5b6-bcde-f012-3456-000000000008",
+      "description": "Co-located in phase OUT:impact"
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--37d61d02-6a4b-42f5-90a5-77dc21ea4525",
+      "created": "2026-02-09T20:11:07.897Z",
+      "modified": "2026-02-09T20:11:07.897Z",
+      "relationship_type": "related-to",
+      "source_ref": "note--c1d2e3f4-9abc-def0-1234-000000000006",
+      "target_ref": "opinion--e3f4a5b6-bcde-f012-3456-000000000008",
+      "description": "Co-located in phase OUT:impact"
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--8d046b11-7726-42be-b614-d7aff29b8207",
+      "created": "2026-02-09T20:11:07.897Z",
+      "modified": "2026-02-09T20:11:07.897Z",
+      "relationship_type": "related-to",
+      "source_ref": "course-of-action--c5d6e7f8-3456-789a-bcde-ffffffffffff",
+      "target_ref": "course-of-action--d6e7f8a9-4567-89ab-cdef-000000000001",
+      "description": "Co-located in phase OUT:objectives"
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--2b06d770-5fc1-460e-8d37-332a6ba99ab9",
+      "created": "2026-02-09T20:11:07.897Z",
+      "modified": "2026-02-09T20:11:07.897Z",
+      "relationship_type": "related-to",
+      "source_ref": "course-of-action--c5d6e7f8-3456-789a-bcde-ffffffffffff",
+      "target_ref": "x-custom--f4a5b6c7-cdef-0123-4567-000000000009",
+      "description": "Co-located in phase OUT:objectives"
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--8feadcf7-a26a-4976-a6e5-b9be3e42db5e",
+      "created": "2026-02-09T20:11:07.897Z",
+      "modified": "2026-02-09T20:11:07.897Z",
+      "relationship_type": "related-to",
+      "source_ref": "course-of-action--d6e7f8a9-4567-89ab-cdef-000000000001",
+      "target_ref": "x-custom--f4a5b6c7-cdef-0123-4567-000000000009",
+      "description": "Co-located in phase OUT:objectives"
+    }
+  ]
+}
