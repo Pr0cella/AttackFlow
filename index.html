@@ -648,6 +648,96 @@
             flex-shrink: 0;
         }
 
+        /* Kill Chain Description */
+        .kc-desc-bar {
+            border-bottom: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+        .kc-desc-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 16px;
+            cursor: pointer;
+            user-select: none;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            width: 100%;
+            text-align: left;
+        }
+        .kc-desc-toggle:hover { color: var(--text-primary); }
+        .kc-desc-toggle .kc-desc-chevron {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            transition: transform 0.2s ease;
+            transform: rotate(-90deg);
+            flex-shrink: 0;
+        }
+        .kc-desc-bar.open .kc-desc-toggle .kc-desc-chevron {
+            transform: rotate(0deg);
+        }
+        .kc-desc-chevron svg {
+            width: 100%;
+            height: 100%;
+            fill: currentColor;
+        }
+        .kc-desc-hint {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            opacity: 0.5;
+            font-style: italic;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 500px;
+        }
+        .kc-desc-bar.open .kc-desc-hint {
+            display: none;
+        }
+        .kc-desc-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+            padding: 0 16px;
+        }
+        .kc-desc-bar.open .kc-desc-body {
+            max-height: 200px;
+            padding: 0 16px 8px;
+        }
+        .kc-desc-textarea {
+            width: 100%;
+            min-height: 60px;
+            max-height: 160px;
+            resize: vertical;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.8rem;
+            line-height: 1.5;
+            padding: 6px 8px;
+            outline: none;
+        }
+        .kc-desc-textarea::placeholder {
+            color: var(--text-secondary);
+            opacity: 0.5;
+            font-style: italic;
+        }
+        .kc-desc-textarea:focus {
+            border-color: var(--accent);
+        }
+        .kc-desc-counter {
+            text-align: right;
+            font-size: 0.6rem;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
         /* Stats Bar */
         .stats-bar {
             display: flex;
@@ -2784,6 +2874,23 @@
                     </div>
                 </div>
 
+                <div class="kc-desc-bar" id="kc-desc-bar">
+                    <button class="kc-desc-toggle" onclick="toggleDescriptionPanel()" aria-label="Toggle description">
+                        <span class="kc-desc-chevron"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><path d="M310 233L118 41c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L226.7 240 72.7 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3z"/></svg></span>
+                        <span>Description</span>
+                        <span class="kc-desc-hint" id="kc-desc-hint"></span>
+                    </button>
+                    <div class="kc-desc-body">
+                        <textarea class="kc-desc-textarea" id="kc-desc-textarea"
+                                  placeholder="Describe this kill chain analysis..."
+                                  maxlength="2000"
+                                  spellcheck="true"
+                                  oninput="updateDescriptionCounter()"
+                                  onblur="commitKillChainDescription(this)"></textarea>
+                        <div class="kc-desc-counter" id="kc-desc-counter"></div>
+                    </div>
+                </div>
+
                 <div class="stats-bar" id="stats-bar"></div>
                 
                 <!-- Score Legend -->
@@ -3927,8 +4034,9 @@
             cweToCapec: {},
             capecToTechnique: {},
             
-            // Kill chain title
+            // Kill chain title & description
             title: '',
+            description: '',
 
             // Assigned entities (by phase)
             assignments: {},
@@ -3979,7 +4087,9 @@
                 state.library.techniques = { ...state._baseTechniques };
             }
             state.title = '';
+            state.description = '';
             syncTitleToDOM();
+            syncDescriptionToDOM();
         }
 
         // Kill-chain title helpers
@@ -3994,6 +4104,52 @@
         function syncTitleToDOM() {
             const el = document.getElementById('kill-chain-title');
             if (el) el.value = state.title || '';
+        }
+
+        // Kill-chain description helpers
+        function commitKillChainDescription(el) {
+            const maxLen = CONFIG.display?.maxKillChainDescLength || 2000;
+            const raw = el.value;
+            const clean = sanitizeForStorage(raw, maxLen);
+            state.description = clean;
+            el.value = clean;
+            updateDescriptionHint();
+            updateDescriptionCounter();
+        }
+
+        function syncDescriptionToDOM() {
+            const el = document.getElementById('kc-desc-textarea');
+            if (el) el.value = state.description || '';
+            updateDescriptionHint();
+            updateDescriptionCounter();
+            // Collapse panel on sync
+            const bar = document.getElementById('kc-desc-bar');
+            if (bar) bar.classList.remove('open');
+        }
+
+        function toggleDescriptionPanel() {
+            const bar = document.getElementById('kc-desc-bar');
+            if (bar) bar.classList.toggle('open');
+        }
+
+        function updateDescriptionHint() {
+            const hint = document.getElementById('kc-desc-hint');
+            if (!hint) return;
+            const desc = state.description || '';
+            if (desc) {
+                const preview = desc.length > 80 ? desc.substring(0, 80) + '\u2026' : desc;
+                hint.textContent = '\u2014 ' + preview;
+            } else {
+                hint.textContent = '\u2014 none';
+            }
+        }
+
+        function updateDescriptionCounter() {
+            const el = document.getElementById('kc-desc-counter');
+            const ta = document.getElementById('kc-desc-textarea');
+            if (!el || !ta) return;
+            const maxLen = CONFIG.display?.maxKillChainDescLength || 2000;
+            el.textContent = ta.value.length + ' / ' + maxLen;
         }
 
         // ============================================================
@@ -6156,6 +6312,7 @@
                 schema: 'killchain-export-lite',
                 exportedAt: new Date().toISOString(),
                 title: state.title || '',
+                description: state.description || '',
                 view: state.view,
                 activeTab: state.activeTab,
                 filters: state.filters,
@@ -6688,6 +6845,11 @@
                 sanitized.title = sanitizeImportedString(data.title, CONFIG.display?.maxTitleLength || 200);
             }
 
+            // Sanitize optional description
+            if (typeof data.description === 'string') {
+                sanitized.description = sanitizeImportedString(data.description, CONFIG.display?.maxKillChainDescLength || 2000);
+            }
+
             // Sanitize custom library
             if (data.customLibrary && typeof data.customLibrary === 'object') {
                 sanitized.customLibrary = {};
@@ -6803,7 +6965,11 @@
                     if (typeof sanitized.title === 'string') {
                         state.title = sanitizeForStorage(sanitized.title, CONFIG.display?.maxTitleLength || 200);
                     }
+                    if (typeof sanitized.description === 'string') {
+                        state.description = sanitizeForStorage(sanitized.description, CONFIG.display?.maxKillChainDescLength || 2000);
+                    }
                     syncTitleToDOM();
+                    syncDescriptionToDOM();
                     if (sanitized.layers) state.layers = sanitized.layers;
                     if (sanitized.hideEmpty !== undefined) state.hideEmpty = sanitized.hideEmpty;
                     if (sanitized.activeTab) state.activeTab = sanitized.activeTab;
@@ -7404,6 +7570,7 @@
             filterEntities('custom');
             renderKillChain();
             syncTitleToDOM();
+            syncDescriptionToDOM();
         }
 
         // ============================================================
