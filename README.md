@@ -181,3 +181,21 @@ python3 scripts/extract-data.py      # Parse CAPEC/CWE
 ## License
 
 Apache License 2.0 — See [LICENSE](LICENSE) for details.
+
+
+---
+
+## Third-Party Notices
+
+AttackFlow uses data and references from the following third-party sources:
+
+- MITRE ATT&CK: https://attack.mitre.org/
+- CAPEC: https://capec.mitre.org/
+- CWE: https://cwe.mitre.org/
+- STIX 2.1: https://oasis-open.github.io/cti-documentation/
+- Unified Kill Chain: https://www.unifiedkillchain.com/
+
+MITRE and ATT&CK are trademarks of The MITRE Corporation. This project is not
+affiliated with or endorsed by MITRE. CAPEC and CWE are maintained by MITRE.
+Use of these frameworks is subject to the applicable terms and usage guidelines
+published by their respective owners.
