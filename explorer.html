@@ -560,6 +560,18 @@
             return escapeHtml(str).replace(/'/g, '&#39;');
         }
 
+        function isSafeHttpUrl(url) {
+            if (typeof url !== 'string') return false;
+            const trimmed = url.trim();
+            if (!trimmed) return false;
+            try {
+                const parsed = new URL(trimmed);
+                return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+            } catch (e) {
+                return false;
+            }
+        }
+
         // Replace ATT&CK markdown links with clickable technique-ID badges.
         // Runs on already-escaped text.  All captured labels are treated as
         // UNTRUSTED and escaped via escapeAttr() before attribute insertion.
@@ -997,7 +1009,7 @@
 
             const extraRefs = Array.isArray(entity?.references) ? entity.references : [];
             extraRefs.slice(0, 6).forEach(ref => {
-                if (ref?.url) {
+                if (ref?.url && isSafeHttpUrl(ref.url)) {
                     urls.push({ label: ref.name || ref.url, url: ref.url });
                 }
             });
@@ -1008,6 +1020,7 @@
                 linkList.appendChild(empty);
             } else {
                 urls.forEach(item => {
+                    if (!isSafeHttpUrl(item.url)) return;
                     const link = document.createElement('p');
                     const a = document.createElement('a');
                     a.href = item.url;
