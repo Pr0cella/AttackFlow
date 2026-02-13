@@ -542,12 +542,21 @@
             return String(text || '').toLowerCase();
         }
 
+        // Prefer InputSecurity from parent frame (when iframed in index.html),
+        // fall back to local implementation when running standalone.
+        // See FINDINGS.md KCE-SEC-011 — keep in sync with InputSecurity.escapeHtml().
+        const _parentSec = (function () {
+            try { return window.parent?.InputSecurity; } catch (e) { return null; }
+        })();
+
         function escapeHtml(str) {
+            if (_parentSec) return _parentSec.escapeHtml(str);
             if (str === null || str === undefined) return '';
             return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
         }
 
         function escapeAttr(str) {
+            if (_parentSec) return _parentSec.sanitizeAttr(str);
             return escapeHtml(str).replace(/'/g, '&#39;');
         }
 
