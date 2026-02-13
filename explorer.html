@@ -246,6 +246,24 @@
         .badge.cwe { color: var(--cwe); }
         .badge.mitigation { color: var(--mitigation); }
 
+        /* Technique cross-reference badges in descriptions */
+        .technique-xref-badge {
+            display: inline;
+            font-family: monospace;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--attack);
+            background: color-mix(in srgb, var(--attack) 12%, transparent);
+            border: 1px solid color-mix(in srgb, var(--attack) 30%, transparent);
+            border-radius: 3px;
+            padding: 1px 5px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .technique-xref-badge:hover {
+            background: color-mix(in srgb, var(--attack) 25%, transparent);
+        }
+
         .graph {
             display: grid;
             grid-template-columns: repeat(3, minmax(180px, 1fr));
@@ -522,6 +540,32 @@
 
         function normalize(text) {
             return String(text || '').toLowerCase();
+        }
+
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        function escapeAttr(str) {
+            return escapeHtml(str).replace(/'/g, '&#39;');
+        }
+
+        // Replace ATT&CK markdown links with clickable technique-ID badges.
+        // Runs on already-escaped text.  All captured labels are treated as
+        // UNTRUSTED and escaped via escapeAttr() before attribute insertion.
+        // Clicking a badge calls selectEntity() to navigate in-place.
+        function renderDescriptionWithBadges(escapedText) {
+            return escapedText.replace(
+                /\[([^\]]{1,80})\]\(https?:\/\/attack\.mitre\.org\/techniques\/(T\d{4}(?:\/\d{3})?)\)/g,
+                (match, label, rawId) => {
+                    const id = rawId.replace('/', '.');
+                    const safeTitle = escapeAttr(label);
+                    return `<span class="technique-xref-badge" `
+                         + `onclick="selectEntity('attack', '${id}')" `
+                         + `title="${safeTitle}">${id}</span>`;
+                }
+            );
         }
 
         function unique(arr) {
@@ -915,7 +959,7 @@
             const descTitle = document.createElement('h4');
             descTitle.textContent = 'Description';
             const descText = document.createElement('p');
-            descText.textContent = entity?.description || 'No description available.';
+            descText.innerHTML = renderDescriptionWithBadges(escapeHtml(entity?.description || 'No description available.'));
             desc.appendChild(descTitle);
             desc.appendChild(descText);
             details.appendChild(desc);

@@ -4,6 +4,8 @@
 ## [2.7.0] - 2026-02-09
 
 ### Added
+- **Technique Cross-Reference Badges**: Markdown-style links to other ATT&CK techniques in entity descriptions (543 occurrences) are now rendered as styled inline ID badges. Clicking a badge opens the integrated Relationship Explorer for that technique. Applies to both description and detection sections.
+
 - **Kill Chain Description**: Collapsible description textarea between the title bar and statistics bar. Collapsed by default with a subtle preview hint (truncated text or "none"). Smooth CSS transition with chevron SVG toggle. Supports up to 2,000 characters (configurable via `CONFIG.display.maxKillChainDescLength`). Included in JSON import/export — missing `description` field defaults to empty string for backward compatibility.
 - **Clear Confirmation**: `clearAssignments()` now shows a `confirm()` dialog before wiping all assignments.
 - **Collapsible Descriptions**: ATT&CK, CAPEC, and CWE entity descriptions in the detail modal are now wrapped in `<details>/<summary>` elements, collapsed by default. ATT&CK detection guidance is also collapsible.

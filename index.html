@@ -2449,6 +2449,24 @@
         .detail-list-item .id.capec { color: var(--capec-color); }
         .detail-list-item .id.cwe { color: var(--cwe-color); }
 
+        /* Technique cross-reference badges (KCE-SEC-010 compliant) */
+        .technique-xref-badge {
+            display: inline;
+            font-family: var(--mono, monospace);
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--attack-color);
+            background: color-mix(in srgb, var(--attack-color) 12%, transparent);
+            border: 1px solid color-mix(in srgb, var(--attack-color) 30%, transparent);
+            border-radius: 3px;
+            padding: 1px 5px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .technique-xref-badge:hover {
+            background: color-mix(in srgb, var(--attack-color) 25%, transparent);
+        }
+
         /* Legend */
         .legend {
             display: flex;
@@ -5339,6 +5357,26 @@
         // ============================================================
         // SELECTION & DETAIL
         // ============================================================
+
+        // Replace ATT&CK markdown links in descriptions with clickable
+        // technique-ID badges that open the integrated Explorer view.
+        // Runs on already-escaped text (after esc()).  All regex captures
+        // are treated as UNTRUSTED — the label is escaped with escAttr()
+        // before any attribute insertion to prevent attribute-breakout XSS.
+        // See FINDINGS.md KCE-SEC-010, TASKS.md Task 23.
+        function renderDescriptionWithBadges(escapedText) {
+            return escapedText.replace(
+                /\[([^\]]{1,80})\]\(https?:\/\/attack\.mitre\.org\/techniques\/(T\d{4}(?:\/\d{3})?)\)/g,
+                (match, label, rawId) => {
+                    const id = rawId.replace('/', '.');
+                    const safeTitle = escAttr(label);
+                    return `<span class="technique-xref-badge" `
+                         + `onclick="openEntityExplorer('attack', '${id}')" `
+                         + `title="${safeTitle}">${id}</span>`;
+                }
+            );
+        }
+
         function selectEntity(type, id) {
             state.selection = { type, id };
             
@@ -5388,7 +5426,7 @@
                         <h4>Description</h4>
                         <details>
                             <summary>Show / hide description</summary>
-                            <p>${esc(entity?.description || 'No description available.')}</p>
+                            <p>${renderDescriptionWithBadges(esc(entity?.description || 'No description available.'))}</p>
                         </details>
                     </div>
                     <div class="detail-section">
@@ -5406,7 +5444,7 @@
                         <h4>Detection</h4>
                         <details>
                             <summary>Show / hide detection guidance</summary>
-                            <p style="font-size: 0.75rem;">${esc(entity.detection)}</p>
+                            <p style="font-size: 0.75rem;">${renderDescriptionWithBadges(esc(entity.detection))}</p>
                         </details>
                     </div>
                     ` : ''}
