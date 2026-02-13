@@ -1,6 +1,11 @@
 # Changelog
 ---
 
+## [2.7.1] - 2026-02-14
+
+### Fixed
+- **Reference link hardening (ATT&CK detail panel & Relationship Explorer)**: attribute-safe escaping and strict `http`/`https` validation for reference URLs.
+
 ## [2.7.0] - 2026-02-09
 
 ### Added
