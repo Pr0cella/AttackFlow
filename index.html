@@ -5387,6 +5387,18 @@
             showDetail(type, id);
         }
 
+        function isSafeHttpUrl(url) {
+            if (typeof url !== 'string') return false;
+            const trimmed = url.trim();
+            if (!trimmed) return false;
+            try {
+                const parsed = new URL(trimmed);
+                return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+            } catch (e) {
+                return false;
+            }
+        }
+
         function buildEntityDetail(type, id) {
             let entity, html = '', name = 'Unknown';
 
@@ -5410,11 +5422,11 @@
 
                 const refs = entity?.references || [];
                 const refsHtml = refs.slice(0, 3).map(r => {
-                    const url = r.url || '';
-                    const isSafeUrl = /^https?:\/\//i.test(url);
+                    const url = r?.url || '';
+                    const isSafeUrl = isSafeHttpUrl(url);
                     return isSafeUrl ? `
                     <div class="detail-list-item">
-                        <a href="${esc(url)}" target="_blank" rel="noopener noreferrer" style="color: var(--text-secondary); text-decoration: none;">
+                        <a href="${escAttr(url)}" target="_blank" rel="noopener noreferrer" style="color: var(--text-secondary); text-decoration: none;">
                             ${esc(r.name)} →
                         </a>
                     </div>
