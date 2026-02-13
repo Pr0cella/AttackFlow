@@ -199,3 +199,6 @@ MITRE and ATT&CK are trademarks of The MITRE Corporation. This project is not
 affiliated with or endorsed by MITRE. CAPEC and CWE are maintained by MITRE.
 Use of these frameworks is subject to the applicable terms and usage guidelines
 published by their respective owners.
+
+AttackFlow is not affiliated with or endorsed by the Center for Threat-Informed
+Defense (CTID) or the CTID "Attack Flow" project.

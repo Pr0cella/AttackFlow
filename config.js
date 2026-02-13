@@ -184,7 +184,8 @@ const CONFIG = {
         maxTitleLength: 200,     // Max kill chain title length
         maxCustomLabels: 20,     // Max labels per custom STIX item
         maxLabelLength: 50,      // Max chars per label
-        maxCustomDescLength: 2000 // Max description length for custom items
+        maxCustomDescLength: 2000, // Max description length for custom items
+        maxKillChainDescLength: 2000 // Max kill chain description length
     },
 
     // Navigation behavior

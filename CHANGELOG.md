@@ -4,6 +4,10 @@
 ## [2.7.0] - 2026-02-09
 
 ### Added
+- **Kill Chain Description**: Collapsible description textarea between the title bar and statistics bar. Collapsed by default with a subtle preview hint (truncated text or "none"). Smooth CSS transition with chevron SVG toggle. Supports up to 2,000 characters (configurable via `CONFIG.display.maxKillChainDescLength`). Included in JSON import/export — missing `description` field defaults to empty string for backward compatibility.
+- **Clear Confirmation**: `clearAssignments()` now shows a `confirm()` dialog before wiping all assignments.
+- **Collapsible Descriptions**: ATT&CK, CAPEC, and CWE entity descriptions in the detail modal are now wrapped in `<details>/<summary>` elements, collapsed by default. ATT&CK detection guidance is also collapsible.
+- **Metadata at Top**: For ATT&CK/CAPEC/CWE entities, the metadata summary (score, confidence, phase, CVEs, comments, hyperlinks, observables) now appears above the entity detail in the modal dialog.
 - **STIX Bundle Import**: New "Import STIX Bundle" button in the STIX sidebar tab — parse any STIX 2.1 bundle JSON and extract all supported SDOs into the STIX item library.
   - Supports all 18 SDO types plus `x-custom`: attack-pattern, campaign, course-of-action, grouping, identity, indicator, infrastructure, intrusion-set, location, malware, malware-analysis, note, observed-data, opinion, report, threat-actor, tool, vulnerability.
   - Relationships, sightings, and marking-definitions are silently skipped.

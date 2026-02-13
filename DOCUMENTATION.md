@@ -134,7 +134,7 @@ Top-level configuration constant. Properties:
 | `themes` | `{dark: {default: ...}, light: {default: ...}}` | Theme presets with ui + metaIcons overrides |
 | `themeDefaults` | `{mode, scheme}` | Default theme mode (`'light'`) and scheme (`'default'`) |
 | `themeMode` | `string` | Initial mode: `'light'`, `'dark'`, or `'auto'` |
-| `display` | `object` | Max lengths for names, descriptions, mitigations, references, custom items |
+| `display` | `object` | Max lengths for names, descriptions, mitigations, references, custom items, kill chain description |
 | `navigation` | `{confirmOnLeave}` | Whether to show leave-site confirmation |
 
 #### `CONFIG.stixTypes`
@@ -521,6 +521,7 @@ Synchronizes `phaseData.layout` with the actual items and groups. Adds missing l
 | `capecToTechnique` | `object` | `{}` | `CAPEC-123 → ['T1234', ...]` mapping |
 | `assignments` | `object` | `{}` | Phase → PhaseData mapping (18 phases) |
 | `title` | `string` | `''` | Editable kill chain title (max 200 chars) |
+| `description` | `string` | `''` | Editable kill chain description (max 2000 chars, configurable) |
 | `selection` | `object` | `{type:null, id:null}` | Currently selected entity |
 
 `state.library.custom` stores STIX objects keyed by their STIX ID (e.g. `malware--uuid`). Each value is a `StixLibraryEntry`.
@@ -546,7 +547,7 @@ Converts `'social-engineering'` → `'Social Engineering'`.
 
 #### `initAssignments() → void`
 
-Initializes `state.assignments` with empty `PhaseData` for each of the 18 phases. Each phase gets `{ techniques: [], capecs: [], cwes: [], customItems: [], groups: [], layout: [] }`. Also resets `state.title` to `''` and syncs the DOM.
+Initializes `state.assignments` with empty `PhaseData` for each of the 18 phases. Each phase gets `{ techniques: [], capecs: [], cwes: [], customItems: [], groups: [], layout: [] }`. Also resets `state.title` and `state.description` to `''` and syncs the DOM.
 
 #### `commitKillChainTitle(el) → void`
 
@@ -555,6 +556,26 @@ Sanitizes the title input value via `sanitizeForStorage()`, caps at `CONFIG.disp
 #### `syncTitleToDOM() → void`
 
 Sets the `#kill-chain-title` input's value from `state.title`.
+
+#### `commitKillChainDescription(el) → void`
+
+Sanitizes the description textarea value via `sanitizeForStorage()`, caps at `CONFIG.display.maxKillChainDescLength` (default 2000), stores in `state.description`, and updates the hint + counter.
+
+#### `syncDescriptionToDOM() → void`
+
+Sets the `#kc-desc-textarea` value from `state.description`, updates the collapsed hint text and character counter, and collapses the panel.
+
+#### `toggleDescriptionPanel() → void`
+
+Toggles the `.open` class on `#kc-desc-bar`, triggering the CSS `max-height` transition.
+
+#### `updateDescriptionHint() → void`
+
+Updates the `#kc-desc-hint` element with a truncated preview (first 80 chars + ellipsis) or "— none" when empty. Only visible when the panel is collapsed.
+
+#### `updateDescriptionCounter() → void`
+
+Updates the `#kc-desc-counter` element with `{current} / {max}` character count.
 
 ---
 
@@ -1306,6 +1327,7 @@ Spec-defined fields are dynamic — the set depends on `stixType` and is determi
   schema: 'killchain-export-lite',
   exportedAt: '2026-02-09T12:00:00.000Z',
   title: 'APT29 Analysis',
+  description: 'Analysis of APT29 intrusion...',  // Optional, defaults to ''
   view: 'killchain',
   activeTab: 'attack',
   filters: { attack: 'all', capec: 'all', cwe: 'all', custom: 'all' },
@@ -1434,6 +1456,8 @@ This table maps the current monolithic code to the planned 5-module structure de
 | `closeStixEditor` | STIX Editor Modal | ~4920 |
 | `closeUsageGuide` | Modals | ~5715 |
 | `collapseAll` | Utilities | ~4776 |
+| `commitKillChainDescription` | State | ~4100 |
+| `commitKillChainTitle` | State | ~3985 |
 | `commitRenameGroup` | Group Management | ~3155 |
 | `createAssignmentInstanceId` | Metadata Helpers | ~3001 |
 | `createCustomItem` | STIX Item Management | ~4670 |
@@ -1536,7 +1560,10 @@ This table maps the current monolithic code to the planned 5-module structure de
 | `showToast` | Toast | ~5748 |
 | `showUsageGuide` | Modals | ~5710 |
 | `startRenameGroup` | Group Management | ~3145 |
+| `syncDescriptionToDOM` | State | ~4110 |
+| `syncTitleToDOM` | State | ~3995 |
 | `toggleCustomTypeName` | STIX Item Management | ~4625 |
+| `toggleDescriptionPanel` | State | ~4128 |
 | `toggleDropdown` | Dropdown Utils | ~5395 |
 | `toggleLayer` | Layer Toggle | ~3660 |
 | `togglePhase` | Kill Chain Rendering | ~4500 |
@@ -1557,6 +1584,8 @@ This table maps the current monolithic code to the planned 5-module structure de
 | `updateAssignmentMetadata` | Assignment Logic | 3240 |
 | `updateCompactControls` | Compact Mode | 3680 |
 | `updateConfidenceLabel` | Metadata Editor | 5450 |
+| `updateDescriptionCounter` | State | ~4148 |
+| `updateDescriptionHint` | State | ~4135 |
 | `updateHideEmptyControl` | Compact Mode | 3670 |
 | `updateThemeControls` | Theme Runtime | 3588 |
 | `validateKillChainImport` | Import | 4880 |
