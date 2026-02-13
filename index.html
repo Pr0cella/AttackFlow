@@ -3312,16 +3312,20 @@
             // Normalize input: remove control chars, strip script tags, trim, limit length
             normalize(str, maxLength = 1000) {
                 if (str === null || str === undefined) return '';
+                // NOTE: Do NOT add .trim() here — normalize() is called on every
+                // keystroke by the live input sanitizer.  Trimming here strips
+                // trailing spaces as the user types, making it impossible to
+                // enter spaces between words.  Trim at commit/storage time only
+                // (see sanitize() and sanitizeForStorage()).  KCE-SEC-010.
                 return String(str)
                     .replace(/[\x00-\x1F\x7F]/g, '')  // Remove control chars
                     .replace(/<script[^>]*>.*?<\/script>/gi, '')  // Remove script tags
-                    .trim()
                     .slice(0, maxLength);
             },
             
             // Sanitize: remove control chars, strip disallowed chars, trim, limit length, encode entities
             sanitize(str, maxLength = 1000) {
-                let value = this.normalize(str, maxLength);
+                let value = this.normalize(str, maxLength).trim();
                 // Remove disallowed bracket/quote/semicolon characters and SQL comment markers
                 value = value.replace(/[\[\]\{\};"'`]/g, '');
                 value = value.replace(/--+/g, '');
@@ -3420,7 +3424,7 @@
         }
 
         function sanitizeForStorage(text, maxLength = 1000) {
-            let value = InputSecurity.normalize(text, maxLength);
+            let value = InputSecurity.normalize(text, maxLength).trim();
             value = value.replace(/[\[\]\{\};"'`]/g, '');
             value = value.replace(/--+/g, '');
             return value;
@@ -3519,13 +3523,6 @@
             document.addEventListener('input', (e) => {
                 const target = e.target;
                 if (!isTextInputElement(target)) return;
-                // Skip live sanitization for the title input — trimming on every
-                // keystroke prevents trailing spaces.  Full sanitization happens
-                // on blur in commitKillChainTitle().
-                if (target.id === 'kill-chain-title') return;
-                // Skip live sanitization for modal inputs — .trim() in normalize()
-                // strips trailing spaces while typing.  Sanitization happens on submit.
-                if (target.closest('.create-custom-modal') || target.closest('.edit-stix-modal')) return;
                 const value = target.value || '';
                 const sanitized = sanitizeUserInputText(value);
                 if (sanitized !== value) {
