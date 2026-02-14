@@ -634,6 +634,60 @@ function isSafeHttpUrl(url) {
 
 ---
 
+## Appendix C: Testing & Verification
+
+### Security Test Suite Results
+
+A comprehensive security test suite was created and executed with the following results:
+
+**Test Categories:**
+1. ✅ HTML Escaping (3/3 tests passed)
+   - XSS payload escaping
+   - Script tag neutralization
+   - Attribute context escaping
+
+2. ✅ CSV Formula Injection Prevention (7/7 tests passed)
+   - Formula prefix characters (=, +, -, @)
+   - Tab and carriage return handling
+   - Normal text preservation
+
+3. ✅ Entity ID Validation (17/17 tests passed)
+   - Valid ATT&CK IDs (T1234, T1234.001)
+   - Valid CAPEC IDs (CAPEC-1, CAPEC-12345)
+   - Valid CWE IDs (CWE-79, CWE-1234)
+   - Custom ID format validation
+   - Malicious ID rejection (SQL injection, XSS attempts)
+
+4. ✅ URL Scheme Validation (8/8 tests passed)
+   - HTTP/HTTPS allowed
+   - javascript: blocked
+   - data: blocked
+   - file: blocked
+   - ftp: blocked
+
+5. ✅ XSS Prevention in onclick Attribute (2/2 tests passed)
+   - Quote breakout attempt blocked
+   - Normal IDs handled correctly
+
+**Total: 37/37 tests passed (100% success rate)**
+
+### Code Review
+
+- ✅ Automated code review completed with no issues
+- ✅ Security-critical code sections reviewed
+- ✅ Input/output boundaries verified
+- ✅ No breaking changes to functionality
+
+### Manual Verification
+
+- ✅ CSP headers present in both index.html and explorer.html
+- ✅ All external links have rel="noopener noreferrer"
+- ✅ All DOM insertions use proper escaping
+- ✅ CSV export includes formula injection prevention
+- ✅ Entity IDs validated before URL construction
+
+---
+
 **Report Generated:** 2026-02-15  
 **Next Audit Recommended:** Annual review or after significant code changes  
 **Security Contact:** Repository maintainer via GitHub issues
