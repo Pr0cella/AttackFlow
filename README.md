@@ -5,6 +5,7 @@ An editor for creating enriched Cyber Kill Chain assessments by mapping MITRE AT
 ### Work in progress 
 
 ![Version](https://img.shields.io/badge/version-2.8.0-blue)
+[![MITRE ATT&CK® 18](https://img.shields.io/badge/MITRE%20ATT%26CK®-v18-red)](https://attack.mitre.org/versions/v18/)
 ![License](https://img.shields.io/badge/license-Apache%202.0-green)
 ![Dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)
 
