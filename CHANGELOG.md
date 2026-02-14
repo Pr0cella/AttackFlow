@@ -8,6 +8,7 @@
 - **Technique & Mitigation STIX Export**: STIX bundle export now includes assigned ATT&CK techniques as `attack-pattern` SDOs with deterministic UUIDv5 IDs, `external_references` (MITRE source), and `kill_chain_phases` (UKC phase mapping). Mitigations from assigned techniques are emitted as `course-of-action` SDOs with `mitigates` relationship SROs linking to the correct `attack-pattern`. Techniques assigned to multiple phases aggregate all phases. Export now works with any assigned techniques, not just custom STIX objects.
 - **Clear STIX Data**: New "Clear STIX Data" button in the STIX sidebar tab removes all STIX items from the library and from all kill chain phase assignments, with a confirmation prompt showing the item count.
 - **Auto-Clear STIX on Import**: Two config flags in `CONFIG.imports` control whether existing STIX data is automatically cleared before importing: `clearStixOnBundleImport` (before STIX bundle import) and `clearStixOnKillChainImport` (before kill chain import). Both default to `false`.
+- **Collapsible Inline Comments & Descriptions**: Phase item cards in the kill chain now show a collapsible text area below the entity name (non-compact mode only). ATT&CK/CAPEC/CWE cards display metadata comments; STIX/custom cards display the item description. Chevron SVG toggle with smooth CSS height transition. Area is vertically resizable. Global "Comments" toolbar button toggles all collapsibles at once. Hidden automatically in compact mode.
 
 ## [2.7.1] - 2026-02-14
 
