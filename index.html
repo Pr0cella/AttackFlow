@@ -7192,6 +7192,39 @@
                 }
                 rows.push(row);
             }
+
+            // Add Mitigation rows (derived from assigned techniques)
+            const allMitigations = new Map(); // M-id → { name, phases: Set, techniqueIds: Set }
+            for (const [phaseKey, phase] of Object.entries(state.assignments)) {
+                const techs = getAllPhaseItemsByType(phase, 'attack');
+                for (const t of techs) {
+                    const techId = getAssignmentId(t);
+                    const entity = state.library.techniques[techId];
+                    if (!entity?.mitigations) continue;
+                    for (const m of entity.mitigations) {
+                        if (!allMitigations.has(m.id)) {
+                            allMitigations.set(m.id, { name: m.name, phases: new Set(), techniqueIds: new Set() });
+                        }
+                        allMitigations.get(m.id).phases.add(phaseKey);
+                        allMitigations.get(m.id).techniqueIds.add(techId);
+                    }
+                }
+            }
+            for (const [mitId, data] of allMitigations) {
+                const row = [
+                    'Mitigation',
+                    mitId,
+                    data.name,
+                    '',
+                    '',
+                    '',
+                    'Mitigates: ' + [...data.techniqueIds].sort().join(', ')
+                ];
+                for (const phaseKey of ALL_PHASES) {
+                    row.push(data.phases.has(phaseKey) ? 'X' : '');
+                }
+                rows.push(row);
+            }
             
             // Convert to CSV string
             // KCE-SEC-004: Prefix cells starting with formula characters to prevent injection

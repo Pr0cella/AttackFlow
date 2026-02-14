@@ -1,6 +1,11 @@
 # Changelog
 ---
 
+## [2.8.0] - 2026-02-14
+
+### Added
+- **Mitigation CSV Export**: Mitigations linked to assigned ATT&CK techniques now appear as separate rows in CSV exports with `Type: "Mitigation"`. Phase coverage is inherited from linked techniques. Comments column lists the technique IDs each mitigation covers for traceability. Mitigations are deduplicated — shared mitigations appear once regardless of how many techniques reference them.
+
 ## [2.7.1] - 2026-02-14
 
 ### Added
