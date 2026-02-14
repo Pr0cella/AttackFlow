@@ -4870,9 +4870,13 @@
 
                     // Auto-clear existing STIX data if configured
                     if (CONFIG.imports?.clearStixOnBundleImport) {
-                        for (const phaseKey of Object.keys(state.assignments)) {
-                            const pd = state.assignments[phaseKey];
-                            if (pd && pd.customItems) pd.customItems = [];
+                        for (const [phaseKey, pd] of Object.entries(state.assignments)) {
+                            if (!pd) continue;
+                            if (pd.customItems) pd.customItems = [];
+                            for (const group of pd.groups || []) {
+                                group.items = (group.items || []).filter(item => item.type !== 'custom');
+                            }
+                            ensurePhaseLayout(phaseKey, pd);
                         }
                         state.library.custom = {};
                     }
@@ -4942,6 +4946,7 @@
 
                     switchTab('custom');
                     filterEntities('custom');
+                    if (CONFIG.imports?.clearStixOnBundleImport) renderAll();
                     showToast(msg);
                 } catch (err) {
                     showToast('STIX import failed: ' + InputSecurity.escapeHtml(err.message));
@@ -4959,10 +4964,14 @@
             }
             if (!confirm(`Clear all ${count} STIX item${count !== 1 ? 's' : ''} from the library and remove them from all kill chain phases?`)) return;
 
-            // Remove custom items from all phase assignments
-            for (const phaseKey of Object.keys(state.assignments)) {
-                const pd = state.assignments[phaseKey];
-                if (pd && pd.customItems) pd.customItems = [];
+            // Remove custom items from all phase assignments (ungrouped + grouped)
+            for (const [phaseKey, pd] of Object.entries(state.assignments)) {
+                if (!pd) continue;
+                if (pd.customItems) pd.customItems = [];
+                for (const group of pd.groups || []) {
+                    group.items = (group.items || []).filter(item => item.type !== 'custom');
+                }
+                ensurePhaseLayout(phaseKey, pd);
             }
 
             // Clear the library
