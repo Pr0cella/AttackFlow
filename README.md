@@ -4,7 +4,7 @@ An editor for creating enriched Cyber Kill Chain assessments by mapping MITRE AT
 
 ### Work in progress 
 
-![Version](https://img.shields.io/badge/version-2.7.1-blue)
+![Version](https://img.shields.io/badge/version-2.8.0-blue)
 ![License](https://img.shields.io/badge/license-Apache%202.0-green)
 ![Dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)
 
@@ -20,18 +20,22 @@ An editor for creating enriched Cyber Kill Chain assessments by mapping MITRE AT
 - **STIX 2.1 Objects** — Create and manage all 18 SDO types plus custom objects
 - **STIX Bundle Import** — Import any STIX 2.1 bundle JSON to extract SDOs with full property preservation
 - **STIX Editor** — Edit all spec-defined fields per SDO type with vocabulary dropdowns
+- **STIX Bundle Export** — Export assigned techniques as `attack-pattern` SDOs with mitigations as `course-of-action` SDOs and `mitigates` SROs, using deterministic UUIDv5 IDs
+- **Clear STIX Data** — One-click removal of all STIX items, with configurable auto-clear on bundle or kill chain import
 - **Drag & Drop** — Intuitive assignment of entities to phases
 - **Grouping** — Organize items into collapsible groups within phases
 - **Duplicates** — Allow multiple instances of the same entity
 - **Rich Metadata** — Comments, hyperlinks, observables, multi-CVE/CVSS references
 - **Score & Confidence** — Rate items by severity and assessment confidence
 - **Visual Indicators** — Color-coded ribbons, CVE badges, and metadata icons
+- **Technique Cross-References** — Inline clickable technique ID badges in descriptions link to the Relationship Explorer
+- **Kill Chain Description** — Collapsible description field for documenting the overall assessment
 - **Light/Dark Theme** — Toggle theme with shared settings across views
 - **Compact Mode** — Dense ID-only tags to fit large kill chains
 - **Relationship Explorer** — Browse ATT&CK ↔ CAPEC ↔ CWE ↔ Mitigations in a dedicated view
 - **Hide Empty Phases** — Focus on active phases by hiding empty ones
 - **Collapsible Sidebar** — Toggle the left sidebar for more workspace
-- **Import/Export** — Lightweight JSON sharing, CSV exports, and STIX bundle exports
+- **Import/Export** — JSON sharing, CSV exports (with mitigation rows), and STIX 2.1 bundle exports (with mitigations and relationships)
 - **Navigator Layers** — Import ATT&CK Navigator JSON exports
 - **Offline Operation** — No CDN, no remote requests, no third-party dependencies
 
@@ -69,7 +73,8 @@ The Relationship Explorer is a second main view that lets you investigate ATT&CK
 ```
 ├── index.html                      # Main application
 ├── explorer.html                   # Relationship Explorer view
-├── config.js                       # Centralized configuration (paths, colors, settings)
+├── config.js                       # Centralized configuration 
+│                                    # (paths, colors, imports, settings)
 ├── stix-config.js                  # STIX 2.1 SDO type definitions and vocabularies
 ├── examples/                        # Sample kill chain exports
 │   ├── demo.json                    # Full-metadata demo mapping
@@ -129,6 +134,7 @@ Each assigned item supports:
 ## Data Sources
 
 - [MITRE ATT&CK](https://attack.mitre.org/) — Adversarial tactics and techniques
+- [MITRE ATT&CK Navigator](https://github.com/mitre-attack/attack-navigator)
 - [CAPEC](https://capec.mitre.org/) — Common Attack Pattern Enumeration
 - [CWE](https://cwe.mitre.org/) — Common Weakness Enumeration
 - [STIX 2.1](https://docs.oasis-open.org/cti/stix/v2.1/) — Structured Threat Information Expression
@@ -190,6 +196,7 @@ Apache License 2.0 — See [LICENSE](LICENSE) for details.
 AttackFlow uses data and references from the following third-party sources:
 
 - MITRE ATT&CK: https://attack.mitre.org/
+- MITRE ATT&CK Navigator: https://github.com/mitre-attack/attack-navigator
 - CAPEC: https://capec.mitre.org/
 - CWE: https://cwe.mitre.org/
 - STIX 2.1: https://oasis-open.github.io/cti-documentation/
