@@ -1,0 +1,499 @@
+{
+  "version": "2.7.0",
+  "schema": "killchain-export-lite",
+  "exportedAt": "2026-02-10T11:00:00.000Z",
+  "title": "UC6 — Enterprise AD Compromise: Purple Team Exercise",
+  "description": "Purple team AD compromise exercise showing attempted, detected, and missed techniques with remediation actions and exercise notes.",
+  "view": "killchain",
+  "activeTab": "attack",
+  "layers": {
+    "attack": true,
+    "capec": true,
+    "cwe": true,
+    "custom": true
+  },
+  "hideEmpty": true,
+  "customLibrary": {
+    "course-of-action--b2faa507-7990-4c05-a4c5-c04f00f08c01": {
+      "id": "course-of-action--b2faa507-7990-4c05-a4c5-c04f00f08c01",
+      "stixType": "course-of-action",
+      "name": "Phishing-Resistant MFA Enforcement",
+      "description": "Deploy FIDO2/WebAuthn across all privileged accounts. Eliminates credential theft via Evilginx2 AITM proxy. Current gap: 40% of admin accounts still use TOTP-based MFA.",
+      "labels": [
+        "mitigation",
+        "identity",
+        "mfa"
+      ],
+      "created": "2026-02-10T11:00:00.000Z",
+      "modified": "2026-02-10T11:00:00.000Z"
+    },
+    "course-of-action--249fe544-a4a7-41f3-b4aa-160d42b133d1": {
+      "id": "course-of-action--249fe544-a4a7-41f3-b4aa-160d42b133d1",
+      "stixType": "course-of-action",
+      "name": "EDR Signature Tuning — LSASS Access",
+      "description": "Tune CrowdStrike policy to alert on all LSASS memory access patterns including indirect syscalls and API unhooking. Current policy missed Nanodump due to ntdll.dll unhooking evasion.",
+      "labels": [
+        "mitigation",
+        "edr",
+        "credential-access"
+      ],
+      "created": "2026-02-10T11:00:00.000Z",
+      "modified": "2026-02-10T11:00:00.000Z"
+    },
+    "course-of-action--80e9122f-5303-4eca-887b-c89f6bff1908": {
+      "id": "course-of-action--80e9122f-5303-4eca-887b-c89f6bff1908",
+      "stixType": "course-of-action",
+      "name": "Kerberos Hardening — AES-Only + PAC Validation",
+      "description": "Disable RC4-HMAC for Kerberos. Enable PAC validation on all DCs. Deploy AES256-only policy for service accounts. This prevents Kerberoasting with crackable cipher suites.",
+      "labels": [
+        "mitigation",
+        "kerberos",
+        "ad-hardening"
+      ],
+      "created": "2026-02-10T11:00:00.000Z",
+      "modified": "2026-02-10T11:00:00.000Z"
+    },
+    "tool--ed59203b-f465-4d16-845b-390f3dc9256f": {
+      "id": "tool--ed59203b-f465-4d16-845b-390f3dc9256f",
+      "stixType": "tool",
+      "name": "Evilginx2",
+      "description": "Adversary-in-the-middle (AITM) phishing framework. Proxies legitimate authentication portals to capture session tokens, bypassing TOTP-based MFA.",
+      "labels": [
+        "phishing",
+        "aitm",
+        "credential-theft"
+      ],
+      "created": "2026-02-10T11:00:00.000Z",
+      "modified": "2026-02-10T11:00:00.000Z",
+      "tool_types": [
+        "exploitation",
+        "credential-exploitation"
+      ]
+    },
+    "tool--22475a09-17a6-4e25-8afe-751cd4aac59f": {
+      "id": "tool--22475a09-17a6-4e25-8afe-751cd4aac59f",
+      "stixType": "tool",
+      "name": "Nanodump",
+      "description": "LSASS memory dumper using indirect syscalls to bypass EDR API hooking. Creates a minidump of LSASS process memory without triggering standard credential access detections.",
+      "labels": [
+        "credential-dumping",
+        "edr-evasion"
+      ],
+      "created": "2026-02-10T11:00:00.000Z",
+      "modified": "2026-02-10T11:00:00.000Z",
+      "tool_types": [
+        "credential-exploitation"
+      ]
+    },
+    "note--d2f59b50-bf5f-4a31-9fd1-1833661e5663": {
+      "id": "note--d2f59b50-bf5f-4a31-9fd1-1833661e5663",
+      "stixType": "note",
+      "name": "Exercise Summary — Week 4 Debrief",
+      "description": "4-week purple team exercise against Acme Financial Corp AD environment (180 DCs, 45,000 users, hybrid Azure AD). Red team achieved Domain Admin in 72 hours from initial phishing. Key findings: (1) TOTP MFA bypassed via Evilginx2 — FIDO2 required; (2) LSASS protection insufficient — Nanodump bypassed CrowdStrike; (3) Kerberoasting succeeded due to RC4-HMAC still enabled; (4) Lateral movement detected but too slowly — 6-hour MTTR exceeds 1-hour target.",
+      "labels": [
+        "exercise-summary",
+        "purple-team"
+      ],
+      "created": "2026-02-10T11:00:00.000Z",
+      "modified": "2026-02-10T11:00:00.000Z"
+    }
+  },
+  "assignments": {
+    "IN:reconnaissance": {
+      "techniques": [
+        {
+          "id": "T1589.002",
+          "metadata": {
+            "score": "medium",
+            "confidence": 75,
+            "comments": "RED: OSINT harvesting of employee LinkedIn profiles for spearphishing targets. Identified 12 IT Helpdesk staff with O365 admin roles.\nBLUE: No detection capability for external OSINT. ACCEPTED RISK.\nGAP: None — external recon is outside defensive perimeter.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": []
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "IN:resource-development": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [
+        {
+          "id": "tool--ed59203b-f465-4d16-845b-390f3dc9256f",
+          "instanceId": "itm-pt-tool1",
+          "type": "custom",
+          "metadata": {}
+        }
+      ],
+      "groups": [],
+      "layout": [
+        {
+          "kind": "item",
+          "instanceId": "itm-pt-tool1"
+        }
+      ]
+    },
+    "IN:delivery": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [
+        {
+          "groupId": "grp-pt-delivery",
+          "label": "Phase Result: RED WIN — MFA Bypassed",
+          "collapsed": false,
+          "items": [
+            {
+              "type": "attack",
+              "id": "T1566.002",
+              "instanceId": "itm-mlh41k8u-hayih",
+              "metadata": {
+                "score": "high",
+                "confidence": 80,
+                "comments": "RED: Evilginx2 AITM phishing link sent to 12 Helpdesk targets via Teams message. Link proxied legitimate M365 login portal.\nBLUE: Defender for O365 Safe Links did NOT detect Evilginx2 URL — it served legitimate Microsoft content through a proxy.\nGAP: CRITICAL — Safe Links cannot detect AITM proxies serving legitimate content. Need URL reputation + anomaly detection.",
+                "cves": [],
+                "hyperlinks": [],
+                "observables": []
+              }
+            }
+          ]
+        }
+      ],
+      "layout": [
+        {
+          "kind": "group",
+          "groupId": "grp-pt-delivery"
+        }
+      ]
+    },
+    "IN:social-engineering": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "IN:exploitation": {
+      "techniques": [
+        {
+          "id": "T1557.001",
+          "metadata": {
+            "score": "critical",
+            "confidence": 90,
+            "comments": "RED: 4 of 12 targets authenticated through Evilginx2 proxy. Captured valid session tokens for M365 admin accounts. TOTP codes relayed in real-time.\nBLUE: Azure AD Conditional Access detected 'impossible travel' for 1 of 4 sessions — alerted but not blocked. 3 sessions succeeded undetected.\nGAP: CRITICAL — TOTP MFA is bypassable. Conditional Access risk policies too permissive. Recommendation: FIDO2 for all admin accounts.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": []
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [
+        {
+          "id": "course-of-action--b2faa507-7990-4c05-a4c5-c04f00f08c01",
+          "instanceId": "itm-pt-coa1",
+          "type": "custom",
+          "metadata": {}
+        }
+      ],
+      "groups": [],
+      "layout": [
+        {
+          "kind": "item",
+          "instanceId": "itm-pt-coa1"
+        }
+      ]
+    },
+    "IN:persistence": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [
+        {
+          "groupId": "grp-pt-persist",
+          "label": "Phase Result: BLUE PARTIAL — Detected, Slow Response",
+          "collapsed": false,
+          "items": [
+            {
+              "type": "attack",
+              "id": "T1098.001",
+              "instanceId": "itm-mlh41k8u-ut153",
+              "metadata": {
+                "score": "high",
+                "confidence": 70,
+                "comments": "RED: Added additional authentication methods (app password) to compromised M365 admin account for persistence.\nBLUE: Azure AD audit log alert triggered on authentication method change — detected within 15 minutes.\nGAP: PARTIAL — Detection exists but response was manual. Automate account lockout on auth method changes for admin accounts.",
+                "cves": [],
+                "hyperlinks": [],
+                "observables": []
+              }
+            }
+          ]
+        }
+      ],
+      "layout": [
+        {
+          "kind": "group",
+          "groupId": "grp-pt-persist"
+        }
+      ]
+    },
+    "IN:defense-evasion": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "IN:command-control": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "THROUGH:pivoting": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "THROUGH:discovery": {
+      "techniques": [
+        {
+          "id": "T1087.002",
+          "metadata": {
+            "score": "medium",
+            "confidence": 65,
+            "comments": "RED: BloodHound CE enumeration of AD environment from compromised workstation. Identified 3 shortest paths to Domain Admin via Kerberos delegation chains.\nBLUE: CrowdStrike detected BloodHound LDAP query volume — alert at T+3 hours.\nGAP: PARTIAL — Detection latency too high. BloodHound completed full collection in 45 minutes. Need real-time LDAP anomaly detection.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": []
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "THROUGH:privilege-escalation": {
+      "techniques": [
+        {
+          "id": "T1558.003",
+          "metadata": {
+            "score": "critical",
+            "confidence": 85,
+            "comments": "RED: Kerberoasting attack against 47 SPN-enabled service accounts. 12 accounts had RC4-HMAC TGS tickets. 3 cracked within 4 hours (weak passwords). One was a svc-backup account with DCSync rights.\nBLUE: Microsoft Defender for Identity detected Kerberoasting — alerted at T+20 minutes. SOC acknowledged but classified as P3 (low priority).\nGAP: CRITICAL — Detection worked but triage failed. RC4-HMAC must be disabled. Service account passwords must be 25+ chars.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": []
+          },
+          "instanceId": "itm-mlh41k8u-3ey49"
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [
+        {
+          "groupId": "grp-pt-privesc",
+          "label": "Phase Result: BLUE DETECTED — Triage Failed",
+          "collapsed": false,
+          "items": [
+            {
+              "type": "custom",
+              "id": "course-of-action--80e9122f-5303-4eca-887b-c89f6bff1908",
+              "instanceId": "itm-pt-coa3",
+              "metadata": {}
+            }
+          ]
+        }
+      ],
+      "layout": [
+        {
+          "kind": "group",
+          "groupId": "grp-pt-privesc"
+        },
+        {
+          "kind": "item",
+          "instanceId": "itm-mlh41k8u-3ey49"
+        }
+      ]
+    },
+    "THROUGH:execution": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "THROUGH:credential-access": {
+      "techniques": [
+        {
+          "id": "T1003.001",
+          "metadata": {
+            "score": "critical",
+            "confidence": 80,
+            "comments": "RED: Nanodump used to dump LSASS memory via indirect syscalls. Bypassed CrowdStrike Falcon by unhooking ntdll.dll before making NtReadVirtualMemory calls.\nBLUE: CrowdStrike Falcon did NOT detect Nanodump — indirect syscall evasion bypassed userland API hooks.\nGAP: CRITICAL — EDR vendor-specific bypass. Need kernel-level LSASS protection (PPL) and additional LSASS access detection rules.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": []
+          },
+          "instanceId": "itm-mlh41k8u-sfa58"
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [
+        {
+          "groupId": "grp-pt-cred",
+          "label": "Phase Result: RED WIN — EDR Bypassed",
+          "collapsed": false,
+          "items": [
+            {
+              "type": "custom",
+              "id": "tool--22475a09-17a6-4e25-8afe-751cd4aac59f",
+              "instanceId": "itm-pt-tool2",
+              "metadata": {}
+            },
+            {
+              "type": "custom",
+              "id": "course-of-action--249fe544-a4a7-41f3-b4aa-160d42b133d1",
+              "instanceId": "itm-pt-coa2",
+              "metadata": {}
+            }
+          ]
+        }
+      ],
+      "layout": [
+        {
+          "kind": "group",
+          "groupId": "grp-pt-cred"
+        },
+        {
+          "kind": "item",
+          "instanceId": "itm-mlh41k8u-sfa58"
+        }
+      ]
+    },
+    "THROUGH:lateral-movement": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [
+        {
+          "groupId": "grp-pt-latmov",
+          "label": "Phase Result: BLUE DETECTED — Response Too Slow",
+          "collapsed": false,
+          "items": [
+            {
+              "type": "attack",
+              "id": "T1021.006",
+              "instanceId": "itm-mlh41k8u-7vnbl",
+              "metadata": {
+                "score": "high",
+                "confidence": 75,
+                "comments": "RED: WinRM lateral movement to Domain Controllers using cracked service account credentials. DCSync executed to extract krbtgt hash.\nBLUE: Defender for Identity detected DCSync — alert at T+5 minutes.\nGAP: PARTIAL — Detection successful but the attack completed before SOC response. Need automated containment (isolate DC on DCSync alert).",
+                "cves": [],
+                "hyperlinks": [],
+                "observables": []
+              }
+            }
+          ]
+        }
+      ],
+      "layout": [
+        {
+          "kind": "group",
+          "groupId": "grp-pt-latmov"
+        }
+      ]
+    },
+    "OUT:collection": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "OUT:exfiltration": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "OUT:impact": {
+      "techniques": [
+        {
+          "id": "T1484.001",
+          "metadata": {
+            "score": "critical",
+            "confidence": 85,
+            "comments": "RED: Golden Ticket created using extracted krbtgt hash. Full domain compromise achieved in 72 hours from initial phishing. Objective: DOMAIN ADMIN ACHIEVED.\nBLUE: No detection for Golden Ticket usage — Defender for Identity anomaly model did not trigger.\nGAP: CRITICAL — Post-compromise detection for krbtgt abuse is missing. Deploy honey tokens and KRBTGT rotation (180-day cycle).",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": []
+          },
+          "instanceId": "itm-mlh41k8u-gmb28"
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [
+        {
+          "groupId": "grp-pt-impact",
+          "label": "Phase Result: RED WIN — Domain Compromised",
+          "collapsed": false,
+          "items": [
+            {
+              "type": "custom",
+              "id": "note--d2f59b50-bf5f-4a31-9fd1-1833661e5663",
+              "instanceId": "itm-pt-note1",
+              "metadata": {}
+            }
+          ]
+        }
+      ],
+      "layout": [
+        {
+          "kind": "group",
+          "groupId": "grp-pt-impact"
+        },
+        {
+          "kind": "item",
+          "instanceId": "itm-mlh41k8u-gmb28"
+        }
+      ]
+    },
+    "OUT:objectives": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    }
+  }
+}

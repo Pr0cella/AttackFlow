@@ -4,41 +4,49 @@ An editor for creating enriched Cyber Kill Chain assessments by mapping MITRE AT
 
 ### Work in progress 
 
-![Version](https://img.shields.io/badge/version-2.7.1-blue)
+![Version](https://img.shields.io/badge/version-2.8.0-blue)
+[![MITRE ATT&CK® 18](https://img.shields.io/badge/MITRE%20ATT%26CK®-v18-red)](https://attack.mitre.org/versions/v18/)
 ![License](https://img.shields.io/badge/license-Apache%202.0-green)
 ![Dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)
 
-## Main Editor
-![Preview](preview.png)
-
 ## Features
 
-- **Vanilla JavaScript** — No external dependencies, runs in any browser
+### Implementation
+- **Vanilla CSS & JavaScript** — No external dependencies, runs in any browser
+- **Offline Operation** — No CDN, no remote requests, no third-party dependencies
+- **Lightweight Theming Engine** — Toggle configurable light/dark theme with shared settings (via `config.js`) across views 
+
+### Resource Corpus
 - **Unified Kill Chain** — Map entities to IN → THROUGH → OUT phases
 - **Multi-Domain ATT&CK** — 898 techniques across Enterprise, Mobile, and ICS
 - **CAPEC/CWE Integration** — Link attack patterns and weaknesses
 - **STIX 2.1 Objects** — Create and manage all 18 SDO types plus custom objects
-- **STIX Bundle Import** — Import any STIX 2.1 bundle JSON to extract SDOs with full property preservation
-- **STIX Editor** — Edit all spec-defined fields per SDO type with vocabulary dropdowns
+
+### Import & Sharing
+- **Import/Export** — JSON sharing, CSV exports (with mitigation rows), and STIX 2.1 bundle exports (with mitigations and relationships)
+- **STIX Bundle Export** — Export assigned techniques as `attack-pattern` SDOs with mitigations as `course-of-action` SDOs and `mitigates` SROs, using deterministic UUIDv5 IDs
+- **STIX Bundle Import** — Import multiple STIX 2.1 bundles to extract SDOs with full property preservation (Configurable auto-clear on bundle or kill chain import via `config.js`). Aggregates data by default.
+- **Navigator Layers** — Import ATT&CK Navigator JSON exports
+
+### Editor
 - **Drag & Drop** — Intuitive assignment of entities to phases
-- **Grouping** — Organize items into collapsible groups within phases
-- **Duplicates** — Allow multiple instances of the same entity
+- **Grouping** — Organize items into collapsible named groups within phases
 - **Rich Metadata** — Comments, hyperlinks, observables, multi-CVE/CVSS references
 - **Score & Confidence** — Rate items by severity and assessment confidence
-- **Visual Indicators** — Color-coded ribbons, CVE badges, and metadata icons
-- **Light/Dark Theme** — Toggle theme with shared settings across views
-- **Compact Mode** — Dense ID-only tags to fit large kill chains
-- **Relationship Explorer** — Browse ATT&CK ↔ CAPEC ↔ CWE ↔ Mitigations in a dedicated view
-- **Hide Empty Phases** — Focus on active phases by hiding empty ones
-- **Collapsible Sidebar** — Toggle the left sidebar for more workspace
-- **Import/Export** — Lightweight JSON sharing, CSV exports, and STIX bundle exports
-- **Navigator Layers** — Import ATT&CK Navigator JSON exports
-- **Offline Operation** — No CDN, no remote requests, no third-party dependencies
+- **Compact Mode** — Dense ID-only tags to fit large kill chains, collapsible sidebar & hiding empty phases
+- **STIX Editor** — Edit all spec-defined fields per SDO type with vocabulary dropdowns
 
-## Relations View
+![Preview](preview.png)
+
+#### Kill Chain Relationships
+- **Browsable Mapping Explorer** — Browse kill chain related CAPEC → CWE → ATT&CK → Mitigation patterns per Phase in a dedicated view
+
 ![Relations View](relations.png)
 
-## Explorer View
+### Relationship Explorer 
+- **Integrated Resource Corpus Explorer** Explore & search the complete corpus of related ATT&CK ↔ CAPEC ↔ CWE ↔ Mitigations patterns
+- **Technique Cross-References** — Item relationships & techniques referenced by ID in descriptions link to the Relationship Explorer
+
 ![Explorer View](explorer.png)
 
 ## Quick Start
@@ -57,6 +65,19 @@ The Relationship Explorer is a second main view that lets you investigate ATT&CK
 10. Enable compact mode for dense layouts when needed
 11. Export your attack chain as JSON, CSV, or STIX Bundle
 
+## Usecases
+
+See the usecases [README](docs/Usecases/README.md) for details.
+
+1. Incident Response TTP Mapping
+2. Red Team Operation Planning
+3. Blue Team Defense Posture Assessment
+4. CTI Report Building
+5. Vulnerability-Centric Risk Analysis
+6. Purple Team Exercise Planning and Debrief
+7. Ransomware Playbook Documentation
+8. Supply Chain Attack Analysis
+
 ## Testing
 
 - **Demo kill chain**: Import [examples/demo.json](examples/demo.json) to exercise all metadata fields (CVE/CVSS, observables, links, confidence) and multi-phase coverage.
@@ -69,13 +90,12 @@ The Relationship Explorer is a second main view that lets you investigate ATT&CK
 ```
 ├── index.html                      # Main application
 ├── explorer.html                   # Relationship Explorer view
-├── config.js                       # Centralized configuration (paths, colors, settings)
+├── config.js                       # Centralized configuration 
+│                                   # (paths, colors, imports, settings)
 ├── stix-config.js                  # STIX 2.1 SDO type definitions and vocabularies
-├── examples/                        # Sample kill chain exports
-│   ├── demo.json                    # Full-metadata demo mapping
-│   ├── grouping-demo.json           # Grouped ransomware TTP example
-│   ├── stix-demo.json               # All 19 STIX SDO types showcase
-│   └── Operation-Midnight-Eclipse-stix-bundle.json  # Exported STIX 2.1 bundle
+├── examples/*                      # Sample kill chain exports
+├── docs/
+│   └── Usecases/*                  # Usecase documentation and sample exports
 ├── scripts/
 │   ├── extract-attack.py           # ATT&CK STIX bundle parser
 │   ├── extract-data.py             # CAPEC/CWE XML parser
@@ -129,12 +149,15 @@ Each assigned item supports:
 ## Data Sources
 
 - [MITRE ATT&CK](https://attack.mitre.org/) — Adversarial tactics and techniques
+- [MITRE ATT&CK Navigator](https://github.com/mitre-attack/attack-navigator)
 - [CAPEC](https://capec.mitre.org/) — Common Attack Pattern Enumeration
 - [CWE](https://cwe.mitre.org/) — Common Weakness Enumeration
 - [STIX 2.1](https://docs.oasis-open.org/cti/stix/v2.1/) — Structured Threat Information Expression
 - [Unified Kill Chain](https://www.unifiedkillchain.com/) — Attack phase framework
 
 ## Security
+
+[SECURITY POLICY](SECURITY.md)
 
 AttackFlow implements defense-in-depth protections and adheres to security by design principles. 
 (Note: Application NOT production ready yet - may still contain vulnerable components) 
@@ -178,6 +201,15 @@ python3 scripts/extract-data.py      # Parse CAPEC/CWE
 # Sanitization runs before and after parsing to keep source and generated files clean
 ```
 
+
+## Contributing & Reporting Issues
+
+See the [CONTRIBUTING Guide](CONTRIBUTING.md) for details on how to contribute.
+
+
+See the [SECURITY POLICY](SECURITY.md) for details on how to report vulnerabilities.
+
+
 ## License
 
 Apache License 2.0 — See [LICENSE](LICENSE) for details.
@@ -190,10 +222,12 @@ Apache License 2.0 — See [LICENSE](LICENSE) for details.
 AttackFlow uses data and references from the following third-party sources:
 
 - MITRE ATT&CK: https://attack.mitre.org/
+- MITRE ATT&CK Navigator: https://github.com/mitre-attack/attack-navigator
 - CAPEC: https://capec.mitre.org/
 - CWE: https://cwe.mitre.org/
 - STIX 2.1: https://oasis-open.github.io/cti-documentation/
 - Unified Kill Chain: https://www.unifiedkillchain.com/
+- FontAwesome: https://github.com/FortAwesome/Font-Awesome
 
 MITRE and ATT&CK are trademarks of The MITRE Corporation. This project is not
 affiliated with or endorsed by MITRE. CAPEC and CWE are maintained by MITRE.

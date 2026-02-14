@@ -7,7 +7,7 @@
 
 const CONFIG = {
     // Application info
-    version: '2.7.1',
+    version: '2.8.0',
     changelogUrl: 'CHANGELOG.md',
     
     // Framework source files (for extraction scripts)
@@ -186,6 +186,12 @@ const CONFIG = {
         maxLabelLength: 50,      // Max chars per label
         maxCustomDescLength: 2000, // Max description length for custom items
         maxKillChainDescLength: 2000 // Max kill chain description length
+    },
+
+    // Import behavior
+    imports: {
+        clearStixOnBundleImport: false,    // Auto-clear STIX library before importing a STIX bundle
+        clearStixOnKillChainImport: true   // Auto-clear STIX library before importing a kill chain
     },
 
     // Navigation behavior
