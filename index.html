@@ -565,6 +565,7 @@
             display: flex;
             gap: 4px;
             flex-wrap: wrap;
+            justify-content: space-between;
         }
 
         .import-btn {
@@ -2848,6 +2849,7 @@
                                     Import STIX Bundle
                                     <input type="file" accept=".json" onchange="importStixBundle(event)" style="display: none;">
                                 </label>
+                                <button class="import-btn" onclick="clearStixLibrary()">Clear All Items</button>
                             </div>
                         </div>
                         <div class="search-bar">
@@ -3756,6 +3758,65 @@
         // Generate a STIX 2.1 compliant ID
         function generateStixId(stixType) {
             return `${stixType}--${generateUUID()}`;
+        }
+
+        // Deterministic UUIDv5 from namespace + name (RFC 4122 §4.3)
+        // Uses SHA-1 truncated to 128 bits with version/variant bits set
+        const MITIGATION_NS_UUID = 'af7e2c13-3b4d-4e5f-8a9b-0c1d2e3f4a5b';
+        const TECHNIQUE_NS_UUID = 'bf8f3d24-4c5e-5f60-9bac-1d2e3f405b6c';
+
+        function uuidv5(namespace, name) {
+            const nsHex = namespace.replace(/-/g, '');
+            const nsBytes = new Uint8Array(16);
+            for (let i = 0; i < 16; i++) nsBytes[i] = parseInt(nsHex.substr(i * 2, 2), 16);
+            const nameBytes = new TextEncoder().encode(name);
+            const data = new Uint8Array(nsBytes.length + nameBytes.length);
+            data.set(nsBytes); data.set(nameBytes, nsBytes.length);
+            const hash = sha1Bytes(data);
+            hash[6] = (hash[6] & 0x0f) | 0x50;
+            hash[8] = (hash[8] & 0x3f) | 0x80;
+            const hex = Array.from(hash.slice(0, 16)).map(b => b.toString(16).padStart(2, '0')).join('');
+            return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20,32)}`;
+        }
+
+        // Minimal SHA-1 (FIPS 180-4) — pure JS, no dependencies
+        function sha1Bytes(msgBytes) {
+            const msg = Array.from(msgBytes);
+            const bitLen = msg.length * 8;
+            msg.push(0x80);
+            while (msg.length % 64 !== 56) msg.push(0);
+            msg.push(0, 0, 0, 0);
+            msg.push((bitLen >>> 24) & 0xff, (bitLen >>> 16) & 0xff, (bitLen >>> 8) & 0xff, bitLen & 0xff);
+            let h0 = 0x67452301, h1 = 0xEFCDAB89, h2 = 0x98BADCFE, h3 = 0x10325476, h4 = 0xC3D2E1F0;
+            for (let off = 0; off < msg.length; off += 64) {
+                const w = new Array(80);
+                for (let i = 0; i < 16; i++) w[i] = (msg[off+i*4]<<24)|(msg[off+i*4+1]<<16)|(msg[off+i*4+2]<<8)|msg[off+i*4+3];
+                for (let i = 16; i < 80; i++) { const t = w[i-3]^w[i-8]^w[i-14]^w[i-16]; w[i] = (t<<1)|(t>>>31); }
+                let a=h0, b=h1, c=h2, d=h3, e=h4;
+                for (let i = 0; i < 80; i++) {
+                    let f, k;
+                    if (i<20)      { f=(b&c)|((~b)&d); k=0x5A827999; }
+                    else if (i<40) { f=b^c^d;           k=0x6ED9EBA1; }
+                    else if (i<60) { f=(b&c)|(b&d)|(c&d); k=0x8F1BBCDC; }
+                    else           { f=b^c^d;           k=0xCA62C1D6; }
+                    const tmp = ((a<<5)|(a>>>27)) + f + e + k + w[i];
+                    e=d; d=c; c=(b<<30)|(b>>>2); b=a; a=tmp|0;
+                }
+                h0=(h0+a)|0; h1=(h1+b)|0; h2=(h2+c)|0; h3=(h3+d)|0; h4=(h4+e)|0;
+            }
+            const result = new Uint8Array(20);
+            [h0,h1,h2,h3,h4].forEach((h, i) => {
+                result[i*4]=(h>>>24)&0xff; result[i*4+1]=(h>>>16)&0xff; result[i*4+2]=(h>>>8)&0xff; result[i*4+3]=h&0xff;
+            });
+            return result;
+        }
+
+        function mitigationStixId(mitreId) {
+            return `course-of-action--${uuidv5(MITIGATION_NS_UUID, mitreId)}`;
+        }
+
+        function techniqueStixId(techId) {
+            return `attack-pattern--${uuidv5(TECHNIQUE_NS_UUID, techId)}`;
         }
 
         function getPhaseUngroupedItems(phaseData, type) {
@@ -4807,6 +4868,19 @@
 
                     let imported = 0, skipped = 0, duplicates = 0;
 
+                    // Auto-clear existing STIX data if configured
+                    if (CONFIG.imports?.clearStixOnBundleImport) {
+                        for (const [phaseKey, pd] of Object.entries(state.assignments)) {
+                            if (!pd) continue;
+                            if (pd.customItems) pd.customItems = [];
+                            for (const group of pd.groups || []) {
+                                group.items = (group.items || []).filter(item => item.type !== 'custom');
+                            }
+                            ensurePhaseLayout(phaseKey, pd);
+                        }
+                        state.library.custom = {};
+                    }
+
                     for (const obj of data.objects) {
                         // Basic object validation
                         if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
@@ -4872,6 +4946,7 @@
 
                     switchTab('custom');
                     filterEntities('custom');
+                    if (CONFIG.imports?.clearStixOnBundleImport) renderAll();
                     showToast(msg);
                 } catch (err) {
                     showToast('STIX import failed: ' + InputSecurity.escapeHtml(err.message));
@@ -4879,6 +4954,32 @@
             };
             reader.readAsText(file);
             event.target.value = '';
+        }
+
+        function clearStixLibrary() {
+            const count = Object.keys(state.library.custom).length;
+            if (count === 0) {
+                showToast('No STIX items to clear');
+                return;
+            }
+            if (!confirm(`Clear all ${count} STIX item${count !== 1 ? 's' : ''} from the library and remove them from all kill chain phases?`)) return;
+
+            // Remove custom items from all phase assignments (ungrouped + grouped)
+            for (const [phaseKey, pd] of Object.entries(state.assignments)) {
+                if (!pd) continue;
+                if (pd.customItems) pd.customItems = [];
+                for (const group of pd.groups || []) {
+                    group.items = (group.items || []).filter(item => item.type !== 'custom');
+                }
+                ensurePhaseLayout(phaseKey, pd);
+            }
+
+            // Clear the library
+            state.library.custom = {};
+
+            filterEntities('custom');
+            renderAll();
+            showToast(`Cleared ${count} STIX item${count !== 1 ? 's' : ''}`);
         }
 
         function sanitizeStixBundleObject(obj, stixType, stixId) {
@@ -6442,6 +6543,94 @@
                 }
             }
 
+            // Add attack-pattern SDOs for assigned techniques (deterministic IDs)
+            const techniquePhases = new Map(); // techId → Set of phase names
+            for (const [phaseKey, phaseData] of Object.entries(state.assignments)) {
+                if (!phaseData) continue;
+                const techs = getAllPhaseItemsByType(phaseData, 'attack');
+                for (const t of techs) {
+                    const techId = getAssignmentId(t);
+                    if (!techniquePhases.has(techId)) techniquePhases.set(techId, new Set());
+                    techniquePhases.get(techId).add(phaseKey.split(':')[1]);
+                }
+            }
+            for (const [techId, phases] of techniquePhases) {
+                const entity = state.library.techniques[techId];
+                objects.push({
+                    type: 'attack-pattern',
+                    spec_version: '2.1',
+                    id: techniqueStixId(techId),
+                    created: now,
+                    modified: now,
+                    name: entity?.name || techId,
+                    ...(entity?.description ? { description: entity.description } : {}),
+                    external_references: [{
+                        source_name: 'mitre-attack',
+                        external_id: techId,
+                        url: `https://attack.mitre.org/techniques/${techId.replace('.', '/')}`
+                    }],
+                    kill_chain_phases: [...phases].map(p => ({
+                        kill_chain_name: 'unified-kill-chain',
+                        phase_name: p
+                    }))
+                });
+            }
+
+            // Add course-of-action SDOs from mitigations linked to assigned techniques
+            const mitigationMap = new Map();
+            const techMitLinks = new Map();
+            for (const [phaseKey, phaseData] of Object.entries(state.assignments)) {
+                if (!phaseData) continue;
+                const techs = getAllPhaseItemsByType(phaseData, 'attack');
+                for (const t of techs) {
+                    const techId = getAssignmentId(t);
+                    const entity = state.library.techniques[techId];
+                    if (!entity?.mitigations) continue;
+                    const techSid = techniqueStixId(techId);
+                    for (const m of entity.mitigations) {
+                        if (!mitigationMap.has(m.id)) mitigationMap.set(m.id, m);
+                        if (!techMitLinks.has(techSid)) techMitLinks.set(techSid, new Set());
+                        techMitLinks.get(techSid).add(mitigationStixId(m.id));
+                    }
+                }
+            }
+
+            for (const [mitreId, m] of mitigationMap) {
+                objects.push({
+                    type: 'course-of-action',
+                    spec_version: '2.1',
+                    id: mitigationStixId(mitreId),
+                    created: now,
+                    modified: now,
+                    name: m.name,
+                    ...(m.description ? { description: m.description } : {}),
+                    external_references: [{
+                        source_name: 'mitre-attack',
+                        external_id: mitreId,
+                        url: `https://attack.mitre.org/mitigations/${mitreId}`
+                    }]
+                });
+            }
+
+            // Emit mitigates SROs
+            for (const [techSid, mitSids] of techMitLinks) {
+                for (const mitSid of mitSids) {
+                    const key = `${mitSid}|${techSid}|mitigates`;
+                    if (relationshipSet.has(key)) continue;
+                    relationshipSet.add(key);
+                    objects.push({
+                        type: 'relationship',
+                        spec_version: '2.1',
+                        id: `relationship--${generateUUID()}`,
+                        created: now,
+                        modified: now,
+                        relationship_type: 'mitigates',
+                        source_ref: mitSid,
+                        target_ref: techSid
+                    });
+                }
+            }
+
             return {
                 type: 'bundle',
                 id: `bundle--${generateUUID()}`,
@@ -6476,9 +6665,12 @@
         }
 
         function exportSTIXBundle() {
-            const customIds = Object.keys(state.library.custom);
-            if (customIds.length === 0) {
-                showToast('No custom STIX objects to export');
+            const hasCustom = Object.keys(state.library.custom).length > 0;
+            const hasAssignments = Object.values(state.assignments).some(phase =>
+                getAllPhaseItemsByType(phase, 'attack').length > 0
+            );
+            if (!hasCustom && !hasAssignments) {
+                showToast('No STIX objects to export');
                 return;
             }
             const bundle = buildSTIXBundle();
@@ -7002,6 +7194,9 @@
                     ensureLibraryFallbacks(state.assignments);
 
                     // Restore custom library from sanitized data
+                    if (CONFIG.imports?.clearStixOnKillChainImport) {
+                        state.library.custom = {};
+                    }
                     if (sanitized.customLibrary) {
                         for (const [id, item] of Object.entries(sanitized.customLibrary)) {
                             state.library.custom[id] = item;
@@ -7186,6 +7381,39 @@
                     formatConfidence(meta),
                     formatCveList(meta),
                     (meta.comments || '').slice(0, 100).replace(/\n/g, ' ')
+                ];
+                for (const phaseKey of ALL_PHASES) {
+                    row.push(data.phases.has(phaseKey) ? 'X' : '');
+                }
+                rows.push(row);
+            }
+
+            // Add Mitigation rows (derived from assigned techniques)
+            const allMitigations = new Map(); // M-id → { name, phases: Set, techniqueIds: Set }
+            for (const [phaseKey, phase] of Object.entries(state.assignments)) {
+                const techs = getAllPhaseItemsByType(phase, 'attack');
+                for (const t of techs) {
+                    const techId = getAssignmentId(t);
+                    const entity = state.library.techniques[techId];
+                    if (!entity?.mitigations) continue;
+                    for (const m of entity.mitigations) {
+                        if (!allMitigations.has(m.id)) {
+                            allMitigations.set(m.id, { name: m.name, phases: new Set(), techniqueIds: new Set() });
+                        }
+                        allMitigations.get(m.id).phases.add(phaseKey);
+                        allMitigations.get(m.id).techniqueIds.add(techId);
+                    }
+                }
+            }
+            for (const [mitId, data] of allMitigations) {
+                const row = [
+                    'Mitigation',
+                    mitId,
+                    data.name,
+                    '',
+                    '',
+                    '',
+                    'Mitigates: ' + [...data.techniqueIds].sort().join(', ')
                 ];
                 for (const phaseKey of ALL_PHASES) {
                     row.push(data.phases.has(phaseKey) ? 'X' : '');

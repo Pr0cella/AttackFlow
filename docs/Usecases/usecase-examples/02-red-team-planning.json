@@ -1,0 +1,530 @@
+{
+  "version": "2.7.0",
+  "schema": "killchain-export-lite",
+  "exportedAt": "2026-02-10T09:00:00.000Z",
+  "title": "UC2 — FinServ Assumed Breach: Red Team Operation Plan",
+  "description": "Red team assumed-breach plan for a financial services target, mapping planned TTPs, tooling, and C2 infrastructure across the full UKC.",
+  "view": "killchain",
+  "activeTab": "attack",
+  "layers": {
+    "attack": true,
+    "capec": true,
+    "cwe": true,
+    "custom": true
+  },
+  "hideEmpty": true,
+  "customLibrary": {
+    "infrastructure--014afc51-7cfc-4ab7-a703-03e9a00ad84a": {
+      "id": "infrastructure--014afc51-7cfc-4ab7-a703-03e9a00ad84a",
+      "stixType": "infrastructure",
+      "name": "C2 — Mythic Server (AWS eu-west-1)",
+      "description": "Primary C2 server running Mythic framework. Hosted on AWS eu-west-1 under burn account. Malleable C2 profile mimicking Microsoft 365 traffic to evade DPI. DNS redirector via Route53 with domain categorized as CDN.",
+      "labels": [
+        "c2",
+        "mythic",
+        "cloud"
+      ],
+      "created": "2026-02-01T08:00:00.000Z",
+      "modified": "2026-02-10T09:00:00.000Z",
+      "infrastructure_types": [
+        "command-and-control"
+      ],
+      "aliases": [
+        "C2-PRIMARY"
+      ]
+    },
+    "infrastructure--a8e5309a-5a65-41eb-8e26-86c7601816b0": {
+      "id": "infrastructure--a8e5309a-5a65-41eb-8e26-86c7601816b0",
+      "stixType": "infrastructure",
+      "name": "HTTPS Redirector — cdn-financial-updates.com",
+      "description": "HTTPS redirector using Apache mod_rewrite to filter non-beacon traffic. Categorized as Financial Services in Bluecoat/Zscaler. Valid LE certificate. Drops non-matching requests to legitimate Microsoft 365 login page.",
+      "labels": [
+        "redirector",
+        "categorized-domain"
+      ],
+      "created": "2026-02-01T08:30:00.000Z",
+      "modified": "2026-02-10T09:00:00.000Z",
+      "infrastructure_types": [
+        "command-and-control",
+        "staging"
+      ]
+    },
+    "tool--c298b72f-8104-40fc-96ad-80d7739ddd1e": {
+      "id": "tool--c298b72f-8104-40fc-96ad-80d7739ddd1e",
+      "stixType": "tool",
+      "name": "Mythic C2 Framework",
+      "description": "Open-source adversary simulation framework. Using Apollo agent for Windows endpoints and Poseidon for Linux. Chosen for flexibility and evasion profile over Cobalt Strike due to client's Crowdstrike EDR having strong CS signatures.",
+      "labels": [
+        "c2-framework",
+        "open-source"
+      ],
+      "created": "2026-02-01T09:00:00.000Z",
+      "modified": "2026-02-10T09:00:00.000Z",
+      "tool_types": [
+        "remote-access",
+        "exploitation"
+      ],
+      "aliases": [
+        "Apollo",
+        "Poseidon"
+      ],
+      "tool_version": "3.3.0"
+    },
+    "tool--a254fd86-6a7f-4e74-8e41-26988264cd4c": {
+      "id": "tool--a254fd86-6a7f-4e74-8e41-26988264cd4c",
+      "stixType": "tool",
+      "name": "Rubeus",
+      "description": "C# Kerberos abuse toolkit for AS-REP roasting, Kerberoasting, S4U abuse, and ticket manipulation. Compiled with ConfuserEx obfuscation and loaded reflectively via Mythic's assembly_inject.",
+      "labels": [
+        "kerberos",
+        "credential-access",
+        "dotnet"
+      ],
+      "created": "2026-02-01T09:30:00.000Z",
+      "modified": "2026-02-10T09:00:00.000Z",
+      "tool_types": [
+        "credential-exploitation"
+      ],
+      "aliases": [
+        "Rubeus.exe"
+      ]
+    }
+  },
+  "assignments": {
+    "IN:reconnaissance": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "IN:resource-development": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [
+        {
+          "id": "infrastructure--014afc51-7cfc-4ab7-a703-03e9a00ad84a",
+          "instanceId": "itm-rt-infra1",
+          "type": "custom",
+          "metadata": {}
+        },
+        {
+          "id": "infrastructure--a8e5309a-5a65-41eb-8e26-86c7601816b0",
+          "instanceId": "itm-rt-infra2",
+          "type": "custom",
+          "metadata": {}
+        },
+        {
+          "id": "tool--c298b72f-8104-40fc-96ad-80d7739ddd1e",
+          "instanceId": "itm-rt-tool1",
+          "type": "custom",
+          "metadata": {}
+        }
+      ],
+      "groups": [],
+      "layout": [
+        {
+          "kind": "item",
+          "instanceId": "itm-rt-infra1"
+        },
+        {
+          "kind": "item",
+          "instanceId": "itm-rt-infra2"
+        },
+        {
+          "kind": "item",
+          "instanceId": "itm-rt-tool1"
+        }
+      ]
+    },
+    "IN:delivery": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "IN:social-engineering": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "IN:exploitation": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [
+        {
+          "groupId": "grp-rt-assumed-breach",
+          "label": "Assumed Breach — Starting Position",
+          "collapsed": false,
+          "items": [
+            {
+              "type": "attack",
+              "id": "T1078.002",
+              "instanceId": "itm-rt-ab1",
+              "metadata": {
+                "score": "high",
+                "confidence": 95,
+                "comments": "ASSUMED BREACH: Client provides domain user credentials (standard employee level). Starting point: workstation on the trading floor VLAN. Simulates compromised insider or phishing-obtained creds. ROE: no actual phishing, no external exploitation.",
+                "cves": [],
+                "hyperlinks": [
+                  {
+                    "label": "Engagement ROE v2",
+                    "url": "https://engagements.redteam.example.com/FIN-2026-003/roe"
+                  }
+                ],
+                "observables": []
+              }
+            }
+          ]
+        }
+      ],
+      "layout": [
+        {
+          "kind": "group",
+          "groupId": "grp-rt-assumed-breach"
+        }
+      ]
+    },
+    "IN:persistence": {
+      "techniques": [
+        {
+          "id": "T1053.005",
+          "metadata": {
+            "score": "high",
+            "confidence": 70,
+            "comments": "PLAN: Scheduled task persistence via Mythic's scheduled_task module. Task disguised as Windows Update helper. Fallback: COM object hijack (T1546.015) if schtask creation is blocked by AppLocker.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": []
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "IN:defense-evasion": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [
+        {
+          "groupId": "grp-rt-evasion",
+          "label": "EDR Evasion Chain",
+          "collapsed": false,
+          "items": [
+            {
+              "type": "attack",
+              "id": "T1055.001",
+              "instanceId": "itm-rt-ev1",
+              "metadata": {
+                "score": "high",
+                "confidence": 60,
+                "comments": "PLAN: DLL injection into explorer.exe for parent PID spoofing. Apollo agent supports process hollowing. Success probability: 60% — Crowdstrike has AMSI hooks on common targets. Fallback: T1055.012 (process hollowing into RuntimeBroker.exe).",
+                "cves": [],
+                "hyperlinks": [],
+                "observables": []
+              }
+            },
+            {
+              "type": "attack",
+              "id": "T1027.013",
+              "instanceId": "itm-rt-ev2",
+              "metadata": {
+                "score": "medium",
+                "confidence": 75,
+                "comments": "PLAN: Encrypted payload staging. Apollo agent compiled with AES-GCM encrypted shellcode, decrypted only in-memory. ConfuserEx obfuscation on .NET assemblies. Expected to bypass static signature detection.",
+                "cves": [],
+                "hyperlinks": [],
+                "observables": []
+              }
+            }
+          ]
+        }
+      ],
+      "layout": [
+        {
+          "kind": "group",
+          "groupId": "grp-rt-evasion"
+        }
+      ]
+    },
+    "IN:command-control": {
+      "techniques": [
+        {
+          "id": "T1071.001",
+          "metadata": {
+            "score": "high",
+            "confidence": 85,
+            "comments": "PLAN: HTTPS C2 via cdn-financial-updates.com → AWS redirector → Mythic. Malleable profile: Microsoft 365 traffic pattern with /connect/oauth2 URI. Expected to pass DPI and proxy categorization. Beacon jitter: 30-45% on 60s interval.",
+            "cves": [],
+            "hyperlinks": [
+              {
+                "label": "Malleable C2 profile",
+                "url": "https://engagements.redteam.example.com/profiles/m365-clone-v3"
+              }
+            ],
+            "observables": [
+              {
+                "type": "domain-name",
+                "value": "cdn-financial-updates.com"
+              }
+            ]
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "THROUGH:pivoting": {
+      "techniques": [
+        {
+          "id": "T1090.001",
+          "metadata": {
+            "score": "medium",
+            "confidence": 55,
+            "comments": "PLAN: SOCKS proxy pivot from trading floor to core banking VLAN via Mythic's socks module. Expected firewall rule: trading workstations may reach core banking on 443/8443. If blocked, fall back to T1572 (protocol tunneling via SSH over 443).",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": []
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "THROUGH:discovery": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [
+        {
+          "groupId": "grp-rt-discovery",
+          "label": "AD Enumeration Phase",
+          "collapsed": false,
+          "items": [
+            {
+              "type": "attack",
+              "id": "T1087.002",
+              "instanceId": "itm-rt-disc1",
+              "metadata": {
+                "score": "low",
+                "confidence": 90,
+                "comments": "PLAN: BloodHound (SharpHound collector) for AD graph enumeration. Low risk — LDAP queries are normal. Run during business hours for noise cover. Expect: domain admin path, delegation abuse opportunities.",
+                "cves": [],
+                "hyperlinks": [],
+                "observables": []
+              }
+            },
+            {
+              "type": "attack",
+              "id": "T1046",
+              "instanceId": "itm-rt-disc2",
+              "metadata": {
+                "score": "medium",
+                "confidence": 65,
+                "comments": "PLAN: Service scanning of core banking VLAN. Use Mythic's TCP scan module (slow, randomized). Target: SWIFT messaging servers, database instances, admin jump boxes. OPSEC: max 10 conn/min to avoid IDS threshold.",
+                "cves": [],
+                "hyperlinks": [],
+                "observables": []
+              }
+            }
+          ]
+        }
+      ],
+      "layout": [
+        {
+          "kind": "group",
+          "groupId": "grp-rt-discovery"
+        }
+      ]
+    },
+    "THROUGH:privilege-escalation": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [
+        {
+          "groupId": "grp-rt-privesc",
+          "label": "Privilege Escalation Paths",
+          "collapsed": false,
+          "items": [
+            {
+              "type": "attack",
+              "id": "T1558.003",
+              "instanceId": "itm-rt-pe1",
+              "metadata": {
+                "score": "high",
+                "confidence": 80,
+                "comments": "PLAN: Kerberoasting via Rubeus. Target SPNs on service accounts (likely SQL, SWIFT, backup). Offline cracking with hashcat + rule set. Success probability: 80% — financial orgs commonly have service accounts with crackable passwords due to legacy constraints.",
+                "cves": [],
+                "hyperlinks": [
+                  {
+                    "label": "Rubeus Kerberoast guide",
+                    "url": "https://github.com/GhostPack/Rubeus"
+                  }
+                ],
+                "observables": []
+              }
+            },
+            {
+              "type": "attack",
+              "id": "T1134.005",
+              "instanceId": "itm-rt-pe2",
+              "metadata": {
+                "score": "high",
+                "confidence": 50,
+                "comments": "PLAN: SID History injection if we obtain DA. Allows persistent access to child domains even after password reset. Success probability: 50% — depends on forest trust configuration. Fallback: Golden Ticket (T1558.001).",
+                "cves": [],
+                "hyperlinks": [],
+                "observables": []
+              }
+            }
+          ]
+        }
+      ],
+      "layout": [
+        {
+          "kind": "group",
+          "groupId": "grp-rt-privesc"
+        }
+      ]
+    },
+    "THROUGH:execution": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "THROUGH:credential-access": {
+      "techniques": [
+        {
+          "id": "T1003.006",
+          "metadata": {
+            "score": "critical",
+            "confidence": 70,
+            "comments": "PLAN: DCSync via Rubeus + Mimikatz (lsadump::dcsync). Requires Domain Admin or replication rights. This is the primary DA credential extraction technique. OPSEC: target specific accounts, not full dump.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": []
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [
+        {
+          "id": "tool--a254fd86-6a7f-4e74-8e41-26988264cd4c",
+          "instanceId": "itm-rt-rubeus1",
+          "type": "custom",
+          "metadata": {}
+        }
+      ],
+      "groups": [],
+      "layout": [
+        {
+          "kind": "item",
+          "instanceId": "itm-rt-rubeus1"
+        }
+      ]
+    },
+    "THROUGH:lateral-movement": {
+      "techniques": [
+        {
+          "id": "T1021.006",
+          "metadata": {
+            "score": "high",
+            "confidence": 75,
+            "comments": "PLAN: WinRM lateral movement to core banking servers. Preferred over RDP (less noisy, scriptable). Use compromised service account credentials from Kerberoasting. Target: SWIFT messaging server, trade settlement DB.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": []
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "OUT:collection": {
+      "techniques": [
+        {
+          "id": "T1005",
+          "metadata": {
+            "score": "critical",
+            "confidence": 85,
+            "comments": "OBJECTIVE: Access SWIFT messaging configuration and sample transaction logs. Proof of access = screenshot + config hash. Do NOT exfiltrate actual transaction data per ROE. Secondary: access trade settlement database schema.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": []
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "OUT:exfiltration": {
+      "techniques": [
+        {
+          "id": "T1041",
+          "metadata": {
+            "score": "high",
+            "confidence": 80,
+            "comments": "PLAN: Exfiltrate proof artifacts over C2 channel. Max payload: screenshots and config hashes only per ROE. Estimate: less than 5 MB total. Mythic supports chunked file download with AES encryption.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": []
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "OUT:impact": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "OUT:objectives": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    }
+  }
+}
