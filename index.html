@@ -1676,13 +1676,19 @@
         .tag-comment-area {
             max-height: 0;
             overflow: hidden;
-            transition: max-height 0.25s ease;
             margin-top: 0;
         }
 
         .tag-comment-area.open {
             max-height: 200px;
             margin-top: 4px;
+            transition: 0.2s max-height;
+            transition-duration: 0.1s;
+        }
+
+        .tag-comment-area:not(.open) {
+            transition: 0.2s max-height;
+            transition-duration: 0.1s;
         }
 
         .tag-comment-content {
@@ -1690,23 +1696,14 @@
             line-height: 1.4;
             color: var(--text-secondary);
             background: var(--bg-phase);
-            /* border: 1px solid var(--border-color); */
-            /* border-radius: 3px; */
             padding: 6px 8px;
             resize: vertical;
             overflow-y: auto;
             min-height: 2.4em;
             max-height: 200px;
             word-break: break-word;
-
-            /* Group like style */
             border: 1px dashed var(--border-color);
             border-radius: 6px;
-            /* padding: 4px;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-             background: rgba(17, 24, 39, 0.25); */
         }
 
         .app.compact-mode .tag-comment-toggle,
