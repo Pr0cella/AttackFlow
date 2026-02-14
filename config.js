@@ -188,6 +188,12 @@ const CONFIG = {
         maxKillChainDescLength: 2000 // Max kill chain description length
     },
 
+    // Import behavior
+    imports: {
+        clearStixOnBundleImport: false,    // Auto-clear STIX library before importing a STIX bundle
+        clearStixOnKillChainImport: false  // Auto-clear STIX library before importing a kill chain
+    },
+
     // Navigation behavior
     navigation: {
         confirmOnLeave: true     // Show confirmation dialog before leaving the page
