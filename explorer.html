@@ -588,15 +588,18 @@
         // Runs on already-escaped text.  All captured labels are treated as
         // UNTRUSTED and escaped via escapeAttr() before attribute insertion.
         // Clicking a badge calls selectEntity() to navigate in-place.
+        // SECURITY: Both id and label must be escaped in attribute context to
+        // prevent DOM XSS via malicious technique IDs in data sources.
         function renderDescriptionWithBadges(escapedText) {
             return escapedText.replace(
                 /\[([^\]]{1,80})\]\(https?:\/\/attack\.mitre\.org\/techniques\/(T\d{4}(?:\/\d{3})?)\)/g,
                 (match, label, rawId) => {
                     const id = rawId.replace('/', '.');
                     const safeTitle = escapeAttr(label);
+                    const safeId = escapeAttr(id);  // SECURITY FIX: Escape ID for onclick attribute
                     return `<span class="technique-xref-badge" `
-                         + `onclick="selectEntity('attack', '${id}')" `
-                         + `title="${safeTitle}">${id}</span>`;
+                         + `onclick="selectEntity('attack', '${safeId}')" `
+                         + `title="${safeTitle}">${escapeHtml(id)}</span>`;
                 }
             );
         }
