@@ -69,6 +69,15 @@ The Relationship Explorer is a second main view that lets you investigate ATT&CK
 
 See the usecases [README](docs/Usecases/README) for details.
 
+1. Incident Response TTP Mapping
+2. Red Team Operation Planning
+3. Blue Team Defense Posture Assessment
+4. CTI Report Building
+5. Vulnerability-Centric Risk Analysis
+6. Purple Team Exercise Planning and Debrief
+7. Ransomware Playbook Documentation
+8. Supply Chain Attack Analysis
+
 ## Testing
 
 - **Demo kill chain**: Import [examples/demo.json](examples/demo.json) to exercise all metadata fields (CVE/CVSS, observables, links, confidence) and multi-phase coverage.
@@ -196,6 +205,8 @@ python3 scripts/extract-data.py      # Parse CAPEC/CWE
 ## Contributing & Reporting Issues
 
 See the [CONTRIBUTING Guide](CONTRIBUTING) for details on how to contribute.
+
+
 See the [SECURITY POLICY](SECURITY) for details on how to report vulnerabilities.
 
 
