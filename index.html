@@ -14,7 +14,10 @@
         object-src 'none';
         base-uri 'self';
         form-action 'self';
+        frame-ancestors 'self';
     ">
+    <meta http-equiv="X-Frame-Options" content="SAMEORIGIN">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
     <title>AttackFlow - Kill Chain Editor</title>
     <script src="config.js"></script>
     <script src="stix-config.js"></script>
