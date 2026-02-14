@@ -1,10 +1,10 @@
-# AttackFlow - Kill Chain Editor & Visualizer
+# ![](favicon.ico) AttackFlow - Kill Chain Editor & Visualizer
 
 An editor for creating enriched Cyber Kill Chain assessments by mapping MITRE ATT&CK, CAPEC, CWE & STIX 2.1 objects to the Unified Kill Chain framework and enriching phase parts with additional data. Visualize and assess complex attack scenarios easily by combining flexible TTPs with atomic IOCs and forensic data.
 
 ### Work in progress 
 
-![Version](https://img.shields.io/badge/version-2.7.0-blue)
+![Version](https://img.shields.io/badge/version-2.7.1-blue)
 ![License](https://img.shields.io/badge/license-Apache%202.0-green)
 ![Dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)
 
