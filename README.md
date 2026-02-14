@@ -216,6 +216,7 @@ AttackFlow uses data and references from the following third-party sources:
 - CWE: https://cwe.mitre.org/
 - STIX 2.1: https://oasis-open.github.io/cti-documentation/
 - Unified Kill Chain: https://www.unifiedkillchain.com/
+- FontAwesome: https://github.com/FortAwesome/Font-Awesome
 
 MITRE and ATT&CK are trademarks of The MITRE Corporation. This project is not
 affiliated with or endorsed by MITRE. CAPEC and CWE are maintained by MITRE.
