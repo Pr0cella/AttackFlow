@@ -67,7 +67,7 @@ The Relationship Explorer is a second main view that lets you investigate ATT&CK
 
 ## Usecases
 
-See the usecases [README](docs/Usecases/README) for details.
+See the usecases [README](docs/Usecases/README.md) for details.
 
 1. Incident Response TTP Mapping
 2. Red Team Operation Planning
@@ -157,7 +157,7 @@ Each assigned item supports:
 
 ## Security
 
-[SECURITY POLICY](SECURITY)
+[SECURITY POLICY](SECURITY.md)
 
 AttackFlow implements defense-in-depth protections and adheres to security by design principles. 
 (Note: Application NOT production ready yet - may still contain vulnerable components) 
@@ -204,10 +204,10 @@ python3 scripts/extract-data.py      # Parse CAPEC/CWE
 
 ## Contributing & Reporting Issues
 
-See the [CONTRIBUTING Guide](CONTRIBUTING) for details on how to contribute.
+See the [CONTRIBUTING Guide](CONTRIBUTING.md) for details on how to contribute.
 
 
-See the [SECURITY POLICY](SECURITY) for details on how to report vulnerabilities.
+See the [SECURITY POLICY](SECURITY.md) for details on how to report vulnerabilities.
 
 
 ## License
