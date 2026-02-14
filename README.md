@@ -65,6 +65,10 @@ The Relationship Explorer is a second main view that lets you investigate ATT&CK
 10. Enable compact mode for dense layouts when needed
 11. Export your attack chain as JSON, CSV, or STIX Bundle
 
+## Usecases
+
+See the usecases [README](docs/Usecases/README) for details.
+
 ## Testing
 
 - **Demo kill chain**: Import [examples/demo.json](examples/demo.json) to exercise all metadata fields (CVE/CVSS, observables, links, confidence) and multi-phase coverage.
@@ -81,6 +85,8 @@ The Relationship Explorer is a second main view that lets you investigate ATT&CK
 │                                   # (paths, colors, imports, settings)
 ├── stix-config.js                  # STIX 2.1 SDO type definitions and vocabularies
 ├── examples/*                      # Sample kill chain exports
+├── docs/
+│   └── Usecases/*                  # Usecase documentation and sample exports
 ├── scripts/
 │   ├── extract-attack.py           # ATT&CK STIX bundle parser
 │   ├── extract-data.py             # CAPEC/CWE XML parser

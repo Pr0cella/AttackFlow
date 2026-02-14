@@ -1,0 +1,567 @@
+{
+  "version": "2.7.0",
+  "schema": "killchain-export-lite",
+  "exportedAt": "2026-02-10T12:00:00.000Z",
+  "title": "UC7 — BlackCat/ALPHV Affiliate Playbook: Ransomware Kill Chain",
+  "description": "Ransomware affiliate playbook for BlackCat/ALPHV, documenting the end-to-end kill chain, tools, and IOCs for response planning.",
+  "view": "killchain",
+  "activeTab": "attack",
+  "layers": {
+    "attack": true,
+    "capec": true,
+    "cwe": true,
+    "custom": true
+  },
+  "hideEmpty": true,
+  "customLibrary": {
+    "intrusion-set--5fbd8e64-4676-4ea9-b0b6-f244b7d634cd": {
+      "id": "intrusion-set--5fbd8e64-4676-4ea9-b0b6-f244b7d634cd",
+      "stixType": "intrusion-set",
+      "name": "BlackCat/ALPHV (Affiliate Cluster UNC4466)",
+      "description": "RaaS affiliate leveraging BlackCat/ALPHV ransomware platform. This cluster specializes in exploiting Veritas Backup Exec (CVE-2021-27876/7/8) for initial access, followed by Impacket + Cobalt Strike toolchain. High-value targets: healthcare, legal, manufacturing. Double extortion: encryption + data leak site.",
+      "labels": [
+        "ransomware",
+        "raas",
+        "double-extortion"
+      ],
+      "created": "2026-01-10T08:00:00.000Z",
+      "modified": "2026-02-10T12:00:00.000Z",
+      "aliases": [
+        "UNC4466",
+        "Scattered Spider Affiliate",
+        "ALPHV Cluster 7"
+      ],
+      "first_seen": "2023-06-01T00:00:00.000Z",
+      "last_seen": "2026-01-05T00:00:00.000Z",
+      "goals": [
+        "Financial extortion via ransomware encryption",
+        "Data theft for double extortion leverage"
+      ],
+      "resource_level": "organization",
+      "primary_motivation": "personal-gain"
+    },
+    "malware--106d45a1-9643-4443-8f61-6a9dee63dd88": {
+      "id": "malware--106d45a1-9643-4443-8f61-6a9dee63dd88",
+      "stixType": "malware",
+      "name": "BlackCat v2 (Sphynx)",
+      "description": "Rust-based ransomware. Cross-platform (Windows, Linux, ESXi). AES-128-CTR + RSA-4096 hybrid encryption. Configurable via JSON — affiliate specifies targets, exclusions, encryption mode (full, header-only, intermittent). Supports ESXi VM shutdown, shadow copy deletion, and network propagation via PsExec/WMI.",
+      "labels": [
+        "ransomware",
+        "rust",
+        "cross-platform"
+      ],
+      "created": "2026-01-10T08:00:00.000Z",
+      "modified": "2026-02-10T12:00:00.000Z",
+      "is_family": true,
+      "malware_types": [
+        "ransomware"
+      ],
+      "aliases": [
+        "ALPHV",
+        "Sphynx",
+        "Noberus"
+      ],
+      "first_seen": "2023-02-01T00:00:00.000Z",
+      "last_seen": "2026-01-05T00:00:00.000Z",
+      "implementation_languages": [
+        "rust"
+      ],
+      "capabilities": [
+        "encrypts-files",
+        "destroys-data",
+        "communicates-with-c2",
+        "escalates-privileges"
+      ]
+    },
+    "tool--236f5aa2-cca2-4cdc-9198-0e9efcbec63f": {
+      "id": "tool--236f5aa2-cca2-4cdc-9198-0e9efcbec63f",
+      "stixType": "tool",
+      "name": "Cobalt Strike 4.9 (Cracked)",
+      "description": "Cracked Cobalt Strike 4.9 with xorencoded shellcode. Used for post-exploitation C2, lateral movement, and payload staging. Beacon configured with HTTPS malleable C2 profile (jquery-c2.4.9.profile).",
+      "labels": [
+        "c2",
+        "post-exploitation",
+        "cracked"
+      ],
+      "created": "2026-01-10T08:00:00.000Z",
+      "modified": "2026-02-10T12:00:00.000Z",
+      "tool_types": [
+        "remote-access"
+      ]
+    },
+    "tool--623f48b3-a259-4ad5-b890-f44e0af2a694": {
+      "id": "tool--623f48b3-a259-4ad5-b890-f44e0af2a694",
+      "stixType": "tool",
+      "name": "Impacket",
+      "description": "Python-based network protocol toolkit. Used for secretsdump.py (credential extraction), wmiexec.py (execution), and smbexec.py (lateral movement). Standard ransomware affiliate tooling.",
+      "labels": [
+        "credential-access",
+        "lateral-movement"
+      ],
+      "created": "2026-02-10T12:00:00.000Z",
+      "modified": "2026-02-10T12:00:00.000Z",
+      "tool_types": [
+        "credential-exploitation",
+        "network-capture"
+      ]
+    },
+    "infrastructure--ecaac6f8-be71-40ad-aecb-5d5a357c47af": {
+      "id": "infrastructure--ecaac6f8-be71-40ad-aecb-5d5a357c47af",
+      "stixType": "infrastructure",
+      "name": "ALPHV C2 — HTTPS Malleable Profile",
+      "description": "Cobalt Strike HTTPS C2 using jquery malleable profile. 3 Team Servers on bulletproof hosting (AS209588). Watermark removed from cracked build. Jitter: 37%. Sleep: 60s.",
+      "labels": [
+        "c2",
+        "cobalt-strike",
+        "https"
+      ],
+      "created": "2026-01-10T08:00:00.000Z",
+      "modified": "2026-02-10T12:00:00.000Z",
+      "infrastructure_types": [
+        "command-and-control"
+      ],
+      "first_seen": "2023-06-01T00:00:00.000Z",
+      "last_seen": "2026-01-05T00:00:00.000Z"
+    },
+    "identity--367128b3-e8fb-4d3b-8fb5-5b691209b2a7": {
+      "id": "identity--367128b3-e8fb-4d3b-8fb5-5b691209b2a7",
+      "stixType": "identity",
+      "name": "Meridian Healthcare Group",
+      "description": "Victim. Regional healthcare system operating 14 hospitals and 200+ clinics across 3 states. 32,000 employees. 2.1M patient records. HIPAA-regulated environment.",
+      "labels": [
+        "victim",
+        "healthcare",
+        "hipaa"
+      ],
+      "created": "2026-02-10T12:00:00.000Z",
+      "modified": "2026-02-10T12:00:00.000Z",
+      "identity_class": "organization",
+      "sectors": [
+        "healthcare"
+      ]
+    }
+  },
+  "assignments": {
+    "IN:reconnaissance": {
+      "techniques": [
+        {
+          "id": "T1595.002",
+          "metadata": {
+            "score": "medium",
+            "confidence": 55,
+            "comments": "Affiliate scans for internet-facing Veritas Backup Exec agents (TCP 10000) and vulnerable VPN appliances. Meridian had 4 Backup Exec instances exposed on the perimeter — all running vulnerable versions (21.0).",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": []
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [
+        {
+          "id": "intrusion-set--5fbd8e64-4676-4ea9-b0b6-f244b7d634cd",
+          "instanceId": "itm-rw-is1",
+          "type": "custom",
+          "metadata": {}
+        },
+        {
+          "id": "identity--367128b3-e8fb-4d3b-8fb5-5b691209b2a7",
+          "instanceId": "itm-rw-id1",
+          "type": "custom",
+          "metadata": {}
+        }
+      ],
+      "groups": [],
+      "layout": [
+        {
+          "kind": "item",
+          "instanceId": "itm-rw-is1"
+        },
+        {
+          "kind": "item",
+          "instanceId": "itm-rw-id1"
+        }
+      ]
+    },
+    "IN:resource-development": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [
+        {
+          "groupId": "grp-rw-toolchain",
+          "label": "Affiliate Toolchain",
+          "collapsed": false,
+          "items": [
+            {
+              "type": "custom",
+              "id": "infrastructure--ecaac6f8-be71-40ad-aecb-5d5a357c47af",
+              "instanceId": "itm-rw-infra1",
+              "metadata": {}
+            },
+            {
+              "type": "custom",
+              "id": "tool--236f5aa2-cca2-4cdc-9198-0e9efcbec63f",
+              "instanceId": "itm-rw-tool1",
+              "metadata": {}
+            }
+          ]
+        }
+      ],
+      "layout": [
+        {
+          "kind": "group",
+          "groupId": "grp-rw-toolchain"
+        }
+      ]
+    },
+    "IN:delivery": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "IN:social-engineering": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "IN:exploitation": {
+      "techniques": [
+        {
+          "id": "T1190",
+          "metadata": {
+            "score": "critical",
+            "confidence": 90,
+            "comments": "Exploitation of Veritas Backup Exec Agent (CVE-2021-27876 — file access, CVE-2021-27877 — auth bypass, CVE-2021-27878 — command execution). Chain provides unauthenticated RCE on the backup server. Initial Cobalt Strike beacon deployed within 15 minutes of exploitation.",
+            "cves": [
+              {
+                "id": "CVE-2021-27876",
+                "score": "8.1"
+              },
+              {
+                "id": "CVE-2021-27877",
+                "score": "8.2"
+              },
+              {
+                "id": "CVE-2021-27878",
+                "score": "8.8"
+              }
+            ],
+            "hyperlinks": [
+              {
+                "label": "Mandiant UNC4466 Report",
+                "url": "https://www.mandiant.com/resources/blog/unc4466-targets-veritas-backup-exec"
+              }
+            ],
+            "observables": [
+              {
+                "type": "ipv4-addr",
+                "value": "185.220.101.34"
+              }
+            ]
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "IN:persistence": {
+      "techniques": [
+        {
+          "id": "T1053.005",
+          "metadata": {
+            "score": "high",
+            "confidence": 75,
+            "comments": "Scheduled task 'Windows Update Check' executing Cobalt Strike beacon DLL via rundll32. Task set to run at SYSTEM context every 4 hours.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": []
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "IN:defense-evasion": {
+      "techniques": [
+        {
+          "id": "T1562.001",
+          "metadata": {
+            "score": "critical",
+            "confidence": 85,
+            "comments": "Disabled Windows Defender real-time protection and tamper protection via registry modification. Also disabled CrowdStrike Falcon sensor service via direct service control — possible because backup server ran with unrestrained SYSTEM privileges and Falcon was not tamper-protected.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": []
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "IN:command-control": {
+      "techniques": [
+        {
+          "id": "T1071.001",
+          "metadata": {
+            "score": "high",
+            "confidence": 80,
+            "comments": "Cobalt Strike HTTPS beacon with jquery malleable C2 profile. Mimics jQuery CDN requests to cdn.jquery.com via domain fronting. Beacon jitter: 37%, sleep: 60s.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": [
+              {
+                "type": "domain-name",
+                "value": "cdn-static-update.azureedge.net"
+              },
+              {
+                "type": "ipv4-addr",
+                "value": "193.142.59.17"
+              }
+            ]
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "THROUGH:pivoting": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "THROUGH:discovery": {
+      "techniques": [
+        {
+          "id": "T1018",
+          "metadata": {
+            "score": "medium",
+            "confidence": 70,
+            "comments": "Network discovery via Cobalt Strike 'net view' and AdFind.exe. Enumerated all domain-joined systems, backup targets, and ESXi hosts. Identified 14 vCenter clusters managing 400+ VMs including EMR systems.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": []
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "THROUGH:privilege-escalation": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "THROUGH:execution": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "THROUGH:credential-access": {
+      "techniques": [
+        {
+          "id": "T1003.002",
+          "metadata": {
+            "score": "critical",
+            "confidence": 85,
+            "comments": "Impacket secretsdump.py extracted SAM database and cached domain credentials from backup server. Obtained Domain Admin hash for svc-veeam@meridian.local — service account with unrestricted DA rights (misconfiguration).",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": []
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [
+        {
+          "id": "tool--623f48b3-a259-4ad5-b890-f44e0af2a694",
+          "instanceId": "itm-rw-tool2",
+          "type": "custom",
+          "metadata": {}
+        }
+      ],
+      "groups": [],
+      "layout": [
+        {
+          "kind": "item",
+          "instanceId": "itm-rw-tool2"
+        }
+      ]
+    },
+    "THROUGH:lateral-movement": {
+      "techniques": [
+        {
+          "id": "T1021.002",
+          "metadata": {
+            "score": "critical",
+            "confidence": 80,
+            "comments": "WMI-based lateral movement to Domain Controllers and vCenter management servers using DA credentials. Deployed additional Cobalt Strike beacons to 27 critical systems within 6 hours of initial exploitation.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": []
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "OUT:collection": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [
+        {
+          "groupId": "grp-rw-steal",
+          "label": "Double Extortion — Data Theft Phase",
+          "collapsed": false,
+          "items": [
+            {
+              "type": "attack",
+              "id": "T1560.001",
+              "instanceId": "itm-mlh41k91-wcr4l",
+              "metadata": {
+                "score": "critical",
+                "confidence": 80,
+                "comments": "Pre-encryption data staging. 847 GB of patient records, financial data, and HR documents archived into password-protected 7z files. Staged on backup server's 10TB volume for exfiltration.",
+                "cves": [],
+                "hyperlinks": [],
+                "observables": []
+              }
+            }
+          ]
+        }
+      ],
+      "layout": [
+        {
+          "kind": "group",
+          "groupId": "grp-rw-steal"
+        }
+      ]
+    },
+    "OUT:exfiltration": {
+      "techniques": [
+        {
+          "id": "T1567.002",
+          "metadata": {
+            "score": "critical",
+            "confidence": 85,
+            "comments": "Exfiltration to MEGA cloud storage — 847 GB uploaded over 3 days using rclone.exe. Traffic blended with legitimate HTTPS. Data published on ALPHV .onion leak site as leverage for ransom negotiation.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": []
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "OUT:impact": {
+      "techniques": [
+        {
+          "id": "T1486",
+          "metadata": {
+            "score": "critical",
+            "confidence": 95,
+            "comments": "BlackCat v2 deployed simultaneously to 400+ Windows systems and 14 ESXi hosts. AES-128-CTR + RSA-4096 hybrid encryption. ESXi VMs shut down before VMDK encryption. Ransom demand: $12M in Bitcoin. 11 of 14 hospitals forced to divert patients. EMR systems offline for 18 days.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": []
+          },
+          "instanceId": "itm-mlh41k91-h0a1e"
+        },
+        {
+          "id": "T1490",
+          "metadata": {
+            "score": "critical",
+            "confidence": 90,
+            "comments": "Shadow copies deleted on all Windows hosts (vssadmin delete shadows /all /quiet). Veritas backup catalogs encrypted (the backup server was compromised first). ESXi snapshots deleted. No viable backup restoration path — 18-day recovery from bare metal.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": []
+          },
+          "instanceId": "itm-mlh41k91-rtahd"
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [
+        {
+          "groupId": "grp-rw-detonate",
+          "label": "Ransomware Detonation — Simultaneous Deployment",
+          "collapsed": false,
+          "items": [
+            {
+              "type": "custom",
+              "id": "malware--106d45a1-9643-4443-8f61-6a9dee63dd88",
+              "instanceId": "itm-rw-mal1",
+              "metadata": {}
+            }
+          ]
+        }
+      ],
+      "layout": [
+        {
+          "kind": "group",
+          "groupId": "grp-rw-detonate"
+        },
+        {
+          "kind": "item",
+          "instanceId": "itm-mlh41k91-h0a1e"
+        },
+        {
+          "kind": "item",
+          "instanceId": "itm-mlh41k91-rtahd"
+        }
+      ]
+    },
+    "OUT:objectives": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    }
+  }
+}

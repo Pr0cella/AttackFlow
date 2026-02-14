@@ -1,0 +1,551 @@
+{
+  "version": "2.7.0",
+  "schema": "killchain-export-lite",
+  "exportedAt": "2026-02-10T13:00:00.000Z",
+  "title": "UC8 — MSP Supply Chain Compromise: Multi-Victim Attack Analysis",
+  "description": "Supply chain compromise of an MSP with downstream victims, modeling multi-hop techniques, identities, and shared infrastructure.",
+  "view": "killchain",
+  "activeTab": "custom",
+  "layers": {
+    "attack": true,
+    "capec": true,
+    "cwe": true,
+    "custom": true
+  },
+  "hideEmpty": true,
+  "customLibrary": {
+    "threat-actor--a39de2e9-f7ba-4f74-8080-41f394a371cf": {
+      "id": "threat-actor--a39de2e9-f7ba-4f74-8080-41f394a371cf",
+      "stixType": "threat-actor",
+      "name": "Nebula Syndicate",
+      "description": "Financially motivated threat actor specializing in MSP/MSSP supply chain compromises. Targets IT service providers to achieve one-to-many victim access. Known for RMM tool abuse and living-off-the-land techniques that blend with legitimate MSP operations.",
+      "labels": [
+        "organized-crime",
+        "supply-chain",
+        "msp-targeting"
+      ],
+      "created": "2026-01-05T10:00:00.000Z",
+      "modified": "2026-02-10T13:00:00.000Z",
+      "threat_actor_types": [
+        "criminal"
+      ],
+      "aliases": [
+        "Nebula Syndicate",
+        "UNC5190"
+      ],
+      "first_seen": "2024-03-01T00:00:00.000Z",
+      "last_seen": "2026-01-01T00:00:00.000Z",
+      "roles": [
+        "agent",
+        "infrastructure-operator"
+      ],
+      "goals": [
+        "Compromise MSPs for downstream victim access",
+        "Deploy ransomware across MSP customer base",
+        "Exfiltrate data for double extortion"
+      ],
+      "sophistication": "advanced",
+      "resource_level": "organization",
+      "primary_motivation": "personal-gain"
+    },
+    "identity--e73de8b1-868b-4438-81a8-053502632a2c": {
+      "id": "identity--e73de8b1-868b-4438-81a8-053502632a2c",
+      "stixType": "identity",
+      "name": "Apex IT Solutions (MSP)",
+      "description": "Compromised MSP. Regional managed service provider serving 140+ SMB clients across healthcare, legal, and financial sectors. Uses ConnectWise ScreenConnect and Datto RMM for endpoint management. Admin-level access to all client environments.",
+      "labels": [
+        "victim-msp",
+        "supply-chain-origin"
+      ],
+      "created": "2026-02-10T13:00:00.000Z",
+      "modified": "2026-02-10T13:00:00.000Z",
+      "identity_class": "organization",
+      "sectors": [
+        "technology"
+      ]
+    },
+    "identity--53a56cd1-d1ef-4bee-a1b4-6141854a5d07": {
+      "id": "identity--53a56cd1-d1ef-4bee-a1b4-6141854a5d07",
+      "stixType": "identity",
+      "name": "Pinnacle Law Partners LLP",
+      "description": "Downstream victim #1. 80-attorney law firm specializing in M&A and IP litigation. Holdings include privileged attorney-client communications and M&A documents worth millions in insider trading value.",
+      "labels": [
+        "victim-downstream",
+        "legal",
+        "high-value"
+      ],
+      "created": "2026-02-10T13:00:00.000Z",
+      "modified": "2026-02-10T13:00:00.000Z",
+      "identity_class": "organization",
+      "sectors": [
+        "legal"
+      ]
+    },
+    "identity--eda98fbb-9c33-4e31-9fce-5325fdf860d5": {
+      "id": "identity--eda98fbb-9c33-4e31-9fce-5325fdf860d5",
+      "stixType": "identity",
+      "name": "Valley Health Medical Group",
+      "description": "Downstream victim #2. Multi-site medical practice with 42 physicians. 180,000 patient records including PHI/PII. HIPAA regulated.",
+      "labels": [
+        "victim-downstream",
+        "healthcare",
+        "hipaa"
+      ],
+      "created": "2026-02-10T13:00:00.000Z",
+      "modified": "2026-02-10T13:00:00.000Z",
+      "identity_class": "organization",
+      "sectors": [
+        "healthcare"
+      ]
+    },
+    "infrastructure--269d4d1c-8880-4f1a-bebc-eaac197a2523": {
+      "id": "infrastructure--269d4d1c-8880-4f1a-bebc-eaac197a2523",
+      "stixType": "infrastructure",
+      "name": "Compromised RMM — Datto RMM + ScreenConnect",
+      "description": "Attackers gained admin access to Apex IT Solutions' RMM platforms. Datto RMM provides agent-based remote execution on all 2,800+ managed endpoints. ConnectWise ScreenConnect provides interactive remote sessions. Both operated as legitimate MSP tools — indistinguishable from normal MSP operations at the endpoint.",
+      "labels": [
+        "rmm",
+        "supply-chain",
+        "legitimate-tool-abuse"
+      ],
+      "created": "2026-02-10T13:00:00.000Z",
+      "modified": "2026-02-10T13:00:00.000Z",
+      "infrastructure_types": [
+        "command-and-control"
+      ],
+      "first_seen": "2025-11-15T00:00:00.000Z",
+      "last_seen": "2026-01-01T00:00:00.000Z"
+    },
+    "note--17b3e67c-d540-4e22-89db-b07dbff0f198": {
+      "id": "note--17b3e67c-d540-4e22-89db-b07dbff0f198",
+      "stixType": "note",
+      "name": "Supply Chain Multiplier Analysis",
+      "description": "IMPACT MULTIPLIER: Compromising Apex IT Solutions (1 MSP) provided simultaneous access to 140+ client organizations and 2,800+ endpoints. The attacker's cost-to-impact ratio is extreme: one phishing campaign against 1 MSP yielded the equivalent of 140 independent breaches. Key insight: MSP trust relationships create transitive trust chains — the MSP's admin credentials are de facto Domain Admin across every client environment.",
+      "labels": [
+        "analysis",
+        "supply-chain",
+        "impact"
+      ],
+      "created": "2026-02-10T13:00:00.000Z",
+      "modified": "2026-02-10T13:00:00.000Z"
+    }
+  },
+  "assignments": {
+    "IN:reconnaissance": {
+      "techniques": [
+        {
+          "id": "T1591.004",
+          "metadata": {
+            "score": "medium",
+            "confidence": 60,
+            "comments": "Nebula Syndicate specifically targets MSPs by identifying their technology stack. LinkedIn job postings for Apex IT revealed: ConnectWise ScreenConnect, Datto RMM, Microsoft 365. MSP websites often advertise client counts and vertical specializations — Apex boasted '140+ clients across healthcare and legal.'",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": []
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [
+        {
+          "id": "threat-actor--a39de2e9-f7ba-4f74-8080-41f394a371cf",
+          "instanceId": "itm-sc-ta1",
+          "type": "custom",
+          "metadata": {}
+        },
+        {
+          "id": "identity--e73de8b1-868b-4438-81a8-053502632a2c",
+          "instanceId": "itm-sc-msp1",
+          "type": "custom",
+          "metadata": {}
+        }
+      ],
+      "groups": [],
+      "layout": [
+        {
+          "kind": "item",
+          "instanceId": "itm-sc-ta1"
+        },
+        {
+          "kind": "item",
+          "instanceId": "itm-sc-msp1"
+        }
+      ]
+    },
+    "IN:resource-development": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "IN:delivery": {
+      "techniques": [
+        {
+          "id": "T1566.002",
+          "metadata": {
+            "score": "high",
+            "confidence": 80,
+            "comments": "Spearphishing link targeting Apex IT's helpdesk team. Email impersonated ConnectWise support with a 'critical security update' link leading to a credential harvesting page. 2 of 8 helpdesk staff entered their SSO credentials.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": [
+              {
+                "type": "domain-name",
+                "value": "connectwise-portal-update.com"
+              },
+              {
+                "type": "email-addr",
+                "value": "security-alert@connectwise-support.net"
+              }
+            ]
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "IN:social-engineering": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "IN:exploitation": {
+      "techniques": [
+        {
+          "id": "T1078.004",
+          "metadata": {
+            "score": "critical",
+            "confidence": 85,
+            "comments": "Valid cloud credentials used to access Apex IT's Microsoft 365 tenant. From there, accessed Datto RMM admin panel and ConnectWise ScreenConnect admin dashboard using SSO federation. Single phished credential → full RMM admin access across 140+ client environments.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": []
+          },
+          "instanceId": "itm-mlh41k98-i7ww6"
+        }
+      ],
+      "capecs": [
+        {
+          "id": "CAPEC-560",
+          "metadata": {
+            "score": "critical",
+            "confidence": 80,
+            "comments": "CAPEC-560: Use of Known Domain Credentials. Phished credentials provided legitimate access to MSP admin tools — no vulnerability exploitation required. The attack chain from phished SSO credential to RMM admin leverages the MSP's own trust architecture.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": []
+          },
+          "instanceId": "itm-mlh41k98-zd7s3"
+        }
+      ],
+      "cwes": [],
+      "customItems": [],
+      "groups": [
+        {
+          "groupId": "grp-sc-access",
+          "label": "Supply Chain Pivot: MSP → 140+ Clients",
+          "collapsed": false,
+          "items": [
+            {
+              "type": "custom",
+              "id": "infrastructure--269d4d1c-8880-4f1a-bebc-eaac197a2523",
+              "instanceId": "itm-sc-rmm1",
+              "metadata": {}
+            }
+          ]
+        }
+      ],
+      "layout": [
+        {
+          "kind": "group",
+          "groupId": "grp-sc-access"
+        },
+        {
+          "kind": "item",
+          "instanceId": "itm-mlh41k98-i7ww6"
+        },
+        {
+          "kind": "item",
+          "instanceId": "itm-mlh41k98-zd7s3"
+        }
+      ]
+    },
+    "IN:persistence": {
+      "techniques": [
+        {
+          "id": "T1098.001",
+          "metadata": {
+            "score": "high",
+            "confidence": 75,
+            "comments": "Created additional admin account in Datto RMM ('apex-backup-svc') and ConnectWise ScreenConnect ('cw-patch-mgr'). Named to blend with existing MSP service accounts. Provides persistence even if original phished account is rotated.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": []
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "IN:defense-evasion": {
+      "techniques": [
+        {
+          "id": "T1036.004",
+          "metadata": {
+            "score": "high",
+            "confidence": 85,
+            "comments": "ALL attacker activity executed through legitimate RMM tools. At the endpoint level, scripts and commands arrive via signed Datto RMM agent or ConnectWise ScreenConnect — identical to legitimate MSP operations. No malware deployed. No IOCs beyond RMM execution logs.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": []
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "IN:command-control": {
+      "techniques": [
+        {
+          "id": "T1219",
+          "metadata": {
+            "score": "critical",
+            "confidence": 90,
+            "comments": "RMM tools AS C2. Datto RMM provides scripted command execution on all 2,800+ agents. ScreenConnect provides interactive GUI sessions. Both are signed, trusted, and expected in the environment. This is the fundamental supply chain advantage: the C2 channel is the MSP's own management infrastructure.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": []
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [
+        {
+          "id": "note--17b3e67c-d540-4e22-89db-b07dbff0f198",
+          "instanceId": "itm-sc-note1",
+          "type": "custom",
+          "metadata": {}
+        }
+      ],
+      "groups": [],
+      "layout": [
+        {
+          "kind": "item",
+          "instanceId": "itm-sc-note1"
+        }
+      ]
+    },
+    "THROUGH:pivoting": {
+      "techniques": [
+        {
+          "id": "T1199",
+          "metadata": {
+            "score": "critical",
+            "confidence": 90,
+            "comments": "Trust relationship exploitation: MSP → Client. Datto RMM agents run as SYSTEM on every managed endpoint. The MSP's trust relationship provides immediate SYSTEM-level access to all client environments without any additional exploitation. This is the supply chain multiplier.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": []
+          },
+          "instanceId": "itm-mlh41k98-vbin0"
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [
+        {
+          "groupId": "grp-sc-downstream",
+          "label": "Downstream Victims (2 of 140+)",
+          "collapsed": false,
+          "items": [
+            {
+              "type": "custom",
+              "id": "identity--53a56cd1-d1ef-4bee-a1b4-6141854a5d07",
+              "instanceId": "itm-sc-victim1",
+              "metadata": {}
+            },
+            {
+              "type": "custom",
+              "id": "identity--eda98fbb-9c33-4e31-9fce-5325fdf860d5",
+              "instanceId": "itm-sc-victim2",
+              "metadata": {}
+            }
+          ]
+        }
+      ],
+      "layout": [
+        {
+          "kind": "group",
+          "groupId": "grp-sc-downstream"
+        },
+        {
+          "kind": "item",
+          "instanceId": "itm-mlh41k98-vbin0"
+        }
+      ]
+    },
+    "THROUGH:discovery": {
+      "techniques": [
+        {
+          "id": "T1018",
+          "metadata": {
+            "score": "medium",
+            "confidence": 70,
+            "comments": "Datto RMM dashboard provides complete endpoint inventory for all clients — hostnames, OS versions, installed software, network addresses. No active scanning required. The MSP's own asset management IS the attacker's discovery phase.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": []
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "THROUGH:privilege-escalation": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "THROUGH:execution": {
+      "techniques": [
+        {
+          "id": "T1059.001",
+          "metadata": {
+            "score": "critical",
+            "confidence": 85,
+            "comments": "PowerShell execution via Datto RMM Component Scripts. Commands executed as SYSTEM across targeted client environments. Script content: download and execute ransomware payload from attacker-controlled Azure Blob storage.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": []
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "THROUGH:credential-access": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "THROUGH:lateral-movement": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "OUT:collection": {
+      "techniques": [
+        {
+          "id": "T1005",
+          "metadata": {
+            "score": "critical",
+            "confidence": 80,
+            "comments": "Targeted collection from high-value clients: Pinnacle Law (M&A documents, privileged communications) and Valley Health (patient records). ScreenConnect interactive sessions used to browse file shares and identify high-value documents. 120 GB staged across both victims.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": []
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "OUT:exfiltration": {
+      "techniques": [
+        {
+          "id": "T1567.002",
+          "metadata": {
+            "score": "critical",
+            "confidence": 85,
+            "comments": "Exfiltration to MEGA via rclone deployed through Datto RMM. 120 GB exfiltrated over 5 days. Traffic indistinguishable from legitimate cloud sync operations at the network level.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": []
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "OUT:impact": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [
+        {
+          "groupId": "grp-sc-impact",
+          "label": "Mass Deployment: 47 Orgs via Single RMM Job",
+          "collapsed": false,
+          "items": [
+            {
+              "type": "attack",
+              "id": "T1486",
+              "instanceId": "itm-mlh41k98-8rt9b",
+              "metadata": {
+                "score": "critical",
+                "confidence": 90,
+                "comments": "Ransomware deployed simultaneously to 47 high-value client organizations via Datto RMM mass-deployment job. Selective targeting: healthcare, legal, and financial clients hit; small retail clients skipped (lower ransom potential). 47 organizations encrypted in under 4 hours from a single Datto RMM job execution.",
+                "cves": [],
+                "hyperlinks": [],
+                "observables": []
+              }
+            }
+          ]
+        }
+      ],
+      "layout": [
+        {
+          "kind": "group",
+          "groupId": "grp-sc-impact"
+        }
+      ]
+    },
+    "OUT:objectives": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    }
+  }
+}

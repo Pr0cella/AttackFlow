@@ -1,0 +1,395 @@
+{
+  "version": "2.7.0",
+  "schema": "killchain-export-lite",
+  "exportedAt": "2026-02-10T09:00:00.000Z",
+  "title": "UC3 — Manufacturing OT/IT Defense Posture Assessment",
+  "description": "Defense posture assessment for a manufacturing OT/IT environment, highlighting detection gaps via ATT&CK/CAPEC/CWE mapping and course-of-action mitigations.",
+  "view": "killchain",
+  "activeTab": "cwe",
+  "layers": {
+    "attack": true,
+    "capec": true,
+    "cwe": true,
+    "custom": true
+  },
+  "hideEmpty": true,
+  "customLibrary": {
+    "course-of-action--e27ad3d4-c4b5-4880-a01e-df28d77101a0": {
+      "id": "course-of-action--e27ad3d4-c4b5-4880-a01e-df28d77101a0",
+      "stixType": "course-of-action",
+      "name": "Implement PLC Firmware Validation",
+      "description": "Deploy cryptographic firmware signing and validation on all Siemens S7-1500 and Allen-Bradley PLCs. Current gap: firmware updates are accepted without signature verification, allowing malicious firmware injection.",
+      "labels": [
+        "ics",
+        "firmware",
+        "critical"
+      ],
+      "created": "2026-02-05T09:00:00.000Z",
+      "modified": "2026-02-10T09:00:00.000Z"
+    },
+    "course-of-action--0737aeec-4905-4679-8da9-9e312bdaade4": {
+      "id": "course-of-action--0737aeec-4905-4679-8da9-9e312bdaade4",
+      "stixType": "course-of-action",
+      "name": "Enforce IT/OT Network Segmentation",
+      "description": "Deploy a data diode or unidirectional gateway between IT DMZ and OT Level 3 (site operations). Current state: flat Layer 2 between engineering workstations and PLC network via legacy Cisco switch. No ACL enforcement.",
+      "labels": [
+        "network",
+        "segmentation",
+        "ics"
+      ],
+      "created": "2026-02-05T09:30:00.000Z",
+      "modified": "2026-02-10T09:00:00.000Z"
+    },
+    "course-of-action--21b704d2-d203-42de-ba96-0a1c31940d1b": {
+      "id": "course-of-action--21b704d2-d203-42de-ba96-0a1c31940d1b",
+      "stixType": "course-of-action",
+      "name": "Deploy OT-Aware EDR on Engineering Workstations",
+      "description": "Install Claroty or Dragos endpoint agent on all HMI and engineering workstations. Current gap: no endpoint detection on any OT-connected Windows systems. These systems run Windows 10 LTSC but have no AV/EDR due to legacy vendor restrictions.",
+      "labels": [
+        "edr",
+        "ot",
+        "endpoint"
+      ],
+      "created": "2026-02-05T10:00:00.000Z",
+      "modified": "2026-02-10T09:00:00.000Z"
+    }
+  },
+  "assignments": {
+    "IN:reconnaissance": {
+      "techniques": [
+        {
+          "id": "T1595.002",
+          "metadata": {
+            "score": "medium",
+            "confidence": 40,
+            "comments": "GAP ASSESSMENT: External scanning detection capability is LIMITED. WAF covers web apps but Shodan/Censys exposure of OT protocols (Modbus/44818, EtherNet/IP/2222) on WAN-facing IPs is not monitored. Recommendation: deploy protocol-aware IDS on perimeter.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": []
+          }
+        }
+      ],
+      "capecs": [
+        {
+          "id": "CAPEC-169",
+          "metadata": {
+            "score": "medium",
+            "comments": "Footprinting via exposed OT services. Shodan shows 3 IPs with Modbus and EtherNet/IP responding on WAN interface."
+          }
+        }
+      ],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "IN:resource-development": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "IN:delivery": {
+      "techniques": [
+        {
+          "id": "T1566.001",
+          "metadata": {
+            "score": "low",
+            "confidence": 75,
+            "comments": "DETECTION: STRONG. Email gateway (Proofpoint) with sandbox detonation, URL rewriting, and macro blocking. Current block rate: 99.2% for malicious attachments in last quarter. Assessment: adequate control.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": []
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "IN:social-engineering": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "IN:exploitation": {
+      "techniques": [
+        {
+          "id": "T1190",
+          "metadata": {
+            "score": "critical",
+            "confidence": 30,
+            "comments": "GAP: CRITICAL. VPN concentrator (Fortinet FortiGate) running FortiOS 7.0.x — vulnerable to CVE-2024-21762. No signature update since November. IPS in detection-only mode, not blocking. Assessment: high-priority remediation required.",
+            "cves": [
+              {
+                "id": "CVE-2024-21762",
+                "score": "9.8",
+                "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+              }
+            ],
+            "hyperlinks": [
+              {
+                "label": "Fortinet Advisory",
+                "url": "https://www.fortiguard.com/psirt/FG-IR-24-015"
+              }
+            ],
+            "observables": []
+          }
+        }
+      ],
+      "capecs": [
+        {
+          "id": "CAPEC-242",
+          "metadata": {
+            "score": "critical",
+            "comments": "Code injection via VPN appliance — matches CAPEC-242. No WAF/IPS signature coverage for FortiOS-specific exploit patterns."
+          }
+        }
+      ],
+      "cwes": [
+        {
+          "id": "CWE-787",
+          "metadata": {
+            "score": "critical",
+            "comments": "Out-of-bounds write in FortiOS SSL-VPN — root cause of CVE-2024-21762."
+          }
+        }
+      ],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "IN:persistence": {
+      "techniques": [
+        {
+          "id": "T1053.005",
+          "metadata": {
+            "score": "high",
+            "confidence": 45,
+            "comments": "GAP: Scheduled task creation detection is INCONSISTENT. IT domain: Crowdstrike detects (adequate). OT engineering workstations: NO EDR deployed. Assessment: blind spot on all OT-connected Windows systems.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": []
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [
+        {
+          "id": "course-of-action--21b704d2-d203-42de-ba96-0a1c31940d1b",
+          "instanceId": "itm-bt-coa1",
+          "type": "custom",
+          "metadata": {}
+        }
+      ],
+      "groups": [],
+      "layout": [
+        {
+          "kind": "item",
+          "instanceId": "itm-bt-coa1"
+        }
+      ]
+    },
+    "IN:defense-evasion": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "IN:command-control": {
+      "techniques": [
+        {
+          "id": "T1071.001",
+          "metadata": {
+            "score": "high",
+            "confidence": 50,
+            "comments": "GAP: HTTPS C2 detection is PARTIAL. Proxy (Zscaler) does TLS inspection for IT but OT network traffic bypasses proxy entirely — direct internet access from engineering VLAN. Assessment: critical gap in OT network visibility.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": []
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "THROUGH:pivoting": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [
+        {
+          "groupId": "grp-bt-seg",
+          "label": "OT Segmentation Gap",
+          "collapsed": false,
+          "items": [
+            {
+              "type": "attack",
+              "id": "T1090.001",
+              "instanceId": "itm-auto-1770835608201-5",
+              "metadata": {
+                "score": "critical",
+                "confidence": 20,
+                "comments": "GAP: CRITICAL. IT-to-OT pivot is UNIMPEDED. No segmentation between IT DMZ and OT Level 3 network. Flat Layer 2 via legacy Cisco Catalyst switch. Any IT compromise leads directly to OT. Assessment: highest priority remediation.",
+                "cves": [],
+                "hyperlinks": [],
+                "observables": []
+              }
+            },
+            {
+              "type": "cwe",
+              "id": "CWE-923",
+              "instanceId": "itm-auto-1770835608201-6",
+              "metadata": {
+                "score": "critical",
+                "comments": "Improper restriction of communication channel to intended endpoints — describes the IT/OT flat network topology."
+              }
+            },
+            {
+              "type": "custom",
+              "id": "course-of-action--0737aeec-4905-4679-8da9-9e312bdaade4",
+              "instanceId": "itm-bt-coa2",
+              "metadata": {}
+            }
+          ]
+        }
+      ],
+      "layout": [
+        {
+          "kind": "group",
+          "groupId": "grp-bt-seg"
+        }
+      ]
+    },
+    "THROUGH:discovery": {
+      "techniques": [
+        {
+          "id": "T1046",
+          "metadata": {
+            "score": "high",
+            "confidence": 25,
+            "comments": "GAP: OT network scanning detection is ABSENT. No IDS on OT segments. Nmap scan of Modbus/EtherNet/IP ports would be completely invisible. Assessment: deploy OT-aware NIDS (Claroty/Dragos).",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": []
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "THROUGH:privilege-escalation": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "THROUGH:execution": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "THROUGH:credential-access": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "THROUGH:lateral-movement": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "OUT:collection": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "OUT:exfiltration": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    },
+    "OUT:impact": {
+      "techniques": [
+        {
+          "id": "T1489",
+          "metadata": {
+            "score": "critical",
+            "confidence": 15,
+            "comments": "GAP: CRITICAL. PLC firmware manipulation and service disruption — NO detection capability. PLCs accept unsigned firmware updates. No change detection on PLC program logic. A compromised engineering workstation could upload malicious PLC firmware undetected. Assessment: implement firmware signing and PLC program integrity monitoring.",
+            "cves": [],
+            "hyperlinks": [],
+            "observables": []
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": [
+        {
+          "id": "CWE-345",
+          "metadata": {
+            "score": "critical",
+            "comments": "Insufficient verification of data authenticity — PLC firmware accepted without cryptographic verification."
+          }
+        }
+      ],
+      "customItems": [
+        {
+          "id": "course-of-action--e27ad3d4-c4b5-4880-a01e-df28d77101a0",
+          "instanceId": "itm-bt-coa3",
+          "type": "custom",
+          "metadata": {}
+        }
+      ],
+      "groups": [],
+      "layout": [
+        {
+          "kind": "item",
+          "instanceId": "itm-bt-coa3"
+        }
+      ]
+    },
+    "OUT:objectives": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": []
+    }
+  }
+}
