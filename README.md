@@ -9,41 +9,44 @@ An editor for creating enriched Cyber Kill Chain assessments by mapping MITRE AT
 ![License](https://img.shields.io/badge/license-Apache%202.0-green)
 ![Dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)
 
-## Main Editor
-![Preview](preview.png)
-
 ## Features
 
-- **Vanilla JavaScript** — No external dependencies, runs in any browser
+### Implementation
+- **Vanilla CSS & JavaScript** — No external dependencies, runs in any browser
+- **Offline Operation** — No CDN, no remote requests, no third-party dependencies
+- **Lightweight Theming Engine** — Toggle configurable light/dark theme with shared settings (via `config.js`) across views 
+
+### Resource Corpus
 - **Unified Kill Chain** — Map entities to IN → THROUGH → OUT phases
 - **Multi-Domain ATT&CK** — 898 techniques across Enterprise, Mobile, and ICS
 - **CAPEC/CWE Integration** — Link attack patterns and weaknesses
 - **STIX 2.1 Objects** — Create and manage all 18 SDO types plus custom objects
-- **STIX Bundle Import** — Import any STIX 2.1 bundle JSON to extract SDOs with full property preservation
-- **STIX Editor** — Edit all spec-defined fields per SDO type with vocabulary dropdowns
+
+### Import & Sharing
+- **Import/Export** — JSON sharing, CSV exports (with mitigation rows), and STIX 2.1 bundle exports (with mitigations and relationships)
 - **STIX Bundle Export** — Export assigned techniques as `attack-pattern` SDOs with mitigations as `course-of-action` SDOs and `mitigates` SROs, using deterministic UUIDv5 IDs
-- **Clear STIX Data** — One-click removal of all STIX items, with configurable auto-clear on bundle or kill chain import
+- **STIX Bundle Import** — Import multiple STIX 2.1 bundles to extract SDOs with full property preservation (Configurable auto-clear on bundle or kill chain import via `config.js`). Aggregates data by default.
+- **Navigator Layers** — Import ATT&CK Navigator JSON exports
+
+### Editor
 - **Drag & Drop** — Intuitive assignment of entities to phases
-- **Grouping** — Organize items into collapsible groups within phases
-- **Duplicates** — Allow multiple instances of the same entity
+- **Grouping** — Organize items into collapsible named groups within phases
 - **Rich Metadata** — Comments, hyperlinks, observables, multi-CVE/CVSS references
 - **Score & Confidence** — Rate items by severity and assessment confidence
-- **Visual Indicators** — Color-coded ribbons, CVE badges, and metadata icons
-- **Technique Cross-References** — Inline clickable technique ID badges in descriptions link to the Relationship Explorer
-- **Kill Chain Description** — Collapsible description field for documenting the overall assessment
-- **Light/Dark Theme** — Toggle theme with shared settings across views
-- **Compact Mode** — Dense ID-only tags to fit large kill chains
-- **Relationship Explorer** — Browse ATT&CK ↔ CAPEC ↔ CWE ↔ Mitigations in a dedicated view
-- **Hide Empty Phases** — Focus on active phases by hiding empty ones
-- **Collapsible Sidebar** — Toggle the left sidebar for more workspace
-- **Import/Export** — JSON sharing, CSV exports (with mitigation rows), and STIX 2.1 bundle exports (with mitigations and relationships)
-- **Navigator Layers** — Import ATT&CK Navigator JSON exports
-- **Offline Operation** — No CDN, no remote requests, no third-party dependencies
+- **Compact Mode** — Dense ID-only tags to fit large kill chains, collapsible sidebar & hiding empty phases
+- **STIX Editor** — Edit all spec-defined fields per SDO type with vocabulary dropdowns
 
-## Relations View
+![Preview](preview.png)
+
+#### Kill Chain Relationships
+- **Browsable Mapping Explorer** — Browse kill chain related CAPEC → CWE → ATT&CK → Mitigation patterns per Phase in a dedicated view
+
 ![Relations View](relations.png)
 
-## Explorer View
+### Relationship Explorer 
+- **Integrated Resource Corpus Explorer** Explore & search the complete corpus of related ATT&CK ↔ CAPEC ↔ CWE ↔ Mitigations patterns
+- **Technique Cross-References** — Item relationships & techniques referenced by ID in descriptions link to the Relationship Explorer
+
 ![Explorer View](explorer.png)
 
 ## Quick Start
@@ -75,13 +78,9 @@ The Relationship Explorer is a second main view that lets you investigate ATT&CK
 ├── index.html                      # Main application
 ├── explorer.html                   # Relationship Explorer view
 ├── config.js                       # Centralized configuration 
-│                                    # (paths, colors, imports, settings)
+│                                   # (paths, colors, imports, settings)
 ├── stix-config.js                  # STIX 2.1 SDO type definitions and vocabularies
-├── examples/                        # Sample kill chain exports
-│   ├── demo.json                    # Full-metadata demo mapping
-│   ├── grouping-demo.json           # Grouped ransomware TTP example
-│   ├── stix-demo.json               # All 19 STIX SDO types showcase
-│   └── Operation-Midnight-Eclipse-stix-bundle.json  # Exported STIX 2.1 bundle
+├── examples/*                      # Sample kill chain exports
 ├── scripts/
 │   ├── extract-attack.py           # ATT&CK STIX bundle parser
 │   ├── extract-data.py             # CAPEC/CWE XML parser
@@ -143,6 +142,8 @@ Each assigned item supports:
 
 ## Security
 
+[SECURITY POLICY](SECURITY)
+
 AttackFlow implements defense-in-depth protections and adheres to security by design principles. 
 (Note: Application NOT production ready yet - may still contain vulnerable components) 
 Please do not hesitate to create an issue / pull request or contact me directly if you find any security related issues or have suggestions for further improving application security and mitigating exploitation scenarios. 
@@ -184,6 +185,13 @@ python3 scripts/extract-data.py      # Parse CAPEC/CWE
 # JSON sanitization paths are configurable in config.js under sanitize.paths
 # Sanitization runs before and after parsing to keep source and generated files clean
 ```
+
+
+## Contributing & Reporting Issues
+
+See the [CONTRIBUTING Guide](CONTRIBUTING) for details on how to contribute.
+See the [SECURITY POLICY](SECURITY) for details on how to report vulnerabilities.
+
 
 ## License
 
