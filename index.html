@@ -5658,6 +5658,20 @@
             }
         }
 
+        // KCE-SEC-011: Validate entity IDs before use in URLs to prevent injection
+        function isValidEntityId(type, id) {
+            if (!id || typeof id !== 'string') return false;
+            // ATT&CK: T####.### format
+            if (type === 'attack') return /^T\d{4}(?:\.\d{3})?$/.test(id);
+            // CAPEC: CAPEC-### format
+            if (type === 'capec') return /^CAPEC-\d+$/.test(id);
+            // CWE: CWE-### format
+            if (type === 'cwe') return /^CWE-\d+$/.test(id);
+            // Custom: Allow alphanumeric with hyphens and underscores
+            if (type === 'custom') return /^[a-zA-Z0-9_-]+$/.test(id);
+            return false;
+        }
+
         function buildEntityDetail(type, id) {
             let entity, html = '', name = 'Unknown';
 
@@ -5746,7 +5760,9 @@
                     </div>
                     ` : ''}
                     <div class="detail-section">
-                        <a href="https://attack.mitre.org/techniques/${id.replace('.', '/')}" target="_blank" rel="noopener noreferrer" style="color: var(--attack-color);">View on MITRE ATT&CK →</a>
+                        ${isValidEntityId('attack', id) 
+                            ? `<a href="https://attack.mitre.org/techniques/${id.replace('.', '/')}" target="_blank" rel="noopener noreferrer" style="color: var(--attack-color);">View on MITRE ATT&CK →</a>`
+                            : '<span style="color: var(--text-secondary);">Invalid technique ID</span>'}
                     </div>
                 `;
             } else if (type === 'capec') {
@@ -5793,7 +5809,9 @@
                         </div>
                     </div>
                     <div class="detail-section">
-                        <a href="https://capec.mitre.org/data/definitions/${esc(id.replace('CAPEC-', ''))}.html" target="_blank" rel="noopener noreferrer" style="color: var(--capec-color);">View on MITRE CAPEC →</a>
+                        ${isValidEntityId('capec', id) 
+                            ? `<a href="https://capec.mitre.org/data/definitions/${esc(id.replace('CAPEC-', ''))}.html" target="_blank" rel="noopener noreferrer" style="color: var(--capec-color);">View on MITRE CAPEC →</a>`
+                            : '<span style="color: var(--text-secondary);">Invalid CAPEC ID</span>'}
                     </div>
                 `;
             } else if (type === 'cwe') {
@@ -5826,7 +5844,9 @@
                         </div>
                     </div>
                     <div class="detail-section">
-                        <a href="https://cwe.mitre.org/data/definitions/${esc(id.replace('CWE-', ''))}.html" target="_blank" rel="noopener noreferrer" style="color: var(--cwe-color);">View on MITRE CWE →</a>
+                        ${isValidEntityId('cwe', id) 
+                            ? `<a href="https://cwe.mitre.org/data/definitions/${esc(id.replace('CWE-', ''))}.html" target="_blank" rel="noopener noreferrer" style="color: var(--cwe-color);">View on MITRE CWE →</a>`
+                            : '<span style="color: var(--text-secondary);">Invalid CWE ID</span>'}
                     </div>
                 `;
             } else if (type === 'custom') {
