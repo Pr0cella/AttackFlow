@@ -28,33 +28,12 @@ We will acknowledge receipt as soon as possible and aim to provide a fix or miti
 
 ## Scope of Security Measures
 
-The protections cover the current attack surface of a **static client-side application**. A comprehensive security audit was completed on 2026-02-15 (see [SECURITY_AUDIT_REPORT.md](SECURITY_AUDIT_REPORT.md)). Notable security measures:
+The protections cover the current attack surface of a **static client-side application**. They do **not** constitute a production-hardened security posture. Notable limitations:
 
-### ✅ Implemented Security Controls
-- **Input Sanitization:** Comprehensive `InputSecurity` class with HTML and attribute escaping
-- **DOM XSS Prevention:** All user input and external data properly escaped before rendering
-- **CSV Formula Injection Prevention:** Export functions sanitize dangerous formula characters
-- **Tabnabbing Protection:** All external links use `rel="noopener noreferrer"`
-- **URL Validation:** Scheme allowlisting (HTTP/HTTPS only) for external URLs
-- **Entity ID Validation:** Format validation before URL construction
-- **Content Security Policy:** CSP headers present (with `unsafe-inline` for single-file architecture)
-- **Security Headers:** X-Frame-Options and X-XSS-Protection configured
-
-### ⚠️ Known Limitations
-- CSP includes `'unsafe-inline'` for script-src and style-src (necessary for single-file HTML architecture)
-- No Subresource Integrity (SRI) — there are no external CDN dependencies
-- No automated security CI/CD pipeline — testing performed manually
-- `localStorage` is used for theme and compact mode preferences only (no sensitive data)
-- File size limits not enforced on JSON imports (acceptable for local tool usage)
-
-### 📊 Security Test Results
-- 37/37 security tests passed (100% success rate)
-- All DOM XSS vulnerabilities fixed
-- CSV formula injection prevention verified
-- Entity ID validation confirmed
-- URL scheme restrictions validated
-
-For detailed audit findings, see [SECURITY_AUDIT_REPORT.md](SECURITY_AUDIT_REPORT.md).
+- No Content Security Policy (CSP) headers are set — this depends on the hosting server configuration.
+- No Subresource Integrity (SRI) — there are no external CDN dependencies, but `config.js` and `stix-config.js` are loaded via `<script src>`.
+- No automated security CI/CD pipeline — testing is manual and browser-based.
+- `localStorage` is used for theme and compact mode preferences only (no sensitive data).
 
 ---
 
