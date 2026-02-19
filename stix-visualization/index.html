@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8"/>
+    <link href="../css/cti_flatly_2024-05-07-bootstrap.css" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="./stix_visualizer/application.css" />
+    <script src="./stix_visualizer/require.js" data-main="./stix_visualizer/application"></script>
+  </head>
+
+  <body>
+    <div id="top-header-bar" style="margin-top:1rem">
+        <span id="header"></span>
+      <span class="chosen-file" id="chosen-files"></span>
+    </div>
+    
+    <div id="uploader" style="margin-top: 6rem;">
+      <small>Upload STIX 2.X (JSON) file:</small><br><br>
+      <div class="custom-file" style="max-width: 20rem;margin-bottom: 6rem">
+        <input type="file" class="custom-file-input" id="files" name="files">
+        <label class="custom-file-label" for="files" style="text-align: left;">Choose a file</label>
+      </div>
+      <br>
+      <input style="visibility: hidden;display:none" type="text" id="url" name="url" placeholder="Paste URL here" /><br>
+      <button style="visibility: hidden;display:none" id="fetch-url">Fetch</button>
+      <small>Paste STIX 2.X JSON:</small>
+      <br>
+      <br>
+      <textarea id="paste-area-stix-json" class="rounded" style="border-width:1px" name="pasted" placeholder="Copy/Paste JSON data here..."></textarea><br>
+      <br />
+      <br />
+      <button class="btn btn-primary" id="paste-parser">Parse</button>
+      <!-- <p>-- Configuration --</p> -->
+      <textarea style="visibility: hidden;display:none" id="paste-area-custom-config" name="pasted" placeholder="Copy/Paste, in JSON format, (if you want to specify this) your custom config for the graph as such: &#10;{&#10;&quot;&lt;objectType&gt;&quot;: &#10;&#9;{&#10;&#9;&#9;&quot;displayProperty&quot;: &lt;nameOfProperty&gt;, &#10;&#9;&#9;&quot;displayIcon&quot;: &lt;nameOfIconFile&gt;,&#10;&#9;&#9;&quot;embeddedRelationships&quot;: [...relationships...]&#10;&#9;&#9;&quot;timestampList&quot;: [...timestampProperties...]&#10;&#9;},&#10;&quot;userLabels&quot;:&#10;&#9;{&#10;&#9;&#9;&quot;&lt;STIX ID&gt;&quot;: &quot;a label&quot;,&#10;&#9;&#9;...&#10;&#9;},&#10;&quot;include&quot;: &lt;STIX object filter criteria&gt;,&#10;&quot;exclude&quot;: &lt;STIX object filter criteria&gt;&#10;}&#10;&#10;&quot;&lt;objectType&gt;&quot; lets you customize how the node is displayed in the graph per-type; &quot;userLabels&quot; lets you customize labels per-ID.  For type-specific customization, please note that the above properties are the only currently-supported properties, and at least 1 of them has to be specified.  ID-specific label customization will take priority over type-specific labels.&#10;&#10;Each relationship in the &quot;embeddedRelationships&quot; list is a [&quot;&lt;property path&gt;&quot;, &quot;&lt;edge label&gt;&quot;, &lt;edge direction boolean&gt;] triple.  The property path should refer to a _ref(s) property somewhere within objects of that type."></textarea>
+    </div>
+    <div id="canvas-container" class="hidden">
+      <div id="canvas-wrapper">
+        <div id="canvas"></div>
+        <div id="timelineControls">
+          <label for="timeline">Timeline</label>
+          <input type="range" id="timeline" name="timeline" min="0" max="0" step="1" disabled/>
+          <label for="timelineCheckbox">Cumulative Timeline</label>
+          <input type="checkbox" id="timelineCheckbox" name="cumulative" checked disabled/>
+        </div>
+        <div id="legend">
+            <table id="legend-content">
+                <caption>
+                    <h5
+title="Drag the timeline selector to display objects according to their timestamp.
+Dragging anywhere will pan the viewing area.
+Use the mouse wheel to zoom.
+Click the 'Selected Node' area to expand/shrink it.
+Click legend items to toggle visibility of nodes of a particular STIX type."
+                    >
+                    Legend
+                    </h5>
+                </caption>
+            </table>
+        </div>
+      </div>
+      <div id="selected" class="sidebar">
+        <h5>Selected Node</h5>
+        <div id="selection"></div>
+      </div>
+      <div id="connections" class="sidebar">
+        <h5>Linked Nodes</h5>
+        <h6>Incoming Edges:</h6>
+        <div id="connections-incoming"></div>
+        <h6>Outgoing Edges:</h6>
+        <div id="connections-outgoing"></div>
+      </div>
+    </div>
+  </body>
+</html>

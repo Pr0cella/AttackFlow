@@ -196,7 +196,8 @@ const CONFIG = {
 
     // Navigation behavior
     navigation: {
-        confirmOnLeave: true     // Show confirmation dialog before leaving the page
+        confirmOnLeave: true,    // Show confirmation dialog before leaving the page
+        showStixBuilder: true    // Toggle STIX Builder view in navigation
     }
 };
 

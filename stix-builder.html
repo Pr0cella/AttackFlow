@@ -1,0 +1,2168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="./favicon.ico">
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' 'unsafe-inline';
+        style-src 'self' 'unsafe-inline';
+        img-src 'self' data:;
+        connect-src 'self';
+        frame-src 'self' blob:;
+        object-src 'none';
+        base-uri 'self';
+        form-action 'self';
+    ">
+    <title>AttackFlow - STIX Builder</title>
+    <script src="config.js"></script>
+    <script src="stix-builder.config.js"></script>
+    <link rel="stylesheet" href="stix-visualization/stix_visualizer/application.css">
+    <style>
+        :root {
+            --bg-dark: #f8fafc;
+            --bg-card: #ffffff;
+            --bg-panel: #f1f5f9;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --border-color: #e2e8f0;
+            --accent: #94a3b8;
+            --success: #22c55e;
+            --danger: #ef4444;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+        }
+
+        .app {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+            gap: 16px;
+        }
+
+        .header-left {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .header-title {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .header-subtitle {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .control-label {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn {
+            padding: 6px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-panel);
+            color: var(--text-secondary);
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .btn:hover { color: var(--text-primary); border-color: var(--accent); }
+        .btn.primary { border-color: var(--accent); color: var(--text-primary); }
+        .btn.danger:hover { border-color: var(--danger); color: var(--danger); }
+        .btn.success { border-color: var(--success); color: var(--success); }
+
+        .main {
+            display: grid;
+            grid-template-columns: 320px 1fr 360px;
+            gap: 12px;
+            padding: 12px;
+            height: calc(100vh - 56px);
+        }
+
+        .panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .panel-header {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .panel-body {
+            padding: 10px;
+            overflow: auto;
+            flex: 1;
+        }
+
+        #right-pane-body.no-scroll {
+            overflow: hidden;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 6px;
+            padding: 10px 12px 0;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 6px 10px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+
+        .tab.active {
+            color: var(--text-primary);
+            border-color: var(--accent);
+            background: rgba(113, 113, 122, 0.15);
+        }
+
+        .search {
+            padding: 10px 12px;
+            display: flex;
+            gap: 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .search input {
+            width: 100%;
+            padding: 6px 8px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+
+        .object-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .object-item {
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-panel);
+            cursor: pointer;
+        }
+
+        .object-item:hover { border-color: var(--accent); }
+        .object-item.selected { border-color: var(--accent); background: rgba(113, 113, 122, 0.2); }
+
+        .object-id {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-weight: 600;
+            font-size: 0.72rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .object-name {
+            font-size: 0.8rem;
+            margin-top: 4px;
+        }
+
+        .form-section {
+            margin-bottom: 16px;
+        }
+
+        .section-title {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .field {
+            display: grid;
+            grid-template-columns: 180px 1fr;
+            gap: 8px;
+            padding: 6px 0;
+            border-bottom: 1px dashed var(--border-color);
+        }
+
+        .field:last-child { border-bottom: none; }
+
+        .field-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .req {
+            color: var(--danger);
+            font-weight: 600;
+            font-size: 0.7rem;
+        }
+
+        .field-input input,
+        .field-input select,
+        .field-input textarea {
+            width: 100%;
+            padding: 6px 8px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+
+        .field-input textarea { min-height: 70px; resize: vertical; }
+
+        .inline-actions {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .mini-btn {
+            padding: 4px 6px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-panel);
+            color: var(--text-secondary);
+            font-size: 0.65rem;
+            cursor: pointer;
+        }
+
+        .mini-btn:hover { color: var(--text-primary); border-color: var(--accent); }
+        .mini-btn.danger:hover { color: var(--danger); border-color: var(--danger); }
+
+        .center-controls {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .center-toggle .btn.active {
+            background: var(--accent);
+            color: var(--text-primary);
+            border-color: var(--accent);
+        }
+
+        .list-item {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+
+        .list-item:last-child { margin-bottom: 0; }
+
+        .list-item input,
+        .list-item select {
+            width: 100%;
+        }
+
+        .list-info {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+
+        .hint {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .badge {
+            padding: 2px 6px;
+            border-radius: 10px;
+            background: rgba(113, 113, 122, 0.2);
+            color: var(--text-secondary);
+            font-size: 0.65rem;
+            margin-left: 6px;
+        }
+
+        .status-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent);
+        }
+
+        .status-dot.ok { background: var(--success); }
+        .status-dot.bad { background: var(--danger); }
+
+        .json-preview {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 0.72rem;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            padding: 8px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .empty {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+        }
+
+        .toast {
+            position: fixed;
+            right: 16px;
+            bottom: 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            padding: 10px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            color: var(--text-primary);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.2s;
+            pointer-events: none;
+        }
+
+        .toast.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .center-pane {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .center-pane.hidden { display: none; }
+
+        .visualizer-pane {
+            display: none;
+            height: 100%;
+        }
+
+        .visualizer-pane.active { display: block; }
+
+        .visualizer-pane,
+        .visualizer-pane * {
+            color: var(--text-primary);
+            background-color: transparent;
+        }
+
+        .visualizer-pane .sidebar,
+        .right-visualizer .sidebar {
+            background: var(--bg-panel);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .visualizer-pane .selected-object-prop-name,
+        .right-visualizer .selected-object-prop-name { color: var(--accent); }
+
+        .visualizer-pane .selected-object-text-value,
+        .right-visualizer .selected-object-text-value { color: var(--text-primary); }
+
+        .visualizer-pane .selected-object-text-value-ref,
+        .right-visualizer .selected-object-text-value-ref { color: var(--accent); }
+
+        .visualizer-pane .selected-object-text-value-ref-dangling,
+        .right-visualizer .selected-object-text-value-ref-dangling { color: var(--danger); }
+
+        .visualizer-pane .selected-object-nontext-value,
+        .right-visualizer .selected-object-nontext-value { color: var(--text-secondary); }
+
+        .visualizer-pane #legend-content .typeHidden {
+            color: var(--text-secondary);
+        }
+
+        .visualizer-pane .vis-network .vis-node.vis-selected,
+        .visualizer-pane .vis-network .vis-node.vis-selected img,
+        .visualizer-pane .vis-network .vis-node.vis-selected canvas {
+            box-shadow: 0 0 0 3px var(--accent), 0 0 18px rgba(148, 163, 184, 0.5);
+            border-radius: 6px;
+        }
+
+        .visualizer-pane .vis-network .vis-label {
+            color: var(--text-primary);
+        }
+
+        .visualizer-pane .vis-network .vis-node.vis-selected .vis-label {
+            background: rgba(148, 163, 184, 0.25);
+            color: var(--text-primary);
+            border-radius: 4px;
+            padding: 2px 4px;
+        }
+
+        .visualizer-pane #uploader,
+        .visualizer-pane #top-header-bar,
+        .visualizer-pane #chosen-files,
+        .visualizer-pane #paste-area-stix-json,
+        .visualizer-pane #paste-area-custom-config,
+        .visualizer-pane #paste-parser,
+        .visualizer-pane #files {
+            display: none;
+        }
+
+        .visualizer-pane #canvas {
+            border: 1px solid var(--border-color);
+            background: var(--bg-panel);
+            height: 520px;
+        }
+
+        .visualizer-pane #canvas-wrapper {
+            margin: 0;
+            width: 100%;
+            /* margin-right: 1rem; */
+        }
+
+        .visualizer-pane .sidebar {
+            background: var(--bg-panel);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+        }
+
+        .visualizer-pane .selected-object-prop-name { color: var(--accent); }
+        .visualizer-pane .selected-object-text-value { color: var(--text-primary); }
+        .visualizer-pane .selected-object-text-value-ref { color: var(--accent); }
+        .visualizer-pane .selected-object-text-value-ref-dangling { color: var(--danger); }
+
+        .right-visualizer {
+            display: none;
+            height: 100%;
+            overflow: hidden;
+            gap: 10px;
+            flex-direction: column;
+        }
+
+        .right-visualizer.active { display: flex; }
+
+        .right-visualizer .sidebar {
+            width: 100%;
+            margin: 0;
+            overflow: hidden;
+            max-height: calc(50% - 6px);
+            overflow-y: scroll;
+        }
+
+        .right-visualizer .selected-object-text-value,
+        .right-visualizer .selected-object-text-value-ref,
+        .right-visualizer .selected-object-text-value-ref-dangling,
+        .right-visualizer .selected-object-prop-name,
+        .right-visualizer .selected-object-nontext-value {
+            display: inline-block;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .right-visualizer .selected-object-list {
+            max-height: 120px;
+            overflow: hidden;
+        }
+
+        @media (max-width: 1100px) {
+            .main {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+            .panel { min-height: 220px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="header">
+            <div class="header-left">
+                <div class="header-title">STIX 2.1 Builder</div>
+                <div class="header-subtitle">Create, Edit & Visualize STIX 2.1 Bundles</div>
+            </div>
+            <div class="header-controls">
+                <div class="control-group">
+                    <span class="control-label">Add</span>
+                    <select id="add-type" class="btn"></select>
+                    <button class="btn primary" id="add-object">Add Object</button>
+                </div>
+                <div class="control-group">
+                    <span class="control-label">Bundle</span>
+                    <button class="btn" id="import-bundle">Import</button>
+                    <button class="btn" id="export-bundle">Export</button>
+                    <button class="btn" id="validate-bundle">Validate</button>
+                </div>
+                <div class="control-group">
+                    <span class="control-label">Theme</span>
+                    <button class="btn" id="theme-mode-toggle">Toggle</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="main">
+            <div class="panel">
+                <div class="tabs" id="type-tabs"></div>
+                <div class="search">
+                    <input id="search-input" type="text" placeholder="Search by ID or name">
+                </div>
+                <div class="panel-body" id="left-pane-body">
+                    <div class="object-list" id="object-list"></div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <span>Center Pane</span>
+                    <div class="center-controls">
+                        <div class="center-toggle">
+                            <button class="btn" id="mode-editor">Editor</button>
+                            <button class="btn" id="mode-visualizer">Visualizer</button>
+                        </div>
+                        <button class="btn" id="visualize-bundle">Visualize Valid Bundle</button>
+                        <button class="mini-btn" id="copy-json">Copy JSON</button>
+                        <button class="mini-btn danger" id="delete-object">Delete</button>
+                    </div>
+                </div>
+                <div class="panel-body center-pane" id="center-pane">
+                    <div id="editor-panel"></div>
+                    <div class="visualizer-pane" id="visualizer-pane">
+                        <div id="top-header-bar">
+                            <span id="header"></span>
+                            <span class="chosen-file" id="chosen-files"></span>
+                        </div>
+                        <div id="uploader">
+                            <input type="file" id="files" name="files">
+                            <textarea id="paste-area-stix-json"></textarea>
+                            <button id="paste-parser">Parse</button>
+                            <textarea id="paste-area-custom-config"></textarea>
+                        </div>
+                        <div id="canvas-container" class="hidden">
+                            <div id="canvas-wrapper">
+                                <div id="canvas"></div>
+                                <div id="timelineControls">
+                                    <label for="timeline">Timeline</label>
+                                    <input type="range" id="timeline" name="timeline" min="0" max="0" step="1" disabled>
+                                    <label for="timelineCheckbox">Cumulative Timeline</label>
+                                    <input type="checkbox" id="timelineCheckbox" name="cumulative" checked disabled>
+                                </div>
+                                <div id="legend">
+                                    <table id="legend-content">
+                                        <caption><h5>Legend</h5></caption>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <span>Bundle</span>
+                    <div class="status-row" id="bundle-status">
+                        <span class="status-dot" id="status-dot"></span>
+                        <span id="status-text">Not validated</span>
+                    </div>
+                </div>
+                <div class="panel-body" id="right-pane-body">
+                    <div id="bundle-pane">
+                        <div class="form-section">
+                            <div class="section-title">Summary</div>
+                            <div id="bundle-summary" class="hint"></div>
+                        </div>
+                        <div class="form-section">
+                            <div class="section-title">JSON Preview</div>
+                            <div class="json-preview" id="bundle-preview"></div>
+                        </div>
+                    </div>
+                    <div class="right-visualizer" id="visualizer-side-pane">
+                        <div id="selected" class="sidebar">
+                            <h5>Selected Node</h5>
+                            <div id="selection"></div>
+                        </div>
+                        <div id="connections" class="sidebar">
+                            <h5>Linked Nodes</h5>
+                            <h6>Incoming Edges:</h6>
+                            <div id="connections-incoming"></div>
+                            <h6>Outgoing Edges:</h6>
+                            <div id="connections-outgoing"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <input type="file" id="bundle-file" accept=".json" style="display:none">
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const INPUT_LIMITS = {
+            maxFileSize: 50 * 1024 * 1024,
+            maxObjects: 5000,
+            maxStringLength: 5000,
+            maxListItems: 100
+        };
+
+        const LIST_LIMITS = {
+            maxAllResults: 500
+        };
+
+        const THEME_STORAGE_KEYS = {
+            mode: 'af-theme-mode'
+        };
+
+        let currentTheme = {
+            mode: CONFIG?.themeDefaults?.mode || 'light',
+            scheme: 'default'
+        };
+
+        const InputSecurity = {
+            escapeHtml(str) {
+                if (str === null || str === undefined) return '';
+                const div = document.createElement('div');
+                div.textContent = String(str);
+                return div.innerHTML;
+            },
+            encodeHtmlEntities(str) {
+                if (str === null || str === undefined) return '';
+                return String(str)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;')
+                    .replace(/`/g, '&#96;');
+            },
+            normalize(str, maxLength = 10000) {
+                if (str === null || str === undefined) return '';
+                return String(str)
+                    .replace(/[\x00-\x1F\x7F]/g, '')
+                    .replace(/<script[^>]*>.*?<\/script>/gi, '')
+                    .slice(0, maxLength);
+            },
+            sanitize(str, maxLength = 10000) {
+                let value = this.normalize(str, maxLength).trim();
+                value = value.replace(/[\[\]\{\};"'`]/g, '');
+                return this.encodeHtmlEntities(value);
+            },
+            sanitizeAttr(str, maxLength = 200) {
+                return this.encodeHtmlEntities(this.sanitize(str, maxLength));
+            }
+        };
+
+        const esc = (str) => InputSecurity.escapeHtml(str);
+        const escAttr = (str) => InputSecurity.sanitizeAttr(str);
+
+        const BLOCKED_INPUT_CHARS = new Set(['<', '>', '[', ']', '{', '}', '"', "'", '`', ';']);
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('visible');
+            setTimeout(() => toast.classList.remove('visible'), 2200);
+        }
+
+        function getPreferredThemeMode() {
+            const configured = CONFIG?.themeMode || CONFIG?.themeDefaults?.mode || 'light';
+            if (configured !== 'auto') return configured;
+            if (typeof window === 'undefined') return CONFIG?.themeDefaults?.mode || 'light';
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) return 'light';
+            return 'dark';
+        }
+
+        function normalizeThemeMode(mode) {
+            return mode === 'light' || mode === 'dark' ? mode : (CONFIG?.themeDefaults?.mode || 'light');
+        }
+
+        function normalizeThemeScheme(mode, scheme) {
+            const schemes = CONFIG?.themes?.[mode] || {};
+            if (scheme && schemes[scheme]) return scheme;
+            if (schemes.default) return 'default';
+            const first = Object.keys(schemes)[0];
+            return first || 'default';
+        }
+
+        function applyTheme(mode, scheme, persist = true) {
+            const resolvedMode = normalizeThemeMode(mode);
+            const resolvedScheme = normalizeThemeScheme(resolvedMode, scheme);
+            const theme = typeof resolveTheme === 'function'
+                ? resolveTheme(resolvedMode, resolvedScheme)
+                : null;
+            if (typeof applyConfigColors === 'function') applyConfigColors(theme);
+            document.documentElement.dataset.theme = resolvedMode;
+            currentTheme = { mode: resolvedMode, scheme: resolvedScheme };
+            window.AttackFlowStixViz?.applyTheme?.();
+            if (persist) {
+                try { localStorage.setItem(THEME_STORAGE_KEYS.mode, resolvedMode); } catch (e) {}
+            }
+        }
+
+        function toggleThemeMode() {
+            const nextMode = currentTheme.mode === 'dark' ? 'light' : 'dark';
+            const nextScheme = normalizeThemeScheme(nextMode, currentTheme.scheme);
+            applyTheme(nextMode, nextScheme);
+        }
+
+        function initThemeControls() {
+            let storedMode = null;
+            try { storedMode = localStorage.getItem(THEME_STORAGE_KEYS.mode); } catch (e) {}
+            const mode = normalizeThemeMode(storedMode || getPreferredThemeMode());
+            applyTheme(mode, 'default', false);
+        }
+
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        function stripAngleBracketsFromJson(obj) {
+            if (Array.isArray(obj)) return obj.map(stripAngleBracketsFromJson);
+            if (obj && typeof obj === 'object') {
+                const out = {};
+                Object.entries(obj).forEach(([k, v]) => {
+                    out[k] = stripAngleBracketsFromJson(v);
+                });
+                return out;
+            }
+            if (typeof obj === 'string') return obj.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return obj;
+        }
+
+        function sanitizeUserInputText(text) {
+            let value = InputSecurity.normalize(text, INPUT_LIMITS.maxStringLength);
+            value = value.replace(/[\[\]\{\};"'`]/g, '');
+            return value;
+        }
+
+        function sanitizeImportedString(str, maxLength = INPUT_LIMITS.maxStringLength) {
+            if (str === null || str === undefined) return '';
+            if (typeof str !== 'string') return '';
+            return String(str)
+                .replace(/[\x00-\x1F\x7F]/g, '')
+                .replace(/<script[^>]*>.*?<\/script>/gi, '')
+                .replace(/on\w+\s*=/gi, '')
+                .replace(/[\[\]\{\};"'`]/g, '')
+                .replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .trim()
+                .slice(0, maxLength);
+        }
+
+        function applyInputGuards() {
+            document.addEventListener('keydown', (e) => {
+                if (!isTextInputElement(e.target)) return;
+                if (BLOCKED_INPUT_CHARS.has(e.key)) e.preventDefault();
+            });
+            document.addEventListener('beforeinput', (e) => {
+                if (!isTextInputElement(e.target)) return;
+                if (!e.data) return;
+                for (const ch of e.data) {
+                    if (BLOCKED_INPUT_CHARS.has(ch)) {
+                        e.preventDefault();
+                        return;
+                    }
+                }
+            });
+            document.addEventListener('paste', (e) => {
+                if (!isTextInputElement(e.target)) return;
+                const text = (e.clipboardData || window.clipboardData)?.getData('text') || '';
+                const sanitized = sanitizeUserInputText(text);
+                if (sanitized !== text) {
+                    e.preventDefault();
+                    document.execCommand('insertText', false, sanitized);
+                }
+            });
+        }
+
+        function isTextInputElement(el) {
+            return el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
+        }
+
+        function isSafeHttpUrl(url) {
+            if (typeof url !== 'string') return false;
+            const trimmed = url.trim();
+            if (!trimmed) return false;
+            try {
+                const parsed = new URL(trimmed);
+                return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+            } catch (e) {
+                return false;
+            }
+        }
+
+        const state = {
+            bundle: {
+                type: 'bundle',
+                id: 'bundle--' + generateUUID(),
+                spec_version: STIX_VERSION,
+                objects: []
+            },
+            objectsById: new Map(),
+            ui: {
+                activeTab: 'sdo',
+                activeObjectId: null,
+                search: '',
+                centerMode: 'editor'
+            },
+            validation: {
+                ok: false,
+                issues: []
+            }
+        };
+
+        const CATEGORY_LABELS = {
+            all: 'All',
+            sdo: 'SDO',
+            sro: 'SRO',
+            sco: 'SCO',
+            marking: 'Marking',
+            extension: 'Extension'
+        };
+
+        function getObjectCategory(type) {
+            const def = getStixObjectDefinition(type);
+            return def?.category || 'sdo';
+        }
+
+        function getObjectDisplayName(obj) {
+            return obj.name || obj.label || obj.subject || obj.value || obj.id;
+        }
+
+        function buildAddTypeOptions() {
+            const select = document.getElementById('add-type');
+            select.innerHTML = '';
+            Object.keys(STIX_OBJECT_DEFS).forEach((type) => {
+                const def = getStixObjectDefinition(type);
+                const option = document.createElement('option');
+                option.value = type;
+                option.textContent = def?.label || type;
+                select.appendChild(option);
+            });
+        }
+
+        function setActiveTab(tabKey) {
+            state.ui.activeTab = tabKey;
+            renderTabs();
+            renderObjectList();
+        }
+
+        function renderTabs() {
+            const tabs = document.getElementById('type-tabs');
+            tabs.innerHTML = '';
+            Object.keys(CATEGORY_LABELS).forEach((key) => {
+                const btn = document.createElement('button');
+                btn.className = 'tab' + (state.ui.activeTab === key ? ' active' : '');
+                btn.textContent = CATEGORY_LABELS[key];
+                btn.addEventListener('click', () => setActiveTab(key));
+                tabs.appendChild(btn);
+            });
+        }
+
+        function renderObjectList() {
+            const list = document.getElementById('object-list');
+            const search = state.ui.search.toLowerCase();
+            list.innerHTML = '';
+
+            const filtered = state.bundle.objects.filter((obj) => {
+                if (state.ui.activeTab !== 'all' && getObjectCategory(obj.type) !== state.ui.activeTab) return false;
+                const hay = `${obj.id} ${getObjectDisplayName(obj)}`.toLowerCase();
+                return !search || hay.includes(search);
+            });
+
+            let visible = filtered;
+            if (state.ui.activeTab === 'all' && filtered.length > LIST_LIMITS.maxAllResults) {
+                visible = filtered.slice(0, LIST_LIMITS.maxAllResults);
+                if (state.ui.activeObjectId) {
+                    const activeIdx = filtered.findIndex((obj) => obj.id === state.ui.activeObjectId);
+                    if (activeIdx >= LIST_LIMITS.maxAllResults && activeIdx !== -1) {
+                        visible = visible.slice(0, LIST_LIMITS.maxAllResults - 1);
+                        visible.push(filtered[activeIdx]);
+                    }
+                }
+                const info = document.createElement('div');
+                info.className = 'list-info';
+                info.textContent = `Showing first ${LIST_LIMITS.maxAllResults} of ${filtered.length} objects.`;
+                list.appendChild(info);
+            }
+
+            if (!filtered.length) {
+                list.innerHTML = '<div class="empty">No objects in this category.</div>';
+                return;
+            }
+
+            visible.forEach((obj) => {
+                const row = document.createElement('div');
+                row.className = 'object-item' + (state.ui.activeObjectId === obj.id ? ' selected' : '');
+                row.addEventListener('click', () => selectObject(obj.id));
+                row.innerHTML = `
+                    <div class="object-id">${esc(obj.id)}</div>
+                    <div class="object-name">${esc(getObjectDisplayName(obj))}</div>
+                `;
+                list.appendChild(row);
+            });
+
+            const selected = list.querySelector('.object-item.selected');
+            if (selected) selected.scrollIntoView({ block: 'nearest' });
+        }
+
+        function selectObject(id) {
+            state.ui.activeObjectId = id;
+            renderObjectList();
+            renderEditor();
+            if (state.ui.centerMode === 'visualizer') {
+                window.AttackFlowStixViz?.selectAndPopulate?.(id);
+            }
+        }
+
+        function getActiveObject() {
+            return state.bundle.objects.find((obj) => obj.id === state.ui.activeObjectId) || null;
+        }
+
+        function createDefaultObject(type) {
+            const def = getStixObjectDefinition(type);
+            if (!def) return null;
+            const obj = {
+                type: type,
+                id: type + '--' + generateUUID(),
+                spec_version: STIX_VERSION
+            };
+            if (def.category !== 'sco') {
+                const now = new Date().toISOString();
+                obj.created = now;
+                obj.modified = now;
+            }
+            const requiredFields = def.required || [];
+            requiredFields.forEach((field) => {
+                if (field.key in obj) return;
+                obj[field.key] = getDefaultForField(field);
+            });
+            return obj;
+        }
+
+        function getDefaultForField(field) {
+            if (field.default !== undefined) return field.default;
+            switch (field.type) {
+                case 'boolean': return false;
+                case 'integer':
+                case 'number': return null;
+                case 'list':
+                case 'list:open-vocab':
+                case 'object-refs':
+                case 'object-marking-refs':
+                case 'kill-chain-phases':
+                case 'granular-markings':
+                case 'external-references':
+                    return [];
+                case 'dictionary':
+                case 'hashes':
+                case 'extensions':
+                case 'marking-definition':
+                    return {};
+                default:
+                    return '';
+            }
+        }
+
+        function addObject(type) {
+            if (state.bundle.objects.length >= INPUT_LIMITS.maxObjects) {
+                showToast('Bundle object limit reached');
+                return;
+            }
+            const obj = createDefaultObject(type);
+            if (!obj) return;
+            if (state.objectsById.has(obj.id)) {
+                showToast('Duplicate ID generated, try again');
+                return;
+            }
+            state.bundle.objects.push(obj);
+            state.objectsById.set(obj.id, obj);
+            selectObject(obj.id);
+            renderObjectList();
+            renderBundlePreview();
+        }
+
+        function deleteActiveObject() {
+            const obj = getActiveObject();
+            if (!obj) return;
+            if (!confirm(`Delete ${obj.type} ${obj.id}?`)) return;
+            state.bundle.objects = state.bundle.objects.filter((item) => item.id !== obj.id);
+            state.objectsById.delete(obj.id);
+            state.ui.activeObjectId = state.bundle.objects[0]?.id || null;
+            renderObjectList();
+            renderEditor();
+            renderBundlePreview();
+        }
+
+        function renderEditor() {
+            const panel = document.getElementById('editor-panel');
+            const obj = getActiveObject();
+            if (!obj) {
+                panel.innerHTML = '<div class="empty">Select an object to edit.</div>';
+                return;
+            }
+
+            const def = getStixObjectDefinition(obj.type);
+            const commonFields = def?.category !== 'sco'
+                ? [...(STIX_COMMON_PROPERTIES.required || []), ...(STIX_COMMON_PROPERTIES.optional || [])]
+                : [
+                    { key: 'type', label: 'Type', type: 'string', description: 'STIX object type.' },
+                    { key: 'spec_version', label: 'Spec Version', type: 'string', description: 'STIX spec version.' },
+                    { key: 'id', label: 'ID', type: 'identifier', description: 'STIX identifier.' }
+                ];
+
+            const typeFields = [ ...(def?.required || []), ...(def?.optional || []) ];
+
+            panel.innerHTML = `
+                <div class="form-section">
+                    <div class="section-title">Common Properties</div>
+                    ${commonFields.map((field) => renderField(obj, field, isRequiredField(field, def, true))).join('')}
+                </div>
+                <div class="form-section">
+                    <div class="section-title">${esc(def?.label || obj.type)} Fields</div>
+                    ${typeFields.map((field) => renderField(obj, field, isRequiredField(field, def, false))).join('')}
+                </div>
+            `;
+        }
+
+        function setCenterMode(mode) {
+            state.ui.centerMode = mode;
+            renderCenterMode();
+        }
+
+        function renderCenterMode() {
+            const editor = document.getElementById('editor-panel');
+            const visualizer = document.getElementById('visualizer-pane');
+            const modeEditor = document.getElementById('mode-editor');
+            const modeVisualizer = document.getElementById('mode-visualizer');
+            const bundlePane = document.getElementById('bundle-pane');
+            const visualizerSidePane = document.getElementById('visualizer-side-pane');
+            const rightPaneBody = document.getElementById('right-pane-body');
+            const isVisualizer = state.ui.centerMode === 'visualizer';
+
+            editor.classList.toggle('hidden', isVisualizer);
+            visualizer.classList.toggle('active', isVisualizer);
+            modeEditor.classList.toggle('active', !isVisualizer);
+            modeVisualizer.classList.toggle('active', isVisualizer);
+            bundlePane.classList.toggle('hidden', isVisualizer);
+            visualizerSidePane.classList.toggle('active', isVisualizer);
+            rightPaneBody.classList.toggle('no-scroll', isVisualizer);
+        }
+
+        function isRequiredField(field, def, isCommon) {
+            if (isCommon) return (STIX_COMMON_PROPERTIES.required || []).some((f) => f.key === field.key);
+            return (def?.required || []).some((f) => f.key === field.key);
+        }
+
+        function renderField(obj, field, required) {
+            const value = obj[field.key];
+            const reqMark = required ? '<span class="req">*</span>' : '';
+            const label = `${esc(field.label || field.key)}${reqMark}`;
+            return `
+                <div class="field">
+                    <div class="field-label">${label}</div>
+                    <div class="field-input">
+                        ${renderFieldInput(obj, field, value)}
+                        ${field.description ? `<div class="hint">${esc(field.description)}</div>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderFieldInput(obj, field, value) {
+            const key = escAttr(field.key);
+            const isReadOnly = field.key === 'type' || field.key === 'spec_version';
+            const roAttr = isReadOnly ? 'readonly' : '';
+            switch (field.type) {
+                case 'text':
+                    return `<textarea data-field="${key}" data-type="text" ${roAttr}>${esc(value || '')}</textarea>`;
+                case 'boolean':
+                    return `<input type="checkbox" data-field="${key}" data-type="boolean" ${value ? 'checked' : ''}>`;
+                case 'integer':
+                case 'number':
+                    return `<input type="number" data-field="${key}" data-type="${field.type}" value="${value ?? ''}" ${roAttr}>`;
+                case 'timestamp':
+                    return `<input type="text" data-field="${key}" data-type="timestamp" value="${escAttr(value || '')}" placeholder="2026-02-19T12:00:00Z" ${roAttr}>`;
+                case 'identifier':
+                    return `<div class="inline-actions">
+                        <input type="text" data-field="${key}" data-type="identifier" value="${escAttr(value || '')}" ${roAttr}>
+                        <button class="mini-btn" data-action="regen-id">Regenerate</button>
+                    </div>`;
+                case 'enum':
+                    return renderEnumField(field, key, value);
+                case 'open-vocab':
+                    return renderOpenVocabField(field, key, value);
+                case 'list':
+                case 'list:open-vocab':
+                    return renderListField(field, key, value || []);
+                case 'object-refs':
+                    return renderObjectRefsField(field, key, value || []);
+                case 'object-marking-refs':
+                    return renderObjectRefsField(field, key, value || []);
+                case 'kill-chain-phases':
+                    return renderKillChainField(key, value || []);
+                case 'granular-markings':
+                    return renderGranularMarkingsField(key, value || []);
+                case 'external-references':
+                    return renderExternalReferencesField(key, value || []);
+                case 'dictionary':
+                    return renderDictionaryField(key, value || {});
+                case 'hashes':
+                    return renderHashesField(key, value || {});
+                case 'extensions':
+                    return renderExtensionsField(key, value || {});
+                case 'marking-definition':
+                    return renderMarkingDefinitionField(obj, key, value || {});
+                default:
+                    return `<input type="text" data-field="${key}" data-type="string" value="${escAttr(value || '')}" ${roAttr}>`;
+            }
+        }
+
+        function renderEnumField(field, key, value) {
+            const options = field.options || (field.vocabulary ? getVocabulary(field.vocabulary) : []);
+            return `
+                <select data-field="${key}" data-type="enum">
+                    <option value="">Select...</option>
+                    ${options.map((opt) => `<option value="${escAttr(opt)}" ${opt === value ? 'selected' : ''}>${esc(opt)}</option>`).join('')}
+                </select>
+            `;
+        }
+
+        function renderOpenVocabField(field, key, value) {
+            const options = field.vocabulary ? getVocabulary(field.vocabulary) : [];
+            const listId = `list-${key}`;
+            return `
+                <input type="text" data-field="${key}" data-type="open-vocab" list="${listId}" value="${escAttr(value || '')}">
+                <datalist id="${listId}">
+                    ${options.map((opt) => `<option value="${escAttr(opt)}"></option>`).join('')}
+                </datalist>
+            `;
+        }
+
+        function renderListField(field, key, values) {
+            const listId = `list-${key}-${Math.random().toString(36).slice(2, 7)}`;
+            const options = field.vocabulary ? getVocabulary(field.vocabulary) : [];
+            const items = (values || []).map((item, index) => {
+                const input = field.type === 'list:open-vocab'
+                    ? `<input type="text" data-list-field="${key}" data-index="${index}" list="${listId}" value="${escAttr(item || '')}">`
+                    : `<input type="text" data-list-field="${key}" data-index="${index}" value="${escAttr(item || '')}">`;
+                return `
+                    <div class="list-item">
+                        ${input}
+                        <button class="mini-btn danger" data-action="remove-list" data-list-field="${key}" data-index="${index}">Remove</button>
+                    </div>
+                `;
+            }).join('');
+
+            return `
+                <div>
+                    ${items || '<div class="empty">No items yet.</div>'}
+                    <button class="mini-btn" data-action="add-list" data-list-field="${key}">Add Item</button>
+                </div>
+                ${options.length ? `<datalist id="${listId}">${options.map((opt) => `<option value="${escAttr(opt)}"></option>`).join('')}</datalist>` : ''}
+            `;
+        }
+
+        function renderObjectRefsField(field, key, values) {
+            const options = state.bundle.objects.map((obj) => obj.id);
+            const listId = `refs-${key}-${Math.random().toString(36).slice(2, 7)}`;
+            const items = (values || []).map((item, index) => `
+                <div class="list-item">
+                    <input type="text" data-list-field="${key}" data-index="${index}" list="${listId}" value="${escAttr(item || '')}">
+                    <button class="mini-btn danger" data-action="remove-list" data-list-field="${key}" data-index="${index}">Remove</button>
+                </div>
+            `).join('');
+            return `
+                <div>
+                    ${items || '<div class="empty">No references yet.</div>'}
+                    <button class="mini-btn" data-action="add-list" data-list-field="${key}">Add Ref</button>
+                </div>
+                <datalist id="${listId}">
+                    ${options.map((id) => `<option value="${escAttr(id)}"></option>`).join('')}
+                </datalist>
+            `;
+        }
+
+        function renderKillChainField(key, values) {
+            const items = (values || []).map((item, index) => {
+                const chainOptions = Object.keys(STIX_KILL_CHAIN_PHASES).map((kc) =>
+                    `<option value="${escAttr(kc)}" ${kc === item.kill_chain_name ? 'selected' : ''}>${esc(kc)}</option>`
+                ).join('');
+                const phaseOptions = (STIX_KILL_CHAIN_PHASES[item.kill_chain_name] || []).map((p) =>
+                    `<option value="${escAttr(p)}" ${p === item.phase_name ? 'selected' : ''}>${esc(p)}</option>`
+                ).join('');
+                return `
+                    <div class="list-item">
+                        <div>
+                            <select data-kc-field="${key}" data-index="${index}" data-kc-key="kill_chain_name">${chainOptions}</select>
+                            <select data-kc-field="${key}" data-index="${index}" data-kc-key="phase_name">${phaseOptions}</select>
+                        </div>
+                        <button class="mini-btn danger" data-action="remove-kc" data-kc-field="${key}" data-index="${index}">Remove</button>
+                    </div>
+                `;
+            }).join('');
+            return `
+                <div>
+                    ${items || '<div class="empty">No kill chain phases yet.</div>'}
+                    <button class="mini-btn" data-action="add-kc" data-kc-field="${key}">Add Phase</button>
+                </div>
+            `;
+        }
+
+        function renderExternalReferencesField(key, values) {
+            const items = (values || []).map((item, index) => `
+                <div class="list-item">
+                    <div>
+                        <input type="text" data-ref-field="${key}" data-index="${index}" data-ref-key="source_name" placeholder="source_name" value="${escAttr(item.source_name || '')}">
+                        <input type="text" data-ref-field="${key}" data-index="${index}" data-ref-key="description" placeholder="description" value="${escAttr(item.description || '')}">
+                        <input type="text" data-ref-field="${key}" data-index="${index}" data-ref-key="url" placeholder="url" value="${escAttr(item.url || '')}">
+                        <input type="text" data-ref-field="${key}" data-index="${index}" data-ref-key="external_id" placeholder="external_id" value="${escAttr(item.external_id || '')}">
+                        ${renderReferenceHashesField(key, index, item.hashes || {})}
+                    </div>
+                    <button class="mini-btn danger" data-action="remove-ref" data-ref-field="${key}" data-index="${index}">Remove</button>
+                </div>
+            `).join('');
+            return `
+                <div>
+                    ${items || '<div class="empty">No references yet.</div>'}
+                    <button class="mini-btn" data-action="add-ref" data-ref-field="${key}">Add Reference</button>
+                </div>
+            `;
+        }
+
+        function renderReferenceHashesField(refKey, index, hashes) {
+            const fieldKey = `refhash-${refKey}-${index}`;
+            const entries = Object.entries(hashes || {});
+            const items = entries.map(([k, v], idx) => `
+                <div class="list-item">
+                    <div>
+                        <input type="text" data-refhash-field="${fieldKey}" data-ref-root="${refKey}" data-ref-index="${index}" data-index="${idx}" data-refhash-role="key" value="${escAttr(k || '')}" placeholder="hash type">
+                        <input type="text" data-refhash-field="${fieldKey}" data-ref-root="${refKey}" data-ref-index="${index}" data-index="${idx}" data-refhash-role="value" value="${escAttr(v || '')}" placeholder="hash value">
+                    </div>
+                    <button class="mini-btn danger" data-action="remove-refhash" data-refhash-field="${fieldKey}" data-ref-root="${refKey}" data-ref-index="${index}" data-index="${idx}">Remove</button>
+                </div>
+            `).join('');
+            return `
+                <div>
+                    ${items || '<div class="empty">No hashes yet.</div>'}
+                    <button class="mini-btn" data-action="add-refhash" data-refhash-field="${fieldKey}" data-ref-root="${refKey}" data-ref-index="${index}">Add Hash</button>
+                </div>
+            `;
+        }
+
+        function renderGranularMarkingsField(key, values) {
+            const options = state.bundle.objects.filter((obj) => obj.type === 'marking-definition').map((obj) => obj.id);
+            const listId = `gm-${key}-${Math.random().toString(36).slice(2, 7)}`;
+            const items = (values || []).map((item, index) => `
+                <div class="list-item">
+                    <div>
+                        <textarea data-gm-field="${key}" data-index="${index}" data-gm-key="selectors" placeholder="one selector per line">${esc(item.selectors ? item.selectors.join('\n') : '')}</textarea>
+                        <input type="text" data-gm-field="${key}" data-index="${index}" data-gm-key="marking_ref" list="${listId}" value="${escAttr(item.marking_ref || '')}">
+                    </div>
+                    <button class="mini-btn danger" data-action="remove-gm" data-gm-field="${key}" data-index="${index}">Remove</button>
+                </div>
+            `).join('');
+            return `
+                <div>
+                    ${items || '<div class="empty">No granular markings yet.</div>'}
+                    <button class="mini-btn" data-action="add-gm" data-gm-field="${key}">Add Granular Marking</button>
+                </div>
+                <datalist id="${listId}">
+                    ${options.map((id) => `<option value="${escAttr(id)}"></option>`).join('')}
+                </datalist>
+            `;
+        }
+
+        function renderDictionaryField(key, values, prefix = 'dict', meta = {}) {
+            const entries = Object.entries(values || {});
+            const items = entries.map(([k, v], index) => `
+                <div class="list-item">
+                    <div>
+                        <input type="text" data-${prefix}-field="${key}" data-index="${index}" data-${prefix}-role="key" ${meta.root ? `data-ext-root="${meta.root}" data-ext-index="${meta.extIndex}"` : ''} value="${escAttr(k || '')}" placeholder="key">
+                        <input type="text" data-${prefix}-field="${key}" data-index="${index}" data-${prefix}-role="value" ${meta.root ? `data-ext-root="${meta.root}" data-ext-index="${meta.extIndex}"` : ''} value="${escAttr(v || '')}" placeholder="value">
+                    </div>
+                    <button class="mini-btn danger" data-action="remove-${prefix}" data-${prefix}-field="${key}" data-index="${index}" ${meta.root ? `data-ext-root="${meta.root}" data-ext-index="${meta.extIndex}"` : ''}>Remove</button>
+                </div>
+            `).join('');
+            return `
+                <div>
+                    ${items || '<div class="empty">No entries yet.</div>'}
+                    <button class="mini-btn" data-action="add-${prefix}" data-${prefix}-field="${key}" ${meta.root ? `data-ext-root="${meta.root}" data-ext-index="${meta.extIndex}"` : ''}>Add Entry</button>
+                </div>
+            `;
+        }
+
+        function renderHashesField(key, values, inline, prefix = 'hash') {
+            const entries = Object.entries(values || {});
+            const items = entries.map(([k, v], index) => `
+                <div class="list-item">
+                    <div>
+                        <input type="text" data-${prefix}-field="${key}" data-index="${index}" data-${prefix}-role="key" value="${escAttr(k || '')}" placeholder="hash type">
+                        <input type="text" data-${prefix}-field="${key}" data-index="${index}" data-${prefix}-role="value" value="${escAttr(v || '')}" placeholder="hash value">
+                    </div>
+                    <button class="mini-btn danger" data-action="remove-${prefix}" data-${prefix}-field="${key}" data-index="${index}">Remove</button>
+                </div>
+            `).join('');
+            const wrapper = `
+                <div>
+                    ${items || '<div class="empty">No hashes yet.</div>'}
+                    <button class="mini-btn" data-action="add-${prefix}" data-${prefix}-field="${key}">Add Hash</button>
+                </div>
+            `;
+            return inline ? wrapper : `<div class="hint">${wrapper}</div>`;
+        }
+
+        function renderExtensionsField(key, values) {
+            const entries = Object.entries(values || {});
+            const items = entries.map(([k, v], index) => `
+                <div class="list-item">
+                    <div>
+                        <input type="text" data-ext-field="${key}" data-index="${index}" data-ext-role="key" value="${escAttr(k || '')}" placeholder="extension id">
+                        ${renderDictionaryField(`${key}-ext-${index}`, v || {}, 'extdict', { root: key, extIndex: index })}
+                    </div>
+                    <button class="mini-btn danger" data-action="remove-ext" data-ext-field="${key}" data-index="${index}">Remove</button>
+                </div>
+            `).join('');
+            return `
+                <div>
+                    ${items || '<div class="empty">No extensions yet.</div>'}
+                    <button class="mini-btn" data-action="add-ext" data-ext-field="${key}">Add Extension</button>
+                </div>
+            `;
+        }
+
+        function renderMarkingDefinitionField(obj, key, value) {
+            const type = obj.definition_type || '';
+            if (type === 'tlp') {
+                const options = getVocabulary('tlp-ov');
+                return `
+                    <select data-marking-field="${key}" data-marking-type="tlp">
+                        <option value="">Select...</option>
+                        ${options.map((opt) => `<option value="${escAttr(opt)}" ${value.tlp === opt ? 'selected' : ''}>${esc(opt)}</option>`).join('')}
+                    </select>
+                `;
+            }
+            if (type === 'statement') {
+                return `<textarea data-marking-field="${key}" data-marking-type="statement">${esc(value.statement || '')}</textarea>`;
+            }
+            return '<div class="hint">Select definition_type to configure.</div>';
+        }
+
+        function updateBundlePreview() {
+            document.getElementById('bundle-preview').textContent = JSON.stringify(state.bundle, null, 2);
+        }
+
+        function renderBundleSummary() {
+            const counts = {};
+            state.bundle.objects.forEach((obj) => {
+                counts[obj.type] = (counts[obj.type] || 0) + 1;
+            });
+            const lines = Object.keys(counts).sort().map((type) => `${type}: ${counts[type]}`);
+            document.getElementById('bundle-summary').textContent = lines.length ? lines.join(' | ') : 'No objects yet.';
+        }
+
+        function renderBundlePreview() {
+            updateBundlePreview();
+            renderBundleSummary();
+            setVisualizerButtonState();
+        }
+
+        function setVisualizerButtonState() {
+            const btn = document.getElementById('visualize-bundle');
+            const issues = validateBundle();
+            btn.disabled = issues.length > 0;
+        }
+
+        function updateStatus(ok, message) {
+            const dot = document.getElementById('status-dot');
+            const text = document.getElementById('status-text');
+            dot.classList.toggle('ok', ok);
+            dot.classList.toggle('bad', !ok);
+            text.textContent = message;
+        }
+
+        function sanitizeDictionary(raw, maxItems = INPUT_LIMITS.maxListItems) {
+            const out = {};
+            if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
+            Object.entries(raw).slice(0, maxItems).forEach(([k, v]) => {
+                const key = sanitizeImportedString(k, 200);
+                const value = sanitizeImportedString(String(v ?? ''), INPUT_LIMITS.maxStringLength);
+                if (key) out[key] = value;
+            });
+            return out;
+        }
+
+        function sanitizeExtensions(raw, maxItems = INPUT_LIMITS.maxListItems) {
+            const out = {};
+            if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
+            Object.entries(raw).slice(0, maxItems).forEach(([k, v]) => {
+                const key = sanitizeImportedString(k, 200);
+                if (!key) return;
+                out[key] = sanitizeDictionary(v || {});
+            });
+            return out;
+        }
+
+        function sanitizeImportedFieldValue(field, raw) {
+            switch (field.type) {
+                case 'boolean':
+                    return !!raw;
+                case 'integer': {
+                    const num = parseInt(raw, 10);
+                    if (Number.isNaN(num)) return null;
+                    if (field.min !== undefined && num < field.min) return null;
+                    if (field.max !== undefined && num > field.max) return null;
+                    return num;
+                }
+                case 'number': {
+                    const num = Number(raw);
+                    if (!Number.isFinite(num)) return null;
+                    return num;
+                }
+                case 'list':
+                case 'list:open-vocab':
+                case 'object-refs':
+                case 'object-marking-refs':
+                    if (!Array.isArray(raw)) return [];
+                    return raw.slice(0, INPUT_LIMITS.maxListItems)
+                        .map((v) => sanitizeImportedString(String(v ?? ''), 500))
+                        .filter(Boolean);
+                case 'kill-chain-phases':
+                    if (!Array.isArray(raw)) return [];
+                    return raw.slice(0, INPUT_LIMITS.maxListItems).map((v) => ({
+                        kill_chain_name: sanitizeImportedString(v?.kill_chain_name || ''),
+                        phase_name: sanitizeImportedString(v?.phase_name || '')
+                    })).filter((v) => v.kill_chain_name && v.phase_name);
+                case 'granular-markings':
+                    if (!Array.isArray(raw)) return [];
+                    return raw.slice(0, INPUT_LIMITS.maxListItems).map((v) => ({
+                        selectors: Array.isArray(v?.selectors) ? v.selectors.map((s) => sanitizeImportedString(s, 500)).filter(Boolean) : [],
+                        marking_ref: sanitizeImportedString(v?.marking_ref || '')
+                    }));
+                case 'external-references':
+                    if (!Array.isArray(raw)) return [];
+                    return raw.slice(0, INPUT_LIMITS.maxListItems).map((ref) => ({
+                        source_name: sanitizeImportedString(ref?.source_name || '', 200),
+                        description: sanitizeImportedString(ref?.description || '', 1000),
+                        url: sanitizeImportedString(ref?.url || '', 2000),
+                        external_id: sanitizeImportedString(ref?.external_id || '', 200),
+                        hashes: sanitizeDictionary(ref?.hashes || {})
+                    })).filter((ref) => ref.source_name);
+                case 'dictionary':
+                case 'hashes':
+                    return sanitizeDictionary(raw || {});
+                case 'extensions':
+                    return sanitizeExtensions(raw || {});
+                case 'marking-definition':
+                    return raw && typeof raw === 'object'
+                        ? sanitizeDictionary(raw || {}, INPUT_LIMITS.maxListItems)
+                        : {};
+                default:
+                    return sanitizeImportedString(String(raw ?? ''), INPUT_LIMITS.maxStringLength);
+            }
+        }
+
+        function sanitizeImportedObject(obj) {
+            if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return null;
+            const def = getStixObjectDefinition(obj.type);
+            if (!def) return null;
+            if (!obj.id || typeof obj.id !== 'string' || !STIX_ID_PATTERN.test(obj.id)) return null;
+            if (obj.id.split('--')[0] !== obj.type) return null;
+
+            const clean = {
+                type: obj.type,
+                id: obj.id,
+                spec_version: STIX_VERSION
+            };
+
+            if (def.category !== 'sco') {
+                clean.created = typeof obj.created === 'string' ? sanitizeImportedString(obj.created, 100) : new Date().toISOString();
+                clean.modified = typeof obj.modified === 'string' ? sanitizeImportedString(obj.modified, 100) : new Date().toISOString();
+            }
+
+            const commonFields = def.category !== 'sco'
+                ? [...(STIX_COMMON_PROPERTIES.optional || [])]
+                : [];
+            const fields = [...commonFields, ...(def.required || []), ...(def.optional || [])];
+            fields.forEach((field) => {
+                if (!(field.key in obj)) return;
+                const value = sanitizeImportedFieldValue(field, obj[field.key]);
+                if (value !== null && value !== undefined && value !== '') {
+                    clean[field.key] = value;
+                }
+            });
+
+            return clean;
+        }
+
+        function sanitizeBundleForVisualizer(bundle) {
+            const clean = {
+                type: 'bundle',
+                id: bundle.id,
+                spec_version: STIX_VERSION,
+                objects: []
+            };
+            for (const obj of bundle.objects) {
+                const sanitized = sanitizeImportedObject(obj);
+                if (!sanitized) return null;
+                clean.objects.push(sanitized);
+            }
+            return clean;
+        }
+
+        function renderVisualizer() {
+            const issues = validateBundle();
+            if (issues.length) {
+                showToast(issues[0]);
+                return;
+            }
+            const sanitized = sanitizeBundleForVisualizer(state.bundle);
+            if (!sanitized) {
+                showToast('Sanitization failed');
+                return;
+            }
+            setCenterMode('visualizer');
+            if (window.AttackFlowStixViz?.render) {
+                window.AttackFlowStixViz.render(sanitized, null);
+                if (state.ui.activeObjectId) {
+                    window.AttackFlowStixViz.selectAndPopulate?.(state.ui.activeObjectId);
+                }
+                window.AttackFlowStixViz.onSelect = (id) => {
+                    if (!id || state.ui.activeObjectId === id) return;
+                    state.ui.activeObjectId = id;
+                    state.ui.activeTab = 'all';
+                    renderTabs();
+                    renderObjectList();
+                    renderEditor();
+                };
+            } else {
+                showToast('Visualizer not ready');
+            }
+        }
+
+        function validateBundle() {
+            const issues = [];
+            if (state.bundle.type !== 'bundle') issues.push('Bundle type must be "bundle"');
+            if (!STIX_ID_PATTERN.test(state.bundle.id)) issues.push('Bundle id must be a valid STIX id');
+            if (state.bundle.spec_version !== STIX_VERSION) issues.push('Bundle spec_version must be 2.1');
+            if (!Array.isArray(state.bundle.objects)) issues.push('Bundle objects must be an array');
+
+            const ids = new Set();
+            state.bundle.objects.forEach((obj) => {
+                if (!obj || typeof obj !== 'object') {
+                    issues.push('Bundle contains invalid object');
+                    return;
+                }
+                if (!obj.type || !STIX_OBJECT_DEFS[obj.type]) {
+                    issues.push(`Unknown object type: ${obj.type}`);
+                    return;
+                }
+                if (!obj.id || !STIX_ID_PATTERN.test(obj.id)) {
+                    issues.push(`Invalid id for ${obj.type}`);
+                } else if (ids.has(obj.id)) {
+                    issues.push(`Duplicate id: ${obj.id}`);
+                } else {
+                    ids.add(obj.id);
+                }
+                if (obj.spec_version !== STIX_VERSION) {
+                    issues.push(`${obj.type} ${obj.id} spec_version must be 2.1`);
+                }
+                const def = getStixObjectDefinition(obj.type);
+                const required = def?.required || [];
+                const common = def?.category !== 'sco' ? (STIX_COMMON_PROPERTIES.required || []) : [];
+                [...common, ...required].forEach((field) => {
+                    if (!hasValue(obj[field.key], field.type)) {
+                        issues.push(`${obj.type} ${obj.id} missing ${field.key}`);
+                    }
+                });
+
+                validateObjectFields(obj, def, issues);
+            });
+
+            state.validation.ok = issues.length === 0;
+            state.validation.issues = issues;
+            updateStatus(state.validation.ok, state.validation.ok ? 'Valid bundle' : `${issues.length} issue(s)`);
+            return issues;
+        }
+
+        function hasValue(value, type) {
+            if (type === 'boolean') return value === true || value === false;
+            if (type === 'integer' || type === 'number') return value !== null && value !== undefined && value !== '';
+            if (type === 'list' || type === 'list:open-vocab' || type === 'object-refs' || type === 'object-marking-refs') return Array.isArray(value) && value.length > 0;
+            if (type === 'dictionary' || type === 'hashes' || type === 'extensions' || type === 'marking-definition') return value && typeof value === 'object';
+            return value !== null && value !== undefined && String(value).trim() !== '';
+        }
+
+        function validateObjectFields(obj, def, issues) {
+            const fields = [...(def?.required || []), ...(def?.optional || [])];
+            fields.forEach((field) => {
+                const value = obj[field.key];
+                if (value === undefined || value === null || value === '') return;
+                switch (field.type) {
+                    case 'identifier':
+                        if (!STIX_ID_PATTERN.test(value)) issues.push(`${obj.type} ${obj.id} invalid ${field.key}`);
+                        break;
+                    case 'timestamp':
+                        if (Number.isNaN(Date.parse(value))) issues.push(`${obj.type} ${obj.id} invalid ${field.key} timestamp`);
+                        break;
+                    case 'integer':
+                        if (!Number.isInteger(value)) issues.push(`${obj.type} ${obj.id} ${field.key} must be integer`);
+                        if (field.min !== undefined && value < field.min) issues.push(`${obj.type} ${obj.id} ${field.key} below min`);
+                        if (field.max !== undefined && value > field.max) issues.push(`${obj.type} ${obj.id} ${field.key} above max`);
+                        break;
+                    case 'number':
+                        if (typeof value !== 'number') issues.push(`${obj.type} ${obj.id} ${field.key} must be number`);
+                        break;
+                    case 'enum':
+                        if (field.options && !field.options.includes(value)) issues.push(`${obj.type} ${obj.id} ${field.key} invalid enum`);
+                        if (field.vocabulary && !getVocabulary(field.vocabulary).includes(value)) issues.push(`${obj.type} ${obj.id} ${field.key} invalid enum`);
+                        break;
+                    case 'open-vocab':
+                        if (typeof value !== 'string' || !value.trim()) issues.push(`${obj.type} ${obj.id} ${field.key} required`);
+                        break;
+                    case 'object-refs':
+                    case 'object-marking-refs':
+                        if (!Array.isArray(value)) issues.push(`${obj.type} ${obj.id} ${field.key} must be list`);
+                        (value || []).forEach((id) => {
+                            if (!STIX_ID_PATTERN.test(id)) issues.push(`${obj.type} ${obj.id} ${field.key} has invalid ref`);
+                        });
+                        break;
+                    case 'kill-chain-phases':
+                        if (!Array.isArray(value)) issues.push(`${obj.type} ${obj.id} ${field.key} must be list`);
+                        (value || []).forEach((phase) => {
+                            if (!phase.kill_chain_name || !phase.phase_name) issues.push(`${obj.type} ${obj.id} invalid kill_chain_phases entry`);
+                        });
+                        break;
+                    case 'external-references':
+                        (value || []).forEach((ref) => {
+                            if (!ref.source_name) issues.push(`${obj.type} ${obj.id} external_references missing source_name`);
+                            if (ref.url && !isSafeHttpUrl(ref.url)) issues.push(`${obj.type} ${obj.id} external_references invalid url`);
+                        });
+                        break;
+                    case 'marking-definition':
+                        if (obj.definition_type === 'tlp') {
+                            if (!value.tlp || !getVocabulary('tlp-ov').includes(value.tlp)) issues.push(`${obj.type} ${obj.id} invalid tlp marking`);
+                        } else if (obj.definition_type === 'statement') {
+                            if (!value.statement) issues.push(`${obj.type} ${obj.id} invalid statement marking`);
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            });
+
+            if (obj.type === 'artifact') {
+                if (!obj.payload_bin && !obj.url) issues.push('artifact requires payload_bin or url');
+            }
+            if (obj.type === 'network-traffic') {
+                if (!Array.isArray(obj.protocols) || obj.protocols.length === 0) issues.push('network-traffic requires protocols');
+            }
+            if (obj.type === 'sighting') {
+                const hasObserved = Array.isArray(obj.observed_data_refs) && obj.observed_data_refs.length > 0;
+                const hasWhere = Array.isArray(obj.where_sighted_refs) && obj.where_sighted_refs.length > 0;
+                if (!hasObserved && !hasWhere) issues.push('sighting requires observed_data_refs or where_sighted_refs');
+            }
+        }
+
+        function sanitizeValue(value) {
+            if (typeof value === 'string') return InputSecurity.normalize(value, INPUT_LIMITS.maxStringLength);
+            return value;
+        }
+
+        function handleEditorInput(event) {
+            const target = event.target;
+            const obj = getActiveObject();
+            if (!obj) return;
+
+            if (target.dataset.field) {
+                const key = target.dataset.field;
+                const type = target.dataset.type || 'string';
+                const oldId = obj.id;
+                let value = target.value;
+                if (type === 'boolean') value = target.checked;
+                if (type === 'integer' || type === 'number') value = value === '' ? null : Number(value);
+                obj[key] = sanitizeValue(value);
+                if (key === 'id' && oldId !== obj.id) {
+                    state.objectsById.delete(oldId);
+                    state.objectsById.set(obj.id, obj);
+                    state.ui.activeObjectId = obj.id;
+                    renderObjectList();
+                }
+                if (key === 'definition_type') {
+                    renderEditor();
+                }
+                renderBundlePreview();
+                return;
+            }
+
+            if (target.dataset.listField) {
+                const key = target.dataset.listField;
+                const index = parseInt(target.dataset.index, 10);
+                if (!Array.isArray(obj[key])) obj[key] = [];
+                obj[key][index] = sanitizeValue(target.value);
+                renderBundlePreview();
+                return;
+            }
+
+            if (target.dataset.refField) {
+                const key = target.dataset.refField;
+                const index = parseInt(target.dataset.index, 10);
+                const refKey = target.dataset.refKey;
+                if (!Array.isArray(obj[key])) obj[key] = [];
+                if (!obj[key][index]) obj[key][index] = {};
+                obj[key][index][refKey] = sanitizeValue(target.value);
+                renderBundlePreview();
+                return;
+            }
+
+            if (target.dataset.kcField) {
+                const key = target.dataset.kcField;
+                const index = parseInt(target.dataset.index, 10);
+                const kcKey = target.dataset.kcKey;
+                if (!Array.isArray(obj[key])) obj[key] = [];
+                if (!obj[key][index]) obj[key][index] = { kill_chain_name: 'unified-kill-chain', phase_name: '' };
+                obj[key][index][kcKey] = sanitizeValue(target.value);
+                renderEditor();
+                renderBundlePreview();
+                return;
+            }
+
+            if (target.dataset.gmField) {
+                const key = target.dataset.gmField;
+                const index = parseInt(target.dataset.index, 10);
+                const gmKey = target.dataset.gmKey;
+                if (!Array.isArray(obj[key])) obj[key] = [];
+                if (!obj[key][index]) obj[key][index] = { selectors: [], marking_ref: '' };
+                if (gmKey === 'selectors') {
+                    obj[key][index].selectors = sanitizeValue(target.value)
+                        .split('\n')
+                        .map((v) => v.trim())
+                        .filter(Boolean);
+                } else {
+                    obj[key][index][gmKey] = sanitizeValue(target.value);
+                }
+                renderBundlePreview();
+                return;
+            }
+
+            if (target.dataset.dictField) {
+                const key = target.dataset.dictField;
+                obj[key] = collectDictionary(key, 'dict');
+                renderBundlePreview();
+                return;
+            }
+
+            if (target.dataset.hashField) {
+                const key = target.dataset.hashField;
+                obj[key] = collectDictionary(key, 'hash');
+                renderBundlePreview();
+                return;
+            }
+
+            if (target.dataset.refhashField && target.dataset.refRoot) {
+                const fieldKey = target.dataset.refhashField;
+                const root = target.dataset.refRoot;
+                const index = parseInt(target.dataset.refIndex, 10);
+                if (!Array.isArray(obj[root])) obj[root] = [];
+                if (!obj[root][index]) obj[root][index] = {};
+                obj[root][index].hashes = collectDictionary(fieldKey, 'refhash');
+                renderBundlePreview();
+                return;
+            }
+
+            if (target.dataset.extRoot) {
+                const key = target.dataset.extRoot;
+                obj[key] = collectExtensions(key);
+                renderBundlePreview();
+                return;
+            }
+
+            if (target.dataset.markingField) {
+                const key = target.dataset.markingField;
+                const type = target.dataset.markingType;
+                if (!obj[key]) obj[key] = {};
+                if (type === 'tlp') obj[key] = { tlp: sanitizeValue(target.value) };
+                if (type === 'statement') obj[key] = { statement: sanitizeValue(target.value) };
+                renderBundlePreview();
+            }
+        }
+
+        function collectDictionary(fieldKey, prefix) {
+            const keyInputs = document.querySelectorAll(`[data-${prefix}-field="${fieldKey}"][data-${prefix}-role="key"]`);
+            const valInputs = document.querySelectorAll(`[data-${prefix}-field="${fieldKey}"][data-${prefix}-role="value"]`);
+            const dict = {};
+            keyInputs.forEach((input, index) => {
+                const key = sanitizeValue(input.value.trim());
+                const value = sanitizeValue(valInputs[index]?.value || '');
+                if (key) dict[key] = value;
+            });
+            return dict;
+        }
+
+        function collectExtensions(fieldKey) {
+            const extKeys = document.querySelectorAll(`[data-ext-field="${fieldKey}"][data-ext-role="key"]`);
+            const dict = {};
+            extKeys.forEach((input, index) => {
+                const key = sanitizeValue(input.value.trim());
+                if (!key) return;
+                const nestedKey = `${fieldKey}-ext-${index}`;
+                dict[key] = collectDictionary(nestedKey, 'extdict');
+            });
+            return dict;
+        }
+
+        function handleEditorClick(event) {
+            const target = event.target;
+            const obj = getActiveObject();
+            if (!obj) return;
+
+            if (target.dataset.action === 'regen-id') {
+                const oldId = obj.id;
+                obj.id = obj.type + '--' + generateUUID();
+                state.objectsById.delete(oldId);
+                state.objectsById.set(obj.id, obj);
+                state.ui.activeObjectId = obj.id;
+                renderObjectList();
+                renderEditor();
+                renderBundlePreview();
+                return;
+            }
+
+            if (target.dataset.action === 'add-list') {
+                const key = target.dataset.listField;
+                if (!Array.isArray(obj[key])) obj[key] = [];
+                obj[key].push('');
+                renderEditor();
+                return;
+            }
+
+            if (target.dataset.action === 'remove-list') {
+                const key = target.dataset.listField;
+                const index = parseInt(target.dataset.index, 10);
+                obj[key].splice(index, 1);
+                renderEditor();
+                return;
+            }
+
+            if (target.dataset.action === 'add-ref') {
+                const key = target.dataset.refField;
+                if (!Array.isArray(obj[key])) obj[key] = [];
+                obj[key].push({ source_name: '' });
+                renderEditor();
+                return;
+            }
+
+            if (target.dataset.action === 'remove-ref') {
+                const key = target.dataset.refField;
+                const index = parseInt(target.dataset.index, 10);
+                obj[key].splice(index, 1);
+                renderEditor();
+                return;
+            }
+
+            if (target.dataset.action === 'add-kc') {
+                const key = target.dataset.kcField;
+                if (!Array.isArray(obj[key])) obj[key] = [];
+                obj[key].push({ kill_chain_name: 'unified-kill-chain', phase_name: '' });
+                renderEditor();
+                return;
+            }
+
+            if (target.dataset.action === 'remove-kc') {
+                const key = target.dataset.kcField;
+                const index = parseInt(target.dataset.index, 10);
+                obj[key].splice(index, 1);
+                renderEditor();
+                return;
+            }
+
+            if (target.dataset.action === 'add-gm') {
+                const key = target.dataset.gmField;
+                if (!Array.isArray(obj[key])) obj[key] = [];
+                obj[key].push({ selectors: [], marking_ref: '' });
+                renderEditor();
+                return;
+            }
+
+            if (target.dataset.action === 'remove-gm') {
+                const key = target.dataset.gmField;
+                const index = parseInt(target.dataset.index, 10);
+                obj[key].splice(index, 1);
+                renderEditor();
+                return;
+            }
+
+            if (target.dataset.action === 'add-dict') {
+                const key = target.dataset.dictField;
+                obj[key] = obj[key] || {};
+                obj[key]['key-' + Math.random().toString(36).slice(2, 7)] = '';
+                renderEditor();
+                return;
+            }
+
+            if (target.dataset.action === 'remove-dict') {
+                const key = target.dataset.dictField;
+                const entries = Object.entries(obj[key] || {});
+                entries.splice(parseInt(target.dataset.index, 10), 1);
+                obj[key] = Object.fromEntries(entries);
+                renderEditor();
+                return;
+            }
+
+            if (target.dataset.action === 'add-hash') {
+                const key = target.dataset.hashField;
+                obj[key] = obj[key] || {};
+                obj[key]['hash-' + Math.random().toString(36).slice(2, 7)] = '';
+                renderEditor();
+                return;
+            }
+
+            if (target.dataset.action === 'add-refhash') {
+                const root = target.dataset.refRoot;
+                const index = parseInt(target.dataset.refIndex, 10);
+                if (!Array.isArray(obj[root])) obj[root] = [];
+                if (!obj[root][index]) obj[root][index] = {};
+                obj[root][index].hashes = obj[root][index].hashes || {};
+                obj[root][index].hashes['hash-' + Math.random().toString(36).slice(2, 7)] = '';
+                renderEditor();
+                return;
+            }
+
+            if (target.dataset.action === 'remove-hash') {
+                const key = target.dataset.hashField;
+                const entries = Object.entries(obj[key] || {});
+                entries.splice(parseInt(target.dataset.index, 10), 1);
+                obj[key] = Object.fromEntries(entries);
+                renderEditor();
+                return;
+            }
+
+            if (target.dataset.action === 'remove-refhash') {
+                const root = target.dataset.refRoot;
+                const index = parseInt(target.dataset.refIndex, 10);
+                if (!Array.isArray(obj[root])) return;
+                if (!obj[root][index]) return;
+                const entries = Object.entries(obj[root][index].hashes || {});
+                entries.splice(parseInt(target.dataset.index, 10), 1);
+                obj[root][index].hashes = Object.fromEntries(entries);
+                renderEditor();
+                return;
+            }
+
+            if (target.dataset.action === 'add-ext') {
+                const key = target.dataset.extField;
+                obj[key] = obj[key] || {};
+                obj[key]['extension-' + Math.random().toString(36).slice(2, 7)] = {};
+                renderEditor();
+                return;
+            }
+
+            if (target.dataset.action === 'add-extdict') {
+                const root = target.dataset.extRoot;
+                const extIndex = parseInt(target.dataset.extIndex, 10);
+                const entries = Object.entries(obj[root] || {});
+                const extKey = entries[extIndex]?.[0];
+                if (!extKey) return;
+                obj[root][extKey] = obj[root][extKey] || {};
+                obj[root][extKey]['key-' + Math.random().toString(36).slice(2, 7)] = '';
+                renderEditor();
+                return;
+            }
+
+            if (target.dataset.action === 'remove-ext') {
+                const key = target.dataset.extField;
+                const entries = Object.entries(obj[key] || {});
+                entries.splice(parseInt(target.dataset.index, 10), 1);
+                obj[key] = Object.fromEntries(entries);
+                renderEditor();
+                return;
+            }
+
+            if (target.dataset.action === 'remove-extdict') {
+                const root = target.dataset.extRoot;
+                const extIndex = parseInt(target.dataset.extIndex, 10);
+                const entries = Object.entries(obj[root] || {});
+                const extKey = entries[extIndex]?.[0];
+                if (!extKey) return;
+                const dictEntries = Object.entries(obj[root][extKey] || {});
+                dictEntries.splice(parseInt(target.dataset.index, 10), 1);
+                obj[root][extKey] = Object.fromEntries(dictEntries);
+                renderEditor();
+                return;
+            }
+        }
+
+        function exportBundle() {
+            const issues = validateBundle();
+            if (issues.length) {
+                if (!confirm('Bundle has validation issues. Export anyway?')) return;
+            }
+            const blob = new Blob([JSON.stringify(state.bundle, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'stix-bundle.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importBundle(file) {
+            if (!file) return;
+            if (file.size > INPUT_LIMITS.maxFileSize) {
+                showToast('File too large');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const rawData = JSON.parse(e.target.result);
+                    const raw = stripAngleBracketsFromJson(rawData);
+                    if (!raw || typeof raw !== 'object' || raw.type !== 'bundle') throw new Error('Invalid bundle');
+                    if (!Array.isArray(raw.objects)) throw new Error('Bundle objects missing');
+                    if (raw.objects.length > INPUT_LIMITS.maxObjects) throw new Error('Too many objects');
+
+                    let merge = false;
+                    if (!confirm('Replace current bundle with imported bundle?')) {
+                        if (!confirm('Merge imported bundle into current bundle?')) return;
+                        merge = true;
+                    }
+                    if (!merge) {
+                        state.bundle = {
+                            type: 'bundle',
+                            id: raw.id || ('bundle--' + generateUUID()),
+                            spec_version: raw.spec_version || STIX_VERSION,
+                            objects: []
+                        };
+                        state.objectsById = new Map();
+                    }
+                    raw.objects.forEach((obj) => {
+                        const clean = sanitizeImportedObject(obj);
+                        if (!clean) return;
+                        if (state.objectsById.has(clean.id)) return;
+                        state.bundle.objects.push(clean);
+                        state.objectsById.set(clean.id, clean);
+                    });
+                    state.ui.activeObjectId = state.bundle.objects[0]?.id || null;
+                    renderTabs();
+                    renderObjectList();
+                    renderEditor();
+                    renderBundlePreview();
+                    showToast('Bundle imported');
+                } catch (err) {
+                    showToast('Import failed: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function copyActiveJson() {
+            const obj = getActiveObject();
+            if (!obj) return;
+            const text = JSON.stringify(obj, null, 2);
+            navigator.clipboard.writeText(text).then(() => showToast('Copied object JSON'));
+        }
+
+        function initEvents() {
+            document.getElementById('add-object').addEventListener('click', () => {
+                const type = document.getElementById('add-type').value;
+                addObject(type);
+            });
+            document.getElementById('delete-object').addEventListener('click', deleteActiveObject);
+            document.getElementById('export-bundle').addEventListener('click', exportBundle);
+            document.getElementById('validate-bundle').addEventListener('click', () => {
+                const issues = validateBundle();
+                if (issues.length) showToast(issues[0]);
+                renderBundlePreview();
+            });
+            document.getElementById('import-bundle').addEventListener('click', () => {
+                document.getElementById('bundle-file').click();
+            });
+            document.getElementById('bundle-file').addEventListener('change', (e) => {
+                importBundle(e.target.files[0]);
+                e.target.value = '';
+            });
+            document.getElementById('search-input').addEventListener('input', (e) => {
+                state.ui.search = e.target.value || '';
+                renderObjectList();
+            });
+            document.getElementById('editor-panel').addEventListener('input', handleEditorInput);
+            document.getElementById('editor-panel').addEventListener('click', handleEditorClick);
+            document.getElementById('copy-json').addEventListener('click', copyActiveJson);
+            document.getElementById('theme-mode-toggle').addEventListener('click', toggleThemeMode);
+            document.getElementById('mode-editor').addEventListener('click', () => setCenterMode('editor'));
+            document.getElementById('mode-visualizer').addEventListener('click', () => setCenterMode('visualizer'));
+            document.getElementById('visualize-bundle').addEventListener('click', renderVisualizer);
+        }
+
+        initThemeControls();
+        applyInputGuards();
+        buildAddTypeOptions();
+        renderTabs();
+        renderObjectList();
+        renderEditor();
+        renderBundlePreview();
+        renderCenterMode();
+        initEvents();
+    </script>
+    <script src="stix-visualization/stix_visualizer/require.js" data-main="stix-visualization/stix_visualizer/application"></script>
+</body>
+</html>

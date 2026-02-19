@@ -10,7 +10,7 @@
         style-src 'self' 'unsafe-inline';
         img-src 'self' data:;
         connect-src 'self';
-        frame-src 'self';
+        frame-src 'self' blob:;
         object-src 'none';
         base-uri 'self';
         form-action 'self';
@@ -342,6 +342,18 @@
             border: none;
         }
 
+        .stix-builder-container {
+            flex: 1;
+            display: none;
+            background: var(--bg-dark);
+        }
+
+        .stix-builder-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
         .app.explorer-view .sidebar,
         .app.explorer-view .content {
             display: none;
@@ -352,6 +364,19 @@
         }
 
         .app.explorer-view .explorer-container {
+            display: block;
+        }
+
+        .app.stix-builder-view .sidebar,
+        .app.stix-builder-view .content {
+            display: none;
+        }
+
+        .app.stix-builder-view .header-controls {
+            display: none;
+        }
+
+        .app.stix-builder-view .stix-builder-container {
             display: block;
         }
 
@@ -2853,6 +2878,9 @@
                         <div class="view-tab-group" id="view-explorer-group">
                             <button class="view-btn" id="view-explorer" onclick="setView('explorer')">Relationship Explorer</button>
                         </div>
+                        <div class="view-tab-group" id="view-builder-group">
+                            <button class="view-btn" id="view-builder" onclick="setView('stix-builder')">STIX Builder</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -2996,6 +3024,10 @@
 
             <div class="explorer-container" id="explorer-container">
                 <iframe class="explorer-frame" src="explorer.html" title="Relationship Explorer"></iframe>
+            </div>
+
+            <div class="stix-builder-container" id="stix-builder-container">
+                <iframe class="stix-builder-frame" src="stix-builder.html" title="STIX Builder"></iframe>
             </div>
 
             <!-- Content -->
@@ -4635,30 +4667,71 @@
             }
         }
 
+        function isStixBuilderEnabled() {
+            return typeof CONFIG === 'undefined' || CONFIG.navigation?.showStixBuilder !== false;
+        }
+
         function setView(view) {
+            if (view === 'stix-builder' && !isStixBuilderEnabled()) {
+                view = 'killchain';
+            }
             state.view = view;
             const isExplorer = view === 'explorer';
             const isRelationship = view === 'relationship';
+            const isStixBuilder = view === 'stix-builder';
             document.getElementById('view-killchain').classList.toggle('active', view === 'killchain' || isRelationship);
             document.getElementById('view-relationship').classList.toggle('active', isRelationship);
             document.getElementById('view-explorer').classList.toggle('active', isExplorer);
+            document.getElementById('view-builder').classList.toggle('active', isStixBuilder);
             document.getElementById('view-editor-group').classList.toggle('active', view === 'killchain' || isRelationship);
             document.getElementById('view-explorer-group').classList.toggle('active', isExplorer);
-            document.getElementById('kill-chain-container').classList.toggle('hidden', isExplorer || isRelationship);
+            document.getElementById('view-builder-group').classList.toggle('active', isStixBuilder);
+            document.getElementById('kill-chain-container').classList.toggle('hidden', isExplorer || isRelationship || isStixBuilder);
             document.getElementById('relationship-container').classList.toggle('visible', isRelationship);
-            document.getElementById('content-title').textContent = isRelationship ? 'Kill Chain Relationships' : 'Unified Kill Chain';
-            document.getElementById('btn-hide-empty').style.display = !isExplorer && !isRelationship ? 'inline-block' : 'none';
-            document.getElementById('btn-compact').style.display = !isExplorer && !isRelationship ? 'inline-block' : 'none';
-            document.getElementById('btn-comments').style.display = (!isExplorer && !isRelationship && !state.compactMode) ? 'inline-block' : 'none';
-            document.getElementById('stats-bar').style.display = isExplorer ? 'none' : 'flex';
-            document.getElementById('legend-row').style.display = isExplorer ? 'none' : 'flex';
-            document.querySelector('.app').classList.toggle('explorer-view', isExplorer);
+            document.getElementById('content-title').textContent = isRelationship
+                ? 'Kill Chain Relationships'
+                : (isStixBuilder ? 'STIX Builder' : 'Unified Kill Chain');
+            document.getElementById('btn-hide-empty').style.display = (!isExplorer && !isRelationship && !isStixBuilder) ? 'inline-block' : 'none';
+            document.getElementById('btn-compact').style.display = (!isExplorer && !isRelationship && !isStixBuilder) ? 'inline-block' : 'none';
+            document.getElementById('btn-comments').style.display = (!isExplorer && !isRelationship && !isStixBuilder && !state.compactMode) ? 'inline-block' : 'none';
+            document.getElementById('stats-bar').style.display = (isExplorer || isStixBuilder) ? 'none' : 'flex';
+            document.getElementById('legend-row').style.display = (isExplorer || isStixBuilder) ? 'none' : 'flex';
+            const app = document.querySelector('.app');
+            if (app) {
+                app.classList.toggle('explorer-view', isExplorer);
+                app.classList.toggle('stix-builder-view', isStixBuilder);
+            }
             if (isRelationship) {
                 renderRelationshipView();
             }
             updateHideEmptyControl();
             updateCompactControls();
             applyCompactLayout();
+        }
+
+        function applyNavigationConfig() {
+            const showStixBuilder = isStixBuilderEnabled();
+            const builderGroup = document.getElementById('view-builder-group');
+            const builderContainer = document.getElementById('stix-builder-container');
+            const builderFrame = document.querySelector('.stix-builder-frame');
+
+            if (builderGroup) {
+                builderGroup.style.display = showStixBuilder ? '' : 'none';
+            }
+            if (builderContainer) {
+                builderContainer.style.display = showStixBuilder ? '' : 'none';
+            }
+            if (builderFrame) {
+                if (showStixBuilder && !builderFrame.getAttribute('src')) {
+                    builderFrame.setAttribute('src', 'stix-builder.html');
+                }
+                if (!showStixBuilder) {
+                    builderFrame.setAttribute('src', '');
+                }
+            }
+            if (!showStixBuilder && state.view === 'stix-builder') {
+                setView('killchain');
+            }
         }
 
         function toggleSidebar() {
@@ -8087,6 +8160,7 @@
         } else {
             enableLeaveSiteConfirmation();
         }
+        applyNavigationConfig();
         initAssignments();
         initCompactMode();
         window.addEventListener('resize', () => {
