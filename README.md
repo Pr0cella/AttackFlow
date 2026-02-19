@@ -226,6 +226,7 @@ AttackFlow uses data and references from the following third-party sources:
 - CAPEC: https://capec.mitre.org/
 - CWE: https://cwe.mitre.org/
 - STIX 2.1: https://oasis-open.github.io/cti-documentation/
+- STIX Visualizer (stix2viz): https://github.com/oasis-open/cti-stix-visualization
 - Unified Kill Chain: https://www.unifiedkillchain.com/
 - FontAwesome: https://github.com/FortAwesome/Font-Awesome
 
