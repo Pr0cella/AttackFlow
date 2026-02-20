@@ -91,6 +91,48 @@
             letter-spacing: 0.5px;
         }
 
+        .theme-toggle {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-panel);
+            color: var(--text-primary);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            cursor: pointer;
+            transition: border-color 0.2s ease, background 0.2s ease;
+            overflow: hidden;
+        }
+
+        .theme-toggle:hover {
+            border-color: var(--accent);
+        }
+
+        .theme-icon {
+            width: 16px;
+            height: 16px;
+            position: absolute;
+            opacity: 0;
+            transform: scale(0.8) rotate(-15deg);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        .theme-toggle[data-mode="dark"] .theme-icon.theme-dark,
+        .theme-toggle[data-mode="light"] .theme-icon.theme-light {
+            opacity: 1;
+            transform: scale(1) rotate(0deg);
+        }
+
+        .theme-icon svg {
+            width: 100%;
+            height: 100%;
+            fill: currentColor;
+            display: block;
+        }
+
         .btn {
             padding: 6px 10px;
             border: 1px solid var(--border-color);
@@ -549,10 +591,6 @@
                     <button class="btn" id="export-bundle">Export</button>
                     <button class="btn" id="validate-bundle">Validate</button>
                 </div>
-                <div class="control-group">
-                    <span class="control-label">Theme</span>
-                    <button class="btn" id="theme-mode-toggle">Toggle</button>
-                </div>
             </div>
         </div>
 
@@ -749,9 +787,18 @@
             if (typeof applyConfigColors === 'function') applyConfigColors(theme);
             document.documentElement.dataset.theme = resolvedMode;
             currentTheme = { mode: resolvedMode, scheme: resolvedScheme };
+            updateThemeControls();
             window.AttackFlowStixViz?.applyTheme?.();
             if (persist) {
                 try { localStorage.setItem(THEME_STORAGE_KEYS.mode, resolvedMode); } catch (e) {}
+            }
+        }
+
+        function updateThemeControls() {
+            const modeBtn = document.getElementById('theme-mode-toggle');
+            if (modeBtn) {
+                modeBtn.setAttribute('data-mode', currentTheme.mode);
+                modeBtn.setAttribute('aria-label', currentTheme.mode === 'dark' ? 'Switch to light theme' : 'Switch to dark theme');
             }
         }
 
@@ -766,6 +813,15 @@
             try { storedMode = localStorage.getItem(THEME_STORAGE_KEYS.mode); } catch (e) {}
             const mode = normalizeThemeMode(storedMode || getPreferredThemeMode());
             applyTheme(mode, 'default', false);
+        }
+
+        function syncThemeFromStorage() {
+            let storedMode = null;
+            try { storedMode = localStorage.getItem(THEME_STORAGE_KEYS.mode); } catch (e) { return; }
+            const mode = normalizeThemeMode(storedMode || currentTheme.mode);
+            if (mode !== currentTheme.mode) {
+                applyTheme(mode, 'default', false);
+            }
         }
 
         function generateUUID() {
@@ -2147,13 +2203,17 @@
             document.getElementById('editor-panel').addEventListener('input', handleEditorInput);
             document.getElementById('editor-panel').addEventListener('click', handleEditorClick);
             document.getElementById('copy-json').addEventListener('click', copyActiveJson);
-            document.getElementById('theme-mode-toggle').addEventListener('click', toggleThemeMode);
             document.getElementById('mode-editor').addEventListener('click', () => setCenterMode('editor'));
             document.getElementById('mode-visualizer').addEventListener('click', () => setCenterMode('visualizer'));
             document.getElementById('visualize-bundle').addEventListener('click', renderVisualizer);
         }
 
         initThemeControls();
+        window.addEventListener('storage', (e) => {
+            if (e.key === THEME_STORAGE_KEYS.mode) {
+                syncThemeFromStorage();
+            }
+        });
         applyInputGuards();
         buildAddTypeOptions();
         renderTabs();
