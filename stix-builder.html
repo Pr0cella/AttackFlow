@@ -1074,12 +1074,12 @@
 
             panel.innerHTML = `
                 <div class="form-section">
-                    <div class="section-title">Common Properties</div>
-                    ${commonFields.map((field) => renderField(obj, field, isRequiredField(field, def, true))).join('')}
-                </div>
-                <div class="form-section">
                     <div class="section-title">${esc(def?.label || obj.type)} Fields</div>
                     ${typeFields.map((field) => renderField(obj, field, isRequiredField(field, def, false))).join('')}
+                </div>
+                <div class="form-section">
+                    <div class="section-title">Common Properties</div>
+                    ${commonFields.map((field) => renderField(obj, field, isRequiredField(field, def, true))).join('')}
                 </div>
             `;
         }
