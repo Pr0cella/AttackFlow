@@ -258,9 +258,14 @@
             gap: 4px;
         }
 
-        .breadcrumb-sep {
+        .breadcrumb-sep > svg {
             color: var(--text-secondary);
             font-size: 0.7rem;
+            height: 0.8rem;
+            width: 1rem;
+            vertical-align: middle;
+            transform: rotate(180deg);
+            fill: currentColor;
         }
 
         .view-btn.view-btn-crumb {
@@ -327,7 +332,7 @@
         .legend-layers {
             display: flex;
             gap: 12px;
-            padding: 8px 12px;
+            padding: 6px 8px;
             background: var(--bg-card);
             border-radius: 4px;
             font-size: 0.7rem;
@@ -396,6 +401,18 @@
         .dropdown-item.active { background: var(--bg-phase); color: var(--text-primary); }
         .dropdown-item:first-child { border-radius: 4px 4px 0 0; }
         .dropdown-item:last-child { border-radius: 0 0 4px 4px; }
+
+        #export-dropdown svg {
+            width: 1rem;
+            height: 1rem;
+            fill: currentColor;
+            vertical-align: middle;
+            transition: all 0.15s;
+        }
+
+        #export-dropdown.dropdown.open svg {
+            transform: rotate(180deg);
+        }
 
         /* Main Layout */
         .main {
@@ -515,6 +532,7 @@
             align-items: center;
             gap: 8px;
             flex-shrink: 0;
+            justify-self: start;
         }
 
         .sidebar-tabs {
@@ -713,8 +731,8 @@
         }
 
         .content-header {
-            display: flex;
-            justify-content: space-between;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 720px) minmax(0, 1fr);
             align-items: center;
             padding: 8px 16px;
             border-bottom: 1px solid var(--border-color);
@@ -726,6 +744,7 @@
             min-width: 0;
             display: flex;
             justify-content: center;
+            justify-self: center;
         }
 
         .kill-chain-title {
@@ -770,6 +789,7 @@
             display: flex;
             gap: 6px;
             flex-shrink: 0;
+            justify-self: end;
         }
 
         /* Kill Chain Description */
@@ -798,11 +818,11 @@
             width: 10px;
             height: 10px;
             transition: transform 0.2s ease;
-            transform: rotate(-90deg);
+            transform: rotate(90deg);
             flex-shrink: 0;
         }
         .kc-desc-bar.open .kc-desc-toggle .kc-desc-chevron {
-            transform: rotate(0deg);
+            transform: rotate(-90deg);
         }
         .kc-desc-chevron svg {
             width: 100%;
@@ -2036,16 +2056,16 @@
 
         .github-link svg {
             fill: gray;
-            height: 1.1rem;
-            width: 1.1rem;
+            height: 1.5rem;
+            width: 1.5rem;
             flex-shrink: 0;
         }
 
         .github-link svg:hover {
             fill: rgb(170, 65, 170);
             scale: calc(1.1);
-            height: 1.1rem;
-            width: 1.1rem;
+            height: 1.5rem;
+            width: 1.5rem;
             flex-shrink: 0;
         }
 
@@ -2535,7 +2555,7 @@
         .relationship-cell.capec { background: rgba(139, 92, 246, 0.05); }
         .relationship-cell.cwe { background: rgba(245, 158, 11, 0.05); }
         .relationship-cell.attack { background: rgba(59, 130, 246, 0.05); }
-        .relationship-cell.phase { background: rgba(113, 113, 122, 0.05); }
+        .relationship-cell.phase { background: rgba(113, 113, 122, 0.05); border-width: 0px; }
         .relationship-cell.mitigation { background: rgba(16, 185, 129, 0.05); }
 
         .relationship-item {
@@ -3132,7 +3152,7 @@
                         <div class="view-tab-group active" id="view-editor-group">
                             <button class="view-btn active" id="view-killchain" onclick="setView('killchain')">Kill Chain Editor</button>
                             <span class="view-breadcrumb">
-                                <span class="breadcrumb-sep">›</span>
+                                <span class="breadcrumb-sep"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" style="height: 0.8rem;width: 1rem;vertical-align: middle;transform: rotate(180deg);"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M169.4 297.4C156.9 309.9 156.9 330.2 169.4 342.7L361.4 534.7C373.9 547.2 394.2 547.2 406.7 534.7C419.2 522.2 419.2 501.9 406.7 489.4L237.3 320L406.6 150.6C419.1 138.1 419.1 117.8 406.6 105.3C394.1 92.8 373.8 92.8 361.3 105.3L169.3 297.3z"></path></svg></span>
                                 <button class="view-btn view-btn-crumb" id="view-relationship" onclick="setView('relationship')">Relationships</button>
                             </span>
                         </div>
@@ -3152,7 +3172,7 @@
                     <button class="btn" onclick="collapseAll()">Collapse</button>
                     <button class="btn" onclick="clearAssignments()">Clear</button>
                     <div class="dropdown" id="export-dropdown">
-                        <button class="btn" onclick="toggleDropdown('export-dropdown')">Export ▼</button>
+                        <button class="btn" onclick="toggleDropdown('export-dropdown')">Export <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M297.4 438.6C309.9 451.1 330.2 451.1 342.7 438.6L502.7 278.6C515.2 266.1 515.2 245.8 502.7 233.3C490.2 220.8 469.9 220.8 457.4 233.3L320 370.7L182.6 233.4C170.1 220.9 149.8 220.9 137.3 233.4C124.8 245.9 124.8 266.2 137.3 278.7L297.3 438.7z"/></svg></button>
                         <div class="dropdown-content">
                             <button class="dropdown-item" onclick="exportJSON(); closeDropdowns()">JSON</button>
                             <button class="dropdown-item" onclick="exportCSV(); closeDropdowns()">CSV</button>
@@ -3307,58 +3327,7 @@
                 
                 <!-- Score Legend -->
                 <div class="legend-row" id="legend-row">
-                    <div class="score-legend" id="score-legend">
-                        <span style="color: var(--text-secondary); margin-right: 8px;">Score:</span>
-                        <div class="legend-item">
-                            <div class="legend-swatch" style="background: #22c55e;"></div>
-                            <span>Low</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="legend-swatch" style="background: #eab308;"></div>
-                            <span>Medium</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="legend-swatch" style="background: #f97316;"></div>
-                            <span>High</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="legend-swatch" style="background: #ef4444;"></div>
-                            <span>Critical</span>
-                        </div>
-                    </div>
-                    <div class="metadata-legend" id="metadata-legend">
-                        <span style="color: var(--text-secondary); margin-right: 6px;">Metadata:</span>
-                        <div class="legend-item">
-                            <span class="legend-icon has-cve">
-                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v7a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-7a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5Zm-3 8V7a3 3 0 1 1 6 0v3H9Zm3 3a2 2 0 0 1 1 3.732V18h-2v-1.268A2 2 0 0 1 12 13Z"/></svg>
-                            </span>
-                            <span>CVE</span>
-                        </div>
-                        <div class="legend-item">
-                            <span class="legend-icon has-observable">
-                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5c-4.5 0-8.1 2.6-10 7 1.9 4.4 5.5 7 10 7s8.1-2.6 10-7c-1.9-4.4-5.5-7-10-7Zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm0-6a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z"/></svg>
-                            </span>
-                            <span>Observable</span>
-                        </div>
-                        <div class="legend-item">
-                            <span class="legend-icon has-link">
-                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.6 13.4a1 1 0 0 0 1.4 1.4l3.5-3.5a3 3 0 1 0-4.2-4.2l-1.3 1.3a1 1 0 1 0 1.4 1.4l1.3-1.3a1 1 0 0 1 1.4 1.4l-3.5 3.5Zm2.8-2.8a1 1 0 0 0-1.4-1.4L8.5 12.7a3 3 0 1 0 4.2 4.2l1.3-1.3a1 1 0 1 0-1.4-1.4l-1.3 1.3a1 1 0 0 1-1.4-1.4l3.5-3.5Z"/></svg>
-                            </span>
-                            <span>Link</span>
-                        </div>
-                        <div class="legend-item">
-                            <span class="legend-icon has-comment">
-                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H9l-5 4v-4H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm3 5h10v2H7V9Zm0-3h10v2H7V6Zm0 6h6v2H7v-2Z"/></svg>
-                            </span>
-                            <span>Comment</span>
-                        </div>
-                        <div class="legend-item">
-                            <span class="legend-icon has-confidence">
-                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 1 9 9 9 9 0 0 1-9-9Zm8-5h2v6h-2V7Zm0 8h2v2h-2v-2Z"/></svg>
-                            </span>
-                            <span>Confidence</span>
-                        </div>
-                    </div>
+                    
                 </div>
 
                 <div class="kill-chain-container" id="kill-chain-container">
@@ -3411,6 +3380,58 @@
                                 <span class="checkbox"></span>
                                 <span>STIX</span>
                             </label>
+                        </div>
+                    </div>
+                    <div class="score-legend" id="score-legend">
+                        <span style="color: var(--text-secondary); margin-right: 8px;">Score:</span>
+                        <div class="legend-item">
+                            <div class="legend-swatch" style="background: #22c55e;"></div>
+                            <span>Low</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-swatch" style="background: #eab308;"></div>
+                            <span>Medium</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-swatch" style="background: #f97316;"></div>
+                            <span>High</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-swatch" style="background: #ef4444;"></div>
+                            <span>Critical</span>
+                        </div>
+                    </div>
+                    <div class="metadata-legend" id="metadata-legend">
+                        <span style="color: var(--text-secondary); margin-right: 6px;">Metadata:</span>
+                        <div class="legend-item">
+                            <span class="legend-icon has-cve">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v7a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-7a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5Zm-3 8V7a3 3 0 1 1 6 0v3H9Zm3 3a2 2 0 0 1 1 3.732V18h-2v-1.268A2 2 0 0 1 12 13Z"/></svg>
+                            </span>
+                            <span>CVE</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-icon has-observable">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5c-4.5 0-8.1 2.6-10 7 1.9 4.4 5.5 7 10 7s8.1-2.6 10-7c-1.9-4.4-5.5-7-10-7Zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm0-6a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z"/></svg>
+                            </span>
+                            <span>Observable</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-icon has-link">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.6 13.4a1 1 0 0 0 1.4 1.4l3.5-3.5a3 3 0 1 0-4.2-4.2l-1.3 1.3a1 1 0 1 0 1.4 1.4l1.3-1.3a1 1 0 0 1 1.4 1.4l-3.5 3.5Zm2.8-2.8a1 1 0 0 0-1.4-1.4L8.5 12.7a3 3 0 1 0 4.2 4.2l1.3-1.3a1 1 0 1 0-1.4-1.4l-1.3 1.3a1 1 0 0 1-1.4-1.4l3.5-3.5Z"/></svg>
+                            </span>
+                            <span>Link</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-icon has-comment">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H9l-5 4v-4H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm3 5h10v2H7V9Zm0-3h10v2H7V6Zm0 6h6v2H7v-2Z"/></svg>
+                            </span>
+                            <span>Comment</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-icon has-confidence">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 1 9 9 9 9 0 0 1-9-9Zm8-5h2v6h-2V7Zm0 8h2v2h-2v-2Z"/></svg>
+                            </span>
+                            <span>Confidence</span>
                         </div>
                     </div>
                     <div class="github-link">
@@ -4903,6 +4924,7 @@
             if (modeBtn) {
                 modeBtn.setAttribute('data-mode', currentTheme.mode);
                 modeBtn.setAttribute('aria-label', currentTheme.mode === 'dark' ? 'Switch to light theme' : 'Switch to dark theme');
+                modeBtn.setAttribute('title', currentTheme.mode === 'dark' ? 'Switch to light theme' : 'Switch to dark theme');
             }
         }
 
@@ -4962,9 +4984,25 @@
             document.getElementById('content-title').textContent = isRelationship
                 ? 'Kill Chain Relationships'
                 : (isStixBuilder ? 'STIX Builder' : 'Unified Kill Chain');
-            document.getElementById('btn-hide-empty').style.display = (!isExplorer && !isRelationship && !isStixBuilder) ? 'inline-block' : 'none';
-            document.getElementById('btn-compact').style.display = (!isExplorer && !isRelationship && !isStixBuilder) ? 'inline-block' : 'none';
-            document.getElementById('btn-comments').style.display = (!isExplorer && !isRelationship && !isStixBuilder && !state.compactMode) ? 'inline-block' : 'none';
+            const showViewControls = (!isExplorer && !isRelationship && !isStixBuilder);
+            const viewControlVisibility = showViewControls ? 'visible' : 'hidden';
+            const viewControlPointer = showViewControls ? '' : 'none';
+            const hideEmptyBtn = document.getElementById('btn-hide-empty');
+            const compactBtn = document.getElementById('btn-compact');
+            const commentsBtn = document.getElementById('btn-comments');
+            if (hideEmptyBtn) {
+                hideEmptyBtn.style.visibility = viewControlVisibility;
+                hideEmptyBtn.style.pointerEvents = viewControlPointer;
+            }
+            if (compactBtn) {
+                compactBtn.style.visibility = viewControlVisibility;
+                compactBtn.style.pointerEvents = viewControlPointer;
+            }
+            if (commentsBtn) {
+                const showComments = showViewControls && !state.compactMode;
+                commentsBtn.style.visibility = showComments ? 'visible' : 'hidden';
+                commentsBtn.style.pointerEvents = showComments ? '' : 'none';
+            }
             document.getElementById('stats-bar').style.display = (isExplorer || isStixBuilder) ? 'none' : 'flex';
             document.getElementById('legend-row').style.display = (isExplorer || isStixBuilder) ? 'none' : 'flex';
             const app = document.querySelector('.app');

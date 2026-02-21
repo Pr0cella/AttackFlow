@@ -527,6 +527,7 @@
             if (modeBtn) {
                 modeBtn.setAttribute('data-mode', currentTheme.mode);
                 modeBtn.setAttribute('aria-label', currentTheme.mode === 'dark' ? 'Switch to light theme' : 'Switch to dark theme');
+                modeBtn.setAttribute('title', currentTheme.mode === 'dark' ? 'Switch to light theme' : 'Switch to dark theme');
             }
         }
 
