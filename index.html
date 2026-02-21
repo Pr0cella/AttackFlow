@@ -482,6 +482,10 @@
             display: none;
         }
 
+        .app.sidebar-collapsed .search-bar {
+            display: none;
+        }
+
         /* Sidebar */
         .sidebar {
             width: 340px;
@@ -580,6 +584,112 @@
         .search-bar {
             padding: 10px;
             border-bottom: 1px solid var(--border-color);
+        }
+
+        .global-search {
+            position: relative;
+        }
+
+        .global-search-input {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .global-search-sticky {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .global-search-sticky input {
+            accent-color: var(--accent);
+        }
+
+        .global-search-expand {
+            border: 1px solid var(--border-color);
+            background: var(--bg-phase);
+            color: var(--text-secondary);
+            padding: 6px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.15s;
+        }
+
+        .global-search-expand:hover {
+            border-color: var(--accent);
+            color: var(--text-primary);
+        }
+
+        .global-search-results {
+            display: none;
+            margin-top: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-phase);
+            border-radius: 6px;
+            padding: 6px;
+            max-height: 220px;
+            overflow-y: auto;
+        }
+
+        .global-search.open .global-search-results {
+            display: block;
+        }
+
+        .global-search.expanded .global-search-results {
+            max-height: 50vh;
+        }
+
+        .global-search-item {
+            width: 100%;
+            text-align: left;
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--text-primary);
+            padding: 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .global-search-item:hover {
+            border-color: var(--accent);
+            background: rgba(113, 113, 122, 0.15);
+        }
+
+        .global-search-meta {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+        }
+
+        .global-search-type {
+            padding: 1px 6px;
+            border-radius: 999px;
+            font-size: 0.55rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            border: 1px solid var(--border-color);
+        }
+
+        .global-search-type.attack { border-color: var(--attack-color); color: var(--attack-color); }
+        .global-search-type.capec { border-color: var(--capec-color); color: var(--capec-color); }
+        .global-search-type.cwe { border-color: var(--cwe-color); color: var(--cwe-color); }
+
+        .global-search-empty {
+            padding: 8px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
         }
 
         .search-input {
@@ -1030,16 +1140,28 @@
         .phase-group-btn:hover { color: var(--text-primary); border-color: var(--accent); }
 
         .phase-details-btn {
-            background: transparent;
+            background: var(--bg-card);
             border: 1px solid var(--border-color);
             color: var(--text-secondary);
             font-size: 0.65rem;
             padding: 2px 6px;
-            border-radius: 2px;
+            border-radius: 4px;
             cursor: pointer;
         }
 
-        .phase-details-btn:hover { color: var(--text-primary); border-color: var(--accent); }
+        .phase-details-btn:hover { 
+            color: var(--text-primary); border-color: var(--accent); 
+        }
+
+        .phase-details-btn svg,
+        .phase-group-btn svg{
+            width: 0.8rem;
+            height: 0.8rem;
+            fill: currentColor;
+            vertical-align: middle;
+            text-align: center;
+            margin-bottom: 0.1rem;
+        }
 
         .phase.minimized .phase-toggle { transform: rotate(-90deg); }
 
@@ -3222,8 +3344,16 @@
         <div class="main">
             <!-- Sidebar -->
             <div class="sidebar">
-                <div class="search-bar">
-                    <input type="text" class="search-input" id="search-global" placeholder="Global search (ATT&CK/CAPEC/CWE)..." oninput="setGlobalSearch(this.value)">
+                <div class="search-bar global-search" id="global-search-bar">
+                    <div class="global-search-input">
+                        <input type="text" class="search-input" id="search-global" placeholder="Global search (ATT&CK/CAPEC/CWE)..." oninput="setGlobalSearch(this.value)" onfocus="openGlobalSearch()">
+                        <label class="global-search-sticky" title="Keep results open">
+                            <input type="checkbox" id="global-search-sticky" onchange="setGlobalSearchSticky(this.checked)">
+                            Sticky
+                        </label>
+                        <button class="global-search-expand" id="global-search-expand" onclick="toggleGlobalSearchExpanded(event)" aria-label="Toggle global search size" type="button">Expand</button>
+                    </div>
+                    <div class="global-search-results" id="global-search-results"></div>
                 </div>
                 <div class="sidebar-tabs">
                     <button class="sidebar-tab attack active" onclick="switchTab('attack')">ATT&CK</button>
@@ -4620,6 +4750,9 @@
             relationshipExpanded: new Set(),
             activeTab: 'attack',
             globalSearch: '',
+            globalSearchOpen: false,
+            globalSearchExpanded: false,
+            globalSearchSticky: false,
             filters: { attack: 'all', capec: 'all', cwe: 'all', custom: 'all' },
             
             // Full data libraries (loaded from JSON)
@@ -5389,6 +5522,183 @@
             filterEntities('attack');
             filterEntities('capec');
             filterEntities('cwe');
+            renderGlobalSearchResults();
+            if (state.globalSearch.trim()) {
+                openGlobalSearch();
+            }
+        }
+
+        function openGlobalSearch() {
+            state.globalSearchOpen = true;
+            updateGlobalSearchUI();
+            renderGlobalSearchResults();
+        }
+
+        function closeGlobalSearch(force = false) {
+            if (state.globalSearchSticky && !force) {
+                return;
+            }
+            state.globalSearchOpen = false;
+            state.globalSearchExpanded = false;
+            updateGlobalSearchUI();
+        }
+
+        function toggleGlobalSearchExpanded(event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            if (state.globalSearchExpanded) {
+                state.globalSearchExpanded = false;
+            } else {
+                state.globalSearchExpanded = true;
+            }
+            state.globalSearchOpen = true;
+            updateGlobalSearchUI();
+            renderGlobalSearchResults();
+        }
+
+        function setGlobalSearchSticky(enabled) {
+            state.globalSearchSticky = !!enabled;
+            updateGlobalSearchUI();
+        }
+
+        function updateGlobalSearchUI() {
+            const bar = document.getElementById('global-search-bar');
+            const expandBtn = document.getElementById('global-search-expand');
+            const stickyInput = document.getElementById('global-search-sticky');
+            if (!bar) return;
+            bar.classList.toggle('open', state.globalSearchOpen);
+            bar.classList.toggle('expanded', state.globalSearchOpen && state.globalSearchExpanded);
+            if (expandBtn) {
+                expandBtn.textContent = state.globalSearchExpanded ? 'Collapse' : 'Expand';
+                expandBtn.setAttribute('aria-expanded', state.globalSearchExpanded ? 'true' : 'false');
+            }
+            if (stickyInput) {
+                stickyInput.checked = state.globalSearchSticky;
+            }
+        }
+
+        function initGlobalSearch() {
+            document.addEventListener('click', (e) => {
+                const bar = document.getElementById('global-search-bar');
+                if (!bar) return;
+                if (bar.contains(e.target)) return;
+                closeGlobalSearch();
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key !== 'Escape') return;
+                if (state.globalSearchOpen && !state.globalSearchSticky) {
+                    if (state.globalSearchExpanded) {
+                        state.globalSearchExpanded = false;
+                        updateGlobalSearchUI();
+                        renderGlobalSearchResults();
+                    } else {
+                        closeGlobalSearch(true);
+                    }
+                }
+            });
+        }
+
+        function rankGlobalEntity(entity, type, term, tokens) {
+            if (!term) return 0;
+            const id = (entity?.id || '').toString().toLowerCase();
+            const name = (entity?.name || '').toString().toLowerCase();
+            const desc = (entity?.description || '').toString().toLowerCase();
+            const summary = (entity?.summary || '').toString().toLowerCase();
+            let score = 0;
+
+            if (id === term) score += 100;
+            if (name === term) score += 95;
+            if (id.startsWith(term)) score += 80;
+            if (name.startsWith(term)) score += 70;
+            if (id.includes(term)) score += 60;
+            if (name.includes(term)) score += 55;
+            if (desc.includes(term) || summary.includes(term)) score += 30;
+
+            tokens.forEach(token => {
+                if (!token) return;
+                if (id.includes(token)) score += 12;
+                if (name.includes(token)) score += 10;
+                if (desc.includes(token) || summary.includes(token)) score += 4;
+            });
+
+            if (type === 'attack' && Array.isArray(entity?.tactics)) {
+                const tacticText = entity.tactics.join(' ').toLowerCase();
+                if (tacticText.includes(term)) score += 8;
+                tokens.forEach(token => {
+                    if (tacticText.includes(token)) score += 2;
+                });
+            }
+
+            return score;
+        }
+
+        function buildGlobalSearchResults(term) {
+            const results = [];
+            const tokens = term.split(/\s+/).filter(Boolean);
+
+            for (const entity of Object.values(state.library.techniques)) {
+                const score = rankGlobalEntity(entity, 'attack', term, tokens);
+                if (score > 0) results.push({ type: 'attack', id: entity.id, name: entity.name || '', score });
+            }
+
+            for (const entity of Object.values(state.library.capecs)) {
+                const score = rankGlobalEntity(entity, 'capec', term, tokens);
+                if (score > 0) results.push({ type: 'capec', id: entity.id, name: entity.name || '', score });
+            }
+
+            for (const entity of Object.values(state.library.cwes)) {
+                const score = rankGlobalEntity(entity, 'cwe', term, tokens);
+                if (score > 0) results.push({ type: 'cwe', id: entity.id, name: entity.name || '', score });
+            }
+
+            return results.sort((a, b) => b.score - a.score);
+        }
+
+        function renderGlobalSearchResults() {
+            const resultsEl = document.getElementById('global-search-results');
+            if (!resultsEl) return;
+            const term = (state.globalSearch || '').trim().toLowerCase();
+            if (!term) {
+                resultsEl.innerHTML = '<div class="global-search-empty">Type to search across ATT&CK, CAPEC, and CWE.</div>';
+                return;
+            }
+
+            const results = buildGlobalSearchResults(term);
+            const maxResults = state.globalSearchExpanded ? 50 : 10;
+            const visible = results.slice(0, maxResults);
+            if (visible.length === 0) {
+                resultsEl.innerHTML = '<div class="global-search-empty">No matches found.</div>';
+                return;
+            }
+
+            resultsEl.innerHTML = visible.map(result => {
+                const typeLabel = TYPE_LABELS[result.type] || result.type;
+                const safeId = esc(result.id);
+                const safeName = esc(result.name || '');
+                return `
+                    <button class="global-search-item" draggable="true"
+                        ondragstart="handleDragStart(event, '${escAttr(result.type)}', '${escAttr(result.id)}')"
+                        ondragend="handleDragEnd(event)"
+                        onclick="openGlobalSearchResult('${escAttr(result.type)}', '${escAttr(result.id)}')">
+                        <div class="global-search-meta">
+                            <span class="global-search-type ${escAttr(result.type)}">${esc(typeLabel)}</span>
+                            <span>${safeId}</span>
+                        </div>
+                        <div>${safeName}</div>
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function openGlobalSearchResult(type, id) {
+            if (!type || !id) return;
+            switchTab(type);
+            selectEntity(type, id);
+            if (!state.globalSearchSticky) {
+                closeGlobalSearch();
+            }
         }
 
         function matchesGlobalSearch(entity, type, term) {
@@ -6839,12 +7149,21 @@
                              ondrop="handleDrop(event, '${phaseKey}')">
                             <div class="phase-header" onclick="togglePhase(this)">
                                 <div class="phase-title">
-                                    <span class="phase-name">${formatPhaseName(phaseId)}</span>
+                                    <button class="phase-details-btn" onclick="event.stopPropagation(); openPhaseDetails('${phaseKey}')"
+                                            title="View phase details and relations"
+                                        >
+                                        <span class="phase-name">${formatPhaseName(phaseId)}
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M384 64C366.3 64 352 78.3 352 96C352 113.7 366.3 128 384 128L466.7 128L265.3 329.4C252.8 341.9 252.8 362.2 265.3 374.7C277.8 387.2 298.1 387.2 310.6 374.7L512 173.3L512 256C512 273.7 526.3 288 544 288C561.7 288 576 273.7 576 256L576 96C576 78.3 561.7 64 544 64L384 64zM144 160C99.8 160 64 195.8 64 240L64 496C64 540.2 99.8 576 144 576L400 576C444.2 576 480 540.2 480 496L480 416C480 398.3 465.7 384 448 384C430.3 384 416 398.3 416 416L416 496C416 504.8 408.8 512 400 512L144 512C135.2 512 128 504.8 128 496L128 240C128 231.2 135.2 224 144 224L224 224C241.7 224 256 209.7 256 192C256 174.3 241.7 160 224 160L144 160z"/></svg>
+                                        </span>
+                                    </button>
                                     <span class="phase-count ${totalCount === 0 ? 'zero' : ''}">${totalCount}</span>
                                 </div>
                                 <div class="phase-header-actions">
-                                    <button class="phase-group-btn" onclick="event.stopPropagation(); createGroup('${phaseKey}')">+ Group</button>
-                                    <button class="phase-details-btn" onclick="event.stopPropagation(); openPhaseDetails('${phaseKey}')">Phase Details</button>
+                                    <button class="phase-group-btn" onclick="event. stopPropagation(); createGroup('${phaseKey}')"
+                                    title="Create phase group"
+                                    >
+                                        + <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M32 183.4C12.9 172.4 0 151.7 0 128C0 92.7 28.7 64 64 64C87.7 64 108.4 76.9 119.4 96L328.5 96C339.6 76.9 360.2 64 383.9 64C419.2 64 447.9 92.7 447.9 128C447.9 151.7 435 172.4 415.9 183.4L415.9 296.5C435 307.6 447.9 328.2 447.9 351.9C447.9 387.2 419.2 415.9 383.9 415.9C360.2 415.9 339.5 403 328.5 383.9L119.4 383.9C108.3 403 87.7 415.9 64 415.9C28.7 415.9 0 387.2 0 351.9C0 328.2 12.9 307.5 32 296.5L32 183.4zM119.4 160C113.8 169.7 105.7 177.8 96 183.4L96 296.5C105.7 302.1 113.8 310.2 119.4 319.9L328.5 319.9C334.1 310.2 342.2 302.1 351.9 296.5L351.9 183.4C342.2 177.8 334.1 169.7 328.5 160L119.4 160zM544 343.4C534.3 337.8 526.2 329.7 520.6 320L491.4 320C486.1 302.3 476.6 286.5 464 273.6L464 256L520.6 256C531.7 236.9 552.3 224 576 224C611.3 224 640 252.7 640 288C640 311.7 627.1 332.4 608 343.4L608 456.5C627.1 467.6 640 488.2 640 511.9C640 547.2 611.3 575.9 576 575.9C552.3 575.9 531.6 563 520.6 543.9L311.5 543.9C300.4 563 279.8 575.9 256.1 575.9C220.8 575.9 192.1 547.2 192.1 511.9C192.1 488.2 205 467.5 224.1 456.5L224.1 431.9L288.1 431.9L288.1 456.5C297.8 462.1 305.9 470.2 311.5 479.9L520.6 479.9C526.2 470.2 534.3 462.1 544 456.5L544 343.4z"/></svg>
+                                    </button>
                                     <span class="phase-toggle">▼</span>
                                 </div>
                             </div>
@@ -9116,6 +9435,7 @@
             }
         });
         applyInputGuards();
+        initGlobalSearch();
         populateStixTypeDropdown();
         loadVersion();
         loadData();
