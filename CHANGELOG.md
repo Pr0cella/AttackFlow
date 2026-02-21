@@ -4,8 +4,8 @@
 ## [2.9.0] - 2026-02-21
 
 ### Added
-- **STIX Builder**: New STIX 2.1 builder interface for creating & sharing STIX 2.1 objects and bundles.
-- **STIX Visualizer**: Builder-Integrated STIX visualizer view with verbose JSON validator. Reports bundle <-> STIX specification mismatches.
+- **STIX Composer**: New STIX 2.1 editor interface for creating & sharing STIX 2.1 objects and bundles.
+- **STIX Visualizer**: Composer-Integrated STIX visualizer view with verbose JSON validator. Reports bundle <-> STIX specification mismatches.
 - **Mitigation Relationships**: Mitigation column added to the relationship view, sourced from techniques in each chain.
 - **Phase Details Modal**: New modal for phase rollups (click phase in relationship view or use the Phase Details button on phase headers). Designed as high level phase overview for contained items, attached metadata & CVEs, related mitigations and average severity/confidence scores.
 - **CSV Technique Import**: Paste technique IDs via CSV or newline into a modal to replace the ATT&CK library; includes a Reset ATT&CK action to restore base data.

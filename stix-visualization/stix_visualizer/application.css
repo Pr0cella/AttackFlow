@@ -49,6 +49,10 @@ body {
   color: inherit;
 }
 
+#canvas-container {
+  position: relative;
+}
+
 #canvas-wrapper {
   margin: 0 10px 0 10px;
   float: left;
@@ -150,6 +154,52 @@ body {
 
 .hidden {
   display: none;
+}
+
+.canvas-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.canvas-loading.hidden {
+  display: none;
+}
+
+#canvas-container.is-loading #canvas-wrapper,
+#canvas-container.is-loading .sidebar {
+  visibility: hidden;
+}
+
+.canvas-loading-inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.08);
+  color: inherit;
+  font-weight: 600;
+  margin-top: 45%;
+}
+
+.canvas-spinner {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 3px solid rgba(15, 23, 42, 0.25);
+  border-top-color: rgba(15, 23, 42, 0.8);
+  animation: canvas-spin 0.9s linear infinite;
+}
+
+@keyframes canvas-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 #timeline {

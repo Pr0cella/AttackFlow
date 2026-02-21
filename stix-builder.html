@@ -352,8 +352,21 @@
             border-color: var(--accent);
         }
 
-        #visualize-bundle {
-            background: var(--accent);
+        #visualize-bundle,
+        #add-object {
+            background: var(--bg-panel);
+            color: var(--text-secondary);
+            border-color: var(--border-color);
+        }
+
+        #visualize-bundle:disabled,
+        #add-object:disabled {
+            cursor: default;
+            pointer-events: none;
+        }
+
+        #visualize-bundle:not(:disabled):hover,
+        #add-object:not(:disabled):hover {
             color: var(--text-primary);
             border-color: var(--accent);
         }
@@ -697,8 +710,9 @@
             </div>
             <div class="control-group">
                 <span class="control-label">Bundle</span>
+                <button class="btn danger" id="clear-bundle">Clear Bundle</button>
+                <span width="1px" style="border-left:1px solid var(--border-color); height: 16px; display: inline-block;"></span>
                 <button class="btn" id="validate-bundle">Validate</button>
-                <button class="btn" id="clear-bundle">Clear</button>
                 <button class="btn" id="export-bundle">Export</button>
                 <button class="btn" id="import-bundle">Import</button>
             </div>
@@ -741,6 +755,12 @@
                             <textarea id="paste-area-custom-config"></textarea>
                         </div>
                         <div id="canvas-container" class="hidden">
+                            <div class="canvas-loading hidden" id="canvas-loading" aria-live="polite" aria-busy="true">
+                                <div class="canvas-loading-inner">
+                                    <div class="canvas-spinner" aria-hidden="true"></div>
+                                    <div class="canvas-loading-text">Rendering graph...</div>
+                                </div>
+                            </div>
                             <div id="canvas-wrapper">
                                 <div id="canvas"></div>
                                 <div id="timelineControls">
@@ -1607,7 +1627,8 @@
         function setVisualizerButtonState() {
             const btn = document.getElementById('visualize-bundle');
             const issues = validateBundle();
-            btn.disabled = issues.length > 0;
+            const isEmpty = state.bundle.objects.length === 0;
+            btn.disabled = isEmpty || issues.length > 0;
         }
 
         function updateStatus(ok, message) {
@@ -1669,6 +1690,12 @@
             state.ui.activeObjectId = null;
             state.validation.ok = false;
             state.validation.issues = [];
+            if (window.AttackFlowStixViz?.reset) {
+                window.AttackFlowStixViz.reset();
+            }
+            if (state.ui.centerMode !== 'editor') {
+                setCenterMode('editor');
+            }
             renderTabs();
             renderObjectList();
             renderEditor();
@@ -2344,6 +2371,9 @@
                     renderObjectList();
                     renderEditor();
                     renderBundlePreview();
+                    if (state.ui.centerMode === 'visualizer') {
+                        renderVisualizer();
+                    }
                     showToast('Bundle imported');
                 } catch (err) {
                     showToast('Import failed: ' + err.message);

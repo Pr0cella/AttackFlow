@@ -24,6 +24,7 @@ require(["domReady!", "stix2viz/stix2viz/stix2viz"], function (document, stix2vi
     let view = null;
     let uploader = document.getElementById('uploader');
     let canvasContainer = document.getElementById('canvas-container');
+    let canvasLoading = document.getElementById('canvas-loading');
     let canvas = document.getElementById('canvas');
     let timelineVersions = null;
     let cumulativeIdGroups = null;
@@ -147,62 +148,77 @@ require(["domReady!", "stix2viz/stix2viz/stix2viz"], function (document, stix2vi
         // Hard-coded working icon directory setting for this application.
         customConfig.iconDir = "stix-visualization/stix_visualizer/stix2viz/stix2viz/icons";
 
-        toggleView();
+        setViewMode(true);
+        setLoading(true);
 
-        try
-        {
-            let [nodeDataSet, edgeDataSet, stixIdToObject]
-                = stix2viz.makeGraphData(content, customConfig);
-
-            currentEdgeDataSet = edgeDataSet;
-            currentStixIdToObject = stixIdToObject;
-
-            [
-                timelineVersions, cumulativeIdGroups, nonCumulativeIdGroups
-            ] = makeTimelineGroups(nodeDataSet);
-
-            let wantsList = false;
-            if (nodeDataSet.length > 200)
-                wantsList = confirm(
-                    "This graph contains " + nodeDataSet.length.toString()
-                    + " nodes.  Do you wish to display it as a list?"
-                );
-
-            if (wantsList)
+        window.setTimeout(() => {
+            let loadingCleared = false;
+            const clearLoading = () => {
+                if (loadingCleared) return;
+                loadingCleared = true;
+                setLoading(false);
+            };
+            try
             {
-                view = stix2viz.makeListView(
-                    canvas, nodeDataSet, edgeDataSet, stixIdToObject,
-                    customConfig
-                );
+                let [nodeDataSet, edgeDataSet, stixIdToObject]
+                    = stix2viz.makeGraphData(content, customConfig);
 
-                view.on(
-                    "click",
-                    e => listViewClickHandler(e, edgeDataSet, stixIdToObject)
-                );
+                currentEdgeDataSet = edgeDataSet;
+                currentStixIdToObject = stixIdToObject;
+
+                [
+                    timelineVersions, cumulativeIdGroups, nonCumulativeIdGroups
+                ] = makeTimelineGroups(nodeDataSet);
+
+                let wantsList = false;
+                if (nodeDataSet.length > 200)
+                    wantsList = confirm(
+                        "This graph contains " + nodeDataSet.length.toString()
+                        + " nodes.  Do you wish to display it as a list?"
+                    );
+
+                if (wantsList)
+                {
+                    view = stix2viz.makeListView(
+                        canvas, nodeDataSet, edgeDataSet, stixIdToObject,
+                        customConfig
+                    );
+
+                    view.on(
+                        "click",
+                        e => listViewClickHandler(e, edgeDataSet, stixIdToObject)
+                    );
+                    clearLoading();
+                }
+                else
+                {
+                    view = stix2viz.makeGraphView(
+                        canvas, nodeDataSet, edgeDataSet, stixIdToObject,
+                        customConfig
+                    );
+
+                    applyThemeToGraph(view);
+
+                    view.on(
+                        "click",
+                        e => graphViewClickHandler(e, edgeDataSet, stixIdToObject)
+                    );
+
+                    if (view?.graph?.on) {
+                        view.graph.on("stabilized", clearLoading);
+                    }
+                }
+
+                setupTimelineSlider(timelineVersions);
+                populateLegend(...view.legendData);
             }
-            else
+            catch (err)
             {
-                view = stix2viz.makeGraphView(
-                    canvas, nodeDataSet, edgeDataSet, stixIdToObject,
-                    customConfig
-                );
-
-                applyThemeToGraph(view);
-
-                view.on(
-                    "click",
-                    e => graphViewClickHandler(e, edgeDataSet, stixIdToObject)
-                );
+                console.log(err);
+                alertException(err);
+                clearLoading();
             }
-
-            setupTimelineSlider(timelineVersions);
-            populateLegend(...view.legendData);
-        }
-        catch (err)
-        {
-            console.log(err);
-            alertException(err);
-        }
+        }, 0);
     }
 
     function applyThemeToGraph(graphView)
@@ -238,18 +254,18 @@ require(["domReady!", "stix2viz/stix2viz/stix2viz"], function (document, stix2vi
             return applyThemeToGraph(view);
         },
         select: function (stixId) {
-            if (view && stixId) {
-                view.selectNode(stixId);
-            }
+            if (!view || !stixId) return;
+            if (currentStixIdToObject && !currentStixIdToObject.has(stixId)) return;
+            view.selectNode(stixId);
         },
         selectAndPopulate: function (stixId) {
             if (!view || !stixId) return;
+            if (!currentStixIdToObject || !currentEdgeDataSet) return;
+            if (!currentStixIdToObject.has(stixId)) return;
             view.selectNode(stixId);
-            if (currentStixIdToObject && currentEdgeDataSet) {
-                let stixObject = currentStixIdToObject.get(stixId);
-                if (stixObject) {
-                    populateSelected(stixObject, currentEdgeDataSet, currentStixIdToObject);
-                }
+            let stixObject = currentStixIdToObject.get(stixId);
+            if (stixObject) {
+                populateSelected(stixObject, currentEdgeDataSet, currentStixIdToObject);
             }
         }
     };
@@ -389,21 +405,6 @@ require(["domReady!", "stix2viz/stix2viz/stix2viz"], function (document, stix2vi
             vizStixWrapper(content, customConfig);
             linkifyHeader();
         }
-    }
-
-    /* ******************************************************
-     * Fetches STIX 2.0 data from an external URL (supplied
-     * user) via AJAX. Server-side Access-Control-Allow-Origin
-     * must allow cross-domain requests for this to work.
-     * ******************************************************/
-    function handleFetchJson() {
-      return; // disable fetch from URL
-      var url = document.getElementById("url").value;
-      let customConfig = document.getElementById('paste-area-custom-config').value;
-      fetchJsonAjax(url, function(content) {
-        vizStixWrapper(content, customConfig);
-      });
-      linkifyHeader();
     }
 
     /**
@@ -824,10 +825,18 @@ require(["domReady!", "stix2viz/stix2viz/stix2viz"], function (document, stix2vi
      * Toggle the view between the data entry container and
      * the view container
      * ******************************************************/
-    function toggleView() {
-      uploader.classList.toggle("hidden");
-      canvasContainer.classList.toggle("hidden");
-    }
+        function setViewMode(showCanvas) {
+            uploader.classList.toggle("hidden", showCanvas);
+            canvasContainer.classList.toggle("hidden", !showCanvas);
+        }
+
+        function setLoading(isLoading) {
+            if (!canvasLoading) return;
+            if (canvasContainer) {
+                    canvasContainer.classList.toggle("is-loading", isLoading);
+            }
+            canvasLoading.classList.toggle("hidden", !isLoading);
+        }
 
     /* ******************************************************
      * Turns header into a "home" "link"
@@ -842,123 +851,42 @@ require(["domReady!", "stix2viz/stix2viz/stix2viz"], function (document, stix2vi
       * *****************************************************/
     function resetPage() {
       var header = document.getElementById('header');
-      if (header.classList.contains('linkish')) {
-        toggleView();
-        if (view)
-        {
-            view.destroy();
-            view = null;
-        }
-        document.getElementById('files').value = ""; // reset the files input
-        document.getElementById('chosen-files').innerHTML = ""; // reset the subheader text
-        document.getElementById('selection').innerHTML = ""; // reset the selected node in the sidebar
+            setViewMode(false);
+            setLoading(false);
+            if (view)
+            {
+                    view.destroy();
+                    view = null;
+            }
+            document.getElementById('files').value = ""; // reset the files input
+            document.getElementById('chosen-files').innerHTML = ""; // reset the subheader text
+            document.getElementById('selection').innerHTML = ""; // reset the selected node in the sidebar
 
-        // Reset legend table
-        let table = document.getElementById('legend-content');
-        if (table.tBodies.length > 0)
-        {
-            let tbody = table.tBodies[0];
-            tbody.replaceChildren();
-        }
+            // Reset legend table
+            let table = document.getElementById('legend-content');
+            if (table.tBodies.length > 0)
+            {
+                    let tbody = table.tBodies[0];
+                    tbody.replaceChildren();
+            }
 
-        // reset connections box
-        let eltConnIncoming = document.getElementById("connections-incoming");
-        let eltConnOutgoing = document.getElementById("connections-outgoing");
-        eltConnIncoming.replaceChildren();
-        eltConnOutgoing.replaceChildren();
+            // reset connections box
+            let eltConnIncoming = document.getElementById("connections-incoming");
+            let eltConnOutgoing = document.getElementById("connections-outgoing");
+            eltConnIncoming.replaceChildren();
+            eltConnOutgoing.replaceChildren();
 
-        // disable timeline
-        let timeline = document.getElementById("timeline");
-        let timelineCheckbox = document.getElementById("timelineCheckbox");
-        timeline.disabled = true;
-        timelineCheckbox.disabled = true;
+            // disable timeline
+            let timeline = document.getElementById("timeline");
+            let timelineCheckbox = document.getElementById("timelineCheckbox");
+            timeline.disabled = true;
+            timelineCheckbox.disabled = true;
 
-        timelineVersions = cumulativeIdGroups = nonCumulativeIdGroups = null;
+            timelineVersions = cumulativeIdGroups = nonCumulativeIdGroups = null;
 
-        header.classList.remove('linkish');
-      }
-    }
-
-    /* ******************************************************
-     * Generic AJAX 'GET' request.
-     *
-     * Takes a URL and a callback function as input.
-     * ******************************************************/
-    function fetchJsonAjax(url, cfunc) {
-      return; // disable fetch from URL
-      var regex = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/i;
-      if (!regex.test(url)) {
-        alert("ERROR: Double check url provided");
-      }
-
-      var xhttp;
-      if (window.XMLHttpRequest) {
-        xhttp = new XMLHttpRequest();
-      } else {
-        xhttp = new ActiveXObject("Microsoft.XMLHTTP"); // For IE5 and IE6 luddites
-      }
-      xhttp.onreadystatechange = function() {
-        if (xhttp.readyState == 4 && xhttp.status == 200) {
-          cfunc(xhttp.responseText);
-        } else if (xhttp.status != 200 && xhttp.status != 0) {
-          alert("ERROR: " + xhttp.status + ": " + xhttp.statusText + " - Double check url provided");
-          return;
-        }
-
-        xhttp.onerror = function() {
-          alert("ERROR: Unable to fetch JSON. The domain entered has either rejected the request, \
-is not serving JSON, or is not running a webserver.\n\nA GitHub Gist can be created to host RAW JSON data to prevent this.");
-        };
-      }
-      xhttp.open("GET", url, true);
-      xhttp.send();
-    }
-
-    /* ******************************************************
-     * AJAX 'GET' request from `?url=` parameter
-     *
-     * Will check the URL during `window.onload` to determine
-     * if `?url=` parameter is provided
-     * ******************************************************/
-    function fetchJsonFromUrl() {
-      return; // disable fetch from URL
-      var url = window.location.href;
-
-      // If `?` is not provided, load page normally
-      if (/\?/.test(url)) {
-        // Regex to see if `url` parameter has a valid url value
-        var regex = /\?url=https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/i;
-        var res = regex.exec(url);
-        if (res != null) {
-          // Get the value from the `url` parameter
-          let req_url = res[0].substring(5);
-
-          // Fetch JSON from the url
-          fetchJsonAjax(req_url, function(content) {
-            vizStixWrapper(content)
-          });
-          linkifyHeader();
-
-        } else {
-          alert("ERROR: Invalid url - Request must start with '?url=http[s]://' and be a valid domain");
-        }
-      }
-    }
-
-    function selectedNodeClick() {
-        return; // prevent node from being explicitly displayed
-      let selected = document.getElementById('selected');
-      if (selected.className.indexOf('clicked') === -1) {
-        selected.className += " clicked";
-        selected.style.position = 'absolute';
-        selected.style.left = '25px';
-        selected.style.width = (window.innerWidth - 110) + "px";
-        selected.style.top = (document.getElementById('canvas').offsetHeight + 25) + "px";
-        selected.scrollIntoView(true);
-      } else {
-        selected.className = "sidebar"
-        selected.removeAttribute("style")
-      }
+            if (header) {
+                    header.classList.remove('linkish');
+            }
     }
 
     /* ******************************************************
@@ -966,14 +894,10 @@ is not serving JSON, or is not running a webserver.\n\nA GitHub Gist can be crea
      * ******************************************************/
     document.getElementById('files').addEventListener('change', handleFileSelect, false);
     document.getElementById('paste-parser').addEventListener('click', handleTextarea, false);
-    // document.getElementById('fetch-url').addEventListener('click', handleFetchJson, false);
     document.getElementById('header').addEventListener('click', resetPage, false);
     uploader.addEventListener('dragover', handleDragOver, false);
     uploader.addEventListener('drop', handleFileDrop, false);
-    document.getElementById('selected').addEventListener('click', selectedNodeClick, false);
     document.getElementById("legend").addEventListener("click", legendClickHandler, {capture: true});
     document.getElementById("timeline").addEventListener("input", sliderChangeHandler, false);
     document.getElementById("timelineCheckbox").addEventListener("change", sliderChangeHandler, false);
-
-    // fetchJsonFromUrl();
 });
