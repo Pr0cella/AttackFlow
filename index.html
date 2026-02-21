@@ -123,6 +123,7 @@
             background: var(--bg-phase);
             border-radius: 3px;
             transition: all 0.15s;
+            border: 1px solid var(--border-color);
         }
 
         .version-link:hover {
@@ -142,6 +143,7 @@
             border-radius: 50%;
             font-weight: 600;
             transition: all 0.15s;
+            border: 1px solid var(--border-color);
         }
 
         .help-link:hover {
@@ -173,7 +175,7 @@
         .theme-toggle {
             width: 24px;
             height: 24px;
-            border-radius: 6px;
+            border-radius: 24px;
             border: 1px solid var(--border-color);
             background: var(--bg-phase);
             color: var(--text-primary);
@@ -345,7 +347,11 @@
             transition: all 0.15s;
         }
 
-        .btn:hover { background: #736e6e; }
+        .btn:hover { 
+            color: var(--text-primary);
+            background: var(--accent);
+            border-color: var(--accent); 
+        }
         .btn.active { background: var(--accent); border-color: var(--accent); }
         .btn:disabled {
             opacity: 0.5;
@@ -1003,6 +1009,18 @@
 
         .phase-group-btn:hover { color: var(--text-primary); border-color: var(--accent); }
 
+        .phase-details-btn {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 2px;
+            cursor: pointer;
+        }
+
+        .phase-details-btn:hover { color: var(--text-primary); border-color: var(--accent); }
+
         .phase.minimized .phase-toggle { transform: rotate(-90deg); }
 
         .phase-content {
@@ -1545,7 +1563,7 @@
             position: fixed;
             inset: 0;
             background: rgba(0,0,0,0.7);
-            z-index: 2000;
+            z-index: 2300;
             align-items: center;
             justify-content: center;
         }
@@ -2563,6 +2581,138 @@
             color: var(--text-primary);
         }
 
+        .phase-details-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .phase-details-stat {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 8px 10px;
+        }
+
+        .phase-details-stat-label {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+
+        .phase-details-stat-value {
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        .phase-details-section {
+            margin-bottom: 14px;
+        }
+
+        .phase-details-section-title {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .phase-details-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .phase-details-item {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 8px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .phase-details-item.clickable {
+            cursor: pointer;
+        }
+
+        .phase-details-item.clickable:hover {
+            border-color: var(--accent);
+        }
+
+        .phase-details-item-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .phase-details-item-id {
+            font-family: monospace;
+        }
+
+        .phase-details-meta {
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px 10px;
+        }
+
+        .phase-details-relations {
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .phase-details-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 6px;
+            border-radius: 999px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-card);
+            font-size: 0.6rem;
+        }
+
+        .mitigation-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-family: monospace;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #10b981;
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.35);
+            border-radius: 3px;
+            padding: 1px 6px;
+            cursor: pointer;
+        }
+
+        .mitigation-badge:hover {
+            background: rgba(16, 185, 129, 0.2);
+        }
+
+        .phase-details-mitigation-desc summary {
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+
+        .phase-details-mitigation-desc p {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
         .relationship-empty {
             padding: 30px;
             text-align: center;
@@ -2777,6 +2927,14 @@
         .modal-overlay.visible {
             opacity: 1;
             visibility: visible;
+        }
+
+        #phase-details-modal {
+            z-index: 2100;
+        }
+
+        #entity-modal {
+            z-index: 2200;
         }
 
         .modal {
@@ -3293,6 +3451,17 @@
         </div>
     </div>
 
+    <!-- Phase Details Modal -->
+    <div class="modal-overlay" id="phase-details-modal" onclick="closePhaseDetails(event)">
+        <div class="modal modal-wide" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="modal-title" id="phase-details-title"></div>
+                <button class="modal-close" onclick="closePhaseDetails()">×</button>
+            </div>
+            <div class="modal-body" id="phase-details-content"></div>
+        </div>
+    </div>
+
     <!-- Create STIX Item Modal -->
     <div class="create-custom-modal" id="create-custom-modal" onclick="closeCreateCustomModal(event)">
         <div class="create-custom-form" onclick="event.stopPropagation()">
@@ -3437,12 +3606,14 @@
                         <li>Use the search bar to find specific techniques, patterns, weaknesses, or STIX objects</li>
                         <li>Click any entity to view detailed information in the right panel</li>
                         <li>Switch to <span class="guide-key">Relationship Explorer</span> to investigate ATT&CK ↔ CAPEC ↔ CWE ↔ Mitigations without assigning items</li>
+                        <li>Use <span class="guide-key">Phase Details</span> on phase headers or relationship rows for a rollup summary</li>
                     </ul>
                 </div>
 
                 <div class="guide-section">
                     <h4>STIX 2.1 Objects</h4>
                     <ul>
+                        <li>Use the STIX builder to compose objects and bundles, then review them in the visualizer/validator</li>
                         <li>Open the <span class="guide-key">STIX</span> tab to create or import STIX Domain Objects</li>
                         <li>Click <strong>+ Create STIX Item</strong> to manually create any of the 18 SDO types (plus custom)</li>
                         <li>Click <strong>Import STIX Bundle</strong> to load a STIX 2.1 bundle JSON — all SDOs are extracted with full properties</li>
@@ -3490,8 +3661,8 @@
                         <li>Use domain filters (All / Enterprise / Mobile / ICS) for techniques</li>
                         <li>Use abstraction filters for CAPECs and CWEs</li>
                         <li>Enable <span class="guide-key">Hide Empty</span> to focus on phases with assignments</li>
-                        <li>Enable <span class="guide-key">Group by CAPEC</span> to nest techniques under patterns</li>
                         <li>Switch to <span class="guide-key">Relationships</span> view for CAPEC→CWE→ATT&CK chains</li>
+                        <li>Mitigation relationships appear in the Relationships view, with expandable lists</li>
                         <li>Use <span class="guide-key">Relationship Explorer</span> for full entity and mitigation browsing</li>
                     </ul>
                 </div>
@@ -3845,16 +4016,22 @@
 
         function getCveEntries(metadata) {
             const entries = [];
+            const pushEntry = (entry) => {
+                const id = (entry?.id || entry?.cveId || '').toString().trim().toUpperCase();
+                const vector = (entry?.vector || entry?.cvssVector || '').toString().trim();
+                const scoreRaw = entry?.score;
+                const score = typeof scoreRaw === 'number' ? scoreRaw : (scoreRaw ? parseFloat(scoreRaw) : null);
+                if (id) {
+                    entries.push({ id, score: Number.isFinite(score) ? score : null, vector: vector || '' });
+                }
+            };
+
             if (Array.isArray(metadata?.cveEntries)) {
-                metadata.cveEntries.forEach(entry => {
-                    const id = (entry?.id || entry?.cveId || '').toString().trim().toUpperCase();
-                    const vector = (entry?.vector || entry?.cvssVector || '').toString().trim();
-                    const scoreRaw = entry?.score;
-                    const score = typeof scoreRaw === 'number' ? scoreRaw : (scoreRaw ? parseFloat(scoreRaw) : null);
-                    if (id) {
-                        entries.push({ id, score: Number.isFinite(score) ? score : null, vector: vector || '' });
-                    }
-                });
+                metadata.cveEntries.forEach(pushEntry);
+            }
+
+            if (Array.isArray(metadata?.cves)) {
+                metadata.cves.forEach(pushEntry);
             }
 
             if (!entries.length) {
@@ -6406,6 +6583,7 @@
                                 </div>
                                 <div class="phase-header-actions">
                                     <button class="phase-group-btn" onclick="event.stopPropagation(); createGroup('${phaseKey}')">+ Group</button>
+                                    <button class="phase-details-btn" onclick="event.stopPropagation(); openPhaseDetails('${phaseKey}')">Phase Details</button>
                                     <span class="phase-toggle">▼</span>
                                 </div>
                             </div>
@@ -6763,7 +6941,7 @@
                         </div>
                         <div class="relationship-cell phase">
                             <div class="relationship-cell-header">Phase</div>
-                            <div class="relationship-item">
+                            <div class="relationship-item" onclick="openPhaseDetails('${escAttr(chain.phase.key)}')">
                                 <span class="id phase">${esc(chain.phase.key.split(':')[0])}</span>
                                 <span class="name">${esc(chain.phase.name)}</span>
                             </div>
@@ -6792,6 +6970,358 @@
             if (!state.relationshipExpanded) state.relationshipExpanded = new Set();
             state.relationshipExpanded.add(chainId);
             renderRelationshipView();
+        }
+
+        const SCORE_AVERAGE_VALUES = {
+            low: 2.5,
+            medium: 5,
+            high: 7.5,
+            critical: 10
+        };
+
+        function getAverageScoreLabel(avg) {
+            if (avg === null) return 'N/A';
+            if (avg < 3) return 'Low';
+            if (avg < 6) return 'Medium';
+            if (avg < 9) return 'High';
+            return 'Critical';
+        }
+
+        function buildPhaseDetails(phaseKey) {
+            const phaseData = state.assignments[phaseKey];
+            if (!phaseData) return null;
+
+            const groupLabelByInstanceId = new Map();
+            (phaseData.groups || []).forEach((group) => {
+                (group.items || []).forEach((item) => {
+                    const instanceId = getAssignmentInstanceId(item);
+                    if (instanceId) groupLabelByInstanceId.set(instanceId, group.label || 'Group');
+                });
+            });
+
+            const collectItems = (type) => getAllPhaseItemsByType(phaseData, type).map((assignment) => {
+                const id = getAssignmentId(assignment);
+                const metadata = getAssignmentMetadata(assignment);
+                const instanceId = getAssignmentInstanceId(assignment);
+                return {
+                    type,
+                    id,
+                    name: getEntityName(type, id),
+                    metadata,
+                    instanceId,
+                    groupLabel: instanceId ? groupLabelByInstanceId.get(instanceId) || '' : ''
+                };
+            });
+
+            const itemsByType = {
+                attack: collectItems('attack'),
+                capec: collectItems('capec'),
+                cwe: collectItems('cwe'),
+                custom: collectItems('custom')
+            };
+
+            return itemsByType;
+        }
+
+        function getPhaseItemRelationships(type, id) {
+            if (type === 'attack') {
+                const capecs = state.techniqueToCapec[id] || [];
+                const cweSet = new Set();
+                capecs.forEach((capecId) => {
+                    (state.library.capecs[capecId]?.cwes || []).forEach((cweId) => cweSet.add(cweId));
+                });
+                const mitigations = (state.library.techniques[id]?.mitigations || []).map((m) => m.id).filter(Boolean);
+                return { capecs, cwes: [...cweSet], techniques: [], mitigations };
+            }
+
+            if (type === 'capec') {
+                const capec = state.library.capecs[id];
+                return {
+                    capecs: [],
+                    cwes: capec?.cwes || [],
+                    techniques: capec?.techniques || [],
+                    mitigations: []
+                };
+            }
+
+            if (type === 'cwe') {
+                const capecs = state.cweToCapec[id] || [];
+                const techniqueSet = new Set();
+                capecs.forEach((capecId) => {
+                    (state.capecToTechnique[capecId] || []).forEach((techId) => techniqueSet.add(techId));
+                });
+                return { capecs, cwes: [], techniques: [...techniqueSet], mitigations: [] };
+            }
+
+            return { capecs: [], cwes: [], techniques: [], mitigations: [] };
+        }
+
+        function getPhaseAverages(itemsByType) {
+            let scoreTotal = 0;
+            let scoreCount = 0;
+            let confidenceTotal = 0;
+            let confidenceCount = 0;
+
+            Object.values(itemsByType).flat().forEach((item) => {
+                const scoreValue = SCORE_AVERAGE_VALUES[item.metadata.score || ''] || null;
+                if (scoreValue !== null) {
+                    scoreTotal += scoreValue;
+                    scoreCount += 1;
+                }
+                const confidence = item.metadata.confidence;
+                if (confidence !== null && confidence !== undefined && confidence > 0) {
+                    confidenceTotal += confidence;
+                    confidenceCount += 1;
+                }
+            });
+
+            const avgScore = scoreCount ? (scoreTotal / scoreCount) : null;
+            const avgConfidence = confidenceCount ? (confidenceTotal / confidenceCount) : null;
+
+            return {
+                avgScore,
+                avgScoreLabel: getAverageScoreLabel(avgScore),
+                avgConfidence,
+                avgConfidenceLabel: avgConfidence === null ? 'N/A' : getConfidenceLabel(avgConfidence)
+            };
+        }
+
+        function buildPhaseCveEntries(itemsByType) {
+            const entries = [];
+            Object.values(itemsByType).flat().forEach((item) => {
+                const cveEntries = getCveEntries(item.metadata);
+                cveEntries.forEach((entry) => {
+                    entries.push({
+                        id: entry.id,
+                        score: entry.score,
+                        vector: entry.vector,
+                        parentId: item.id,
+                        parentType: item.type
+                    });
+                });
+            });
+            return entries;
+        }
+
+        function buildPhaseMitigations(itemsByType) {
+            const techniqueSet = new Set();
+
+            itemsByType.attack.forEach((item) => techniqueSet.add(item.id));
+            itemsByType.capec.forEach((item) => {
+                (state.capecToTechnique[item.id] || state.library.capecs[item.id]?.techniques || []).forEach((techId) => {
+                    techniqueSet.add(techId);
+                });
+            });
+            itemsByType.cwe.forEach((item) => {
+                const capecs = state.cweToCapec[item.id] || [];
+                capecs.forEach((capecId) => {
+                    (state.capecToTechnique[capecId] || []).forEach((techId) => {
+                        techniqueSet.add(techId);
+                    });
+                });
+            });
+
+            const mitigationMap = new Map();
+            techniqueSet.forEach((techId) => {
+                const tech = state.library.techniques[techId];
+                (tech?.mitigations || []).forEach((mitigation) => {
+                    if (!mitigation?.id) return;
+                    if (!mitigationMap.has(mitigation.id)) {
+                        mitigationMap.set(mitigation.id, {
+                            id: mitigation.id,
+                            name: mitigation.name || mitigation.id,
+                            description: mitigation.description || ''
+                        });
+                    }
+                });
+            });
+
+            return Array.from(mitigationMap.values());
+        }
+
+        function renderPhaseMitigationSection(itemsByType) {
+            const mitigations = buildPhaseMitigations(itemsByType);
+            if (!mitigations.length) {
+                return `
+                    <div class="phase-details-section">
+                        <div class="phase-details-section-title">Mitigations (0)</div>
+                        <div class="list-info">No mitigations</div>
+                    </div>
+                `;
+            }
+
+            const rows = mitigations.map((mitigation) => {
+                const safeId = InputSecurity.encodeHtmlEntities(mitigation.id);
+                const safeName = esc(mitigation.name || mitigation.id);
+                const description = mitigation.description ? `
+                    <details class="phase-details-mitigation-desc">
+                        <summary>Show description</summary>
+                        <p>${esc(mitigation.description)}</p>
+                    </details>
+                ` : '';
+
+                return `
+                    <div class="phase-details-item">
+                        <div class="phase-details-item-header">
+                            <span class="mitigation-badge" onclick="openMitigationExplorer('${safeId}')">${esc(mitigation.id)}</span>
+                            <span>${safeName}</span>
+                        </div>
+                        ${description}
+                    </div>
+                `;
+            }).join('');
+
+            return `
+                <div class="phase-details-section">
+                    <div class="phase-details-section-title">Mitigations (${mitigations.length})</div>
+                    <div class="phase-details-list">${rows}</div>
+                </div>
+            `;
+        }
+
+        function renderPhaseCveSection(itemsByType) {
+            const entries = buildPhaseCveEntries(itemsByType);
+            if (!entries.length) {
+                return '';
+            }
+
+            const rows = entries.map((entry) => {
+                const scoreText = entry.score !== null && entry.score !== undefined ? String(entry.score) : 'N/A';
+                const vectorText = entry.vector ? entry.vector : 'N/A';
+                const parentLabel = `${entry.parentType.toUpperCase()} ${entry.parentId}`;
+                return `
+                    <div class="phase-details-item">
+                        <div class="phase-details-item-header">
+                            <span class="phase-details-item-id">${esc(entry.id)}</span>
+                            <span>${esc(parentLabel)}</span>
+                        </div>
+                        <div class="phase-details-meta">
+                            <span>Score: ${esc(scoreText)}</span>
+                            <span>Vector: ${esc(vectorText)}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            return `
+                <div class="phase-details-section">
+                    <div class="phase-details-section-title">CVEs (${entries.length})</div>
+                    <div class="phase-details-list">${rows}</div>
+                </div>
+            `;
+        }
+
+        function renderPhaseDetailsSection(title, items, phaseKey) {
+            if (!items.length) {
+                return '';
+            }
+
+            const rows = items.map((item) => {
+                const relationships = getPhaseItemRelationships(item.type, item.id);
+                const cveEntries = getCveEntries(item.metadata);
+                const cveText = cveEntries.length ? cveEntries.map(entry => entry.id).join(', ') : 'None';
+                const observables = item.metadata.observables || [];
+                const observableCounts = {};
+                observables.forEach((obs) => {
+                    if (!obs?.type) return;
+                    observableCounts[obs.type] = (observableCounts[obs.type] || 0) + 1;
+                });
+                const observableText = Object.keys(observableCounts).length
+                    ? Object.entries(observableCounts).map(([type, count]) => `${type} x${count}`).join(', ')
+                    : 'None';
+
+                const scoreLabel = item.metadata.score && item.metadata.score !== 'unclassified'
+                    ? item.metadata.score
+                    : 'N/A';
+                const confidenceLabel = item.metadata.confidence && item.metadata.confidence > 0
+                    ? `${item.metadata.confidence}%`
+                    : 'N/A';
+
+                const relationChips = [];
+                const addRelation = (label, values) => {
+                    if (!values || !values.length) return;
+                    relationChips.push(`<span class="phase-details-chip">${esc(label)}: ${esc(values.join(', '))}</span>`);
+                };
+                addRelation('CAPEC', relationships.capecs);
+                addRelation('CWE', relationships.cwes);
+                addRelation('ATT&CK', relationships.techniques);
+                addRelation('Mitigation', relationships.mitigations);
+
+                const groupBadge = item.groupLabel
+                    ? `<span class="phase-details-chip">Group: ${esc(item.groupLabel)}</span>`
+                    : '';
+
+                const openAction = item.type === 'custom'
+                    ? `openEntityModal('custom', '${InputSecurity.encodeHtmlEntities(item.id)}', '${InputSecurity.encodeHtmlEntities(phaseKey)}', '${InputSecurity.encodeHtmlEntities(item.instanceId || '')}')`
+                    : `openEntityModal('${escAttr(item.type)}', '${escAttr(item.id)}', '${escAttr(phaseKey)}', '${escAttr(item.instanceId || '')}')`;
+
+                return `
+                    <div class="phase-details-item clickable" onclick="${openAction}">
+                        <div class="phase-details-item-header">
+                            <span class="phase-details-item-id">${esc(item.id)}</span>
+                            <span>${esc(item.name || item.id)}</span>
+                            ${groupBadge}
+                        </div>
+                        <div class="phase-details-meta">
+                            <span>Score: ${esc(scoreLabel)}</span>
+                            <span>Confidence: ${esc(confidenceLabel)}</span>
+                            <span>CVEs: ${esc(cveText)}</span>
+                            <span>Observables: ${esc(observableText)}</span>
+                        </div>
+                        ${relationChips.length ? `<div class="phase-details-relations">${relationChips.join('')}</div>` : ''}
+                    </div>
+                `;
+            }).join('');
+
+            return `
+                <div class="phase-details-section">
+                    <div class="phase-details-section-title">${esc(title)} (${items.length})</div>
+                    <div class="phase-details-list">${rows}</div>
+                </div>
+            `;
+        }
+
+        function openPhaseDetails(phaseKey) {
+            if (!phaseKey) return;
+            const itemsByType = buildPhaseDetails(phaseKey);
+            if (!itemsByType) return;
+            const averages = getPhaseAverages(itemsByType);
+
+            const phaseName = formatPhaseName(phaseKey.split(':')[1]);
+            document.getElementById('phase-details-title').textContent = `${phaseKey} — ${phaseName}`;
+
+            const summary = `
+                <div class="phase-details-summary">
+                    <div class="phase-details-stat">
+                        <div class="phase-details-stat-label">Average Score</div>
+                        <div class="phase-details-stat-value">${averages.avgScore === null ? 'N/A' : `${averages.avgScoreLabel} (${averages.avgScore.toFixed(2)})`}</div>
+                    </div>
+                    <div class="phase-details-stat">
+                        <div class="phase-details-stat-label">Average Confidence</div>
+                        <div class="phase-details-stat-value">${averages.avgConfidence === null ? 'N/A' : `${averages.avgConfidenceLabel} (${averages.avgConfidence.toFixed(0)}%)`}</div>
+                    </div>
+                </div>
+            `;
+
+            const sections = [
+                summary,
+                renderPhaseDetailsSection('ATT&CK', itemsByType.attack, phaseKey),
+                renderPhaseDetailsSection('CAPEC', itemsByType.capec, phaseKey),
+                renderPhaseDetailsSection('CWE', itemsByType.cwe, phaseKey),
+                renderPhaseDetailsSection('STIX', itemsByType.custom, phaseKey),
+                renderPhaseCveSection(itemsByType),
+                renderPhaseMitigationSection(itemsByType)
+            ].filter(Boolean);
+
+            const content = sections.join('');
+
+            document.getElementById('phase-details-content').innerHTML = content;
+            document.getElementById('phase-details-modal').classList.add('visible');
+        }
+
+        function closePhaseDetails(event) {
+            if (event && event.target !== event.currentTarget) return;
+            document.getElementById('phase-details-modal').classList.remove('visible');
         }
 
         function renderStats() {

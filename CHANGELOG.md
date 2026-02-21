@@ -1,6 +1,20 @@
 # Changelog
 ---
 
+## [2.9.0] - 2026-02-21
+
+### Added
+- **STIX Builder**: New STIX 2.1 builder interface for creating & sharing STIX 2.1 objects and bundles.
+- **STIX Visualizer**: Builder-Integrated STIX visualizer view with verbose JSON validator. Reports bundle <-> STIX specification mismatches.
+- **Mitigation Relationships**: Mitigation column added to the relationship view, sourced from techniques in each chain.
+- **Phase Details Modal**: New modal for phase rollups (click phase in relationship view or use the Phase Details button on phase headers). Designed as high level phase overview for contained items, attached metadata & CVEs, related mitigations and average severity/confidence scores.
+
+### Changed
+**UI Improvements**: Redesigned Navigation & other UI Elements, consolidated all Theme toggles into one
+
+### Fixed
+- **CVE Sources**: CVE extraction now includes `metadata.cves` in addition to legacy fields.
+
 ## [2.8.0] - 2026-02-14
 
 ### Added
