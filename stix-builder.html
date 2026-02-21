@@ -685,8 +685,15 @@
     <div class="app">
         <div class="header">
             <div class="header-left">
-                <div class="header-title">STIX 2.1 Builder</div>
-                <div class="header-subtitle">Create, Edit & Visualize STIX 2.1 Bundles</div>
+                <!--<div class="header-title">STIX 2.1 Builder</div>
+                <div class="header-subtitle">Create, Edit & Visualize STIX 2.1 Bundles</div>-->
+                <div class="header-controls">
+                    <div class="control-group">
+                        <span class="control-label">Add</span>
+                        <select id="add-type" class="btn"></select>
+                        <button class="btn primary" id="add-object">Add Object</button>
+                    </div>
+                </div>
             </div>
             <div class="control-group">
                 <span class="control-label">Bundle</span>
@@ -694,13 +701,6 @@
                 <button class="btn" id="clear-bundle">Clear</button>
                 <button class="btn" id="export-bundle">Export</button>
                 <button class="btn" id="import-bundle">Import</button>
-            </div>
-            <div class="header-controls">
-                <div class="control-group">
-                    <span class="control-label">Add</span>
-                    <select id="add-type" class="btn"></select>
-                    <button class="btn primary" id="add-object">Add Object</button>
-                </div>
             </div>
         </div>
 
@@ -717,15 +717,15 @@
 
             <div class="panel">
                 <div class="panel-header">
+                    <div class="center-controls">
+                        <button class="mini-btn" id="copy-json">Copy Item as JSON</button>
+                        <button class="mini-btn danger" id="delete-object">Delete Item</button>
+                    </div>
                     <div class="center-toggle">
                         <button class="btn" id="mode-editor">Editor</button>
                         <button class="btn" id="mode-visualizer">Visualizer</button>
                     </div>
                     <button class="btn" id="visualize-bundle">Render Bundle</button>
-                    <div class="center-controls">
-                        <button class="mini-btn" id="copy-json">Copy Item as JSON</button>
-                        <button class="mini-btn danger" id="delete-object">Delete Item</button>
-                    </div>
                 </div>
                 <div class="panel-body center-pane" id="center-pane">
                     <div id="editor-panel"></div>

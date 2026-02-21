@@ -8,9 +8,13 @@
 - **STIX Visualizer**: Builder-Integrated STIX visualizer view with verbose JSON validator. Reports bundle <-> STIX specification mismatches.
 - **Mitigation Relationships**: Mitigation column added to the relationship view, sourced from techniques in each chain.
 - **Phase Details Modal**: New modal for phase rollups (click phase in relationship view or use the Phase Details button on phase headers). Designed as high level phase overview for contained items, attached metadata & CVEs, related mitigations and average severity/confidence scores.
+- **CSV Technique Import**: Paste technique IDs via CSV or newline into a modal to replace the ATT&CK library; includes a Reset ATT&CK action to restore base data.
+- **Global Search**: Expanded global search panel with ranked mixed-type results (ATT&CK/CAPEC/CWE), Sticky mode, and drag-and-drop from results.
+- **CSV ID Search**: Comma-separated ID search for ATT&CK, CAPEC, and CWE (supports numeric-only CAPEC/CWE entries).
 
 ### Changed
 **UI Improvements**: Redesigned Navigation & other UI Elements, consolidated all Theme toggles into one
+- Phase item Explore/Edit actions now reveal on hover like Delete.
 
 ### Fixed
 - **CVE Sources**: CVE extraction now includes `metadata.cves` in addition to legacy fields.

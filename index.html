@@ -1998,6 +1998,28 @@
             background: rgba(113, 113, 122, 0.25);
         }
 
+        .technique-tag .tag-action-btn.explore,
+        .technique-tag .tag-action-btn.edit,
+        .capec-tag .tag-action-btn.explore,
+        .capec-tag .tag-action-btn.edit,
+        .cwe-tag .tag-action-btn.explore,
+        .cwe-tag .tag-action-btn.edit,
+        .custom-tag .tag-action-btn.edit {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .technique-tag:hover .tag-action-btn.explore,
+        .technique-tag:hover .tag-action-btn.edit,
+        .capec-tag:hover .tag-action-btn.explore,
+        .capec-tag:hover .tag-action-btn.edit,
+        .cwe-tag:hover .tag-action-btn.explore,
+        .cwe-tag:hover .tag-action-btn.edit,
+        .custom-tag:hover .tag-action-btn.edit {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
         .tag-action-btn.explore { color: #93c5fd; }
         .tag-action-btn.edit { color: #fcd34d; }
 
