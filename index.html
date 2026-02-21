@@ -2883,7 +2883,7 @@
         .legend {
             display: flex;
             justify-content: center;
-            gap: 20px;
+            gap: 6px;
             padding: 8px 16px;
             border-top: 1px solid var(--border-color);
             flex-wrap: wrap;
@@ -3005,6 +3005,39 @@
             overflow-y: auto;
             font-size: 0.85rem;
             line-height: 1.6;
+        }
+
+        .csv-import-hint {
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            font-size: 0.8rem;
+        }
+
+        .csv-import-textarea {
+            width: 100%;
+            min-height: 160px;
+            padding: 8px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-phase);
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            font-family: inherit;
+            box-sizing: border-box;
+            resize: vertical;
+        }
+
+        .csv-import-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: 12px;
+        }
+
+        .csv-import-error {
+            color: #ef4444;
+            font-size: 0.8rem;
+            margin-top: 8px;
         }
 
         .modal-wide {
@@ -3189,6 +3222,9 @@
         <div class="main">
             <!-- Sidebar -->
             <div class="sidebar">
+                <div class="search-bar">
+                    <input type="text" class="search-input" id="search-global" placeholder="Global search (ATT&CK/CAPEC/CWE)..." oninput="setGlobalSearch(this.value)">
+                </div>
                 <div class="sidebar-tabs">
                     <button class="sidebar-tab attack active" onclick="switchTab('attack')">ATT&CK</button>
                     <button class="sidebar-tab capec" onclick="switchTab('capec')">CAPEC</button>
@@ -3205,10 +3241,12 @@
                                     Import ATT&CK Navigator Layer
                                     <input type="file" accept=".json" onchange="importNavigator(event)" style="display: none;">
                                 </label>
+                                <button class="import-btn" onclick="openCsvImportModal()">Import CSV</button>
+                                <button class="import-btn" onclick="resetAttackTechniques()">Reset</button>
                             </div>
                         </div>
                         <div class="search-bar">
-                            <input type="text" class="search-input" id="search-attack" placeholder="Search techniques..." oninput="filterEntities('attack')">
+                            <input type="text" class="search-input" id="search-attack" placeholder="Search techniques... (supports CSV list)" oninput="filterEntities('attack')">
                         </div>
                         <div class="filter-row" id="filter-attack">
                             <button class="filter-btn active" data-filter="all" onclick="setFilter('attack', 'all')">All</button>
@@ -3222,7 +3260,7 @@
                     <!-- CAPEC Tab -->
                     <div class="tab-panel" id="tab-capec">
                         <div class="search-bar">
-                            <input type="text" class="search-input" id="search-capec" placeholder="Search patterns..." oninput="filterEntities('capec')">
+                            <input type="text" class="search-input" id="search-capec" placeholder="Search patterns... (supports CSV list)" oninput="filterEntities('capec')">
                         </div>
                         <div class="filter-row" id="filter-capec">
                             <button class="filter-btn active" data-filter="all" onclick="setFilter('capec', 'all')">All</button>
@@ -3236,7 +3274,7 @@
                     <!-- CWE Tab -->
                     <div class="tab-panel" id="tab-cwe">
                         <div class="search-bar">
-                            <input type="text" class="search-input" id="search-cwe" placeholder="Search weaknesses..." oninput="filterEntities('cwe')">
+                            <input type="text" class="search-input" id="search-cwe" placeholder="Search weaknesses... (supports CSV list)" oninput="filterEntities('cwe')">
                         </div>
                         <div class="filter-row" id="filter-cwe">
                             <button class="filter-btn active" data-filter="all" onclick="setFilter('cwe', 'all')">All</button>
@@ -3480,6 +3518,25 @@
                 <button class="modal-close" onclick="closePhaseDetails()">×</button>
             </div>
             <div class="modal-body" id="phase-details-content"></div>
+        </div>
+    </div>
+
+    <!-- CSV Import Modal -->
+    <div class="modal-overlay" id="csv-import-modal" onclick="closeCsvImportModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="modal-title">Import CSV Technique IDs</div>
+                <button class="modal-close" onclick="closeCsvImportModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="csv-import-hint">Paste technique IDs separated by commas or new lines (e.g. T1205, T1021.005).</div>
+                <textarea class="csv-import-textarea" id="csv-import-textarea" placeholder="T1205&#10;T1021.005" data-allow-newlines="true"></textarea>
+                <div class="csv-import-error" id="csv-import-error"></div>
+                <div class="csv-import-actions">
+                    <button class="btn" onclick="closeCsvImportModal()">Cancel</button>
+                    <button class="btn" onclick="submitCsvImport()">Import</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -3881,8 +3938,19 @@
             return el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA');
         }
 
-        function sanitizeUserInputText(text) {
-            let value = InputSecurity.normalize(text, 10000);
+        function normalizeUserInput(text, maxLength = 10000, allowNewlines = false) {
+            if (text === null || text === undefined) return '';
+            const controlPattern = allowNewlines
+                ? /[\x00-\x09\x0B-\x0C\x0E-\x1F\x7F]/g
+                : /[\x00-\x1F\x7F]/g;
+            return String(text)
+                .replace(controlPattern, '')
+                .replace(/<script[^>]*>.*?<\/script>/gi, '')
+                .slice(0, maxLength);
+        }
+
+        function sanitizeUserInputText(text, allowNewlines = false) {
+            let value = normalizeUserInput(text, 10000, allowNewlines);
             value = value.replace(/[\[\]\{\};"'`]/g, '');
             value = value.replace(/--+/g, '');
             return value;
@@ -3950,7 +4018,8 @@
                 if (!isTextInputElement(target)) return;
                 const data = (e.clipboardData || window.clipboardData)?.getData('text');
                 if (!data) return;
-                const sanitized = sanitizeUserInputText(data);
+                const allowNewlines = target?.dataset?.allowNewlines === 'true';
+                const sanitized = sanitizeUserInputText(data, allowNewlines);
                 if (sanitized !== data) {
                     e.preventDefault();
                     const value = target.value || '';
@@ -3970,7 +4039,8 @@
                 if (!isTextInputElement(target)) return;
                 const data = e.dataTransfer?.getData('text');
                 if (!data) return;
-                const sanitized = sanitizeUserInputText(data);
+                const allowNewlines = target?.dataset?.allowNewlines === 'true';
+                const sanitized = sanitizeUserInputText(data, allowNewlines);
                 if (sanitized !== data) {
                     e.preventDefault();
                     const value = target.value || '';
@@ -3989,7 +4059,8 @@
                 const target = e.target;
                 if (!isTextInputElement(target)) return;
                 const value = target.value || '';
-                const sanitized = sanitizeUserInputText(value);
+                const allowNewlines = target?.dataset?.allowNewlines === 'true';
+                const sanitized = sanitizeUserInputText(value, allowNewlines);
                 if (sanitized !== value) {
                     const pos = target.selectionStart ?? sanitized.length;
                     target.value = sanitized;
@@ -4548,6 +4619,7 @@
             showComments: false,
             relationshipExpanded: new Set(),
             activeTab: 'attack',
+            globalSearch: '',
             filters: { attack: 'all', capec: 'all', cwe: 'all', custom: 'all' },
             
             // Full data libraries (loaded from JSON)
@@ -4767,6 +4839,98 @@
             maxStringLength: 500,
             techniqueIdPattern: /^T\d{4}(\.\d{3})?$/  // T1234 or T1234.001
         };
+
+        async function ensureBaseTechniquesLoaded() {
+            if (state._baseTechniques && Object.keys(state._baseTechniques).length > 0) {
+                return state._baseTechniques;
+            }
+            const attackRes = await fetch('resources/attack-techniques.json');
+            const data = stripAngleBracketsFromJson(await attackRes.json());
+            state._baseTechniques = { ...data };
+            return state._baseTechniques;
+        }
+
+        function parseTechniqueIdInput(raw) {
+            const normalized = normalizeUserInput(raw || '', 20000, true).toUpperCase();
+            const tokens = normalized.split(/[\s,]+/).map(t => t.trim()).filter(Boolean);
+            const unique = [...new Set(tokens)];
+            const valid = [];
+            const invalid = [];
+            unique.forEach(id => {
+                if (IMPORT_LIMITS.techniqueIdPattern.test(id)) {
+                    valid.push(id);
+                } else {
+                    invalid.push(id);
+                }
+            });
+            return { valid, invalid };
+        }
+
+        async function applyTechniqueList(ids) {
+            const base = await ensureBaseTechniquesLoaded();
+            const newTechniques = {};
+            let missing = 0;
+            ids.forEach(id => {
+                const entry = base[id];
+                if (entry) {
+                    newTechniques[id] = entry;
+                } else {
+                    newTechniques[id] = { id, name: `Technique ${id}`, domain: detectDomain(id) };
+                    missing += 1;
+                }
+            });
+            state.library.techniques = newTechniques;
+            return { missing };
+        }
+
+        function openCsvImportModal() {
+            const textArea = document.getElementById('csv-import-textarea');
+            const errorEl = document.getElementById('csv-import-error');
+            if (textArea) textArea.value = '';
+            if (errorEl) errorEl.textContent = '';
+            document.getElementById('csv-import-modal').classList.add('visible');
+        }
+
+        function closeCsvImportModal(event) {
+            if (event && event.target !== event.currentTarget) return;
+            document.getElementById('csv-import-modal').classList.remove('visible');
+        }
+
+        async function submitCsvImport() {
+            const textArea = document.getElementById('csv-import-textarea');
+            const errorEl = document.getElementById('csv-import-error');
+            if (errorEl) errorEl.textContent = '';
+            const raw = textArea ? textArea.value : '';
+            const { valid, invalid } = parseTechniqueIdInput(raw);
+            if (valid.length === 0) {
+                if (errorEl) errorEl.textContent = 'No valid technique IDs found.';
+                return;
+            }
+            try {
+                const { missing } = await applyTechniqueList(valid);
+                let msg = `Loaded ${valid.length} techniques (library replaced)`;
+                if (invalid.length > 0) msg += `, ${invalid.length} invalid skipped`;
+                if (missing > 0) msg += `, ${missing} missing in base library`;
+                showToast(msg);
+                filterEntities('attack');
+                closeCsvImportModal();
+            } catch (err) {
+                if (errorEl) errorEl.textContent = `Import failed: ${err.message}`;
+            }
+        }
+
+        async function resetAttackTechniques() {
+            try {
+                const attackRes = await fetch('resources/attack-techniques.json');
+                const data = stripAngleBracketsFromJson(await attackRes.json());
+                state._baseTechniques = { ...data };
+                state.library.techniques = { ...data };
+                showToast('ATT&CK techniques reset');
+                filterEntities('attack');
+            } catch (err) {
+                showToast('Reset failed: ' + err.message);
+            }
+        }
 
         function importNavigator(event) {
             const file = event.target.files[0];
@@ -5220,31 +5384,90 @@
             filterEntities(type);
         }
 
+        function setGlobalSearch(value) {
+            state.globalSearch = value || '';
+            filterEntities('attack');
+            filterEntities('capec');
+            filterEntities('cwe');
+        }
+
+        function matchesGlobalSearch(entity, type, term) {
+            if (!term) return true;
+            const fields = [];
+            if (entity?.id) fields.push(entity.id);
+            if (entity?.name) fields.push(entity.name);
+            if (entity?.description) fields.push(entity.description);
+            if (entity?.summary) fields.push(entity.summary);
+            if (type === 'attack' && Array.isArray(entity?.tactics)) fields.push(entity.tactics.join(' '));
+            return fields.some(field => field.toLowerCase().includes(term));
+        }
+
+        function parseCommaIdList(raw, pattern, prefix = '') {
+            if (!raw || !raw.includes(',')) return null;
+            const normalized = normalizeUserInput(raw, 1000, true);
+            const ids = normalized
+                .split(',')
+                .map(part => part.trim())
+                .filter(Boolean)
+                .map(part => {
+                    const upper = part.toUpperCase();
+                    if (prefix && /^\d+$/.test(upper)) {
+                        return `${prefix}-${upper}`;
+                    }
+                    return upper;
+                });
+            if (ids.length === 0) return null;
+            const valid = ids.filter(id => pattern.test(id));
+            if (valid.length === 0) return null;
+            return new Set(valid);
+        }
+
         // ============================================================
         // ENTITY LIST RENDERING
         // ============================================================
         function filterEntities(type) {
-            const searchTerm = document.getElementById(`search-${type}`).value.toLowerCase();
+            const searchInput = document.getElementById(`search-${type}`);
+            const rawSearch = searchInput ? searchInput.value : '';
+            const searchTerm = rawSearch.toLowerCase();
+            const globalTerm = (state.globalSearch || '').trim().toLowerCase();
             const filter = state.filters[type];
             const listEl = document.getElementById(`list-${type}`);
             
             let entities = [];
             
             if (type === 'attack') {
+                const idSet = parseCommaIdList(rawSearch, IMPORT_LIMITS.techniqueIdPattern);
                 entities = Object.values(state.library.techniques).filter(t => {
-                    if (searchTerm && !t.id.toLowerCase().includes(searchTerm) && !t.name.toLowerCase().includes(searchTerm)) return false;
+                    if (!matchesGlobalSearch(t, type, globalTerm)) return false;
+                    if (idSet) {
+                        if (!idSet.has(String(t.id || '').toUpperCase())) return false;
+                    } else if (searchTerm && !t.id.toLowerCase().includes(searchTerm) && !t.name.toLowerCase().includes(searchTerm)) {
+                        return false;
+                    }
                     if (filter !== 'all' && t.domain !== filter) return false;
                     return true;
                 });
             } else if (type === 'capec') {
+                const idSet = parseCommaIdList(rawSearch, /^CAPEC-\d+$/i, 'CAPEC');
                 entities = Object.values(state.library.capecs).filter(c => {
-                    if (searchTerm && !c.id.toLowerCase().includes(searchTerm) && !c.name.toLowerCase().includes(searchTerm)) return false;
+                    if (!matchesGlobalSearch(c, type, globalTerm)) return false;
+                    if (idSet) {
+                        if (!idSet.has(String(c.id || '').toUpperCase())) return false;
+                    } else if (searchTerm && !c.id.toLowerCase().includes(searchTerm) && !c.name.toLowerCase().includes(searchTerm)) {
+                        return false;
+                    }
                     if (filter !== 'all' && c.abstraction?.toLowerCase() !== filter) return false;
                     return true;
                 });
             } else if (type === 'cwe') {
+                const idSet = parseCommaIdList(rawSearch, /^CWE-\d+$/i, 'CWE');
                 entities = Object.values(state.library.cwes).filter(w => {
-                    if (searchTerm && !w.id.toLowerCase().includes(searchTerm) && !w.name.toLowerCase().includes(searchTerm)) return false;
+                    if (!matchesGlobalSearch(w, type, globalTerm)) return false;
+                    if (idSet) {
+                        if (!idSet.has(String(w.id || '').toUpperCase())) return false;
+                    } else if (searchTerm && !w.id.toLowerCase().includes(searchTerm) && !w.name.toLowerCase().includes(searchTerm)) {
+                        return false;
+                    }
                     if (filter !== 'all' && w.abstraction?.toLowerCase() !== filter) return false;
                     return true;
                 });
