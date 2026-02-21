@@ -2423,6 +2423,7 @@
         .relationship-header-item .dot.cwe { background: var(--cwe-color); }
         .relationship-header-item .dot.attack { background: var(--attack-color); }
         .relationship-header-item .dot.phase { background: var(--accent); }
+        .relationship-header-item .dot.mitigation { background: #10b981; }
 
         .relationship-arrow {
             color: var(--text-secondary);
@@ -2512,6 +2513,7 @@
         .relationship-cell.cwe { background: rgba(245, 158, 11, 0.05); }
         .relationship-cell.attack { background: rgba(59, 130, 246, 0.05); }
         .relationship-cell.phase { background: rgba(113, 113, 122, 0.05); }
+        .relationship-cell.mitigation { background: rgba(16, 185, 129, 0.05); }
 
         .relationship-item {
             display: flex;
@@ -2535,6 +2537,7 @@
         .relationship-item .id.cwe { color: var(--cwe-color); }
         .relationship-item .id.attack { color: var(--attack-color); }
         .relationship-item .id.phase { color: var(--accent); }
+        .relationship-item .id.mitigation { color: #10b981; }
 
         .relationship-item .name {
             flex: 1;
@@ -3196,6 +3199,8 @@
                         <div class="relationship-header-item"><div class="dot attack"></div>ATT&CK</div>
                         <span class="relationship-arrow">→</span>
                         <div class="relationship-header-item"><div class="dot phase"></div>Phase</div>
+                        <span class="relationship-arrow">→</span>
+                        <div class="relationship-header-item"><div class="dot mitigation"></div>Mitigations</div>
                     </div>
                     <div class="relationship-wrapper">
                         <div class="relationship-chain" id="relationship-chain"></div>
@@ -6614,6 +6619,23 @@
             
             // Build relationship chains from assigned CAPECs
             const chains = [];
+
+            const collectMitigations = (techIds) => {
+                const mitigationMap = new Map();
+                (techIds || []).forEach((techId) => {
+                    const entity = state.library.techniques[techId];
+                    (entity?.mitigations || []).forEach((mitigation) => {
+                        if (!mitigation?.id) return;
+                        if (!mitigationMap.has(mitigation.id)) {
+                            mitigationMap.set(mitigation.id, {
+                                id: mitigation.id,
+                                name: mitigation.name || mitigation.id
+                            });
+                        }
+                    });
+                });
+                return Array.from(mitigationMap.values());
+            };
             
             for (const [phaseKey, phaseData] of Object.entries(state.assignments)) {
                 // For each assigned CAPEC
@@ -6636,7 +6658,8 @@
                         capec: { id: capecId, name: capec.name },
                         cwes: relatedCwes.slice(0, 5).map(id => ({ id, name: state.library.cwes[id]?.name || 'Unknown' })),
                         techniques: relatedTechs.slice(0, 5).map(id => ({ id, name: state.library.techniques[id]?.name || getTechniqueName(id) })),
-                        phase: { key: phaseKey, name: formatPhaseName(phaseKey.split(':')[1]) }
+                        phase: { key: phaseKey, name: formatPhaseName(phaseKey.split(':')[1]) },
+                        mitigations: collectMitigations(relatedTechs)
                     });
                 }
                 
@@ -6655,7 +6678,8 @@
                             capec: capec ? { id: capecId, name: capec.name } : null,
                             cwes: capec?.cwes?.slice(0, 3).map(id => ({ id, name: state.library.cwes[id]?.name || 'Unknown' })) || [],
                             techniques: [{ id: techId, name: state.library.techniques[techId]?.name || getTechniqueName(techId) }],
-                            phase: { key: phaseKey, name: formatPhaseName(phaseKey.split(':')[1]) }
+                            phase: { key: phaseKey, name: formatPhaseName(phaseKey.split(':')[1]) },
+                            mitigations: collectMitigations([techId])
                         });
                     } else if (relatedCapecs.length === 0) {
                         // Technique with no CAPEC
@@ -6663,7 +6687,8 @@
                             capec: null,
                             cwes: [],
                             techniques: [{ id: techId, name: state.library.techniques[techId]?.name || getTechniqueName(techId) }],
-                            phase: { key: phaseKey, name: formatPhaseName(phaseKey.split(':')[1]) }
+                            phase: { key: phaseKey, name: formatPhaseName(phaseKey.split(':')[1]) },
+                            mitigations: collectMitigations([techId])
                         });
                     }
                 }
@@ -6676,6 +6701,8 @@
             
             let html = '';
             for (const chain of chains) {
+                const visibleMitigations = (chain.mitigations || []).slice(0, 5);
+                const mitigationOverflow = Math.max((chain.mitigations || []).length - visibleMitigations.length, 0);
                 html += `
                     <div class="relationship-row">
                         <div class="relationship-cell capec">
@@ -6711,6 +6738,16 @@
                                 <span class="id phase">${esc(chain.phase.key.split(':')[0])}</span>
                                 <span class="name">${esc(chain.phase.name)}</span>
                             </div>
+                        </div>
+                        <div class="relationship-cell mitigation">
+                            <div class="relationship-cell-header">Mitigations</div>
+                            ${visibleMitigations.length > 0 ? visibleMitigations.map(mitigation => `
+                                <div class="relationship-item" onclick="openMitigationExplorer('${escAttr(mitigation.id)}')" title="${escAttr(mitigation.name)}">
+                                    <span class="id mitigation">${esc(mitigation.id)}</span>
+                                    <span class="name">${esc(mitigation.name)}</span>
+                                </div>
+                            `).join('') : '<div class="list-info">—</div>'}
+                            ${mitigationOverflow > 0 ? `<div class="list-info">+${mitigationOverflow} more</div>` : ''}
                         </div>
                     </div>
                 `;
