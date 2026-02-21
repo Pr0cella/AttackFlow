@@ -191,6 +191,16 @@
             gap: 6px;
             padding: 10px 12px 0;
             flex-wrap: wrap;
+            justify-content: space-between;
+        }
+
+        #type-tabs {
+            justify-content: flex-start;
+            gap: 7px;
+        }
+
+        #type-tabs > .tab {
+            padding: 3px 6px;
         }
 
         .tab {
@@ -305,6 +315,10 @@
             font-size: 0.8rem;
         }
 
+        .field-input input[type="checkbox"] {
+            width: auto;
+        }
+
         .field-input textarea { min-height: 70px; resize: vertical; }
 
         .inline-actions {
@@ -333,6 +347,10 @@
         }
 
         .center-toggle .btn.active {
+            border-color: var(--accent);
+        }
+
+        #visualize-bundle {
             background: var(--accent);
             color: var(--text-primary);
             border-color: var(--accent);
@@ -668,18 +686,18 @@
                 <div class="header-title">STIX 2.1 Builder</div>
                 <div class="header-subtitle">Create, Edit & Visualize STIX 2.1 Bundles</div>
             </div>
+            <div class="control-group">
+                <span class="control-label">Bundle</span>
+                <button class="btn" id="validate-bundle">Validate</button>
+                <button class="btn" id="clear-bundle">Clear</button>
+                <button class="btn" id="export-bundle">Export</button>
+                <button class="btn" id="import-bundle">Import</button>
+            </div>
             <div class="header-controls">
                 <div class="control-group">
                     <span class="control-label">Add</span>
                     <select id="add-type" class="btn"></select>
                     <button class="btn primary" id="add-object">Add Object</button>
-                </div>
-                <div class="control-group">
-                    <span class="control-label">Bundle</span>
-                    <button class="btn" id="clear-bundle">Clear Bundle</button>
-                    <button class="btn" id="import-bundle">Import</button>
-                    <button class="btn" id="export-bundle">Export</button>
-                    <button class="btn" id="validate-bundle">Validate</button>
                 </div>
             </div>
         </div>
@@ -697,15 +715,14 @@
 
             <div class="panel">
                 <div class="panel-header">
-                    <span>Center Pane</span>
+                    <div class="center-toggle">
+                        <button class="btn" id="mode-editor">Editor</button>
+                        <button class="btn" id="mode-visualizer">Visualizer</button>
+                    </div>
+                    <button class="btn" id="visualize-bundle">Render Bundle</button>
                     <div class="center-controls">
-                        <div class="center-toggle">
-                            <button class="btn" id="mode-editor">Editor</button>
-                            <button class="btn" id="mode-visualizer">Visualizer</button>
-                        </div>
-                        <button class="btn" id="visualize-bundle">Visualize Valid Bundle</button>
-                        <button class="mini-btn" id="copy-json">Copy JSON</button>
-                        <button class="mini-btn danger" id="delete-object">Delete</button>
+                        <button class="mini-btn" id="copy-json">Copy Item as JSON</button>
+                        <button class="mini-btn danger" id="delete-object">Delete Item</button>
                     </div>
                 </div>
                 <div class="panel-body center-pane" id="center-pane">
@@ -1617,16 +1634,18 @@
                     ? issue.match(STIX_ID_PATTERN_CHECK)[1]
                     : '';
                 item.className = 'issue-item';
-                item.classList.add('btn');
                 item.style.fontSize = '0.75rem';
                 item.style.color = "var(--text-primary)";
                 item.textContent = `${index + 1}. ${issue}`;
                 if (issue_id !== '') {
+                    item.title = 'Click to select related object';
+                    item.classList.add('btn');
                     item.style.cursor = 'pointer';
                     item.addEventListener('click', () => selectObject(issue_id));
                 }
                 list.appendChild(item);
             });
+            setActiveTab("all");
             document.getElementById('bundle-issues-modal').classList.add('visible');
         }
 
