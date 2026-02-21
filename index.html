@@ -2277,6 +2277,11 @@
             cursor: pointer;
             padding: 4px 8px;
         }
+
+        .metadata-section > .add-btn {
+            margin-top: 0.5rem;
+            text-align: center;
+        }
         
         .add-btn {
             display: inline-flex;
@@ -2544,6 +2549,18 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+        }
+
+        .relationship-more {
+            background: none;
+            border: none;
+            padding: 0;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .relationship-more:hover {
+            color: var(--text-primary);
         }
 
         .relationship-empty {
@@ -4331,6 +4348,7 @@
             hideEmpty: false,
             compactMode: false,
             showComments: false,
+            relationshipExpanded: new Set(),
             activeTab: 'attack',
             filters: { attack: 'all', capec: 'all', cwe: 'all', custom: 'all' },
             
@@ -6614,6 +6632,13 @@
         // ============================================================
         // RELATIONSHIP VIEW RENDERING
         // ============================================================
+        function getRelationshipChainId(chain) {
+            const capecId = chain.capec?.id || 'none';
+            const techIds = (chain.techniques || []).map((tech) => tech.id).join(',');
+            const cweIds = (chain.cwes || []).map((cwe) => cwe.id).join(',');
+            return `${chain.phase.key}|${capecId}|${techIds}|${cweIds}`;
+        }
+
         function renderRelationshipView() {
             const container = document.getElementById('relationship-chain');
             
@@ -6701,7 +6726,11 @@
             
             let html = '';
             for (const chain of chains) {
-                const visibleMitigations = (chain.mitigations || []).slice(0, 5);
+                const chainId = getRelationshipChainId(chain);
+                const isExpanded = state.relationshipExpanded?.has(chainId);
+                const visibleMitigations = isExpanded
+                    ? (chain.mitigations || [])
+                    : (chain.mitigations || []).slice(0, 5);
                 const mitigationOverflow = Math.max((chain.mitigations || []).length - visibleMitigations.length, 0);
                 html += `
                     <div class="relationship-row">
@@ -6747,13 +6776,22 @@
                                     <span class="name">${esc(mitigation.name)}</span>
                                 </div>
                             `).join('') : '<div class="list-info">—</div>'}
-                            ${mitigationOverflow > 0 ? `<div class="list-info">+${mitigationOverflow} more</div>` : ''}
+                            ${!isExpanded && mitigationOverflow > 0
+                                ? `<button class="list-info relationship-more" type="button" data-action="expand-mitigations" data-chain-id="${escAttr(chainId)}">+${mitigationOverflow} more</button>`
+                                : ''}
                         </div>
                     </div>
                 `;
             }
             
             container.innerHTML = html;
+        }
+
+        function expandRelationshipMitigations(chainId) {
+            if (!chainId) return;
+            if (!state.relationshipExpanded) state.relationshipExpanded = new Set();
+            state.relationshipExpanded.add(chainId);
+            renderRelationshipView();
         }
 
         function renderStats() {
@@ -7869,6 +7907,16 @@
                 closeDropdowns();
             }
         });
+
+        const relationshipContainer = document.getElementById('relationship-container');
+        if (relationshipContainer) {
+            relationshipContainer.addEventListener('click', (event) => {
+                const target = event.target.closest('[data-action="expand-mitigations"]');
+                if (!target) return;
+                event.preventDefault();
+                expandRelationshipMitigations(target.getAttribute('data-chain-id'));
+            });
+        }
 
         // ============================================================
         // METADATA EDITOR
