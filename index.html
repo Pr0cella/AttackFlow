@@ -1128,9 +1128,9 @@
         }
 
         .phase-group-btn {
-            background: transparent;
+            background: var(--bg-card);
             border: 1px solid var(--border-color);
-            color: var(--text-secondary);
+            color: var(--text-primary);
             font-size: 0.65rem;
             padding: 2px 6px;
             border-radius: 2px;
@@ -1142,7 +1142,7 @@
         .phase-details-btn {
             background: var(--bg-card);
             border: 1px solid var(--border-color);
-            color: var(--text-secondary);
+            color: var(--text-primary);
             font-size: 0.65rem;
             padding: 2px 6px;
             border-radius: 4px;
@@ -3337,7 +3337,7 @@
                             <button class="view-btn" id="view-explorer" onclick="setView('explorer')">Relationship Explorer</button>
                         </div>
                         <div class="view-tab-group" id="view-builder-group">
-                            <button class="view-btn" id="view-builder" onclick="setView('stix-builder')">STIX Builder</button>
+                            <button class="view-btn" id="view-builder" onclick="setView('stix-builder')">STIX Composer</button>
                         </div>
                     </div>
                 </div>
@@ -3468,7 +3468,7 @@
             </div>
 
             <div class="stix-builder-container" id="stix-builder-container">
-                <iframe class="stix-builder-frame" src="stix-builder.html" title="STIX Builder"></iframe>
+                <iframe class="stix-builder-frame" src="stix-builder.html" title="STIX Composer"></iframe>
             </div>
 
             <!-- Content -->
@@ -3477,7 +3477,8 @@
                     <div class="content-title-wrap">
                         <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle sidebar" title="Toggle sidebar">
                             <span class="sidebar-toggle-icon">
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M169.4 297.4C156.9 309.9 156.9 330.2 169.4 342.7L361.4 534.7C373.9 547.2 394.2 547.2 406.7 534.7C419.2 522.2 419.2 501.9 406.7 489.4L237.3 320L406.6 150.6C419.1 138.1 419.1 117.8 406.6 105.3C394.1 92.8 373.8 92.8 361.3 105.3L169.3 297.3z"/></svg>                            </span>
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M169.4 297.4C156.9 309.9 156.9 330.2 169.4 342.7L361.4 534.7C373.9 547.2 394.2 547.2 406.7 534.7C419.2 522.2 419.2 501.9 406.7 489.4L237.3 320L406.6 150.6C419.1 138.1 419.1 117.8 406.6 105.3C394.1 92.8 373.8 92.8 361.3 105.3L169.3 297.3z"/></svg>
+                            </span>
                         </button>
                         <span style="font-size: 0.9rem; font-weight: 500;" id="content-title">Unified Kill Chain</span>
                     </div>
@@ -3843,7 +3844,7 @@
                 <div class="guide-section">
                     <h4>STIX 2.1 Objects</h4>
                     <ul>
-                        <li>Use the STIX builder to compose objects and bundles, then review them in the visualizer/validator</li>
+                        <li>Use the STIX Composer to compose objects and bundles, then review them in the visualizer/validator</li>
                         <li>Open the <span class="guide-key">STIX</span> tab to create or import STIX Domain Objects</li>
                         <li>Click <strong>+ Create STIX Item</strong> to manually create any of the 18 SDO types (plus custom)</li>
                         <li>Click <strong>Import STIX Bundle</strong> to load a STIX 2.1 bundle JSON — all SDOs are extracted with full properties</li>
@@ -5302,7 +5303,7 @@
             document.getElementById('relationship-container').classList.toggle('visible', isRelationship);
             document.getElementById('content-title').textContent = isRelationship
                 ? 'Kill Chain Relationships'
-                : (isStixBuilder ? 'STIX Builder' : 'Unified Kill Chain');
+                : (isStixBuilder ? 'STIX Composer' : 'Unified Kill Chain');
             const showViewControls = (!isExplorer && !isRelationship && !isStixBuilder);
             const viewControlVisibility = showViewControls ? 'visible' : 'hidden';
             const viewControlPointer = showViewControls ? '' : 'none';
