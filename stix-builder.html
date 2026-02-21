@@ -381,6 +381,14 @@
             color: var(--text-secondary);
         }
 
+        .status-row.clickable {
+            cursor: pointer;
+        }
+
+        .status-row.clickable:hover {
+            color: var(--text-primary);
+        }
+
         .status-dot {
             width: 8px;
             height: 8px;
@@ -427,6 +435,87 @@
         .toast.visible {
             opacity: 1;
             transform: translateY(0);
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+        }
+
+        .modal-overlay.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            max-width: 640px;
+            max-height: 80vh;
+            width: 90%;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transform: scale(0.95);
+            transition: transform 0.2s;
+        }
+
+        .modal-overlay.visible .modal {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .modal-title {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.4rem;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .modal-close:hover { color: var(--text-primary); }
+
+        .modal-body {
+            padding: 16px;
+            overflow-y: auto;
+            font-size: 0.8rem;
+            line-height: 1.5;
+        }
+
+        .issue-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .issue-item {
+            padding: 8px 10px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
         }
 
         .center-pane {
@@ -587,6 +676,7 @@
                 </div>
                 <div class="control-group">
                     <span class="control-label">Bundle</span>
+                    <button class="btn" id="clear-bundle">Clear Bundle</button>
                     <button class="btn" id="import-bundle">Import</button>
                     <button class="btn" id="export-bundle">Export</button>
                     <button class="btn" id="validate-bundle">Validate</button>
@@ -654,7 +744,7 @@
             <div class="panel">
                 <div class="panel-header">
                     <span>Bundle</span>
-                    <div class="status-row" id="bundle-status">
+                    <div class="status-row" id="bundle-status" role="button" tabindex="0" aria-label="View validation issues">
                         <span class="status-dot" id="status-dot"></span>
                         <span id="status-text">Not validated</span>
                     </div>
@@ -690,6 +780,18 @@
 
     <input type="file" id="bundle-file" accept=".json" style="display:none">
     <div class="toast" id="toast"></div>
+
+    <div class="modal-overlay" id="bundle-issues-modal" onclick="closeBundleIssues(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="modal-title">Bundle Validation Issues</div>
+                <button class="modal-close" onclick="closeBundleIssues()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="issue-list" id="bundle-issues-list"></div>
+            </div>
+        </div>
+    </div>
 
     <script>
         const INPUT_LIMITS = {
@@ -1491,9 +1593,66 @@
         function updateStatus(ok, message) {
             const dot = document.getElementById('status-dot');
             const text = document.getElementById('status-text');
+            const statusRow = document.getElementById('bundle-status');
             dot.classList.toggle('ok', ok);
             dot.classList.toggle('bad', !ok);
             text.textContent = message;
+            if (statusRow) {
+                const hasIssues = !ok && (state.validation.issues || []).length > 0;
+                statusRow.classList.toggle('clickable', hasIssues);
+                statusRow.classList.toggle('btn', hasIssues);
+                statusRow.setAttribute('aria-disabled', hasIssues ? 'false' : 'true');
+            }
+        }
+
+        function openBundleIssues() {
+            const issues = state.validation.issues || [];
+            if (!issues.length) return;
+            const list = document.getElementById('bundle-issues-list');
+            list.innerHTML = '';
+            issues.forEach((issue, index) => {
+                const item = document.createElement('div');
+                const STIX_ID_PATTERN_CHECK = /(?<![a-z0-9-])([a-z0-9-]+--[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?![a-z0-9-])/i;
+                const issue_id = STIX_ID_PATTERN_CHECK.test(issue)
+                    ? issue.match(STIX_ID_PATTERN_CHECK)[1]
+                    : '';
+                item.className = 'issue-item';
+                item.classList.add('btn');
+                item.style.fontSize = '0.75rem';
+                item.style.color = "var(--text-primary)";
+                item.textContent = `${index + 1}. ${issue}`;
+                if (issue_id !== '') {
+                    item.style.cursor = 'pointer';
+                    item.addEventListener('click', () => selectObject(issue_id));
+                }
+                list.appendChild(item);
+            });
+            document.getElementById('bundle-issues-modal').classList.add('visible');
+        }
+
+        function closeBundleIssues(event) {
+            if (event && event.target !== event.currentTarget) return;
+            document.getElementById('bundle-issues-modal').classList.remove('visible');
+        }
+
+        function clearBundle() {
+            if (!confirm('Clear all STIX objects from this bundle?')) return;
+            state.bundle = {
+                type: 'bundle',
+                id: 'bundle--' + generateUUID(),
+                spec_version: STIX_VERSION,
+                objects: []
+            };
+            state.objectsById = new Map();
+            state.ui.activeObjectId = null;
+            state.validation.ok = false;
+            state.validation.issues = [];
+            renderTabs();
+            renderObjectList();
+            renderEditor();
+            renderBundlePreview();
+            updateStatus(false, 'Not validated');
+            showToast('Bundle cleared');
         }
 
         function sanitizeDictionary(raw, maxItems = INPUT_LIMITS.maxListItems) {
@@ -2137,7 +2296,8 @@
                     if (raw.objects.length > INPUT_LIMITS.maxObjects) throw new Error('Too many objects');
 
                     let merge = false;
-                    if (!confirm('Replace current bundle with imported bundle?')) {
+                    const hasObjects = state.bundle.objects.length > 0;
+                    if (hasObjects && !confirm('Replace current bundle with imported bundle?')) {
                         if (!confirm('Merge imported bundle into current bundle?')) return;
                         merge = true;
                     }
@@ -2182,6 +2342,7 @@
                 const type = document.getElementById('add-type').value;
                 addObject(type);
             });
+            document.getElementById('clear-bundle').addEventListener('click', clearBundle);
             document.getElementById('delete-object').addEventListener('click', deleteActiveObject);
             document.getElementById('export-bundle').addEventListener('click', exportBundle);
             document.getElementById('validate-bundle').addEventListener('click', () => {
@@ -2206,6 +2367,15 @@
             document.getElementById('mode-editor').addEventListener('click', () => setCenterMode('editor'));
             document.getElementById('mode-visualizer').addEventListener('click', () => setCenterMode('visualizer'));
             document.getElementById('visualize-bundle').addEventListener('click', renderVisualizer);
+
+            const statusRow = document.getElementById('bundle-status');
+            statusRow.addEventListener('click', openBundleIssues);
+            statusRow.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    openBundleIssues();
+                }
+            });
         }
 
         initThemeControls();
