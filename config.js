@@ -208,7 +208,7 @@ const CONFIG = {
     navigation: {
         confirmOnLeave: true,    // Show confirmation dialog before leaving the page
         showStixBuilder: true,   // Toggle STIX Composer view in navigation
-        enableLocalIframeIPC: false // Enable postMessage iframe bridge only for file:// local mode
+        enableLocalIframeIPC: false // Enable iframe IPC bridge only for file:// local mode
     }
 };
 

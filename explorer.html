@@ -1634,12 +1634,26 @@
             let attack;
             let capec;
             let cwe;
+            let validatedLoaderSharedData = null;
 
             if (sharedLoader) {
-                const shared = await sharedLoader();
-                attack = shared.attack || {};
-                capec = { patterns: shared.capecPatterns || {} };
-                cwe = { weaknesses: shared.cweWeaknesses || {} };
+                try {
+                    const shared = await sharedLoader();
+                    validatedLoaderSharedData = validateAndFreezeSharedDataPayload(shared);
+                    if (!validatedLoaderSharedData) {
+                        logLocalIframeIPCTrace('explorer', 'direct shared loader payload invalid; falling back to alternate data source');
+                    }
+                } catch (e) {
+                    logLocalIframeIPCTrace('explorer', 'direct shared loader failed; falling back to alternate data source', {
+                        error: String(e && e.message ? e.message : e)
+                    });
+                }
+            }
+
+            if (validatedLoaderSharedData) {
+                attack = cloneJsonData(validatedLoaderSharedData.attack || {});
+                capec = { patterns: cloneJsonData(validatedLoaderSharedData.capecPatterns || {}) };
+                cwe = { weaknesses: cloneJsonData(validatedLoaderSharedData.cweWeaknesses || {}) };
             } else if (parentSharedDataCache) {
                 attack = cloneJsonData(parentSharedDataCache.attack || {});
                 capec = { patterns: cloneJsonData(parentSharedDataCache.capecPatterns || {}) };

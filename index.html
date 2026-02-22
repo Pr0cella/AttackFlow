@@ -5234,6 +5234,15 @@
             refillPerSecond: 1,
             burst: 2
         };
+        const SHARED_DATA_LIMITS = {
+            maxTechniqueEntries: 10000,
+            maxCapecEntries: 10000,
+            maxCweEntries: 10000,
+            maxTechniqueToCapecEntries: 20000,
+            maxCapecToTechniqueEntries: 20000,
+            maxCweToCapecEntries: 20000,
+            maxSerializedBytes: 40 * 1024 * 1024
+        };
 
         const IPC_FRAME_CHANNELS = {
             explorer: { port: null, nonce: '', frameSelector: '.explorer-frame', rateBuckets: Object.create(null) },
@@ -5526,8 +5535,87 @@
                     return null;
                 }
             }
+            if (!enforceSharedDatasetLimits(rawData)) {
+                logLocalIframeIPCTrace('index', 'AF_SHARED_DATA rejected: shared cache exceeds configured limits');
+                return null;
+            }
             const cloned = cloneJsonData(rawData);
             return deepFreeze(cloned);
+        }
+
+        function validateSharedDatasetShape(rawData) {
+            if (!isPlainObject(rawData)) {
+                logLocalIframeIPCTrace('index', 'shared loader dataset rejected: payload is not object');
+                return false;
+            }
+            if (!hasOnlyAllowedKeys(rawData, IPC_SHARED_DATA_KEYS, 'Shared loader dataset')) {
+                return false;
+            }
+            for (const key of IPC_SHARED_DATA_KEYS) {
+                if (!isPlainObject(rawData[key])) {
+                    logLocalIframeIPCTrace('index', 'shared loader dataset rejected: invalid top-level bucket', { key });
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function estimateJsonByteSize(value) {
+            let jsonText = '';
+            try {
+                jsonText = JSON.stringify(value);
+            } catch (e) {
+                return Number.POSITIVE_INFINITY;
+            }
+            if (typeof jsonText !== 'string') return Number.POSITIVE_INFINITY;
+            if (typeof TextEncoder === 'function') {
+                return new TextEncoder().encode(jsonText).length;
+            }
+            return jsonText.length * 2;
+        }
+
+        function enforceSharedDatasetLimits(rawData) {
+            const counts = {
+                attack: Object.keys(rawData.attack || {}).length,
+                capecPatterns: Object.keys(rawData.capecPatterns || {}).length,
+                cweWeaknesses: Object.keys(rawData.cweWeaknesses || {}).length,
+                techniqueToCapec: Object.keys(rawData.techniqueToCapec || {}).length,
+                capecToTechnique: Object.keys(rawData.capecToTechnique || {}).length,
+                cweToCapec: Object.keys(rawData.cweToCapec || {}).length
+            };
+
+            if (counts.attack > SHARED_DATA_LIMITS.maxTechniqueEntries) {
+                logLocalIframeIPCTrace('index', 'shared loader dataset rejected: attack entry limit exceeded', { count: counts.attack, limit: SHARED_DATA_LIMITS.maxTechniqueEntries });
+                return false;
+            }
+            if (counts.capecPatterns > SHARED_DATA_LIMITS.maxCapecEntries) {
+                logLocalIframeIPCTrace('index', 'shared loader dataset rejected: CAPEC entry limit exceeded', { count: counts.capecPatterns, limit: SHARED_DATA_LIMITS.maxCapecEntries });
+                return false;
+            }
+            if (counts.cweWeaknesses > SHARED_DATA_LIMITS.maxCweEntries) {
+                logLocalIframeIPCTrace('index', 'shared loader dataset rejected: CWE entry limit exceeded', { count: counts.cweWeaknesses, limit: SHARED_DATA_LIMITS.maxCweEntries });
+                return false;
+            }
+            if (counts.techniqueToCapec > SHARED_DATA_LIMITS.maxTechniqueToCapecEntries) {
+                logLocalIframeIPCTrace('index', 'shared loader dataset rejected: techniqueToCapec entry limit exceeded', { count: counts.techniqueToCapec, limit: SHARED_DATA_LIMITS.maxTechniqueToCapecEntries });
+                return false;
+            }
+            if (counts.capecToTechnique > SHARED_DATA_LIMITS.maxCapecToTechniqueEntries) {
+                logLocalIframeIPCTrace('index', 'shared loader dataset rejected: capecToTechnique entry limit exceeded', { count: counts.capecToTechnique, limit: SHARED_DATA_LIMITS.maxCapecToTechniqueEntries });
+                return false;
+            }
+            if (counts.cweToCapec > SHARED_DATA_LIMITS.maxCweToCapecEntries) {
+                logLocalIframeIPCTrace('index', 'shared loader dataset rejected: cweToCapec entry limit exceeded', { count: counts.cweToCapec, limit: SHARED_DATA_LIMITS.maxCweToCapecEntries });
+                return false;
+            }
+
+            const estimatedBytes = estimateJsonByteSize(rawData);
+            if (!Number.isFinite(estimatedBytes) || estimatedBytes > SHARED_DATA_LIMITS.maxSerializedBytes) {
+                logLocalIframeIPCTrace('index', 'shared loader dataset rejected: serialized size limit exceeded', { estimatedBytes, limit: SHARED_DATA_LIMITS.maxSerializedBytes });
+                return false;
+            }
+
+            return true;
         }
 
         function getExplorerFrameEl() {
@@ -5729,6 +5817,13 @@
                     cweToCapec
                 };
 
+                if (!validateSharedDatasetShape(data)) {
+                    throw new Error('Shared dataset validation failed');
+                }
+                if (!enforceSharedDatasetLimits(data)) {
+                    throw new Error('Shared dataset limit enforcement failed');
+                }
+
                 cache.data = data;
                 cache.loadedAt = Date.now();
                 broadcastSharedDataToExplorer();
@@ -5745,7 +5840,13 @@
 
         window.getAttackFlowSharedData = function (options) {
             const forceReload = !!(options && options.forceReload);
-            return loadSharedLibraryData(forceReload);
+            return loadSharedLibraryData(forceReload).then((data) => {
+                const immutableSnapshot = buildImmutableSharedDataPayload(data);
+                if (!immutableSnapshot) {
+                    throw new Error('Shared dataset snapshot build failed');
+                }
+                return immutableSnapshot;
+            });
         };
 
         async function loadData() {
