@@ -10,7 +10,7 @@
         style-src 'self' 'unsafe-inline';
         img-src 'self' data:;
         connect-src 'self';
-        frame-src 'self';
+        frame-src 'self' blob:;
         object-src 'none';
         base-uri 'self';
         form-action 'self';
@@ -36,6 +36,7 @@
             --capec-color: #8b5cf6;
             --cwe-color: #f59e0b;
             --attack-color: #3b82f6;
+            --danger: #ef4444;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -56,14 +57,13 @@
 
         /* Header */
         .header {
-            display: flex;
+            display: grid;
+            grid-template-columns: auto 1fr auto;
             align-items: center;
-            justify-content: space-between;
             padding: 8px 16px;
             background: var(--bg-card);
             border-bottom: 1px solid var(--border-color);
             gap: 16px;
-            flex-wrap: wrap;
         }
 
         .header-title {
@@ -75,7 +75,8 @@
         .header-left {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 18px;
+            flex: 1;
         }
 
         .header-brand {
@@ -97,11 +98,23 @@
             gap: 8px;
         }
 
+        .header-center {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            justify-self: center;
+        }
+
         .header-meta {
             display: flex;
             align-items: center;
-            gap: 8px;
-            font-size: 0.65rem;
+            gap: 16px;
+            font-size: 0.7rem;
+        }
+
+        .header-theme {
+            display: flex;
+            align-items: center;
         }
 
         .version-link {
@@ -111,6 +124,7 @@
             background: var(--bg-phase);
             border-radius: 3px;
             transition: all 0.15s;
+            border: 1px solid var(--border-color);
         }
 
         .version-link:hover {
@@ -121,8 +135,8 @@
         .help-link {
             color: var(--text-secondary);
             text-decoration: none;
-            width: 18px;
-            height: 18px;
+            width: 24px;
+            height: 24px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -130,6 +144,7 @@
             border-radius: 50%;
             font-weight: 600;
             transition: all 0.15s;
+            border: 1px solid var(--border-color);
         }
 
         .help-link:hover {
@@ -142,6 +157,7 @@
             align-items: center;
             gap: 16px;
             flex-wrap: wrap;
+            justify-self: end;
         }
 
         .control-group {
@@ -155,6 +171,62 @@
             color: var(--text-secondary);
             text-transform: uppercase;
             letter-spacing: 0.5px;
+        }
+
+        .theme-toggle {
+            width: 24px;
+            height: 24px;
+            border-radius: 24px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-phase);
+            color: var(--text-primary);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            cursor: pointer;
+            transition: border-color 0.2s ease, background 0.2s ease;
+            overflow: hidden;
+        }
+
+        .theme-toggle:hover {
+            border-color: var(--accent);
+        }
+
+        .theme-icon {
+            width: 16px;
+            height: 16px;
+            position: absolute;
+            opacity: 0;
+            transform: scale(0.8) rotate(-15deg);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        .theme-toggle[data-mode="dark"] .theme-icon.theme-dark,
+        .theme-toggle[data-mode="light"] .theme-icon.theme-light {
+            opacity: 1;
+            transform: scale(1) rotate(0deg);
+        }
+
+        .theme-toggle[data-mode="dark"]:hover .theme-icon.theme-dark > svg {
+            fill: #ffd42d;
+        }
+
+        .theme-toggle[data-mode="light"]:hover
+        {
+            background: var(--text-primary);
+        }
+
+        .theme-toggle[data-mode="light"]:hover .theme-icon.theme-light > svg
+        {
+            fill: beige;
+        }
+
+        .theme-icon svg {
+            width: 100%;
+            height: 100%;
+            fill: currentColor;
+            display: block;
         }
 
         /* View Toggle */
@@ -178,6 +250,34 @@
             background: rgba(113, 113, 122, 0.25);
         }
 
+        .view-btn > svg
+        /* #view-killchain > svg,
+        #view-relationship > svg */
+         {
+            width: 1.2rem;
+            height: 1.2rem;
+            vertical-align: middle;
+            fill: var(--text-secondary);
+        }
+
+        #view-relationship.active > svg,
+        #view-relationship:hover > svg,
+        #view-killchain.active > svg,
+        #view-killchain:hover > svg {
+            fill: var(--capec-color);
+        }
+
+        #view-explorer:hover > svg,
+        #view-explorer.active > svg {
+            fill: var(--attack-color);
+        }
+
+        #view-builder:hover > svg,
+        #view-builder.active > svg {
+            fill: var(--cwe-color);
+        }
+        
+
         .view-btn {
             padding: 5px 12px;
             border: none;
@@ -191,7 +291,12 @@
         }
 
         .view-btn.active {
-            background: var(--accent);
+            background: rgba(113, 113, 122, 0.15);
+            color: var(--text-primary);
+        }
+
+        .view-btn:hover {
+            background: var(--meta-default-bg);
             color: var(--text-primary);
         }
 
@@ -201,9 +306,14 @@
             gap: 4px;
         }
 
-        .breadcrumb-sep {
+        .breadcrumb-sep > svg {
             color: var(--text-secondary);
             font-size: 0.7rem;
+            height: 0.8rem;
+            width: 1rem;
+            vertical-align: middle;
+            transform: rotate(180deg);
+            fill: currentColor;
         }
 
         .view-btn.view-btn-crumb {
@@ -264,6 +374,19 @@
         .layer-toggle.capec input:checked + .checkbox { background: var(--capec-color); border-color: var(--capec-color); }
         .layer-toggle.cwe .checkbox { border-color: var(--cwe-color); }
         .layer-toggle.cwe input:checked + .checkbox { background: var(--cwe-color); border-color: var(--cwe-color); }
+        .layer-toggle.custom .checkbox { border-color: var(--custom-color); }
+        .layer-toggle.custom input:checked + .checkbox { background: var(--custom-color); border-color: var(--custom-color); }
+
+        .legend-layers {
+            display: flex;
+            gap: 12px;
+            padding: 6px 8px;
+            background: var(--bg-card);
+            border-radius: 4px;
+            font-size: 0.7rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
 
         /* Buttons */
         .btn {
@@ -277,12 +400,19 @@
             transition: all 0.15s;
         }
 
-        .btn:hover { background: #3a3a3a; }
+        /*.btn:hover:not(.danger) { 
+            color: var(--text-primary);
+            background: var(--accent);
+            border-color: var(--accent); 
+        }*/
+
         .btn.active { background: var(--accent); border-color: var(--accent); }
         .btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
+        .btn:not(.danger):hover { color: var(--text-primary); border-color: var(--accent); }
+        .danger:hover { border-color: var(--danger) !important; color: var(--danger) !important; background: var(--bg-phase)!important; }
 
         /* Dropdown */
         .dropdown {
@@ -323,6 +453,18 @@
         .dropdown-item:first-child { border-radius: 4px 4px 0 0; }
         .dropdown-item:last-child { border-radius: 0 0 4px 4px; }
 
+        #export-dropdown svg {
+            width: 1rem;
+            height: 1rem;
+            fill: currentColor;
+            vertical-align: middle;
+            transition: all 0.15s;
+        }
+
+        #export-dropdown.dropdown.open svg {
+            transform: rotate(180deg);
+        }
+
         /* Main Layout */
         .main {
             display: flex;
@@ -342,16 +484,43 @@
             border: none;
         }
 
+        .stix-builder-container {
+            flex: 1;
+            display: none;
+            background: var(--bg-dark);
+        }
+
+        .stix-builder-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
         .app.explorer-view .sidebar,
         .app.explorer-view .content {
             display: none;
         }
 
         .app.explorer-view .header-controls {
-            display: none;
+            visibility: hidden;
+            pointer-events: none;
         }
 
         .app.explorer-view .explorer-container {
+            display: block;
+        }
+
+        .app.stix-builder-view .sidebar,
+        .app.stix-builder-view .content {
+            display: none;
+        }
+
+        .app.stix-builder-view .header-controls {
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .app.stix-builder-view .stix-builder-container {
             display: block;
         }
 
@@ -361,6 +530,10 @@
 
         .app.sidebar-collapsed .sidebar-tabs,
         .app.sidebar-collapsed .sidebar-content {
+            display: none;
+        }
+
+        .app.sidebar-collapsed .search-bar {
             display: none;
         }
 
@@ -414,6 +587,7 @@
             align-items: center;
             gap: 8px;
             flex-shrink: 0;
+            justify-self: start;
         }
 
         .sidebar-tabs {
@@ -461,6 +635,112 @@
         .search-bar {
             padding: 10px;
             border-bottom: 1px solid var(--border-color);
+        }
+
+        .global-search {
+            position: relative;
+        }
+
+        .global-search-input {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .global-search-sticky {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .global-search-sticky input {
+            accent-color: var(--accent);
+        }
+
+        .global-search-expand {
+            border: 1px solid var(--border-color);
+            background: var(--bg-phase);
+            color: var(--text-secondary);
+            padding: 6px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.15s;
+        }
+
+        .global-search-expand:hover {
+            border-color: var(--accent);
+            color: var(--text-primary);
+        }
+
+        .global-search-results {
+            display: none;
+            margin-top: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-phase);
+            border-radius: 6px;
+            padding: 6px;
+            max-height: 220px;
+            overflow-y: auto;
+        }
+
+        .global-search.open .global-search-results {
+            display: block;
+        }
+
+        .global-search.expanded .global-search-results {
+            max-height: 50vh;
+        }
+
+        .global-search-item {
+            width: 100%;
+            text-align: left;
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--text-primary);
+            padding: 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .global-search-item:hover {
+            border-color: var(--accent);
+            background: rgba(113, 113, 122, 0.15);
+        }
+
+        .global-search-meta {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+        }
+
+        .global-search-type {
+            padding: 1px 6px;
+            border-radius: 999px;
+            font-size: 0.55rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            border: 1px solid var(--border-color);
+        }
+
+        .global-search-type.attack { border-color: var(--attack-color); color: var(--attack-color); }
+        .global-search-type.capec { border-color: var(--capec-color); color: var(--capec-color); }
+        .global-search-type.cwe { border-color: var(--cwe-color); color: var(--cwe-color); }
+
+        .global-search-empty {
+            padding: 8px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
         }
 
         .search-input {
@@ -601,7 +881,10 @@
             transition: all 0.15s;
         }
 
-        .import-btn:hover { border-color: var(--attack-color); color: var(--text-primary); }
+        .import-btn:hover { 
+            border-color: var(--attack-color); 
+            color: var(--text-primary); 
+        }
 
         /* Main Content */
         .content {
@@ -612,8 +895,8 @@
         }
 
         .content-header {
-            display: flex;
-            justify-content: space-between;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 720px) minmax(0, 1fr);
             align-items: center;
             padding: 8px 16px;
             border-bottom: 1px solid var(--border-color);
@@ -625,6 +908,7 @@
             min-width: 0;
             display: flex;
             justify-content: center;
+            justify-self: center;
         }
 
         .kill-chain-title {
@@ -669,6 +953,7 @@
             display: flex;
             gap: 6px;
             flex-shrink: 0;
+            justify-self: end;
         }
 
         /* Kill Chain Description */
@@ -697,11 +982,11 @@
             width: 10px;
             height: 10px;
             transition: transform 0.2s ease;
-            transform: rotate(-90deg);
+            transform: rotate(90deg);
             flex-shrink: 0;
         }
         .kc-desc-bar.open .kc-desc-toggle .kc-desc-chevron {
-            transform: rotate(0deg);
+            transform: rotate(-90deg);
         }
         .kc-desc-chevron svg {
             width: 100%;
@@ -897,9 +1182,9 @@
         }
 
         .phase-group-btn {
-            background: transparent;
+            background: var(--bg-card);
             border: 1px solid var(--border-color);
-            color: var(--text-secondary);
+            color: var(--text-primary);
             font-size: 0.65rem;
             padding: 2px 6px;
             border-radius: 2px;
@@ -907,6 +1192,30 @@
         }
 
         .phase-group-btn:hover { color: var(--text-primary); border-color: var(--accent); }
+
+        .phase-details-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .phase-details-btn:hover { 
+            color: var(--text-primary); border-color: var(--accent); 
+        }
+
+        .phase-details-btn svg,
+        .phase-group-btn svg{
+            width: 0.8rem;
+            height: 0.8rem;
+            fill: currentColor;
+            vertical-align: middle;
+            text-align: center;
+            margin-bottom: 0.1rem;
+        }
 
         .phase.minimized .phase-toggle { transform: rotate(-90deg); }
 
@@ -1450,7 +1759,7 @@
             position: fixed;
             inset: 0;
             background: rgba(0,0,0,0.7);
-            z-index: 2000;
+            z-index: 2300;
             align-items: center;
             justify-content: center;
         }
@@ -1743,6 +2052,28 @@
             background: rgba(113, 113, 122, 0.25);
         }
 
+        .technique-tag .tag-action-btn.explore,
+        .technique-tag .tag-action-btn.edit,
+        .capec-tag .tag-action-btn.explore,
+        .capec-tag .tag-action-btn.edit,
+        .cwe-tag .tag-action-btn.explore,
+        .cwe-tag .tag-action-btn.edit,
+        .custom-tag .tag-action-btn.edit {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .technique-tag:hover .tag-action-btn.explore,
+        .technique-tag:hover .tag-action-btn.edit,
+        .capec-tag:hover .tag-action-btn.explore,
+        .capec-tag:hover .tag-action-btn.edit,
+        .cwe-tag:hover .tag-action-btn.explore,
+        .cwe-tag:hover .tag-action-btn.edit,
+        .custom-tag:hover .tag-action-btn.edit {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
         .tag-action-btn.explore { color: #93c5fd; }
         .tag-action-btn.edit { color: #fcd34d; }
 
@@ -1923,16 +2254,16 @@
 
         .github-link svg {
             fill: gray;
-            height: 1.1rem;
-            width: 1.1rem;
+            height: 1.5rem;
+            width: 1.5rem;
             flex-shrink: 0;
         }
 
         .github-link svg:hover {
             fill: rgb(170, 65, 170);
             scale: calc(1.1);
-            height: 1.1rem;
-            width: 1.1rem;
+            height: 1.5rem;
+            width: 1.5rem;
             flex-shrink: 0;
         }
 
@@ -2182,6 +2513,11 @@
             cursor: pointer;
             padding: 4px 8px;
         }
+
+        .metadata-section > .add-btn {
+            margin-top: 0.5rem;
+            text-align: center;
+        }
         
         .add-btn {
             display: inline-flex;
@@ -2328,6 +2664,7 @@
         .relationship-header-item .dot.cwe { background: var(--cwe-color); }
         .relationship-header-item .dot.attack { background: var(--attack-color); }
         .relationship-header-item .dot.phase { background: var(--accent); }
+        .relationship-header-item .dot.mitigation { background: #10b981; }
 
         .relationship-arrow {
             color: var(--text-secondary);
@@ -2416,7 +2753,8 @@
         .relationship-cell.capec { background: rgba(139, 92, 246, 0.05); }
         .relationship-cell.cwe { background: rgba(245, 158, 11, 0.05); }
         .relationship-cell.attack { background: rgba(59, 130, 246, 0.05); }
-        .relationship-cell.phase { background: rgba(113, 113, 122, 0.05); }
+        .relationship-cell.phase { background: rgba(113, 113, 122, 0.05); border-width: 0px; }
+        .relationship-cell.mitigation { background: rgba(16, 185, 129, 0.05); }
 
         .relationship-item {
             display: flex;
@@ -2440,12 +2778,157 @@
         .relationship-item .id.cwe { color: var(--cwe-color); }
         .relationship-item .id.attack { color: var(--attack-color); }
         .relationship-item .id.phase { color: var(--accent); }
+        .relationship-item .id.mitigation { color: #10b981; }
 
         .relationship-item .name {
             flex: 1;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+        }
+
+        .relationship-more {
+            background: none;
+            border: none;
+            padding: 0;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .relationship-more:hover {
+            color: var(--text-primary);
+        }
+
+        .phase-details-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .phase-details-stat {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 8px 10px;
+        }
+
+        .phase-details-stat-label {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+
+        .phase-details-stat-value {
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        .phase-details-section {
+            margin-bottom: 14px;
+        }
+
+        .phase-details-section-title {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .phase-details-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .phase-details-item {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 8px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .phase-details-item.clickable {
+            cursor: pointer;
+        }
+
+        .phase-details-item.clickable:hover {
+            border-color: var(--accent);
+        }
+
+        .phase-details-item-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .phase-details-item-id {
+            font-family: monospace;
+        }
+
+        .phase-details-meta {
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px 10px;
+        }
+
+        .phase-details-relations {
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .phase-details-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 6px;
+            border-radius: 999px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-card);
+            font-size: 0.6rem;
+        }
+
+        .mitigation-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-family: monospace;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #10b981;
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.35);
+            border-radius: 3px;
+            padding: 1px 6px;
+            cursor: pointer;
+        }
+
+        .mitigation-badge:hover {
+            background: rgba(16, 185, 129, 0.2);
+        }
+
+        .phase-details-mitigation-desc summary {
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+
+        .phase-details-mitigation-desc p {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
         }
 
         .relationship-empty {
@@ -2598,7 +3081,7 @@
         .legend {
             display: flex;
             justify-content: center;
-            gap: 20px;
+            gap: 6px;
             padding: 8px 16px;
             border-top: 1px solid var(--border-color);
             flex-wrap: wrap;
@@ -2664,6 +3147,14 @@
             visibility: visible;
         }
 
+        #phase-details-modal {
+            z-index: 2100;
+        }
+
+        #entity-modal {
+            z-index: 2200;
+        }
+
         .modal {
             background: var(--bg-card);
             border: 1px solid var(--border-color);
@@ -2712,6 +3203,39 @@
             overflow-y: auto;
             font-size: 0.85rem;
             line-height: 1.6;
+        }
+
+        .csv-import-hint {
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            font-size: 0.8rem;
+        }
+
+        .csv-import-textarea {
+            width: 100%;
+            min-height: 160px;
+            padding: 8px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-phase);
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            font-family: inherit;
+            box-sizing: border-box;
+            resize: vertical;
+        }
+
+        .csv-import-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: 12px;
+        }
+
+        .csv-import-error {
+            color: #ef4444;
+            font-size: 0.8rem;
+            margin-top: 8px;
         }
 
         .modal-wide {
@@ -2788,6 +3312,10 @@
             text-align: center;
             max-width: 500px;
             line-height: 1.5;
+            background: var(--bg-dark);
+            padding: 5px;
+            border-radius: 5px;
+            margin-bottom: 2rem;
         }
 
         .loading-dismiss {
@@ -2806,6 +3334,24 @@
             background: #2563eb;
         }
 
+        .loading-bypass {
+            display: none;
+            padding: 8px 16px;
+            background: var(--bg-dark);
+            color: var(--text-secondary, #a1a1aa);
+            border: 1px solid var(--border-color, #3f3f46);
+            border-radius: 4px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: color 0.15s, border-color 0.15s, background 0.15s;
+        }
+
+        .loading-bypass:hover {
+            color: var(--text-primary, #e4e4e7);
+            border-color: var(--accent, #3b82f6);
+            background: rgba(255, 255, 255, 0.06);
+        }
+
         .loading-hint {
             display: none;
             color: var(--text-secondary, #a1a1aa);
@@ -2813,6 +3359,23 @@
             text-align: center;
             max-width: 440px;
             line-height: 1.4;
+            background: var(--bg-dark);
+            border-radius: 5px;
+            margin-top: 2rem;
+        }
+
+        .loading-context-info {
+            display: none;
+            color: var(--cwe-color);
+            font-size: 0.75rem;
+            text-align: center;
+            max-width: 560px;
+            line-height: 1.5;
+            margin-top: 0.75rem;
+            padding: 0.55rem 0.7rem;
+            border: 1px solid var(--border-color, #3f3f46);
+            border-radius: 6px;
+            background: rgba(245, 158, 11, 0.08);
         }
 
         /* Scrollbar */
@@ -2825,8 +3388,10 @@
 <body>
     <div class="loading" id="loading">
         <div class="loading-text">Loading data...</div>
-        <button class="loading-dismiss" id="loading-dismiss" onclick="document.getElementById('loading').classList.add('hidden'); renderAll();">Continue Without Data</button>
+        <button class="loading-dismiss" id="loading-dismiss" onclick="hideLoadingOverlay()">Continue Without Data</button>
+        <button class="loading-bypass" id="loading-bypass" onclick="hideLoadingOverlay()">Continue Without Data</button>
         <div class="loading-hint" id="loading-hint">You can still import ATT&CK Navigator layers, create STIX objects, and import saved kill chains.</div>
+        <div class="loading-context-info" id="loading-context-info"></div>
     </div>
 
     <div class="app">
@@ -2841,17 +3406,45 @@
                         <a href="#" class="help-link" onclick="showUsageGuide(); return false;" title="Usage guide">?</a>
                     </div>
                 </div>
+                <div class="header-theme">
+                    <button class="theme-toggle" id="theme-mode-toggle" onclick="toggleThemeMode()" aria-label="Toggle theme" data-mode="light">
+                        <span class="theme-icon theme-dark">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M420.9 448C428.2 425.7 442.8 405.5 459.3 388.1C492 353.7 512 307.2 512 256C512 150 426 64 320 64C214 64 128 150 128 256C128 307.2 148 353.7 180.7 388.1C197.2 405.5 211.9 425.7 219.1 448L420.8 448zM416 496L224 496L224 512C224 556.2 259.8 592 304 592L336 592C380.2 592 416 556.2 416 512L416 496zM312 176C272.2 176 240 208.2 240 248C240 261.3 229.3 272 216 272C202.7 272 192 261.3 192 248C192 181.7 245.7 128 312 128C325.3 128 336 138.7 336 152C336 165.3 325.3 176 312 176z"/></svg>
+                        </span>
+                        <span class="theme-icon theme-light">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M320 64C178.6 64 64 178.6 64 320C64 461.4 178.6 576 320 576C388.8 576 451.3 548.8 497.3 504.6C504.6 497.6 506.7 486.7 502.6 477.5C498.5 468.3 488.9 462.6 478.8 463.4C473.9 463.8 469 464 464 464C362.4 464 280 381.6 280 280C280 207.9 321.5 145.4 382.1 115.2C391.2 110.7 396.4 100.9 395.2 90.8C394 80.7 386.6 72.5 376.7 70.3C358.4 66.2 339.4 64 320 64z"/></svg>
+                        </span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="header-center">
                 <div class="header-nav">
                     <div class="view-toggle">
                         <div class="view-tab-group active" id="view-editor-group">
-                            <button class="view-btn active" id="view-killchain" onclick="setView('killchain')">Kill Chain Editor</button>
+                            <button class="view-btn active" id="view-killchain" onclick="setView('killchain')">
+                                Kill Chain Editor 
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M451.5 160C434.9 160 418.8 164.5 404.7 172.7C388.9 156.7 370.5 143.3 350.2 133.2C378.4 109.2 414.3 96 451.5 96C537.9 96 608 166 608 252.5C608 294 591.5 333.8 562.2 363.1L491.1 434.2C461.8 463.5 422 480 380.5 480C294.1 480 224 410 224 323.5C224 322 224 320.5 224.1 319C224.6 301.3 239.3 287.4 257 287.9C274.7 288.4 288.6 303.1 288.1 320.8C288.1 321.7 288.1 322.6 288.1 323.4C288.1 374.5 329.5 415.9 380.6 415.9C405.1 415.9 428.6 406.2 446 388.8L517.1 317.7C534.4 300.4 544.2 276.8 544.2 252.3C544.2 201.2 502.8 159.8 451.7 159.8zM307.2 237.3C305.3 236.5 303.4 235.4 301.7 234.2C289.1 227.7 274.7 224 259.6 224C235.1 224 211.6 233.7 194.2 251.1L123.1 322.2C105.8 339.5 96 363.1 96 387.6C96 438.7 137.4 480.1 188.5 480.1C205 480.1 221.1 475.7 235.2 467.5C251 483.5 269.4 496.9 289.8 507C261.6 530.9 225.8 544.2 188.5 544.2C102.1 544.2 32 474.2 32 387.7C32 346.2 48.5 306.4 77.8 277.1L148.9 206C178.2 176.7 218 160.2 259.5 160.2C346.1 160.2 416 230.8 416 317.1C416 318.4 416 319.7 416 321C415.6 338.7 400.9 352.6 383.2 352.2C365.5 351.8 351.6 337.1 352 319.4C352 318.6 352 317.9 352 317.1C352 283.4 334 253.8 307.2 237.5z"/></svg>
+                            </button>
                             <span class="view-breadcrumb">
-                                <span class="breadcrumb-sep">›</span>
-                                <button class="view-btn view-btn-crumb" id="view-relationship" onclick="setView('relationship')">Relationships</button>
+                                <span class="breadcrumb-sep"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" style="height: 0.8rem;width: 1rem;vertical-align: middle;transform: rotate(180deg);"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M169.4 297.4C156.9 309.9 156.9 330.2 169.4 342.7L361.4 534.7C373.9 547.2 394.2 547.2 406.7 534.7C419.2 522.2 419.2 501.9 406.7 489.4L237.3 320L406.6 150.6C419.1 138.1 419.1 117.8 406.6 105.3C394.1 92.8 373.8 92.8 361.3 105.3L169.3 297.3z"></path></svg></span>
+                                <button class="view-btn view-btn-crumb" id="view-relationship" onclick="setView('relationship')">
+                                    Relationships 
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M482.4 221.9C517.7 213.6 544 181.9 544 144C544 99.8 508.2 64 464 64C420.6 64 385.3 98.5 384 141.5L200.2 215.1C185.7 200.8 165.9 192 144 192C99.8 192 64 227.8 64 272C64 316.2 99.8 352 144 352C156.2 352 167.8 349.3 178.1 344.4L323.7 471.8C321.3 479.4 320 487.6 320 496C320 540.2 355.8 576 400 576C444.2 576 480 540.2 480 496C480 468.3 466 443.9 444.6 429.6L482.4 221.9zM220.3 296.2C222.5 289.3 223.8 282 224 274.5L407.8 201C411.4 204.5 415.2 207.7 419.4 210.5L381.6 418.1C376.1 419.4 370.8 421.2 365.8 423.6L220.3 296.2z"></path></svg>
+                                </button>
                             </span>
                         </div>
                         <div class="view-tab-group" id="view-explorer-group">
-                            <button class="view-btn" id="view-explorer" onclick="setView('explorer')">Relationship Explorer</button>
+                            <button class="view-btn" id="view-explorer" onclick="setView('explorer')">
+                                Relationship Explorer 
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M256 128C256 110.3 270.3 96 288 96L352 96C369.7 96 384 110.3 384 128L384 192C384 209.7 369.7 224 352 224L344 224L344 288L464 288C503.8 288 536 320.2 536 360L536 416L544 416C561.7 416 576 430.3 576 448L576 512C576 529.7 561.7 544 544 544L480 544C462.3 544 448 529.7 448 512L448 448C448 430.3 462.3 416 480 416L488 416L488 360C488 346.7 477.3 336 464 336L344 336L344 416L352 416C369.7 416 384 430.3 384 448L384 512C384 529.7 369.7 544 352 544L288 544C270.3 544 256 529.7 256 512L256 448C256 430.3 270.3 416 288 416L296 416L296 336L176 336C162.7 336 152 346.7 152 360L152 416L160 416C177.7 416 192 430.3 192 448L192 512C192 529.7 177.7 544 160 544L96 544C78.3 544 64 529.7 64 512L64 448C64 430.3 78.3 416 96 416L104 416L104 360C104 320.2 136.2 288 176 288L296 288L296 224L288 224C270.3 224 256 209.7 256 192L256 128z"></path></svg>
+                            </button>
+                        </div>
+                        <div class="view-tab-group" id="view-builder-group">
+                            <button class="view-btn" id="view-builder" onclick="setView('stix-builder')">
+                                STIX Composer 
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M468 64C487.2 64 505.6 71.6 519.1 85.2L554.8 120.9C568.4 134.4 576 152.8 576 172C576 191.2 568.4 209.6 554.8 223.1L509.9 268L372 130.1L416.9 85.2C430.4 71.6 448.8 64 468 64zM122.9 379.1L338.1 164L476 301.9L260.9 517.1C250.2 527.8 236.8 535.6 222.2 539.7L94.4 575.1C86.1 577.4 77.1 575.1 71 568.9C64.9 562.7 62.5 553.8 64.8 545.5L100.4 417.8C104.5 403.2 112.2 389.9 123 379.1zM289.4 144.8L144.8 289.4L75.7 220.3C60.1 204.7 60.1 179.4 75.7 163.7L163.7 75.7C179.3 60.1 204.6 60.1 220.3 75.7L226.2 81.6L169.9 137.9C162.1 145.7 162.1 158.4 169.9 166.2C177.7 174 190.4 174 198.2 166.2L254.5 109.9L289.4 144.8zM495.2 350.6L530.1 385.5L473.8 441.8C466 449.6 466 462.3 473.8 470.1C481.6 477.9 494.3 477.9 502.1 470.1L558.4 413.8L564.3 419.7C579.9 435.3 579.9 460.6 564.3 476.3L476.3 564.3C460.7 579.9 435.4 579.9 419.7 564.3L350.6 495.2L495.2 350.6z"/></svg>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -2859,41 +3452,13 @@
             
             <div class="header-controls">
                 <div class="control-group">
-                    <span class="control-label">Theme</span>
-                    <button class="btn" id="theme-mode-toggle" onclick="toggleThemeMode()">Dark</button>
-                </div>
-                <div class="control-group">
-                    <span class="control-label">Layers</span>
-                    <div class="layer-toggles">
-                        <label class="layer-toggle attack">
-                            <input type="checkbox" id="layer-attack" checked onchange="toggleLayer('attack')">
-                            <span class="checkbox"></span>
-                            <span>ATT&CK</span>
-                        </label>
-                        <label class="layer-toggle capec">
-                            <input type="checkbox" id="layer-capec" checked onchange="toggleLayer('capec')">
-                            <span class="checkbox"></span>
-                            <span>CAPEC</span>
-                        </label>
-                        <label class="layer-toggle cwe">
-                            <input type="checkbox" id="layer-cwe" checked onchange="toggleLayer('cwe')">
-                            <span class="checkbox"></span>
-                            <span>CWE</span>
-                        </label>
-                        <label class="layer-toggle custom">
-                            <input type="checkbox" id="layer-custom" checked onchange="toggleLayer('custom')">
-                            <span class="checkbox"></span>
-                            <span>STIX</span>
-                        </label>
-                    </div>
-                </div>
-
-                <div class="control-group">
                     <button class="btn" onclick="expandAll()">Expand</button>
                     <button class="btn" onclick="collapseAll()">Collapse</button>
-                    <button class="btn" onclick="clearAssignments()">Clear</button>
+                    <span width="1px" style="border-left:1px solid var(--border-color); height: 16px; display: inline-block;"></span>
+                    <button class="btn danger" onclick="clearAssignments()">Clear</button>
+                    <span width="1px" style="border-left:1px solid var(--border-color); height: 16px; display: inline-block;"></span>
                     <div class="dropdown" id="export-dropdown">
-                        <button class="btn" onclick="toggleDropdown('export-dropdown')">Export ▼</button>
+                        <button class="btn" onclick="toggleDropdown('export-dropdown')">Export <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M297.4 438.6C309.9 451.1 330.2 451.1 342.7 438.6L502.7 278.6C515.2 266.1 515.2 245.8 502.7 233.3C490.2 220.8 469.9 220.8 457.4 233.3L320 370.7L182.6 233.4C170.1 220.9 149.8 220.9 137.3 233.4C124.8 245.9 124.8 266.2 137.3 278.7L297.3 438.7z"/></svg></button>
                         <div class="dropdown-content">
                             <button class="dropdown-item" onclick="exportJSON(); closeDropdowns()">JSON</button>
                             <button class="dropdown-item" onclick="exportCSV(); closeDropdowns()">CSV</button>
@@ -2910,6 +3475,17 @@
         <div class="main">
             <!-- Sidebar -->
             <div class="sidebar">
+                <div class="search-bar global-search" id="global-search-bar">
+                    <div class="global-search-input">
+                        <input type="text" class="search-input" id="search-global" placeholder="Global search (ATT&CK/CAPEC/CWE)..." oninput="setGlobalSearch(this.value)" onfocus="openGlobalSearch()">
+                        <label class="global-search-sticky" title="Keep results open">
+                            <input type="checkbox" id="global-search-sticky" onchange="setGlobalSearchSticky(this.checked)">
+                            Sticky
+                        </label>
+                        <button class="global-search-expand" id="global-search-expand" onclick="toggleGlobalSearchExpanded(event)" aria-label="Toggle global search size" type="button">Expand</button>
+                    </div>
+                    <div class="global-search-results" id="global-search-results"></div>
+                </div>
                 <div class="sidebar-tabs">
                     <button class="sidebar-tab attack active" onclick="switchTab('attack')">ATT&CK</button>
                     <button class="sidebar-tab capec" onclick="switchTab('capec')">CAPEC</button>
@@ -2926,10 +3502,12 @@
                                     Import ATT&CK Navigator Layer
                                     <input type="file" accept=".json" onchange="importNavigator(event)" style="display: none;">
                                 </label>
+                                <button class="import-btn" onclick="openCsvImportModal()">Import CSV</button>
+                                <button class="import-btn danger" onclick="resetAttackTechniques()">Reset</button>
                             </div>
                         </div>
                         <div class="search-bar">
-                            <input type="text" class="search-input" id="search-attack" placeholder="Search techniques..." oninput="filterEntities('attack')">
+                            <input type="text" class="search-input" id="search-attack" placeholder="Search techniques separated by comma..." oninput="filterEntities('attack')">
                         </div>
                         <div class="filter-row" id="filter-attack">
                             <button class="filter-btn active" data-filter="all" onclick="setFilter('attack', 'all')">All</button>
@@ -2943,7 +3521,7 @@
                     <!-- CAPEC Tab -->
                     <div class="tab-panel" id="tab-capec">
                         <div class="search-bar">
-                            <input type="text" class="search-input" id="search-capec" placeholder="Search patterns..." oninput="filterEntities('capec')">
+                            <input type="text" class="search-input" id="search-capec" placeholder="Search patterns separated by comma..." oninput="filterEntities('capec')">
                         </div>
                         <div class="filter-row" id="filter-capec">
                             <button class="filter-btn active" data-filter="all" onclick="setFilter('capec', 'all')">All</button>
@@ -2957,7 +3535,7 @@
                     <!-- CWE Tab -->
                     <div class="tab-panel" id="tab-cwe">
                         <div class="search-bar">
-                            <input type="text" class="search-input" id="search-cwe" placeholder="Search weaknesses..." oninput="filterEntities('cwe')">
+                            <input type="text" class="search-input" id="search-cwe" placeholder="Search weaknesses separated by comma..." oninput="filterEntities('cwe')">
                         </div>
                         <div class="filter-row" id="filter-cwe">
                             <button class="filter-btn active" data-filter="all" onclick="setFilter('cwe', 'all')">All</button>
@@ -2977,7 +3555,7 @@
                                     Import STIX Bundle
                                     <input type="file" accept=".json" onchange="importStixBundle(event)" style="display: none;">
                                 </label>
-                                <button class="import-btn" onclick="clearStixLibrary()">Clear All Items</button>
+                                <button class="import-btn danger" onclick="clearStixLibrary()">Clear All Items</button>
                             </div>
                         </div>
                         <div class="search-bar">
@@ -2995,7 +3573,11 @@
             </div>
 
             <div class="explorer-container" id="explorer-container">
-                <iframe class="explorer-frame" src="explorer.html" title="Relationship Explorer"></iframe>
+                <iframe class="explorer-frame" src="explorer.html" title="Relationship Explorer" sandbox="allow-scripts allow-same-origin allow-modals"></iframe>
+            </div>
+
+            <div class="stix-builder-container" id="stix-builder-container">
+                <iframe class="stix-builder-frame" src="stix-builder.html" title="STIX Composer" sandbox="allow-scripts allow-same-origin allow-modals"></iframe>
             </div>
 
             <!-- Content -->
@@ -3004,7 +3586,8 @@
                     <div class="content-title-wrap">
                         <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle sidebar" title="Toggle sidebar">
                             <span class="sidebar-toggle-icon">
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M169.4 297.4C156.9 309.9 156.9 330.2 169.4 342.7L361.4 534.7C373.9 547.2 394.2 547.2 406.7 534.7C419.2 522.2 419.2 501.9 406.7 489.4L237.3 320L406.6 150.6C419.1 138.1 419.1 117.8 406.6 105.3C394.1 92.8 373.8 92.8 361.3 105.3L169.3 297.3z"/></svg>                            </span>
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M169.4 297.4C156.9 309.9 156.9 330.2 169.4 342.7L361.4 534.7C373.9 547.2 394.2 547.2 406.7 534.7C419.2 522.2 419.2 501.9 406.7 489.4L237.3 320L406.6 150.6C419.1 138.1 419.1 117.8 406.6 105.3C394.1 92.8 373.8 92.8 361.3 105.3L169.3 297.3z"/></svg>
+                            </span>
                         </button>
                         <span style="font-size: 0.9rem; font-weight: 500;" id="content-title">Unified Kill Chain</span>
                     </div>
@@ -3044,12 +3627,63 @@
                 
                 <!-- Score Legend -->
                 <div class="legend-row" id="legend-row">
+                    
+                </div>
+
+                <div class="kill-chain-container" id="kill-chain-container">
+                    <div class="kill-chain" id="kill-chain"></div>
+                </div>
+
+                <div class="relationship-container" id="relationship-container">
+                    <div class="relationship-header">
+                        <div class="relationship-header-item"><div class="dot capec"></div>CAPEC</div>
+                        <span class="relationship-arrow">→</span>
+                        <div class="relationship-header-item"><div class="dot cwe"></div>CWE</div>
+                        <span class="relationship-arrow">→</span>
+                        <div class="relationship-header-item"><div class="dot attack"></div>ATT&CK</div>
+                        <span class="relationship-arrow">→</span>
+                        <div class="relationship-header-item"><div class="dot phase"></div>Phase</div>
+                        <span class="relationship-arrow">→</span>
+                        <div class="relationship-header-item"><div class="dot mitigation"></div>Mitigations</div>
+                    </div>
+                    <div class="relationship-wrapper">
+                        <div class="relationship-chain" id="relationship-chain"></div>
+                        <div class="flow-arrow">
+                            <div class="flow-arrow-label">Attack Flow</div>
+                            <div class="flow-arrow-line"></div>
+                            <div class="flow-arrow-head"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="legend">
+                    <div class="legend-layers" id="legend-layers">
+                        <span style="color: var(--text-secondary); margin-right: 6px;">Layers:</span>
+                        <div class="layer-toggles">
+                            <label class="layer-toggle attack">
+                                <input type="checkbox" id="layer-attack" checked onchange="toggleLayer('attack')">
+                                <span class="checkbox"></span>
+                                <span>ATT&CK</span>
+                            </label>
+                            <label class="layer-toggle capec">
+                                <input type="checkbox" id="layer-capec" checked onchange="toggleLayer('capec')">
+                                <span class="checkbox"></span>
+                                <span>CAPEC</span>
+                            </label>
+                            <label class="layer-toggle cwe">
+                                <input type="checkbox" id="layer-cwe" checked onchange="toggleLayer('cwe')">
+                                <span class="checkbox"></span>
+                                <span>CWE</span>
+                            </label>
+                            <label class="layer-toggle custom">
+                                <input type="checkbox" id="layer-custom" checked onchange="toggleLayer('custom')">
+                                <span class="checkbox"></span>
+                                <span>STIX</span>
+                            </label>
+                        </div>
+                    </div>
                     <div class="score-legend" id="score-legend">
                         <span style="color: var(--text-secondary); margin-right: 8px;">Score:</span>
-                        <div class="legend-item">
-                            <div class="legend-swatch" style="background: #6b7280;"></div>
-                            <span>Unclassified</span>
-                        </div>
                         <div class="legend-item">
                             <div class="legend-swatch" style="background: #22c55e;"></div>
                             <span>Low</span>
@@ -3100,37 +3734,6 @@
                             <span>Confidence</span>
                         </div>
                     </div>
-                </div>
-
-                <div class="kill-chain-container" id="kill-chain-container">
-                    <div class="kill-chain" id="kill-chain"></div>
-                </div>
-
-                <div class="relationship-container" id="relationship-container">
-                    <div class="relationship-header">
-                        <div class="relationship-header-item"><div class="dot capec"></div>CAPEC</div>
-                        <span class="relationship-arrow">→</span>
-                        <div class="relationship-header-item"><div class="dot cwe"></div>CWE</div>
-                        <span class="relationship-arrow">→</span>
-                        <div class="relationship-header-item"><div class="dot attack"></div>ATT&CK</div>
-                        <span class="relationship-arrow">→</span>
-                        <div class="relationship-header-item"><div class="dot phase"></div>Phase</div>
-                    </div>
-                    <div class="relationship-wrapper">
-                        <div class="relationship-chain" id="relationship-chain"></div>
-                        <div class="flow-arrow">
-                            <div class="flow-arrow-label">Attack Flow</div>
-                            <div class="flow-arrow-line"></div>
-                            <div class="flow-arrow-head"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="legend">
-                    <div class="legend-item"><div class="legend-color attack"></div><span>ATT&CK Technique</span></div>
-                    <div class="legend-item"><div class="legend-color capec"></div><span>CAPEC Pattern</span></div>
-                    <div class="legend-item"><div class="legend-color cwe"></div><span>CWE Weakness</span></div>
-                    <div class="legend-item"><div class="legend-color custom"></div><span>STIX Object</span></div>
                     <div class="github-link">
                         <a title="Show on GitHub" onclick="return(confirm('Open GitHub repository in new tab?'))" href="https://github.com/pr0cella/AttackFlow" target="_blank" rel="noopener noreferrer" >
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M544 160C544 124.7 515.3 96 480 96L160 96C124.7 96 96 124.7 96 160L96 480C96 515.3 124.7 544 160 544L480 544C515.3 544 544 515.3 544 480L544 160zM361.8 471.7C361.8 469.9 361.8 465.7 361.9 460.1C362 448.7 362 431.3 362 416.4C362 400.8 356.8 390.9 350.7 385.7C387.7 381.6 426.7 376.5 426.7 312.6C426.7 294.4 420.2 285.3 409.6 273.6C411.3 269.3 417 251.6 407.9 228.6C394 224.3 362.2 246.5 362.2 246.5C335.6 239 305.6 239 279 246.5C279 246.5 247.2 224.3 233.3 228.6C224.2 251.5 229.8 269.2 231.6 273.6C221 285.3 216 294.4 216 312.6C216 376.2 253.3 381.6 290.3 385.7C285.5 390 281.2 397.4 279.7 408C270.2 412.3 245.9 419.7 231.4 394.1C222.3 378.3 205.9 377 205.9 377C189.7 376.8 204.8 387.2 204.8 387.2C215.6 392.2 223.2 411.4 223.2 411.4C232.9 441.1 279.3 431.1 279.3 431.1C279.3 440.1 279.4 452.8 279.4 461.7C279.4 466.5 279.5 470.3 279.5 471.7C279.5 476 276.5 481.2 268 479.7C202 457.6 155.8 394.8 155.8 321.4C155.8 229.6 226 159.9 317.8 159.9C409.6 159.9 484 229.6 484 321.4C484.1 394.8 439.3 457.7 373.3 479.7C364.9 481.2 361.8 476 361.8 471.7zM271.3 416.9C271.1 415.4 272.4 414.1 274.3 413.7C276.2 413.5 278 414.3 278.2 415.6C278.5 416.9 277.2 418.2 275.2 418.6C273.3 419 271.5 418.2 271.3 416.9zM262.2 420.1C260 420.3 258.5 419.2 258.5 417.7C258.5 416.4 260 415.3 262 415.3C263.9 415.1 265.7 416.2 265.7 417.7C265.7 419 264.2 420.1 262.2 420.1zM247.9 417.9C246 417.5 244.7 416 245.1 414.7C245.5 413.4 247.5 412.8 249.2 413.2C251.2 413.8 252.5 415.3 252 416.6C251.6 417.9 249.6 418.5 247.9 417.9zM235.4 410.6C233.9 409.3 233.5 407.4 234.5 406.5C235.4 405.4 237.3 405.6 238.8 407.1C240.1 408.4 240.6 410.4 239.7 411.2C238.8 412.3 236.9 412.1 235.4 410.6zM226.9 400.6C225.8 399.1 225.8 397.4 226.9 396.7C228 395.8 229.7 396.5 230.6 398C231.7 399.5 231.7 401.3 230.6 402.1C229.7 402.7 228 402.1 226.9 400.6zM220.6 391.8C219.5 390.5 219.3 389 220.2 388.3C221.1 387.4 222.6 387.9 223.7 388.9C224.8 390.2 225 391.7 224.1 392.4C223.2 393.3 221.7 392.8 220.6 391.8zM214.6 385.4C213.3 384.8 212.7 383.7 213.1 382.8C213.5 382.2 214.6 381.9 215.9 382.4C217.2 383.1 217.8 384.2 217.4 385C217 385.9 215.7 386.1 214.6 385.4z"/></svg> 
@@ -3166,6 +3769,36 @@
                 <button class="modal-close" onclick="closeEntityModal()">×</button>
             </div>
             <div class="modal-body" id="entity-modal-content"></div>
+        </div>
+    </div>
+
+    <!-- Phase Details Modal -->
+    <div class="modal-overlay" id="phase-details-modal" onclick="closePhaseDetails(event)">
+        <div class="modal modal-wide" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="modal-title" id="phase-details-title"></div>
+                <button class="modal-close" onclick="closePhaseDetails()">×</button>
+            </div>
+            <div class="modal-body" id="phase-details-content"></div>
+        </div>
+    </div>
+
+    <!-- CSV Import Modal -->
+    <div class="modal-overlay" id="csv-import-modal" onclick="closeCsvImportModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="modal-title">Import CSV Technique IDs</div>
+                <button class="modal-close" onclick="closeCsvImportModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="csv-import-hint">Paste technique IDs separated by commas or new lines (e.g. T1205, T1021.005).</div>
+                <textarea class="csv-import-textarea" id="csv-import-textarea" placeholder="T1205&#10;T1021.005" data-allow-newlines="true"></textarea>
+                <div class="csv-import-error" id="csv-import-error"></div>
+                <div class="csv-import-actions">
+                    <button class="btn" onclick="closeCsvImportModal()">Cancel</button>
+                    <button class="btn" onclick="submitCsvImport()">Import</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -3313,12 +3946,14 @@
                         <li>Use the search bar to find specific techniques, patterns, weaknesses, or STIX objects</li>
                         <li>Click any entity to view detailed information in the right panel</li>
                         <li>Switch to <span class="guide-key">Relationship Explorer</span> to investigate ATT&CK ↔ CAPEC ↔ CWE ↔ Mitigations without assigning items</li>
+                        <li>Use <span class="guide-key">Phase Details</span> on phase headers or relationship rows for a rollup summary</li>
                     </ul>
                 </div>
 
                 <div class="guide-section">
                     <h4>STIX 2.1 Objects</h4>
                     <ul>
+                        <li>Use the STIX Composer to compose objects and bundles, then review them in the visualizer/validator</li>
                         <li>Open the <span class="guide-key">STIX</span> tab to create or import STIX Domain Objects</li>
                         <li>Click <strong>+ Create STIX Item</strong> to manually create any of the 18 SDO types (plus custom)</li>
                         <li>Click <strong>Import STIX Bundle</strong> to load a STIX 2.1 bundle JSON — all SDOs are extracted with full properties</li>
@@ -3366,8 +4001,8 @@
                         <li>Use domain filters (All / Enterprise / Mobile / ICS) for techniques</li>
                         <li>Use abstraction filters for CAPECs and CWEs</li>
                         <li>Enable <span class="guide-key">Hide Empty</span> to focus on phases with assignments</li>
-                        <li>Enable <span class="guide-key">Group by CAPEC</span> to nest techniques under patterns</li>
                         <li>Switch to <span class="guide-key">Relationships</span> view for CAPEC→CWE→ATT&CK chains</li>
+                        <li>Mitigation relationships appear in the Relationships view, with expandable lists</li>
                         <li>Use <span class="guide-key">Relationship Explorer</span> for full entity and mitigation browsing</li>
                     </ul>
                 </div>
@@ -3417,10 +4052,16 @@
         // ============================================================
         // VERSION - Loaded dynamically from changelog
         // ============================================================
-        let APP_VERSION = '2.4.2';  // Fallback version
+        let APP_VERSION = '2.9.0';  // Fallback version
         
         async function loadVersion() {
             try {
+                if (typeof window !== 'undefined' && window.location && window.location.protocol === 'file:') {
+                    APP_VERSION = (typeof CONFIG !== 'undefined' && CONFIG.version) ? CONFIG.version : APP_VERSION;
+                    const versionEl = document.getElementById('app-version');
+                    if (versionEl) versionEl.textContent = 'v' + APP_VERSION;
+                    return;
+                }
                 const res = await fetch('CHANGELOG.md');
                 const text = await res.text();
                 const match = text.match(/^## \[([\d.]+)\]/m);
@@ -3455,7 +4096,8 @@
                     .replace(/>/g, '&gt;')
                     .replace(/"/g, '&quot;')
                     .replace(/'/g, '&#39;')
-                    .replace(/`/g, '&#96;');
+                    .replace(/`/g, '&#96;')
+                    .replace(/\\/g, '&#92;');
             },
 
             // Normalize input: remove control chars, strip script tags, trim, limit length
@@ -3468,7 +4110,6 @@
                 // (see sanitize() and sanitizeForStorage()).  KCE-SEC-010.
                 return String(str)
                     .replace(/[\x00-\x1F\x7F]/g, '')  // Remove control chars
-                    .replace(/<script[^>]*>.*?<\/script>/gi, '')  // Remove script tags
                     .slice(0, maxLength);
             },
             
@@ -3565,8 +4206,18 @@
             return el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA');
         }
 
-        function sanitizeUserInputText(text) {
-            let value = InputSecurity.normalize(text, 10000);
+        function normalizeUserInput(text, maxLength = 10000, allowNewlines = false) {
+            if (text === null || text === undefined) return '';
+            const controlPattern = allowNewlines
+                ? /[\x00-\x09\x0B-\x0C\x0E-\x1F\x7F]/g
+                : /[\x00-\x1F\x7F]/g;
+            return String(text)
+                .replace(controlPattern, '')
+                .slice(0, maxLength);
+        }
+
+        function sanitizeUserInputText(text, allowNewlines = false) {
+            let value = normalizeUserInput(text, 10000, allowNewlines);
             value = value.replace(/[\[\]\{\};"'`]/g, '');
             value = value.replace(/--+/g, '');
             return value;
@@ -3634,7 +4285,8 @@
                 if (!isTextInputElement(target)) return;
                 const data = (e.clipboardData || window.clipboardData)?.getData('text');
                 if (!data) return;
-                const sanitized = sanitizeUserInputText(data);
+                const allowNewlines = target?.dataset?.allowNewlines === 'true';
+                const sanitized = sanitizeUserInputText(data, allowNewlines);
                 if (sanitized !== data) {
                     e.preventDefault();
                     const value = target.value || '';
@@ -3654,7 +4306,8 @@
                 if (!isTextInputElement(target)) return;
                 const data = e.dataTransfer?.getData('text');
                 if (!data) return;
-                const sanitized = sanitizeUserInputText(data);
+                const allowNewlines = target?.dataset?.allowNewlines === 'true';
+                const sanitized = sanitizeUserInputText(data, allowNewlines);
                 if (sanitized !== data) {
                     e.preventDefault();
                     const value = target.value || '';
@@ -3673,7 +4326,8 @@
                 const target = e.target;
                 if (!isTextInputElement(target)) return;
                 const value = target.value || '';
-                const sanitized = sanitizeUserInputText(value);
+                const allowNewlines = target?.dataset?.allowNewlines === 'true';
+                const sanitized = sanitizeUserInputText(value, allowNewlines);
                 if (sanitized !== value) {
                     const pos = target.selectionStart ?? sanitized.length;
                     target.value = sanitized;
@@ -3685,6 +4339,27 @@
         }
 
         // Encode < and > in any JSON-loaded strings
+        const DANGEROUS_OBJECT_KEYS = new Set(['__proto__', 'prototype', 'constructor']);
+
+        function isDangerousObjectKey(key) {
+            return typeof key === 'string' && DANGEROUS_OBJECT_KEYS.has(key);
+        }
+
+        function createSafeObject() {
+            return Object.create(null);
+        }
+
+        function hasOwn(obj, key) {
+            return !!obj && Object.prototype.hasOwnProperty.call(obj, key);
+        }
+
+        function parseJsonSafe(text) {
+            return JSON.parse(text, (key, value) => {
+                if (isDangerousObjectKey(key)) return undefined;
+                return value;
+            });
+        }
+
         function stripAngleBracketsFromJson(value) {
             if (typeof value === 'string') {
                 return value.replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -3693,8 +4368,9 @@
                 return value.map(stripAngleBracketsFromJson);
             }
             if (value && typeof value === 'object') {
-                const cleaned = {};
+                const cleaned = createSafeObject();
                 for (const [key, val] of Object.entries(value)) {
+                    if (isDangerousObjectKey(key)) continue;
                     cleaned[key] = stripAngleBracketsFromJson(val);
                 }
                 return cleaned;
@@ -3721,16 +4397,22 @@
 
         function getCveEntries(metadata) {
             const entries = [];
+            const pushEntry = (entry) => {
+                const id = (entry?.id || entry?.cveId || '').toString().trim().toUpperCase();
+                const vector = (entry?.vector || entry?.cvssVector || '').toString().trim();
+                const scoreRaw = entry?.score;
+                const score = typeof scoreRaw === 'number' ? scoreRaw : (scoreRaw ? parseFloat(scoreRaw) : null);
+                if (id) {
+                    entries.push({ id, score: Number.isFinite(score) ? score : null, vector: vector || '' });
+                }
+            };
+
             if (Array.isArray(metadata?.cveEntries)) {
-                metadata.cveEntries.forEach(entry => {
-                    const id = (entry?.id || entry?.cveId || '').toString().trim().toUpperCase();
-                    const vector = (entry?.vector || entry?.cvssVector || '').toString().trim();
-                    const scoreRaw = entry?.score;
-                    const score = typeof scoreRaw === 'number' ? scoreRaw : (scoreRaw ? parseFloat(scoreRaw) : null);
-                    if (id) {
-                        entries.push({ id, score: Number.isFinite(score) ? score : null, vector: vector || '' });
-                    }
-                });
+                metadata.cveEntries.forEach(pushEntry);
+            }
+
+            if (Array.isArray(metadata?.cves)) {
+                metadata.cves.forEach(pushEntry);
             }
 
             if (!entries.length) {
@@ -4032,8 +4714,8 @@
             const group = (phaseData.groups || []).find(g => g.groupId === groupId);
             if (!group) return;
             group.collapsed = !group.collapsed;
-            const escapedId = window.CSS && CSS.escape ? CSS.escape(groupId) : groupId.replace(/"/g, '\\"');
-            const groupEl = document.querySelector(`.phase-group[data-group-id="${escapedId}"]`);
+            const groupEl = Array.from(document.querySelectorAll('.phase-group'))
+                .find(el => el?.dataset?.groupId === groupId);
             if (groupEl) {
                 groupEl.classList.toggle('collapsed', group.collapsed);
             } else {
@@ -4224,7 +4906,12 @@
             hideEmpty: false,
             compactMode: false,
             showComments: false,
+            relationshipExpanded: new Set(),
             activeTab: 'attack',
+            globalSearch: '',
+            globalSearchOpen: false,
+            globalSearchExpanded: false,
+            globalSearchSticky: false,
             filters: { attack: 'all', capec: 'all', cwe: 'all', custom: 'all' },
             
             // Full data libraries (loaded from JSON)
@@ -4361,56 +5048,954 @@
         // ============================================================
         // DATA LOADING
         // ============================================================
+        const SHARED_DATA_ENDPOINTS = {
+            attack: 'resources/attack-techniques.json',
+            capec: 'resources/capec-full.json',
+            cwe: 'resources/cwe-full.json',
+            techniqueToCapec: 'resources/technique-to-capec.json',
+            capecToTechnique: 'resources/capec-to-technique.json',
+            cweToCapec: 'resources/cwe-to-capec.json'
+        };
+
+        const REQUIRED_OFFLINE_RESOURCE_FILES = Object.values(SHARED_DATA_ENDPOINTS).map(path => path.split('/').pop());
+
+        const OFFLINE_RESOURCE_STORE = {
+            jsonByFileName: new Map(),
+            promptPromise: null
+        };
+
+        function isFileProtocolRuntime() {
+            return typeof window !== 'undefined' && window.location && window.location.protocol === 'file:';
+        }
+
+        function getFileNameFromPath(path) {
+            const normalized = String(path || '');
+            const parts = normalized.split('/');
+            return parts[parts.length - 1] || normalized;
+        }
+
+        function cloneJsonData(data) {
+            if (typeof structuredClone === 'function') {
+                return structuredClone(data);
+            }
+            return JSON.parse(JSON.stringify(data));
+        }
+
+        function readLocalFileText(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(reader.error || new Error('Failed reading local file'));
+                reader.readAsText(file);
+            });
+        }
+
+        async function promptOfflineResourceFiles(requiredFileNames = []) {
+            if (OFFLINE_RESOURCE_STORE.promptPromise) {
+                await OFFLINE_RESOURCE_STORE.promptPromise;
+                return;
+            }
+
+            OFFLINE_RESOURCE_STORE.promptPromise = new Promise((resolve, reject) => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.json,application/json';
+                input.multiple = true;
+                input.setAttribute('webkitdirectory', '');
+                input.setAttribute('directory', '');
+                input.style.display = 'none';
+
+                const cleanup = () => {
+                    if (input.parentNode) input.parentNode.removeChild(input);
+                };
+
+                input.addEventListener('change', async () => {
+                    try {
+                        const files = Array.from(input.files || []);
+                        if (!files.length) {
+                            throw new Error('No resource files selected');
+                        }
+
+                        const nextMap = new Map(OFFLINE_RESOURCE_STORE.jsonByFileName);
+                        for (const file of files) {
+                            const name = file.name;
+                            if (!name || !name.toLowerCase().endsWith('.json')) continue;
+                            const text = await readLocalFileText(file);
+                            const parsed = parseJsonSafe(text);
+                            nextMap.set(name, parsed);
+                        }
+
+                        const missing = requiredFileNames.filter(name => !nextMap.has(name));
+                        if (missing.length) {
+                            throw new Error(`Missing selected resources: ${missing.join(', ')}`);
+                        }
+
+                        OFFLINE_RESOURCE_STORE.jsonByFileName = nextMap;
+                        resolve();
+                    } catch (err) {
+                        reject(err);
+                    } finally {
+                        cleanup();
+                    }
+                }, { once: true });
+
+                document.body.appendChild(input);
+                showToast('Select your local resources folder (or JSON files) to continue');
+                input.click();
+            });
+
+            try {
+                await OFFLINE_RESOURCE_STORE.promptPromise;
+            } finally {
+                OFFLINE_RESOURCE_STORE.promptPromise = null;
+            }
+        }
+
+        async function fetchJsonResource(resourcePath) {
+            if (!isFileProtocolRuntime()) {
+                const response = await fetch(resourcePath);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch ${resourcePath}: HTTP ${response.status}`);
+                }
+                return response.json();
+            }
+
+            const fileName = getFileNameFromPath(resourcePath);
+            if (!OFFLINE_RESOURCE_STORE.jsonByFileName.has(fileName)) {
+                throw new Error(`OFFLINE_RESOURCE_SELECTION_REQUIRED:${fileName}`);
+            }
+
+            const localJson = OFFLINE_RESOURCE_STORE.jsonByFileName.get(fileName);
+            if (typeof localJson === 'undefined') {
+                throw new Error(`Local resource not available: ${fileName}`);
+            }
+
+            return cloneJsonData(localJson);
+        }
+
+        function enableOfflineResourceSelectionUI(message) {
+            const loadingEl = document.getElementById('loading');
+            const loadingText = loadingEl ? loadingEl.querySelector('.loading-text') : null;
+            const loadingHint = document.getElementById('loading-hint');
+            const loadingDismiss = document.getElementById('loading-dismiss');
+            const loadingBypass = document.getElementById('loading-bypass');
+
+            if (loadingText) {
+                loadingText.textContent = message || 'Offline mode requires local resource files.';
+            }
+            if (loadingHint) {
+                loadingHint.style.display = 'block';
+                loadingHint.textContent = 'Click "Select Local Resources" and choose the resources folder (or required JSON files).';
+            }
+            if (loadingDismiss) {
+                loadingDismiss.style.display = 'inline-block';
+                loadingDismiss.textContent = 'Select Local Resources';
+                loadingDismiss.onclick = async () => {
+                    try {
+                        loadingDismiss.disabled = true;
+                        await promptOfflineResourceFiles(REQUIRED_OFFLINE_RESOURCE_FILES);
+                        await loadData();
+                    } catch (err) {
+                        if (loadingText) {
+                            loadingText.textContent = 'Offline resource selection failed: ' + (err && err.message ? err.message : String(err));
+                        }
+                    } finally {
+                        loadingDismiss.disabled = false;
+                    }
+                };
+            }
+            if (loadingBypass) {
+                loadingBypass.style.display = 'inline-block';
+                loadingBypass.textContent = 'Continue Without Data';
+                loadingBypass.onclick = hideLoadingOverlay;
+            }
+        }
+
+        function hideLoadingOverlay() {
+            const loadingEl = document.getElementById('loading');
+            if (loadingEl) loadingEl.classList.add('hidden');
+            renderAll();
+        }
+
+        function getSharedDataCache() {
+            if (!window.AttackFlowSharedData) {
+                window.AttackFlowSharedData = {
+                    promise: null,
+                    data: null,
+                    loadedAt: 0
+                };
+            }
+            return window.AttackFlowSharedData;
+        }
+
+        function isLocalIframeIPCEnabled() {
+            if (!isFileProtocolRuntime()) return false;
+            return typeof CONFIG === 'undefined' || CONFIG.ConfigIframeIPC?.enableLocalIframeIPC !== false;
+        }
+
+        function updateLoadingContextInfo() {
+            const infoEl = document.getElementById('loading-context-info');
+            if (!infoEl) return;
+
+            const shouldWarn = isFileProtocolRuntime() && !isLocalIframeIPCEnabled();
+            if (!shouldWarn) {
+                infoEl.style.display = 'none';
+                infoEl.textContent = '';
+                return;
+            }
+
+            infoEl.style.display = 'block';
+            infoEl.textContent = 'Running from file:// with local iframe IPC bridge disabled. Theme sync, Embedded Relationship Explorer and STIX Composer sync features will not work as expected unless ConfigIframeIPC.enableLocalIframeIPC is enabled in config.js.';
+        }
+
+        function isLocalIframeIPCTraceEnabled() {
+            return typeof CONFIG !== 'undefined' && CONFIG.debugging?.traceLocalIframeIPCLogs === true;
+        }
+
+        const IPC_PORT_INBOUND_MESSAGE_TYPES = new Set(['AF_REQUEST_THEME', 'AF_REQUEST_SHARED_DATA']);
+        const IPC_PORT_INBOUND_MESSAGE_KEYS = {
+            AF_REQUEST_THEME: new Set(['type', 'nonce']),
+            AF_REQUEST_SHARED_DATA: new Set(['type', 'nonce'])
+        };
+        const IPC_BOOTSTRAP_MESSAGE_KEYS = new Set(['type', 'channel', 'nonce']);
+        const IPC_CHANNEL_BOOTSTRAP_TYPE = 'AF_IPC_PORT_INIT';
+        const IPC_SHARED_DATA_KEYS = new Set(['attack', 'capecPatterns', 'cweWeaknesses', 'techniqueToCapec', 'capecToTechnique', 'cweToCapec']);
+        const IPC_RATE_LIMIT_DEFAULTS = {
+            enabled: true,
+            refillPerSecond: 1,
+            burst: 2
+        };
+        const IPC_BOOTSTRAP_DEFAULTS = {
+            timeoutMs: 1200,
+            maxRetries: 3,
+            retryBaseDelayMs: 250,
+            retryBackoffMultiplier: 2,
+            maxRetryDelayMs: 2000
+        };
+        const SHARED_DATA_LIMITS = {
+            maxTechniqueEntries: 10000,
+            maxCapecEntries: 10000,
+            maxCweEntries: 10000,
+            maxTechniqueToCapecEntries: 20000,
+            maxCapecToTechniqueEntries: 20000,
+            maxCweToCapecEntries: 20000,
+            maxSerializedBytes: 40 * 1024 * 1024
+        };
+
+        const IPC_FRAME_CHANNELS = {
+            explorer: {
+                port: null,
+                nonce: '',
+                frameSelector: '.explorer-frame',
+                rateBuckets: Object.create(null),
+                bootstrapTimerId: null,
+                bootstrapAttempt: 0,
+                bootstrapComplete: false,
+                bootstrapExhausted: false
+            },
+            'stix-builder': {
+                port: null,
+                nonce: '',
+                frameSelector: '.stix-builder-frame',
+                rateBuckets: Object.create(null),
+                bootstrapTimerId: null,
+                bootstrapAttempt: 0,
+                bootstrapComplete: false,
+                bootstrapExhausted: false
+            }
+        };
+
+        function logLocalIframeIPCSplash(context) {
+            const protocol = (typeof window !== 'undefined' && window.location && window.location.protocol) ? window.location.protocol : 'unknown';
+            const configured = typeof CONFIG === 'undefined' ? 'unset' : (CONFIG.ConfigIframeIPC?.enableLocalIframeIPC !== false);
+            const active = isLocalIframeIPCEnabled();
+            console.info(`[AF IPC][${context}] local iframe IPC status`, {
+                protocol,
+                configured,
+                active,
+                trace: isLocalIframeIPCTraceEnabled(),
+                messageChannel: typeof MessageChannel === 'function'
+            });
+        }
+
+        function logLocalIframeIPCTrace(context, message, details) {
+            if (!isLocalIframeIPCTraceEnabled()) return;
+            if (typeof details === 'undefined') {
+                console.log(`[AF IPC][${context}] ${message}`);
+                return;
+            }
+            console.log(`[AF IPC][${context}] ${message}`, details);
+        }
+
+        function getLocalIframeIPCRateLimitConfig() {
+            const cfg = (typeof CONFIG !== 'undefined' && CONFIG.debugging?.localIframeIPCRateLimit)
+                ? CONFIG.debugging.localIframeIPCRateLimit
+                : {};
+            const enabled = cfg.enabled !== false;
+            const refillPerSecond = Number.isFinite(cfg.refillPerSecond) && cfg.refillPerSecond > 0
+                ? cfg.refillPerSecond
+                : IPC_RATE_LIMIT_DEFAULTS.refillPerSecond;
+            const burst = Number.isFinite(cfg.burst) && cfg.burst > 0
+                ? cfg.burst
+                : IPC_RATE_LIMIT_DEFAULTS.burst;
+            return {
+                enabled,
+                refillPerSecond,
+                burst
+            };
+        }
+
+        function getLocalIframeIPCBootstrapConfig() {
+            const cfg = (typeof CONFIG !== 'undefined' && CONFIG.debugging?.localIframeIPCBootstrap)
+                ? CONFIG.debugging.localIframeIPCBootstrap
+                : {};
+            const timeoutMs = Number.isFinite(cfg.timeoutMs) && cfg.timeoutMs >= 200
+                ? Math.floor(cfg.timeoutMs)
+                : IPC_BOOTSTRAP_DEFAULTS.timeoutMs;
+            const maxRetries = Number.isFinite(cfg.maxRetries) && cfg.maxRetries >= 1
+                ? Math.floor(cfg.maxRetries)
+                : IPC_BOOTSTRAP_DEFAULTS.maxRetries;
+            const retryBaseDelayMs = Number.isFinite(cfg.retryBaseDelayMs) && cfg.retryBaseDelayMs >= 0
+                ? Math.floor(cfg.retryBaseDelayMs)
+                : IPC_BOOTSTRAP_DEFAULTS.retryBaseDelayMs;
+            const retryBackoffMultiplier = Number.isFinite(cfg.retryBackoffMultiplier) && cfg.retryBackoffMultiplier >= 1
+                ? cfg.retryBackoffMultiplier
+                : IPC_BOOTSTRAP_DEFAULTS.retryBackoffMultiplier;
+            const maxRetryDelayMs = Number.isFinite(cfg.maxRetryDelayMs) && cfg.maxRetryDelayMs >= retryBaseDelayMs
+                ? Math.floor(cfg.maxRetryDelayMs)
+                : IPC_BOOTSTRAP_DEFAULTS.maxRetryDelayMs;
+            return {
+                timeoutMs,
+                maxRetries,
+                retryBaseDelayMs,
+                retryBackoffMultiplier,
+                maxRetryDelayMs
+            };
+        }
+
+        function isIPCRequestRateAllowed(frameKey, messageType, transport) {
+            const rateLimit = getLocalIframeIPCRateLimitConfig();
+            if (!rateLimit.enabled) return true;
+
+            const frameState = getIPCFrameState(frameKey);
+            if (!frameState) {
+                logLocalIframeIPCTrace('index', 'rate-limit fallback: unknown frame, allow request', { frameKey, messageType, transport });
+                return true;
+            }
+
+            if (!frameState.rateBuckets || typeof frameState.rateBuckets !== 'object') {
+                frameState.rateBuckets = Object.create(null);
+            }
+
+            const now = Date.now();
+            const bucketKey = String(messageType || 'unknown');
+            let bucket = frameState.rateBuckets[bucketKey];
+            if (!bucket) {
+                bucket = {
+                    tokens: rateLimit.burst,
+                    lastRefillMs: now
+                };
+                frameState.rateBuckets[bucketKey] = bucket;
+            }
+
+            const elapsedMs = Math.max(0, now - bucket.lastRefillMs);
+            if (elapsedMs > 0) {
+                const refillTokens = (elapsedMs / 1000) * rateLimit.refillPerSecond;
+                bucket.tokens = Math.min(rateLimit.burst, bucket.tokens + refillTokens);
+                bucket.lastRefillMs = now;
+            }
+
+            if (bucket.tokens < 1) {
+                logLocalIframeIPCTrace('index', 'rate-limit throttle: request blocked', {
+                    frameKey,
+                    messageType,
+                    transport,
+                    tokens: bucket.tokens
+                });
+                return false;
+            }
+
+            bucket.tokens -= 1;
+            return true;
+        }
+
+        function isPlainObject(value) {
+            return !!value && typeof value === 'object' && !Array.isArray(value);
+        }
+
+        function hasOnlyAllowedKeys(value, allowedKeys, contextLabel) {
+            if (!isPlainObject(value)) {
+                logLocalIframeIPCTrace('index', `${contextLabel} rejected: payload is not object`);
+                return false;
+            }
+            const keys = Object.keys(value);
+            for (const key of keys) {
+                if (!allowedKeys.has(key)) {
+                    logLocalIframeIPCTrace('index', `${contextLabel} rejected: unknown key`, { key });
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function deepFreeze(value) {
+            if (!value || typeof value !== 'object' || Object.isFrozen(value)) return value;
+            Object.getOwnPropertyNames(value).forEach((name) => {
+                const child = value[name];
+                if (child && typeof child === 'object') deepFreeze(child);
+            });
+            return Object.freeze(value);
+        }
+
+        function createLocalIPCNonce() {
+            const timestampPart = Date.now().toString(36);
+            const perfPart = (typeof performance !== 'undefined' && typeof performance.now === 'function')
+                ? Math.floor(performance.now() * 1000).toString(36)
+                : 'nop';
+            const randomPart = (() => {
+                try {
+                    if (typeof crypto !== 'undefined' && crypto && typeof crypto.getRandomValues === 'function') {
+                        const bytes = new Uint8Array(16);
+                        crypto.getRandomValues(bytes);
+                        return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+                    }
+                } catch (e) {
+                    // fall through to Math.random fallback
+                }
+                const samples = [];
+                for (let i = 0; i < 6; i++) {
+                    samples.push(Math.floor(Math.random() * 0x100000000).toString(36));
+                }
+                return samples.join('');
+            })();
+            return `afipc-${timestampPart}-${perfPart}-${randomPart}`;
+        }
+
+        function isKnownIPCSourceWindow(sourceWindow) {
+            if (!sourceWindow) return false;
+            const explorerWin = getExplorerFrameEl()?.contentWindow || null;
+            const builderWin = getStixBuilderFrameEl()?.contentWindow || null;
+            return sourceWindow === explorerWin || sourceWindow === builderWin;
+        }
+
+        function getIPCFrameState(frameKey) {
+            return IPC_FRAME_CHANNELS[frameKey] || null;
+        }
+
+        function clearIPCFrameBootstrapTimer(frameState) {
+            if (!frameState || !frameState.bootstrapTimerId) return;
+            clearTimeout(frameState.bootstrapTimerId);
+            frameState.bootstrapTimerId = null;
+        }
+
+        function clearIPCFrameChannel(frameKey, options = {}) {
+            const frameState = getIPCFrameState(frameKey);
+            if (!frameState) return;
+            clearIPCFrameBootstrapTimer(frameState);
+            if (frameState.port) {
+                try {
+                    frameState.port.onmessage = null;
+                    frameState.port.close();
+                } catch (e) {
+                    // ignore close errors
+                }
+            }
+            frameState.port = null;
+            frameState.nonce = '';
+            frameState.rateBuckets = Object.create(null);
+            frameState.bootstrapComplete = false;
+            if (options.resetBootstrapAttempt === true) {
+                frameState.bootstrapAttempt = 0;
+                frameState.bootstrapExhausted = false;
+            }
+        }
+
+        function scheduleIPCChannelBootstrapRetry(frameKey, reason) {
+            const frameState = getIPCFrameState(frameKey);
+            if (!frameState) return false;
+            const cfg = getLocalIframeIPCBootstrapConfig();
+            const currentAttempt = Number(frameState.bootstrapAttempt || 0);
+            if (currentAttempt >= cfg.maxRetries) {
+                frameState.bootstrapExhausted = true;
+                logLocalIframeIPCTrace('index', 'channel bootstrap retries exhausted', {
+                    frameKey,
+                    attempts: currentAttempt,
+                    reason
+                });
+                return false;
+            }
+
+            const nextAttempt = currentAttempt + 1;
+            const exponent = Math.max(0, nextAttempt - 2);
+            const computedDelay = cfg.retryBaseDelayMs * Math.pow(cfg.retryBackoffMultiplier, exponent);
+            const retryDelayMs = Math.min(cfg.maxRetryDelayMs, computedDelay);
+
+            logLocalIframeIPCTrace('index', 'channel bootstrap retry scheduled', {
+                frameKey,
+                nextAttempt,
+                retryDelayMs,
+                reason
+            });
+
+            window.setTimeout(() => {
+                const latestFrameState = getIPCFrameState(frameKey);
+                if (!latestFrameState || latestFrameState.bootstrapExhausted || latestFrameState.bootstrapComplete) return;
+                setupIPCChannelForFrame(frameKey, { attempt: nextAttempt, reason: 'retry' });
+            }, retryDelayMs);
+            return true;
+        }
+
+        function sendIPCMessageViaChannel(frameKey, message) {
+            const frameState = getIPCFrameState(frameKey);
+            if (!frameState || !frameState.port || !frameState.nonce) return false;
+            try {
+                frameState.port.postMessage({ ...message, nonce: frameState.nonce });
+                logLocalIframeIPCTrace('index', 'channel message sent', { frameKey, type: message?.type || null });
+                return true;
+            } catch (e) {
+                logLocalIframeIPCTrace('index', 'channel message send failed', { frameKey, type: message?.type || null, error: String(e && e.message ? e.message : e) });
+                return false;
+            }
+        }
+
+        function setupIPCChannelForFrame(frameKey, options = {}) {
+            if (!isLocalIframeIPCEnabled() || typeof MessageChannel !== 'function') return false;
+            const frameState = getIPCFrameState(frameKey);
+            if (!frameState) return false;
+            const cfg = getLocalIframeIPCBootstrapConfig();
+            const requestedAttempt = Number.isFinite(options.attempt) && options.attempt > 0
+                ? Math.floor(options.attempt)
+                : 1;
+
+            if (requestedAttempt === 1) {
+                frameState.bootstrapExhausted = false;
+            }
+            if (frameState.bootstrapExhausted) {
+                logLocalIframeIPCTrace('index', 'channel setup skipped: retries already exhausted', { frameKey });
+                return false;
+            }
+
+            const frameEl = document.querySelector(frameState.frameSelector);
+            const frameWindow = frameEl?.contentWindow;
+            if (!frameWindow) {
+                logLocalIframeIPCTrace('index', 'channel setup skipped: frame unavailable', { frameKey });
+                frameState.bootstrapAttempt = requestedAttempt;
+                scheduleIPCChannelBootstrapRetry(frameKey, 'frame-unavailable');
+                return false;
+            }
+
+            clearIPCFrameChannel(frameKey);
+            const channel = new MessageChannel();
+            const nonce = createLocalIPCNonce();
+
+            frameState.bootstrapAttempt = requestedAttempt;
+            frameState.bootstrapComplete = false;
+            frameState.port = channel.port1;
+            frameState.nonce = nonce;
+            frameState.port.onmessage = (event) => {
+                const message = event.data;
+                if (!message || typeof message !== 'object') return;
+
+                if (!frameState.bootstrapComplete) {
+                    frameState.bootstrapComplete = true;
+                    frameState.bootstrapExhausted = false;
+                    clearIPCFrameBootstrapTimer(frameState);
+                    logLocalIframeIPCTrace('index', 'channel bootstrap established', {
+                        frameKey,
+                        attempt: frameState.bootstrapAttempt
+                    });
+                }
+
+                if (!IPC_PORT_INBOUND_MESSAGE_TYPES.has(message.type)) {
+                    logLocalIframeIPCTrace('index', 'channel message rejected: unknown type', { frameKey, type: message.type || null });
+                    return;
+                }
+
+                const allowedKeys = IPC_PORT_INBOUND_MESSAGE_KEYS[message.type];
+                if (!hasOnlyAllowedKeys(message, allowedKeys, `Channel ${message.type}`)) {
+                    return;
+                }
+
+                if (message.nonce !== frameState.nonce) {
+                    logLocalIframeIPCTrace('index', 'channel message rejected: nonce mismatch', { frameKey, type: message.type || null });
+                    return;
+                }
+
+                if (!isIPCRequestRateAllowed(frameKey, message.type, 'channel')) {
+                    return;
+                }
+
+                if (message.type === 'AF_REQUEST_THEME') {
+                    sendIPCMessageViaChannel(frameKey, {
+                        type: 'AF_THEME_SYNC',
+                        mode: currentTheme?.mode || 'light',
+                        scheme: currentTheme?.scheme || 'default'
+                    });
+                    return;
+                }
+
+                if (message.type === 'AF_REQUEST_SHARED_DATA') {
+                    if (frameKey !== 'explorer') {
+                        logLocalIframeIPCTrace('index', 'channel shared-data request rejected: frame not allowed', { frameKey });
+                        return;
+                    }
+                    const cache = getSharedDataCache();
+                    const immutablePayload = cache.data ? buildImmutableSharedDataPayload(cache.data) : null;
+                    if (!immutablePayload) {
+                        logLocalIframeIPCTrace('index', 'channel shared-data response skipped: payload unavailable');
+                        return;
+                    }
+                    sendIPCMessageViaChannel(frameKey, {
+                        type: 'AF_SHARED_DATA',
+                        data: immutablePayload
+                    });
+                }
+            };
+            frameState.port.start();
+
+            try {
+                frameWindow.postMessage({
+                    type: IPC_CHANNEL_BOOTSTRAP_TYPE,
+                    channel: frameKey,
+                    nonce
+                }, '*', [channel.port2]);
+                logLocalIframeIPCTrace('index', 'channel bootstrap sent', { frameKey, attempt: requestedAttempt });
+
+                clearIPCFrameBootstrapTimer(frameState);
+                frameState.bootstrapTimerId = window.setTimeout(() => {
+                    const latestFrameState = getIPCFrameState(frameKey);
+                    if (!latestFrameState) return;
+                    if (latestFrameState.nonce !== nonce || latestFrameState.bootstrapComplete) return;
+
+                    logLocalIframeIPCTrace('index', 'channel bootstrap timeout', {
+                        frameKey,
+                        attempt: requestedAttempt,
+                        timeoutMs: cfg.timeoutMs
+                    });
+                    clearIPCFrameChannel(frameKey);
+                    scheduleIPCChannelBootstrapRetry(frameKey, 'timeout');
+                }, cfg.timeoutMs);
+                return true;
+            } catch (e) {
+                logLocalIframeIPCTrace('index', 'channel bootstrap failed', { frameKey, error: String(e && e.message ? e.message : e) });
+                clearIPCFrameChannel(frameKey);
+                scheduleIPCChannelBootstrapRetry(frameKey, 'postMessage-error');
+                return false;
+            }
+        }
+
+        function buildImmutableSharedDataPayload(rawData) {
+            if (!isPlainObject(rawData)) {
+                logLocalIframeIPCTrace('index', 'AF_SHARED_DATA rejected: shared cache is not object');
+                return null;
+            }
+            if (!hasOnlyAllowedKeys(rawData, IPC_SHARED_DATA_KEYS, 'AF_SHARED_DATA')) {
+                return null;
+            }
+            for (const key of IPC_SHARED_DATA_KEYS) {
+                const value = rawData[key];
+                if (!isPlainObject(value)) {
+                    logLocalIframeIPCTrace('index', 'AF_SHARED_DATA rejected: invalid data bucket', { key });
+                    return null;
+                }
+            }
+            if (!enforceSharedDatasetLimits(rawData)) {
+                logLocalIframeIPCTrace('index', 'AF_SHARED_DATA rejected: shared cache exceeds configured limits');
+                return null;
+            }
+            const cloned = cloneJsonData(rawData);
+            return deepFreeze(cloned);
+        }
+
+        function validateSharedDatasetShape(rawData) {
+            if (!isPlainObject(rawData)) {
+                logLocalIframeIPCTrace('index', 'shared loader dataset rejected: payload is not object');
+                return false;
+            }
+            if (!hasOnlyAllowedKeys(rawData, IPC_SHARED_DATA_KEYS, 'Shared loader dataset')) {
+                return false;
+            }
+            for (const key of IPC_SHARED_DATA_KEYS) {
+                if (!isPlainObject(rawData[key])) {
+                    logLocalIframeIPCTrace('index', 'shared loader dataset rejected: invalid top-level bucket', { key });
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function estimateJsonByteSize(value) {
+            let jsonText = '';
+            try {
+                jsonText = JSON.stringify(value);
+            } catch (e) {
+                return Number.POSITIVE_INFINITY;
+            }
+            if (typeof jsonText !== 'string') return Number.POSITIVE_INFINITY;
+            if (typeof TextEncoder === 'function') {
+                return new TextEncoder().encode(jsonText).length;
+            }
+            return jsonText.length * 2;
+        }
+
+        function enforceSharedDatasetLimits(rawData) {
+            const counts = {
+                attack: Object.keys(rawData.attack || {}).length,
+                capecPatterns: Object.keys(rawData.capecPatterns || {}).length,
+                cweWeaknesses: Object.keys(rawData.cweWeaknesses || {}).length,
+                techniqueToCapec: Object.keys(rawData.techniqueToCapec || {}).length,
+                capecToTechnique: Object.keys(rawData.capecToTechnique || {}).length,
+                cweToCapec: Object.keys(rawData.cweToCapec || {}).length
+            };
+
+            if (counts.attack > SHARED_DATA_LIMITS.maxTechniqueEntries) {
+                logLocalIframeIPCTrace('index', 'shared loader dataset rejected: attack entry limit exceeded', { count: counts.attack, limit: SHARED_DATA_LIMITS.maxTechniqueEntries });
+                return false;
+            }
+            if (counts.capecPatterns > SHARED_DATA_LIMITS.maxCapecEntries) {
+                logLocalIframeIPCTrace('index', 'shared loader dataset rejected: CAPEC entry limit exceeded', { count: counts.capecPatterns, limit: SHARED_DATA_LIMITS.maxCapecEntries });
+                return false;
+            }
+            if (counts.cweWeaknesses > SHARED_DATA_LIMITS.maxCweEntries) {
+                logLocalIframeIPCTrace('index', 'shared loader dataset rejected: CWE entry limit exceeded', { count: counts.cweWeaknesses, limit: SHARED_DATA_LIMITS.maxCweEntries });
+                return false;
+            }
+            if (counts.techniqueToCapec > SHARED_DATA_LIMITS.maxTechniqueToCapecEntries) {
+                logLocalIframeIPCTrace('index', 'shared loader dataset rejected: techniqueToCapec entry limit exceeded', { count: counts.techniqueToCapec, limit: SHARED_DATA_LIMITS.maxTechniqueToCapecEntries });
+                return false;
+            }
+            if (counts.capecToTechnique > SHARED_DATA_LIMITS.maxCapecToTechniqueEntries) {
+                logLocalIframeIPCTrace('index', 'shared loader dataset rejected: capecToTechnique entry limit exceeded', { count: counts.capecToTechnique, limit: SHARED_DATA_LIMITS.maxCapecToTechniqueEntries });
+                return false;
+            }
+            if (counts.cweToCapec > SHARED_DATA_LIMITS.maxCweToCapecEntries) {
+                logLocalIframeIPCTrace('index', 'shared loader dataset rejected: cweToCapec entry limit exceeded', { count: counts.cweToCapec, limit: SHARED_DATA_LIMITS.maxCweToCapecEntries });
+                return false;
+            }
+
+            const estimatedBytes = estimateJsonByteSize(rawData);
+            if (!Number.isFinite(estimatedBytes) || estimatedBytes > SHARED_DATA_LIMITS.maxSerializedBytes) {
+                logLocalIframeIPCTrace('index', 'shared loader dataset rejected: serialized size limit exceeded', { estimatedBytes, limit: SHARED_DATA_LIMITS.maxSerializedBytes });
+                return false;
+            }
+
+            return true;
+        }
+
+        function getExplorerFrameEl() {
+            return document.querySelector('.explorer-frame');
+        }
+
+        function getStixBuilderFrameEl() {
+            return document.querySelector('.stix-builder-frame');
+        }
+
+        function broadcastSharedDataToExplorer() {
+            if (!isLocalIframeIPCEnabled()) {
+                logLocalIframeIPCTrace('index', 'shared-data broadcast blocked: IPC disabled');
+                return;
+            }
+            const cache = getSharedDataCache();
+            if (!cache.data) {
+                logLocalIframeIPCTrace('index', 'shared-data broadcast skipped: cache empty');
+                return;
+            }
+            const immutablePayload = buildImmutableSharedDataPayload(cache.data);
+            if (!immutablePayload) {
+                logLocalIframeIPCTrace('index', 'shared-data broadcast skipped: payload validation failed');
+                return;
+            }
+            if (sendIPCMessageViaChannel('explorer', {
+                type: 'AF_SHARED_DATA',
+                data: immutablePayload
+            })) {
+                logLocalIframeIPCTrace('index', 'shared-data broadcast sent via channel');
+                return;
+            }
+            logLocalIframeIPCTrace('index', 'shared-data broadcast skipped: channel unavailable');
+        }
+
+        function broadcastThemeToEmbeddedViews() {
+            if (!isLocalIframeIPCEnabled()) {
+                logLocalIframeIPCTrace('index', 'theme broadcast blocked: IPC disabled');
+                return;
+            }
+            const payload = {
+                type: 'AF_THEME_SYNC',
+                mode: currentTheme?.mode || 'light',
+                scheme: currentTheme?.scheme || 'default'
+            };
+            const explorerSent = sendIPCMessageViaChannel('explorer', payload);
+            const builderSent = sendIPCMessageViaChannel('stix-builder', payload);
+            logLocalIframeIPCTrace('index', 'theme broadcast attempted via channel', {
+                mode: payload.mode,
+                scheme: payload.scheme,
+                explorerSent,
+                builderSent
+            });
+        }
+
+        function initEmbeddedMessageBridge() {
+            if (!isLocalIframeIPCEnabled()) {
+                logLocalIframeIPCTrace('index', 'bridge init skipped: IPC disabled');
+                return;
+            }
+            logLocalIframeIPCTrace('index', 'bridge initialized');
+
+            window.addEventListener('message', (event) => {
+                const message = event.data;
+                if (!message || typeof message !== 'object') return;
+                if (!isKnownIPCSourceWindow(event.source)) {
+                    logLocalIframeIPCTrace('index', 'message rejected: unknown source window');
+                    return;
+                }
+                if (message.type !== IPC_CHANNEL_BOOTSTRAP_TYPE) {
+                    logLocalIframeIPCTrace('index', 'window message rejected: channel-only mode', { type: message.type || null });
+                }
+            });
+
+            const explorerFrame = getExplorerFrameEl();
+            if (explorerFrame) {
+                explorerFrame.addEventListener('load', () => {
+                    logLocalIframeIPCTrace('index', 'explorer iframe load detected');
+                    setupIPCChannelForFrame('explorer');
+                    broadcastThemeToEmbeddedViews();
+                    broadcastSharedDataToExplorer();
+                });
+            }
+
+            const builderFrame = getStixBuilderFrameEl();
+            if (builderFrame) {
+                builderFrame.addEventListener('load', () => {
+                    logLocalIframeIPCTrace('index', 'stix-builder iframe load detected');
+                    setupIPCChannelForFrame('stix-builder');
+                    broadcastThemeToEmbeddedViews();
+                });
+            }
+        }
+
+        async function loadSharedLibraryData(forceReload = false) {
+            const cache = getSharedDataCache();
+
+            if (!forceReload && cache.data) {
+                return cache.data;
+            }
+
+            if (!forceReload && cache.promise) {
+                return cache.promise;
+            }
+
+            cache.promise = (async () => {
+                const [attackJson, capecJson, cweJson, t2cJson, c2tJson, c2cJson] = await Promise.all([
+                    fetchJsonResource(SHARED_DATA_ENDPOINTS.attack),
+                    fetchJsonResource(SHARED_DATA_ENDPOINTS.capec),
+                    fetchJsonResource(SHARED_DATA_ENDPOINTS.cwe),
+                    fetchJsonResource(SHARED_DATA_ENDPOINTS.techniqueToCapec),
+                    fetchJsonResource(SHARED_DATA_ENDPOINTS.capecToTechnique),
+                    fetchJsonResource(SHARED_DATA_ENDPOINTS.cweToCapec)
+                ]);
+
+                const attack = stripAngleBracketsFromJson(attackJson);
+                const capec = stripAngleBracketsFromJson(capecJson);
+                const cwe = stripAngleBracketsFromJson(cweJson);
+                const techniqueToCapec = stripAngleBracketsFromJson(t2cJson);
+                const capecToTechnique = stripAngleBracketsFromJson(c2tJson);
+                const cweToCapec = stripAngleBracketsFromJson(c2cJson);
+
+                const data = {
+                    attack,
+                    capecPatterns: capec.patterns || {},
+                    cweWeaknesses: cwe.weaknesses || {},
+                    techniqueToCapec,
+                    capecToTechnique,
+                    cweToCapec
+                };
+
+                if (!validateSharedDatasetShape(data)) {
+                    throw new Error('Shared dataset validation failed');
+                }
+                if (!enforceSharedDatasetLimits(data)) {
+                    throw new Error('Shared dataset limit enforcement failed');
+                }
+
+                cache.data = data;
+                cache.loadedAt = Date.now();
+                broadcastSharedDataToExplorer();
+                return data;
+            })().catch(err => {
+                cache.promise = null;
+                throw err;
+            });
+
+            const result = await cache.promise;
+            cache.promise = null;
+            return result;
+        }
+
+        window.getAttackFlowSharedData = function (options) {
+            const forceReload = !!(options && options.forceReload);
+            return loadSharedLibraryData(forceReload).then((data) => {
+                const immutableSnapshot = buildImmutableSharedDataPayload(data);
+                if (!immutableSnapshot) {
+                    throw new Error('Shared dataset snapshot build failed');
+                }
+                return immutableSnapshot;
+            });
+        };
+
         async function loadData() {
             try {
-                // Load ATT&CK techniques data
-                const attackRes = await fetch('resources/attack-techniques.json');
-                state.library.techniques = stripAngleBracketsFromJson(await attackRes.json());
-                
-                // Load CAPEC data
-                const capecRes = await fetch('resources/capec-full.json');
-                const capecData = stripAngleBracketsFromJson(await capecRes.json());
-                state.library.capecs = capecData.patterns;
-                
-                // Load CWE data
-                const cweRes = await fetch('resources/cwe-full.json');
-                const cweData = stripAngleBracketsFromJson(await cweRes.json());
-                state.library.cwes = cweData.weaknesses;
-                
-                // Load mappings
-                const t2cRes = await fetch('resources/technique-to-capec.json');
-                state.techniqueToCapec = stripAngleBracketsFromJson(await t2cRes.json());
-                
-                const c2tRes = await fetch('resources/capec-to-technique.json');
-                state.capecToTechnique = stripAngleBracketsFromJson(await c2tRes.json());
-                
-                const c2cRes = await fetch('resources/cwe-to-capec.json');
-                state.cweToCapec = stripAngleBracketsFromJson(await c2cRes.json());
+                const shared = await loadSharedLibraryData();
+
+                state.library.techniques = { ...shared.attack };
+                state.library.capecs = { ...shared.capecPatterns };
+                state.library.cwes = { ...shared.cweWeaknesses };
+                state.techniqueToCapec = shared.techniqueToCapec;
+                state.capecToTechnique = shared.capecToTechnique;
+                state.cweToCapec = shared.cweToCapec;
                 
                 console.log(`Loaded: ${Object.keys(state.library.techniques).length} techniques, ${Object.keys(state.library.capecs).length} CAPECs, ${Object.keys(state.library.cwes).length} CWEs`);
                 
                 // Preserve full technique library for Navigator import enrichment
                 state._baseTechniques = { ...state.library.techniques };
+
+                broadcastSharedDataToExplorer();
                 
                 document.getElementById('loading').classList.add('hidden');
                 renderAll();
             } catch (err) {
                 console.error('Failed to load data:', err);
+                if (isFileProtocolRuntime() && String(err && err.message || '').startsWith('OFFLINE_RESOURCE_SELECTION_REQUIRED:')) {
+                    enableOfflineResourceSelectionUI('Offline mode requires local resource selection.');
+                    return;
+                }
                 // KCE-SEC-009: Use textContent instead of innerHTML for error messages
                 const loadingEl = document.getElementById('loading');
                 const loadingText = loadingEl.querySelector('.loading-text');
                 loadingText.textContent = 'Error loading data: ' + err.message;
                 // Show dismiss button and hint so user can still use the app
-                document.getElementById('loading-dismiss').style.display = 'inline-block';
-                document.getElementById('loading-hint').style.display = 'block';
+                const loadingDismiss = document.getElementById('loading-dismiss');
+                const loadingBypass = document.getElementById('loading-bypass');
+                const loadingHint = document.getElementById('loading-hint');
+                if (loadingDismiss) {
+                    loadingDismiss.style.display = 'inline-block';
+                    loadingDismiss.textContent = 'Continue Without Data';
+                    loadingDismiss.onclick = hideLoadingOverlay;
+                }
+                if (loadingBypass) {
+                    loadingBypass.style.display = 'none';
+                }
+                if (loadingHint) {
+                    loadingHint.style.display = 'block';
+                }
             }
         }
 
         // Load Navigator layer (replaces technique library; preserves mappings & CAPEC/CWE)
         async function loadNavigator(domain) {
             try {
-                const res = await fetch(`resources/Nav_Layer_${domain.toUpperCase()}.json`);
-                const layer = stripAngleBracketsFromJson(await res.json());
+                const layerJson = await fetchJsonResource(`resources/Nav_Layer_${domain.toUpperCase()}.json`);
+                const layer = stripAngleBracketsFromJson(layerJson);
                 
                 // Replace technique library (mappings & CAPEC/CWE stay intact)
                 // Enrich from base library when available for full metadata
@@ -4445,6 +6030,96 @@
             techniqueIdPattern: /^T\d{4}(\.\d{3})?$/  // T1234 or T1234.001
         };
 
+        async function ensureBaseTechniquesLoaded() {
+            if (state._baseTechniques && Object.keys(state._baseTechniques).length > 0) {
+                return state._baseTechniques;
+            }
+            const shared = await loadSharedLibraryData();
+            state._baseTechniques = { ...shared.attack };
+            return state._baseTechniques;
+        }
+
+        function parseTechniqueIdInput(raw) {
+            const normalized = normalizeUserInput(raw || '', 20000, true).toUpperCase();
+            const tokens = normalized.split(/[\s,]+/).map(t => t.trim()).filter(Boolean);
+            const unique = [...new Set(tokens)];
+            const valid = [];
+            const invalid = [];
+            unique.forEach(id => {
+                if (IMPORT_LIMITS.techniqueIdPattern.test(id)) {
+                    valid.push(id);
+                } else {
+                    invalid.push(id);
+                }
+            });
+            return { valid, invalid };
+        }
+
+        async function applyTechniqueList(ids) {
+            const base = await ensureBaseTechniquesLoaded();
+            const newTechniques = {};
+            let missing = 0;
+            ids.forEach(id => {
+                const entry = base[id];
+                if (entry) {
+                    newTechniques[id] = entry;
+                } else {
+                    newTechniques[id] = { id, name: `Technique ${id}`, domain: detectDomain(id) };
+                    missing += 1;
+                }
+            });
+            state.library.techniques = newTechniques;
+            return { missing };
+        }
+
+        function openCsvImportModal() {
+            const textArea = document.getElementById('csv-import-textarea');
+            const errorEl = document.getElementById('csv-import-error');
+            if (textArea) textArea.value = '';
+            if (errorEl) errorEl.textContent = '';
+            document.getElementById('csv-import-modal').classList.add('visible');
+        }
+
+        function closeCsvImportModal(event) {
+            if (event && event.target !== event.currentTarget) return;
+            document.getElementById('csv-import-modal').classList.remove('visible');
+        }
+
+        async function submitCsvImport() {
+            const textArea = document.getElementById('csv-import-textarea');
+            const errorEl = document.getElementById('csv-import-error');
+            if (errorEl) errorEl.textContent = '';
+            const raw = textArea ? textArea.value : '';
+            const { valid, invalid } = parseTechniqueIdInput(raw);
+            if (valid.length === 0) {
+                if (errorEl) errorEl.textContent = 'No valid technique IDs found.';
+                return;
+            }
+            try {
+                const { missing } = await applyTechniqueList(valid);
+                let msg = `Loaded ${valid.length} techniques (library replaced)`;
+                if (invalid.length > 0) msg += `, ${invalid.length} invalid skipped`;
+                if (missing > 0) msg += `, ${missing} missing in base library`;
+                showToast(msg);
+                filterEntities('attack');
+                closeCsvImportModal();
+            } catch (err) {
+                if (errorEl) errorEl.textContent = `Import failed: ${err.message}`;
+            }
+        }
+
+        async function resetAttackTechniques() {
+            try {
+                const shared = await loadSharedLibraryData(true);
+                state._baseTechniques = { ...shared.attack };
+                state.library.techniques = { ...shared.attack };
+                showToast('ATT&CK techniques reset');
+                filterEntities('attack');
+            } catch (err) {
+                showToast('Reset failed: ' + err.message);
+            }
+        }
+
         function importNavigator(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -4459,7 +6134,7 @@
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {
-                    const layer = stripAngleBracketsFromJson(JSON.parse(e.target.result));
+                    const layer = stripAngleBracketsFromJson(parseJsonSafe(e.target.result));
                     
                     // KCE-SEC-003: Validate it's an object (basic schema check)
                     if (typeof layer !== 'object' || layer === null || Array.isArray(layer)) {
@@ -4587,6 +6262,7 @@
             document.documentElement.dataset.theme = resolvedMode;
             currentTheme = { mode: resolvedMode, scheme: resolvedScheme };
             updateThemeControls();
+            broadcastThemeToEmbeddedViews();
             if (persist) {
                 try {
                     localStorage.setItem(THEME_STORAGE_KEYS.mode, resolvedMode);
@@ -4599,7 +6275,9 @@
         function updateThemeControls() {
             const modeBtn = document.getElementById('theme-mode-toggle');
             if (modeBtn) {
-                modeBtn.textContent = currentTheme.mode === 'dark' ? 'Dark' : 'Light';
+                modeBtn.setAttribute('data-mode', currentTheme.mode);
+                modeBtn.setAttribute('aria-label', currentTheme.mode === 'dark' ? 'Switch to light theme' : 'Switch to dark theme');
+                modeBtn.setAttribute('title', currentTheme.mode === 'dark' ? 'Switch to light theme' : 'Switch to dark theme');
             }
         }
 
@@ -4635,30 +6313,87 @@
             }
         }
 
+        function isStixBuilderEnabled() {
+            return typeof CONFIG === 'undefined' || CONFIG.navigation?.showStixBuilder !== false;
+        }
+
         function setView(view) {
+            if (view === 'stix-builder' && !isStixBuilderEnabled()) {
+                view = 'killchain';
+            }
             state.view = view;
             const isExplorer = view === 'explorer';
             const isRelationship = view === 'relationship';
+            const isStixBuilder = view === 'stix-builder';
             document.getElementById('view-killchain').classList.toggle('active', view === 'killchain' || isRelationship);
             document.getElementById('view-relationship').classList.toggle('active', isRelationship);
             document.getElementById('view-explorer').classList.toggle('active', isExplorer);
+            document.getElementById('view-builder').classList.toggle('active', isStixBuilder);
             document.getElementById('view-editor-group').classList.toggle('active', view === 'killchain' || isRelationship);
             document.getElementById('view-explorer-group').classList.toggle('active', isExplorer);
-            document.getElementById('kill-chain-container').classList.toggle('hidden', isExplorer || isRelationship);
+            document.getElementById('view-builder-group').classList.toggle('active', isStixBuilder);
+            document.getElementById('kill-chain-container').classList.toggle('hidden', isExplorer || isRelationship || isStixBuilder);
             document.getElementById('relationship-container').classList.toggle('visible', isRelationship);
-            document.getElementById('content-title').textContent = isRelationship ? 'Kill Chain Relationships' : 'Unified Kill Chain';
-            document.getElementById('btn-hide-empty').style.display = !isExplorer && !isRelationship ? 'inline-block' : 'none';
-            document.getElementById('btn-compact').style.display = !isExplorer && !isRelationship ? 'inline-block' : 'none';
-            document.getElementById('btn-comments').style.display = (!isExplorer && !isRelationship && !state.compactMode) ? 'inline-block' : 'none';
-            document.getElementById('stats-bar').style.display = isExplorer ? 'none' : 'flex';
-            document.getElementById('legend-row').style.display = isExplorer ? 'none' : 'flex';
-            document.querySelector('.app').classList.toggle('explorer-view', isExplorer);
+            document.getElementById('content-title').textContent = isRelationship
+                ? 'Kill Chain Relationships'
+                : (isStixBuilder ? 'STIX Composer' : 'Unified Kill Chain');
+            const showViewControls = (!isExplorer && !isRelationship && !isStixBuilder);
+            const viewControlVisibility = showViewControls ? 'visible' : 'hidden';
+            const viewControlPointer = showViewControls ? '' : 'none';
+            const hideEmptyBtn = document.getElementById('btn-hide-empty');
+            const compactBtn = document.getElementById('btn-compact');
+            const commentsBtn = document.getElementById('btn-comments');
+            if (hideEmptyBtn) {
+                hideEmptyBtn.style.visibility = viewControlVisibility;
+                hideEmptyBtn.style.pointerEvents = viewControlPointer;
+            }
+            if (compactBtn) {
+                compactBtn.style.visibility = viewControlVisibility;
+                compactBtn.style.pointerEvents = viewControlPointer;
+            }
+            if (commentsBtn) {
+                const showComments = showViewControls && !state.compactMode;
+                commentsBtn.style.visibility = showComments ? 'visible' : 'hidden';
+                commentsBtn.style.pointerEvents = showComments ? '' : 'none';
+            }
+            document.getElementById('stats-bar').style.display = (isExplorer || isStixBuilder) ? 'none' : 'flex';
+            document.getElementById('legend-row').style.display = (isExplorer || isStixBuilder) ? 'none' : 'flex';
+            const app = document.querySelector('.app');
+            if (app) {
+                app.classList.toggle('explorer-view', isExplorer);
+                app.classList.toggle('stix-builder-view', isStixBuilder);
+            }
             if (isRelationship) {
                 renderRelationshipView();
             }
             updateHideEmptyControl();
             updateCompactControls();
             applyCompactLayout();
+        }
+
+        function applyNavigationConfig() {
+            const showStixBuilder = isStixBuilderEnabled();
+            const builderGroup = document.getElementById('view-builder-group');
+            const builderContainer = document.getElementById('stix-builder-container');
+            const builderFrame = document.querySelector('.stix-builder-frame');
+
+            if (builderGroup) {
+                builderGroup.style.display = showStixBuilder ? '' : 'none';
+            }
+            if (builderContainer) {
+                builderContainer.style.display = showStixBuilder ? '' : 'none';
+            }
+            if (builderFrame) {
+                if (showStixBuilder && !builderFrame.getAttribute('src')) {
+                    builderFrame.setAttribute('src', 'stix-builder.html');
+                }
+                if (!showStixBuilder) {
+                    builderFrame.setAttribute('src', '');
+                }
+            }
+            if (!showStixBuilder && state.view === 'stix-builder') {
+                setView('killchain');
+            }
         }
 
         function toggleSidebar() {
@@ -4838,31 +6573,267 @@
             filterEntities(type);
         }
 
+        function setGlobalSearch(value) {
+            state.globalSearch = value || '';
+            filterEntities('attack');
+            filterEntities('capec');
+            filterEntities('cwe');
+            renderGlobalSearchResults();
+            if (state.globalSearch.trim()) {
+                openGlobalSearch();
+            }
+        }
+
+        function openGlobalSearch() {
+            state.globalSearchOpen = true;
+            updateGlobalSearchUI();
+            renderGlobalSearchResults();
+        }
+
+        function closeGlobalSearch(force = false) {
+            if (state.globalSearchSticky && !force) {
+                return;
+            }
+            state.globalSearchOpen = false;
+            state.globalSearchExpanded = false;
+            updateGlobalSearchUI();
+        }
+
+        function toggleGlobalSearchExpanded(event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            if (state.globalSearchExpanded) {
+                state.globalSearchExpanded = false;
+            } else {
+                state.globalSearchExpanded = true;
+            }
+            state.globalSearchOpen = true;
+            updateGlobalSearchUI();
+            renderGlobalSearchResults();
+        }
+
+        function setGlobalSearchSticky(enabled) {
+            state.globalSearchSticky = !!enabled;
+            updateGlobalSearchUI();
+        }
+
+        function updateGlobalSearchUI() {
+            const bar = document.getElementById('global-search-bar');
+            const expandBtn = document.getElementById('global-search-expand');
+            const stickyInput = document.getElementById('global-search-sticky');
+            if (!bar) return;
+            bar.classList.toggle('open', state.globalSearchOpen);
+            bar.classList.toggle('expanded', state.globalSearchOpen && state.globalSearchExpanded);
+            if (expandBtn) {
+                expandBtn.textContent = state.globalSearchExpanded ? 'Collapse' : 'Expand';
+                expandBtn.setAttribute('aria-expanded', state.globalSearchExpanded ? 'true' : 'false');
+            }
+            if (stickyInput) {
+                stickyInput.checked = state.globalSearchSticky;
+            }
+        }
+
+        function initGlobalSearch() {
+            document.addEventListener('click', (e) => {
+                const bar = document.getElementById('global-search-bar');
+                if (!bar) return;
+                if (bar.contains(e.target)) return;
+                closeGlobalSearch();
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key !== 'Escape') return;
+                if (state.globalSearchOpen && !state.globalSearchSticky) {
+                    if (state.globalSearchExpanded) {
+                        state.globalSearchExpanded = false;
+                        updateGlobalSearchUI();
+                        renderGlobalSearchResults();
+                    } else {
+                        closeGlobalSearch(true);
+                    }
+                }
+            });
+        }
+
+        function rankGlobalEntity(entity, type, term, tokens) {
+            if (!term) return 0;
+            const id = (entity?.id || '').toString().toLowerCase();
+            const name = (entity?.name || '').toString().toLowerCase();
+            const desc = (entity?.description || '').toString().toLowerCase();
+            const summary = (entity?.summary || '').toString().toLowerCase();
+            let score = 0;
+
+            if (id === term) score += 100;
+            if (name === term) score += 95;
+            if (id.startsWith(term)) score += 80;
+            if (name.startsWith(term)) score += 70;
+            if (id.includes(term)) score += 60;
+            if (name.includes(term)) score += 55;
+            if (desc.includes(term) || summary.includes(term)) score += 30;
+
+            tokens.forEach(token => {
+                if (!token) return;
+                if (id.includes(token)) score += 12;
+                if (name.includes(token)) score += 10;
+                if (desc.includes(token) || summary.includes(token)) score += 4;
+            });
+
+            if (type === 'attack' && Array.isArray(entity?.tactics)) {
+                const tacticText = entity.tactics.join(' ').toLowerCase();
+                if (tacticText.includes(term)) score += 8;
+                tokens.forEach(token => {
+                    if (tacticText.includes(token)) score += 2;
+                });
+            }
+
+            return score;
+        }
+
+        function buildGlobalSearchResults(term) {
+            const results = [];
+            const tokens = term.split(/\s+/).filter(Boolean);
+
+            for (const entity of Object.values(state.library.techniques)) {
+                const score = rankGlobalEntity(entity, 'attack', term, tokens);
+                if (score > 0) results.push({ type: 'attack', id: entity.id, name: entity.name || '', score });
+            }
+
+            for (const entity of Object.values(state.library.capecs)) {
+                const score = rankGlobalEntity(entity, 'capec', term, tokens);
+                if (score > 0) results.push({ type: 'capec', id: entity.id, name: entity.name || '', score });
+            }
+
+            for (const entity of Object.values(state.library.cwes)) {
+                const score = rankGlobalEntity(entity, 'cwe', term, tokens);
+                if (score > 0) results.push({ type: 'cwe', id: entity.id, name: entity.name || '', score });
+            }
+
+            return results.sort((a, b) => b.score - a.score);
+        }
+
+        function renderGlobalSearchResults() {
+            const resultsEl = document.getElementById('global-search-results');
+            if (!resultsEl) return;
+            const term = (state.globalSearch || '').trim().toLowerCase();
+            if (!term) {
+                resultsEl.innerHTML = '<div class="global-search-empty">Type to search across ATT&CK, CAPEC, and CWE.</div>';
+                return;
+            }
+
+            const results = buildGlobalSearchResults(term);
+            const maxResults = state.globalSearchExpanded ? 50 : 10;
+            const visible = results.slice(0, maxResults);
+            if (visible.length === 0) {
+                resultsEl.innerHTML = '<div class="global-search-empty">No matches found.</div>';
+                return;
+            }
+
+            resultsEl.innerHTML = visible.map(result => {
+                const typeLabel = TYPE_LABELS[result.type] || result.type;
+                const safeId = esc(result.id);
+                const safeName = esc(result.name || '');
+                return `
+                    <button class="global-search-item entity-item ${escAttr(result.type)}" draggable="true"
+                        ondragstart="handleDragStart(event, '${escAttr(result.type)}', '${escAttr(result.id)}')"
+                        ondragend="handleDragEnd(event)"
+                        onclick="openGlobalSearchResult('${escAttr(result.type)}', '${escAttr(result.id)}')">
+                        <div class="global-search-meta">
+                            <span class="global-search-type ${escAttr(result.type)}">${esc(typeLabel)}</span>
+                            <span>${safeId}</span>
+                        </div>
+                        <div>${safeName}</div>
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function openGlobalSearchResult(type, id) {
+            if (!type || !id) return;
+            switchTab(type);
+            selectEntity(type, id);
+            if (!state.globalSearchSticky) {
+                closeGlobalSearch();
+            }
+        }
+
+        function matchesGlobalSearch(entity, type, term) {
+            if (!term) return true;
+            const fields = [];
+            if (entity?.id) fields.push(entity.id);
+            if (entity?.name) fields.push(entity.name);
+            if (entity?.description) fields.push(entity.description);
+            if (entity?.summary) fields.push(entity.summary);
+            if (type === 'attack' && Array.isArray(entity?.tactics)) fields.push(entity.tactics.join(' '));
+            return fields.some(field => field.toLowerCase().includes(term));
+        }
+
+        function parseCommaIdList(raw, pattern, prefix = '') {
+            if (!raw || !raw.includes(',')) return null;
+            const normalized = normalizeUserInput(raw, 1000, true);
+            const ids = normalized
+                .split(',')
+                .map(part => part.trim())
+                .filter(Boolean)
+                .map(part => {
+                    const upper = part.toUpperCase();
+                    if (prefix && /^\d+$/.test(upper)) {
+                        return `${prefix}-${upper}`;
+                    }
+                    return upper;
+                });
+            if (ids.length === 0) return null;
+            const valid = ids.filter(id => pattern.test(id));
+            if (valid.length === 0) return null;
+            return new Set(valid);
+        }
+
         // ============================================================
         // ENTITY LIST RENDERING
         // ============================================================
         function filterEntities(type) {
-            const searchTerm = document.getElementById(`search-${type}`).value.toLowerCase();
+            const searchInput = document.getElementById(`search-${type}`);
+            const rawSearch = searchInput ? searchInput.value : '';
+            const searchTerm = rawSearch.toLowerCase();
+            const globalTerm = (state.globalSearch || '').trim().toLowerCase();
             const filter = state.filters[type];
             const listEl = document.getElementById(`list-${type}`);
             
             let entities = [];
             
             if (type === 'attack') {
+                const idSet = parseCommaIdList(rawSearch, IMPORT_LIMITS.techniqueIdPattern);
                 entities = Object.values(state.library.techniques).filter(t => {
-                    if (searchTerm && !t.id.toLowerCase().includes(searchTerm) && !t.name.toLowerCase().includes(searchTerm)) return false;
+                    if (!matchesGlobalSearch(t, type, globalTerm)) return false;
+                    if (idSet) {
+                        if (!idSet.has(String(t.id || '').toUpperCase())) return false;
+                    } else if (searchTerm && !t.id.toLowerCase().includes(searchTerm) && !t.name.toLowerCase().includes(searchTerm)) {
+                        return false;
+                    }
                     if (filter !== 'all' && t.domain !== filter) return false;
                     return true;
                 });
             } else if (type === 'capec') {
+                const idSet = parseCommaIdList(rawSearch, /^CAPEC-\d+$/i, 'CAPEC');
                 entities = Object.values(state.library.capecs).filter(c => {
-                    if (searchTerm && !c.id.toLowerCase().includes(searchTerm) && !c.name.toLowerCase().includes(searchTerm)) return false;
+                    if (!matchesGlobalSearch(c, type, globalTerm)) return false;
+                    if (idSet) {
+                        if (!idSet.has(String(c.id || '').toUpperCase())) return false;
+                    } else if (searchTerm && !c.id.toLowerCase().includes(searchTerm) && !c.name.toLowerCase().includes(searchTerm)) {
+                        return false;
+                    }
                     if (filter !== 'all' && c.abstraction?.toLowerCase() !== filter) return false;
                     return true;
                 });
             } else if (type === 'cwe') {
+                const idSet = parseCommaIdList(rawSearch, /^CWE-\d+$/i, 'CWE');
                 entities = Object.values(state.library.cwes).filter(w => {
-                    if (searchTerm && !w.id.toLowerCase().includes(searchTerm) && !w.name.toLowerCase().includes(searchTerm)) return false;
+                    if (!matchesGlobalSearch(w, type, globalTerm)) return false;
+                    if (idSet) {
+                        if (!idSet.has(String(w.id || '').toUpperCase())) return false;
+                    } else if (searchTerm && !w.id.toLowerCase().includes(searchTerm) && !w.name.toLowerCase().includes(searchTerm)) {
+                        return false;
+                    }
                     if (filter !== 'all' && w.abstraction?.toLowerCase() !== filter) return false;
                     return true;
                 });
@@ -5007,7 +6978,7 @@
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {
-                    const rawData = JSON.parse(e.target.result);
+                    const rawData = parseJsonSafe(e.target.result);
                     const data = stripAngleBracketsFromJson(rawData);
 
                     // Validate top-level bundle structure
@@ -5185,7 +7156,8 @@
                 const coreKeys = new Set(['name', 'description', 'labels']);
                 const specFields = [...(typeDef.required || []), ...(typeDef.optional || [])].filter(f => !coreKeys.has(f.key));
                 for (const field of specFields) {
-                    if (!(field.key in obj)) continue;
+                    if (!field || isDangerousObjectKey(field.key)) continue;
+                    if (!hasOwn(obj, field.key)) continue;
                     const raw = obj[field.key];
                     if (field.type === 'boolean') {
                         entry[field.key] = !!raw;
@@ -6234,11 +8206,21 @@
                              ondrop="handleDrop(event, '${phaseKey}')">
                             <div class="phase-header" onclick="togglePhase(this)">
                                 <div class="phase-title">
-                                    <span class="phase-name">${formatPhaseName(phaseId)}</span>
+                                    <button class="phase-details-btn" onclick="event.stopPropagation(); openPhaseDetails('${phaseKey}')"
+                                            title="View phase details and relations"
+                                        >
+                                        <span class="phase-name">${formatPhaseName(phaseId)}
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M384 64C366.3 64 352 78.3 352 96C352 113.7 366.3 128 384 128L466.7 128L265.3 329.4C252.8 341.9 252.8 362.2 265.3 374.7C277.8 387.2 298.1 387.2 310.6 374.7L512 173.3L512 256C512 273.7 526.3 288 544 288C561.7 288 576 273.7 576 256L576 96C576 78.3 561.7 64 544 64L384 64zM144 160C99.8 160 64 195.8 64 240L64 496C64 540.2 99.8 576 144 576L400 576C444.2 576 480 540.2 480 496L480 416C480 398.3 465.7 384 448 384C430.3 384 416 398.3 416 416L416 496C416 504.8 408.8 512 400 512L144 512C135.2 512 128 504.8 128 496L128 240C128 231.2 135.2 224 144 224L224 224C241.7 224 256 209.7 256 192C256 174.3 241.7 160 224 160L144 160z"/></svg>
+                                        </span>
+                                    </button>
                                     <span class="phase-count ${totalCount === 0 ? 'zero' : ''}">${totalCount}</span>
                                 </div>
                                 <div class="phase-header-actions">
-                                    <button class="phase-group-btn" onclick="event.stopPropagation(); createGroup('${phaseKey}')">+ Group</button>
+                                    <button class="phase-group-btn" onclick="event. stopPropagation(); createGroup('${phaseKey}')"
+                                    title="Create phase group"
+                                    >
+                                        + <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M32 183.4C12.9 172.4 0 151.7 0 128C0 92.7 28.7 64 64 64C87.7 64 108.4 76.9 119.4 96L328.5 96C339.6 76.9 360.2 64 383.9 64C419.2 64 447.9 92.7 447.9 128C447.9 151.7 435 172.4 415.9 183.4L415.9 296.5C435 307.6 447.9 328.2 447.9 351.9C447.9 387.2 419.2 415.9 383.9 415.9C360.2 415.9 339.5 403 328.5 383.9L119.4 383.9C108.3 403 87.7 415.9 64 415.9C28.7 415.9 0 387.2 0 351.9C0 328.2 12.9 307.5 32 296.5L32 183.4zM119.4 160C113.8 169.7 105.7 177.8 96 183.4L96 296.5C105.7 302.1 113.8 310.2 119.4 319.9L328.5 319.9C334.1 310.2 342.2 302.1 351.9 296.5L351.9 183.4C342.2 177.8 334.1 169.7 328.5 160L119.4 160zM544 343.4C534.3 337.8 526.2 329.7 520.6 320L491.4 320C486.1 302.3 476.6 286.5 464 273.6L464 256L520.6 256C531.7 236.9 552.3 224 576 224C611.3 224 640 252.7 640 288C640 311.7 627.1 332.4 608 343.4L608 456.5C627.1 467.6 640 488.2 640 511.9C640 547.2 611.3 575.9 576 575.9C552.3 575.9 531.6 563 520.6 543.9L311.5 543.9C300.4 563 279.8 575.9 256.1 575.9C220.8 575.9 192.1 547.2 192.1 511.9C192.1 488.2 205 467.5 224.1 456.5L224.1 431.9L288.1 431.9L288.1 456.5C297.8 462.1 305.9 470.2 311.5 479.9L520.6 479.9C526.2 470.2 534.3 462.1 544 456.5L544 343.4z"/></svg>
+                                    </button>
                                     <span class="phase-toggle">▼</span>
                                 </div>
                             </div>
@@ -6465,11 +8447,35 @@
         // ============================================================
         // RELATIONSHIP VIEW RENDERING
         // ============================================================
+        function getRelationshipChainId(chain) {
+            const capecId = chain.capec?.id || 'none';
+            const techIds = (chain.techniques || []).map((tech) => tech.id).join(',');
+            const cweIds = (chain.cwes || []).map((cwe) => cwe.id).join(',');
+            return `${chain.phase.key}|${capecId}|${techIds}|${cweIds}`;
+        }
+
         function renderRelationshipView() {
             const container = document.getElementById('relationship-chain');
             
             // Build relationship chains from assigned CAPECs
             const chains = [];
+
+            const collectMitigations = (techIds) => {
+                const mitigationMap = new Map();
+                (techIds || []).forEach((techId) => {
+                    const entity = state.library.techniques[techId];
+                    (entity?.mitigations || []).forEach((mitigation) => {
+                        if (!mitigation?.id) return;
+                        if (!mitigationMap.has(mitigation.id)) {
+                            mitigationMap.set(mitigation.id, {
+                                id: mitigation.id,
+                                name: mitigation.name || mitigation.id
+                            });
+                        }
+                    });
+                });
+                return Array.from(mitigationMap.values());
+            };
             
             for (const [phaseKey, phaseData] of Object.entries(state.assignments)) {
                 // For each assigned CAPEC
@@ -6492,7 +8498,8 @@
                         capec: { id: capecId, name: capec.name },
                         cwes: relatedCwes.slice(0, 5).map(id => ({ id, name: state.library.cwes[id]?.name || 'Unknown' })),
                         techniques: relatedTechs.slice(0, 5).map(id => ({ id, name: state.library.techniques[id]?.name || getTechniqueName(id) })),
-                        phase: { key: phaseKey, name: formatPhaseName(phaseKey.split(':')[1]) }
+                        phase: { key: phaseKey, name: formatPhaseName(phaseKey.split(':')[1]) },
+                        mitigations: collectMitigations(relatedTechs)
                     });
                 }
                 
@@ -6511,7 +8518,8 @@
                             capec: capec ? { id: capecId, name: capec.name } : null,
                             cwes: capec?.cwes?.slice(0, 3).map(id => ({ id, name: state.library.cwes[id]?.name || 'Unknown' })) || [],
                             techniques: [{ id: techId, name: state.library.techniques[techId]?.name || getTechniqueName(techId) }],
-                            phase: { key: phaseKey, name: formatPhaseName(phaseKey.split(':')[1]) }
+                            phase: { key: phaseKey, name: formatPhaseName(phaseKey.split(':')[1]) },
+                            mitigations: collectMitigations([techId])
                         });
                     } else if (relatedCapecs.length === 0) {
                         // Technique with no CAPEC
@@ -6519,7 +8527,8 @@
                             capec: null,
                             cwes: [],
                             techniques: [{ id: techId, name: state.library.techniques[techId]?.name || getTechniqueName(techId) }],
-                            phase: { key: phaseKey, name: formatPhaseName(phaseKey.split(':')[1]) }
+                            phase: { key: phaseKey, name: formatPhaseName(phaseKey.split(':')[1]) },
+                            mitigations: collectMitigations([techId])
                         });
                     }
                 }
@@ -6532,6 +8541,12 @@
             
             let html = '';
             for (const chain of chains) {
+                const chainId = getRelationshipChainId(chain);
+                const isExpanded = state.relationshipExpanded?.has(chainId);
+                const visibleMitigations = isExpanded
+                    ? (chain.mitigations || [])
+                    : (chain.mitigations || []).slice(0, 5);
+                const mitigationOverflow = Math.max((chain.mitigations || []).length - visibleMitigations.length, 0);
                 html += `
                     <div class="relationship-row">
                         <div class="relationship-cell capec">
@@ -6563,16 +8578,386 @@
                         </div>
                         <div class="relationship-cell phase">
                             <div class="relationship-cell-header">Phase</div>
-                            <div class="relationship-item">
+                            <div class="relationship-item" onclick="openPhaseDetails('${escAttr(chain.phase.key)}')">
                                 <span class="id phase">${esc(chain.phase.key.split(':')[0])}</span>
                                 <span class="name">${esc(chain.phase.name)}</span>
                             </div>
+                        </div>
+                        <div class="relationship-cell mitigation">
+                            <div class="relationship-cell-header">Mitigations</div>
+                            ${visibleMitigations.length > 0 ? visibleMitigations.map(mitigation => `
+                                <div class="relationship-item" onclick="openMitigationExplorer('${escAttr(mitigation.id)}')" title="${escAttr(mitigation.name)}">
+                                    <span class="id mitigation">${esc(mitigation.id)}</span>
+                                    <span class="name">${esc(mitigation.name)}</span>
+                                </div>
+                            `).join('') : '<div class="list-info">—</div>'}
+                            ${!isExpanded && mitigationOverflow > 0
+                                ? `<button class="list-info relationship-more" type="button" data-action="expand-mitigations" data-chain-id="${escAttr(chainId)}">+${mitigationOverflow} more</button>`
+                                : ''}
                         </div>
                     </div>
                 `;
             }
             
             container.innerHTML = html;
+        }
+
+        function expandRelationshipMitigations(chainId) {
+            if (!chainId) return;
+            if (!state.relationshipExpanded) state.relationshipExpanded = new Set();
+            state.relationshipExpanded.add(chainId);
+            renderRelationshipView();
+        }
+
+        const SCORE_AVERAGE_VALUES = {
+            low: 2.5,
+            medium: 5,
+            high: 7.5,
+            critical: 10
+        };
+
+        function getAverageScoreLabel(avg) {
+            if (avg === null) return 'N/A';
+            if (avg < 3) return 'Low';
+            if (avg < 6) return 'Medium';
+            if (avg < 9) return 'High';
+            return 'Critical';
+        }
+
+        function buildPhaseDetails(phaseKey) {
+            const phaseData = state.assignments[phaseKey];
+            if (!phaseData) return null;
+
+            const groupLabelByInstanceId = new Map();
+            (phaseData.groups || []).forEach((group) => {
+                (group.items || []).forEach((item) => {
+                    const instanceId = getAssignmentInstanceId(item);
+                    if (instanceId) groupLabelByInstanceId.set(instanceId, group.label || 'Group');
+                });
+            });
+
+            const collectItems = (type) => getAllPhaseItemsByType(phaseData, type).map((assignment) => {
+                const id = getAssignmentId(assignment);
+                const metadata = getAssignmentMetadata(assignment);
+                const instanceId = getAssignmentInstanceId(assignment);
+                return {
+                    type,
+                    id,
+                    name: getEntityName(type, id),
+                    metadata,
+                    instanceId,
+                    groupLabel: instanceId ? groupLabelByInstanceId.get(instanceId) || '' : ''
+                };
+            });
+
+            const itemsByType = {
+                attack: collectItems('attack'),
+                capec: collectItems('capec'),
+                cwe: collectItems('cwe'),
+                custom: collectItems('custom')
+            };
+
+            return itemsByType;
+        }
+
+        function getPhaseItemRelationships(type, id) {
+            if (type === 'attack') {
+                const capecs = state.techniqueToCapec[id] || [];
+                const cweSet = new Set();
+                capecs.forEach((capecId) => {
+                    (state.library.capecs[capecId]?.cwes || []).forEach((cweId) => cweSet.add(cweId));
+                });
+                const mitigations = (state.library.techniques[id]?.mitigations || []).map((m) => m.id).filter(Boolean);
+                return { capecs, cwes: [...cweSet], techniques: [], mitigations };
+            }
+
+            if (type === 'capec') {
+                const capec = state.library.capecs[id];
+                return {
+                    capecs: [],
+                    cwes: capec?.cwes || [],
+                    techniques: capec?.techniques || [],
+                    mitigations: []
+                };
+            }
+
+            if (type === 'cwe') {
+                const capecs = state.cweToCapec[id] || [];
+                const techniqueSet = new Set();
+                capecs.forEach((capecId) => {
+                    (state.capecToTechnique[capecId] || []).forEach((techId) => techniqueSet.add(techId));
+                });
+                return { capecs, cwes: [], techniques: [...techniqueSet], mitigations: [] };
+            }
+
+            return { capecs: [], cwes: [], techniques: [], mitigations: [] };
+        }
+
+        function getPhaseAverages(itemsByType) {
+            let scoreTotal = 0;
+            let scoreCount = 0;
+            let confidenceTotal = 0;
+            let confidenceCount = 0;
+
+            Object.values(itemsByType).flat().forEach((item) => {
+                const scoreValue = SCORE_AVERAGE_VALUES[item.metadata.score || ''] || null;
+                if (scoreValue !== null) {
+                    scoreTotal += scoreValue;
+                    scoreCount += 1;
+                }
+                const confidence = item.metadata.confidence;
+                if (confidence !== null && confidence !== undefined && confidence > 0) {
+                    confidenceTotal += confidence;
+                    confidenceCount += 1;
+                }
+            });
+
+            const avgScore = scoreCount ? (scoreTotal / scoreCount) : null;
+            const avgConfidence = confidenceCount ? (confidenceTotal / confidenceCount) : null;
+
+            return {
+                avgScore,
+                avgScoreLabel: getAverageScoreLabel(avgScore),
+                avgConfidence,
+                avgConfidenceLabel: avgConfidence === null ? 'N/A' : getConfidenceLabel(avgConfidence)
+            };
+        }
+
+        function buildPhaseCveEntries(itemsByType) {
+            const entries = [];
+            Object.values(itemsByType).flat().forEach((item) => {
+                const cveEntries = getCveEntries(item.metadata);
+                cveEntries.forEach((entry) => {
+                    entries.push({
+                        id: entry.id,
+                        score: entry.score,
+                        vector: entry.vector,
+                        parentId: item.id,
+                        parentType: item.type
+                    });
+                });
+            });
+            return entries;
+        }
+
+        function buildPhaseMitigations(itemsByType) {
+            const techniqueSet = new Set();
+
+            itemsByType.attack.forEach((item) => techniqueSet.add(item.id));
+            itemsByType.capec.forEach((item) => {
+                (state.capecToTechnique[item.id] || state.library.capecs[item.id]?.techniques || []).forEach((techId) => {
+                    techniqueSet.add(techId);
+                });
+            });
+            itemsByType.cwe.forEach((item) => {
+                const capecs = state.cweToCapec[item.id] || [];
+                capecs.forEach((capecId) => {
+                    (state.capecToTechnique[capecId] || []).forEach((techId) => {
+                        techniqueSet.add(techId);
+                    });
+                });
+            });
+
+            const mitigationMap = new Map();
+            techniqueSet.forEach((techId) => {
+                const tech = state.library.techniques[techId];
+                (tech?.mitigations || []).forEach((mitigation) => {
+                    if (!mitigation?.id) return;
+                    if (!mitigationMap.has(mitigation.id)) {
+                        mitigationMap.set(mitigation.id, {
+                            id: mitigation.id,
+                            name: mitigation.name || mitigation.id,
+                            description: mitigation.description || ''
+                        });
+                    }
+                });
+            });
+
+            return Array.from(mitigationMap.values());
+        }
+
+        function renderPhaseMitigationSection(itemsByType) {
+            const mitigations = buildPhaseMitigations(itemsByType);
+            if (!mitigations.length) {
+                return `
+                    <div class="phase-details-section">
+                        <div class="phase-details-section-title">Mitigations (0)</div>
+                        <div class="list-info">No mitigations</div>
+                    </div>
+                `;
+            }
+
+            const rows = mitigations.map((mitigation) => {
+                const safeId = InputSecurity.encodeHtmlEntities(mitigation.id);
+                const safeName = esc(mitigation.name || mitigation.id);
+                const description = mitigation.description ? `
+                    <details class="phase-details-mitigation-desc">
+                        <summary>Show description</summary>
+                        <p>${esc(mitigation.description)}</p>
+                    </details>
+                ` : '';
+
+                return `
+                    <div class="phase-details-item">
+                        <div class="phase-details-item-header">
+                            <span class="mitigation-badge" onclick="openMitigationExplorer('${safeId}')">${esc(mitigation.id)}</span>
+                            <span>${safeName}</span>
+                        </div>
+                        ${description}
+                    </div>
+                `;
+            }).join('');
+
+            return `
+                <div class="phase-details-section">
+                    <div class="phase-details-section-title">Mitigations (${mitigations.length})</div>
+                    <div class="phase-details-list">${rows}</div>
+                </div>
+            `;
+        }
+
+        function renderPhaseCveSection(itemsByType) {
+            const entries = buildPhaseCveEntries(itemsByType);
+            if (!entries.length) {
+                return '';
+            }
+
+            const rows = entries.map((entry) => {
+                const scoreText = entry.score !== null && entry.score !== undefined ? String(entry.score) : 'N/A';
+                const vectorText = entry.vector ? entry.vector : 'N/A';
+                const parentLabel = `${entry.parentType.toUpperCase()} ${entry.parentId}`;
+                return `
+                    <div class="phase-details-item">
+                        <div class="phase-details-item-header">
+                            <span class="phase-details-item-id">${esc(entry.id)}</span>
+                            <span>${esc(parentLabel)}</span>
+                        </div>
+                        <div class="phase-details-meta">
+                            <span>Score: ${esc(scoreText)}</span>
+                            <span>Vector: ${esc(vectorText)}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            return `
+                <div class="phase-details-section">
+                    <div class="phase-details-section-title">CVEs (${entries.length})</div>
+                    <div class="phase-details-list">${rows}</div>
+                </div>
+            `;
+        }
+
+        function renderPhaseDetailsSection(title, items, phaseKey) {
+            if (!items.length) {
+                return '';
+            }
+
+            const rows = items.map((item) => {
+                const relationships = getPhaseItemRelationships(item.type, item.id);
+                const cveEntries = getCveEntries(item.metadata);
+                const cveText = cveEntries.length ? cveEntries.map(entry => entry.id).join(', ') : 'None';
+                const observables = item.metadata.observables || [];
+                const observableCounts = {};
+                observables.forEach((obs) => {
+                    if (!obs?.type) return;
+                    observableCounts[obs.type] = (observableCounts[obs.type] || 0) + 1;
+                });
+                const observableText = Object.keys(observableCounts).length
+                    ? Object.entries(observableCounts).map(([type, count]) => `${type} x${count}`).join(', ')
+                    : 'None';
+
+                const scoreLabel = item.metadata.score && item.metadata.score !== 'unclassified'
+                    ? item.metadata.score
+                    : 'N/A';
+                const confidenceLabel = item.metadata.confidence && item.metadata.confidence > 0
+                    ? `${item.metadata.confidence}%`
+                    : 'N/A';
+
+                const relationChips = [];
+                const addRelation = (label, values) => {
+                    if (!values || !values.length) return;
+                    relationChips.push(`<span class="phase-details-chip">${esc(label)}: ${esc(values.join(', '))}</span>`);
+                };
+                addRelation('CAPEC', relationships.capecs);
+                addRelation('CWE', relationships.cwes);
+                addRelation('ATT&CK', relationships.techniques);
+                addRelation('Mitigation', relationships.mitigations);
+
+                const groupBadge = item.groupLabel
+                    ? `<span class="phase-details-chip">Group: ${esc(item.groupLabel)}</span>`
+                    : '';
+
+                const encodeInlineJsArg = (value) => InputSecurity.encodeHtmlEntities(JSON.stringify(String(value ?? '')));
+                const openAction = `openEntityModal(${encodeInlineJsArg(item.type)}, ${encodeInlineJsArg(item.id)}, ${encodeInlineJsArg(phaseKey)}, ${encodeInlineJsArg(item.instanceId || '')})`;
+
+                return `
+                    <div class="phase-details-item clickable" onclick="${openAction}">
+                        <div class="phase-details-item-header">
+                            <span class="phase-details-item-id">${esc(item.id)}</span>
+                            <span>${esc(item.name || item.id)}</span>
+                            ${groupBadge}
+                        </div>
+                        <div class="phase-details-meta">
+                            <span>Score: ${esc(scoreLabel)}</span>
+                            <span>Confidence: ${esc(confidenceLabel)}</span>
+                            <span>CVEs: ${esc(cveText)}</span>
+                            <span>Observables: ${esc(observableText)}</span>
+                        </div>
+                        ${relationChips.length ? `<div class="phase-details-relations">${relationChips.join('')}</div>` : ''}
+                    </div>
+                `;
+            }).join('');
+
+            return `
+                <div class="phase-details-section">
+                    <div class="phase-details-section-title">${esc(title)} (${items.length})</div>
+                    <div class="phase-details-list">${rows}</div>
+                </div>
+            `;
+        }
+
+        function openPhaseDetails(phaseKey) {
+            if (!phaseKey) return;
+            const itemsByType = buildPhaseDetails(phaseKey);
+            if (!itemsByType) return;
+            const averages = getPhaseAverages(itemsByType);
+
+            const phaseName = formatPhaseName(phaseKey.split(':')[1]);
+            document.getElementById('phase-details-title').textContent = `${phaseKey} — ${phaseName}`;
+
+            const summary = `
+                <div class="phase-details-summary">
+                    <div class="phase-details-stat">
+                        <div class="phase-details-stat-label">Average Score</div>
+                        <div class="phase-details-stat-value">${averages.avgScore === null ? 'N/A' : `${averages.avgScoreLabel} (${averages.avgScore.toFixed(2)})`}</div>
+                    </div>
+                    <div class="phase-details-stat">
+                        <div class="phase-details-stat-label">Average Confidence</div>
+                        <div class="phase-details-stat-value">${averages.avgConfidence === null ? 'N/A' : `${averages.avgConfidenceLabel} (${averages.avgConfidence.toFixed(0)}%)`}</div>
+                    </div>
+                </div>
+            `;
+
+            const sections = [
+                summary,
+                renderPhaseDetailsSection('ATT&CK', itemsByType.attack, phaseKey),
+                renderPhaseDetailsSection('CAPEC', itemsByType.capec, phaseKey),
+                renderPhaseDetailsSection('CWE', itemsByType.cwe, phaseKey),
+                renderPhaseDetailsSection('STIX', itemsByType.custom, phaseKey),
+                renderPhaseCveSection(itemsByType),
+                renderPhaseMitigationSection(itemsByType)
+            ].filter(Boolean);
+
+            const content = sections.join('');
+
+            document.getElementById('phase-details-content').innerHTML = content;
+            document.getElementById('phase-details-modal').classList.add('visible');
+        }
+
+        function closePhaseDetails(event) {
+            if (event && event.target !== event.currentTarget) return;
+            document.getElementById('phase-details-modal').classList.remove('visible');
         }
 
         function renderStats() {
@@ -6997,7 +9382,7 @@
             }
 
             // Validate schema version if present
-            if (data.schemaVersion && !/^\d+\.\d+(\.\d+)?$/.test(data.schemaVersion)) {
+            if (hasOwn(data, 'schemaVersion') && data.schemaVersion && !/^\d+\.\d+(\.\d+)?$/.test(data.schemaVersion)) {
                 return { valid: false, error: 'Invalid schema version format' };
             }
 
@@ -7027,7 +9412,7 @@
             }
 
             // Validate optional title
-            if (data.title !== undefined && data.title !== null) {
+            if (hasOwn(data, 'title') && data.title !== undefined && data.title !== null) {
                 if (typeof data.title !== 'string') {
                     return { valid: false, error: 'title must be a string' };
                 }
@@ -7045,8 +9430,6 @@
             // Normalize, remove dangerous chars, limit length
             return String(str)
                 .replace(/[\x00-\x1F\x7F]/g, '')  // Control chars
-                .replace(/<script[^>]*>.*?<\/script>/gi, '')  // Script tags
-                .replace(/on\w+\s*=/gi, '')  // Event handlers (onmouseover=, onerror=, etc.)
                 .replace(/[\[\]\{\};"'`]/g, '')  // Blocked chars including double quotes
                 .replace(/--+/g, '')  // SQL comments
                 .replace(/</g, '&lt;').replace(/>/g, '&gt;')  // Encode angle brackets
@@ -7211,11 +9594,15 @@
 
         function sanitizeImportedData(data) {
             const sanitized = {
-                assignments: {}
+                assignments: createSafeObject()
             };
 
             // Sanitize assignments
-            for (const [phaseKey, phaseData] of Object.entries(data.assignments || {})) {
+            const assignmentSource = (data && typeof data === 'object' && data.assignments && typeof data.assignments === 'object')
+                ? data.assignments
+                : createSafeObject();
+            for (const [phaseKey, phaseData] of Object.entries(assignmentSource)) {
+                if (isDangerousObjectKey(phaseKey)) continue;
                 sanitized.assignments[phaseKey] = {
                     techniques: [],
                     capecs: [],
@@ -7303,11 +9690,12 @@
 
             // Sanitize custom library
             if (data.customLibrary && typeof data.customLibrary === 'object') {
-                sanitized.customLibrary = {};
+                sanitized.customLibrary = createSafeObject();
                 const maxItems = 500;
                 let count = 0;
                 for (const [id, item] of Object.entries(data.customLibrary)) {
                     if (count >= maxItems) break;
+                    if (isDangerousObjectKey(id)) continue;
                     if (!STIX_ID_PATTERN.test(id)) continue;
                     if (!item || typeof item !== 'object') continue;
                     const stixType = id.split('--')[0];
@@ -7337,7 +9725,8 @@
                         const coreKeys = new Set(['name', 'description', 'labels']);
                         const specFields = [...(typeDef.required || []), ...(typeDef.optional || [])].filter(f => !coreKeys.has(f.key));
                         for (const field of specFields) {
-                            if (!(field.key in item)) continue;
+                            if (!field || isDangerousObjectKey(field.key)) continue;
+                            if (!hasOwn(item, field.key)) continue;
                             const raw = item[field.key];
                             if (field.type === 'boolean') {
                                 entry[field.key] = !!raw;
@@ -7382,7 +9771,7 @@
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {
-                    const rawData = JSON.parse(e.target.result);
+                    const rawData = parseJsonSafe(e.target.result);
                     const data = stripAngleBracketsFromJson(rawData);
 
                     // Validate structure before processing
@@ -7688,6 +10077,16 @@
                 closeDropdowns();
             }
         });
+
+        const relationshipContainer = document.getElementById('relationship-container');
+        if (relationshipContainer) {
+            relationshipContainer.addEventListener('click', (event) => {
+                const target = event.target.closest('[data-action="expand-mitigations"]');
+                if (!target) return;
+                event.preventDefault();
+                expandRelationshipMitigations(target.getAttribute('data-chain-id'));
+            });
+        }
 
         // ============================================================
         // METADATA EDITOR
@@ -8020,6 +10419,10 @@
             modal.classList.add('visible');
             
             try {
+                if (typeof window !== 'undefined' && window.location && window.location.protocol === 'file:') {
+                    content.textContent = 'Changelog preview is unavailable in file:// mode. Open via localhost to load CHANGELOG.md dynamically.';
+                    return;
+                }
                 const res = await fetch('CHANGELOG.md');
                 const text = await res.text();
                 content.textContent = text;
@@ -8075,6 +10478,8 @@
         // INITIALIZATION
         // ============================================================
         initThemeControls();
+        logLocalIframeIPCSplash('index');
+        updateLoadingContextInfo();
         window.addEventListener('storage', (e) => {
             if (e.key === THEME_STORAGE_KEYS.mode) {
                 syncThemeFromStorage();
@@ -8087,6 +10492,8 @@
         } else {
             enableLeaveSiteConfirmation();
         }
+        initEmbeddedMessageBridge();
+        applyNavigationConfig();
         initAssignments();
         initCompactMode();
         window.addEventListener('resize', () => {
@@ -8095,6 +10502,7 @@
             }
         });
         applyInputGuards();
+        initGlobalSearch();
         populateStixTypeDropdown();
         loadVersion();
         loadData();
