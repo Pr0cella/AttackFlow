@@ -84,12 +84,13 @@ See the usecases [README](docs/Usecases/README.md) for details.
 - **Grouping demo**: Import [examples/grouping-demo.json](examples/grouping-demo.json) for a ransomware-focused TTP mapping that showcases grouping.
 - **STIX demo**: Import [examples/stix-demo.json](examples/stix-demo.json) for a full STIX 2.1 showcase with all 19 SDO types across UKC phases.
 - **STIX bundle**: Import [examples/Operation-Midnight-Eclipse-stix-bundle.json](examples/Operation-Midnight-Eclipse-stix-bundle.json) via the STIX tab's "Import STIX Bundle" button to test STIX bundle parsing (25 SDOs across 19 types + 18 phase-relationship SROs).
-
 ## Project Structure
 
 ```
 ├── index.html                      # Main application
 ├── explorer.html                   # Relationship Explorer view
+├── stix-builder.html               # STIX Composer (STIX 2.1 Bundle Creator & Visualizer)
+├── stix-builder.config.js          # STIX Composer configuration & STIX 2.1 spec reference
 ├── config.js                       # Centralized configuration 
 │                                   # (paths, colors, imports, settings)
 ├── stix-config.js                  # STIX 2.1 SDO type definitions and vocabularies
@@ -171,6 +172,40 @@ Please do not hesitate to create an issue / pull request or contact me directly 
 - **XXE Protection** — Secure XML parsing with entity expansion disabled
 - **CSV Safety** — Formula injection protection on exports
 
+### Prototype Pollution Hardening (v2.9.0)
+
+Import paths and JSON processing include explicit prototype pollution defenses:
+
+- **Dangerous key blocklist** — `__proto__`, `constructor`, and `prototype` keys are rejected in parse/sanitize paths.
+- **Safe JSON parsing** — untrusted JSON is parsed with a reviver that drops dangerous prototype keys.
+- **Null-prototype accumulators** — sanitized object collectors use `Object.create(null)` for untrusted key maps.
+- **Own-property checks** — import logic uses own-property guards for dynamic field copy to avoid inherited-property abuse.
+
+### Local iframe IPC (v2.9.0)
+
+AttackFlow includes a local-use IPC bridge between `index.html` (parent) and embedded `explorer.html` / `stix-builder.html` iframes. This allows using all features by simply opening the `index.html` file in a browser, letting the IPC bridge handle all data exchange between iframes. 
+
+Note: Designed strictly for local, non-webserver usage (requires `file://` as protocol)
+
+- **Purpose**: Theme synchronization and shared data handoff to reduce redundant iframe loading paths.
+- **Scope**: Designed for local usage mode (requires `file://` protocol) and controlled by `CONFIG.navigation.enableLocalIframeIPC`.
+- **Transport**: `MessageChannel` (preferred) with controlled `window.postMessage` fallback only when channels are unavailable.
+- **Session binding**: Per-iframe session nonce is required for channel messages.
+- **Validation**: IPC message types/keys are allowlisted; unknown keys/types are rejected.
+- **Shared payload safety**: `AF_SHARED_DATA` is schema-checked, cloned, and deep-frozen before use.
+- **Containment**: Embedded iframes are sandboxed (`allow-scripts allow-same-origin allow-modals`).
+- **Throttling**: Parent applies per-frame/per-request-type token-bucket rate limiting.
+
+Configuration in `config.js`:
+
+- `CONFIG.navigation.enableLocalIframeIPC`
+- `CONFIG.debugging.traceLocalIframeIPCLogs`
+- `CONFIG.debugging.localIframeIPCRateLimit.enabled`
+- `CONFIG.debugging.localIframeIPCRateLimit.refillPerSecond`
+- `CONFIG.debugging.localIframeIPCRateLimit.burst`
+
+See `IPC_API-DOCS.md` for concise architecture and threat-model documentation.
+
 ### Security Objectives
 1. **No execution of untrusted content** from local or upstream data (MITRE JSON/XML, user-imported layers).
 2. **Defensive rendering**: all UI output is treated as untrusted until sanitized & encoded.
@@ -201,6 +236,14 @@ python3 scripts/extract-data.py      # Parse CAPEC/CWE
 # Sanitization runs before and after parsing to keep source and generated files clean
 ```
 
+## Installation
+
+### For Installation on servers:
+- Just drop the files on a webserver, (optionally) set CSP headers and navigate to index.html.
+
+### For local use (in a browser):
+1. Set `CONFIG.navigation.enableLocalIframeIPC` to `true` and open the `index.html` file in a web browser.
+2. Upload the `resources/` directory as instructed to populate the framework database and use all application features.
 
 ## Contributing & Reporting Issues
 

@@ -14,6 +14,7 @@
         object-src 'none';
         base-uri 'self';
         form-action 'self';
+        frame-ancestors 'self';
     ">
     <title>AttackFlow - Relationship Explorer</title>
     <style>
@@ -471,6 +472,22 @@
 
     <script src="config.js"></script>
     <script>
+        (function syncThemeHelpersFromParent() {
+            try {
+                const allowParentCoupling = (
+                    typeof window !== 'undefined' &&
+                    window.location &&
+                    window.location.protocol === 'file:' &&
+                    (typeof CONFIG === 'undefined' || CONFIG.navigation?.enableLocalIframeIPC !== false)
+                );
+                if (allowParentCoupling && window.parent && window.parent !== window && window.parent.CONFIG) {
+                    window.CONFIG = window.parent.CONFIG;
+                }
+            } catch (e) {
+                // Keep local config/theme helpers when parent access is unavailable
+            }
+        })();
+
         const THEME_STORAGE_KEYS = {
             mode: 'af-theme-mode'
         };
@@ -562,6 +579,286 @@
                 applyTheme(mode, 'default', false);
             }
         }
+
+        function isLocalIframeIPCEnabled() {
+            if (!isFileProtocolRuntime()) return false;
+            return typeof CONFIG === 'undefined' || CONFIG.navigation?.enableLocalIframeIPC !== false;
+        }
+
+        function isLocalIframeIPCTraceEnabled() {
+            return typeof CONFIG !== 'undefined' && CONFIG.debugging?.traceLocalIframeIPCLogs === true;
+        }
+
+        const IPC_INBOUND_MESSAGE_TYPES = new Set(['AF_THEME_SYNC', 'AF_SHARED_DATA']);
+        const IPC_INBOUND_MESSAGE_KEYS = {
+            AF_THEME_SYNC: new Set(['type', 'mode', 'scheme']),
+            AF_SHARED_DATA: new Set(['type', 'data'])
+        };
+        const IPC_PORT_INBOUND_MESSAGE_TYPES = new Set(['AF_THEME_SYNC', 'AF_SHARED_DATA']);
+        const IPC_PORT_INBOUND_MESSAGE_KEYS = {
+            AF_THEME_SYNC: new Set(['type', 'mode', 'scheme', 'nonce']),
+            AF_SHARED_DATA: new Set(['type', 'data', 'nonce'])
+        };
+        const IPC_PORT_OUTBOUND_MESSAGE_KEYS = {
+            AF_REQUEST_THEME: new Set(['type', 'nonce']),
+            AF_REQUEST_SHARED_DATA: new Set(['type', 'nonce'])
+        };
+        const IPC_BOOTSTRAP_MESSAGE_KEYS = new Set(['type', 'channel', 'nonce']);
+        const IPC_CHANNEL_BOOTSTRAP_TYPE = 'AF_IPC_PORT_INIT';
+        const IPC_SHARED_DATA_KEYS = new Set(['attack', 'capecPatterns', 'cweWeaknesses', 'techniqueToCapec', 'capecToTechnique', 'cweToCapec']);
+
+        function logLocalIframeIPCSplash(context) {
+            const protocol = (typeof window !== 'undefined' && window.location && window.location.protocol) ? window.location.protocol : 'unknown';
+            const configured = typeof CONFIG === 'undefined' ? 'unset' : (CONFIG.navigation?.enableLocalIframeIPC !== false);
+            const active = isLocalIframeIPCEnabled();
+            console.info(`[AF IPC][${context}] local iframe IPC status`, {
+                protocol,
+                configured,
+                active,
+                trace: isLocalIframeIPCTraceEnabled()
+            });
+        }
+
+        function logLocalIframeIPCTrace(context, message, details) {
+            if (!isLocalIframeIPCTraceEnabled()) return;
+            if (typeof details === 'undefined') {
+                console.log(`[AF IPC][${context}] ${message}`);
+                return;
+            }
+            console.log(`[AF IPC][${context}] ${message}`, details);
+        }
+
+        function isPlainObject(value) {
+            return !!value && typeof value === 'object' && !Array.isArray(value);
+        }
+
+        function hasOnlyAllowedKeys(value, allowedKeys, contextLabel) {
+            if (!isPlainObject(value)) {
+                logLocalIframeIPCTrace('explorer', `${contextLabel} rejected: payload is not object`);
+                return false;
+            }
+            const keys = Object.keys(value);
+            for (const key of keys) {
+                if (!allowedKeys.has(key)) {
+                    logLocalIframeIPCTrace('explorer', `${contextLabel} rejected: unknown key`, { key });
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function deepFreeze(value) {
+            if (!value || typeof value !== 'object' || Object.isFrozen(value)) return value;
+            Object.getOwnPropertyNames(value).forEach((name) => {
+                const child = value[name];
+                if (child && typeof child === 'object') deepFreeze(child);
+            });
+            return Object.freeze(value);
+        }
+
+        let parentIpcPort = null;
+        let parentIpcNonce = '';
+
+        function hasActiveParentIPCChannel() {
+            return !!parentIpcPort && !!parentIpcNonce;
+        }
+
+        function setParentIPCChannel(port, nonce) {
+            if (parentIpcPort) {
+                try {
+                    parentIpcPort.onmessage = null;
+                    parentIpcPort.close();
+                } catch (e) {
+                    // ignore close errors
+                }
+            }
+            parentIpcPort = port;
+            parentIpcNonce = nonce;
+        }
+
+        function sendParentIPCRequest(type) {
+            if (!hasActiveParentIPCChannel()) return false;
+            if (!IPC_PORT_OUTBOUND_MESSAGE_KEYS[type]) return false;
+            const payload = { type, nonce: parentIpcNonce };
+            try {
+                parentIpcPort.postMessage(payload);
+                logLocalIframeIPCTrace('explorer', 'channel request sent', { type });
+                return true;
+            } catch (e) {
+                logLocalIframeIPCTrace('explorer', 'channel request failed', { type, error: String(e && e.message ? e.message : e) });
+                return false;
+            }
+        }
+
+        function validateAndFreezeSharedDataPayload(rawData) {
+            if (!isPlainObject(rawData)) {
+                logLocalIframeIPCTrace('explorer', 'AF_SHARED_DATA rejected: data is not object');
+                return null;
+            }
+            if (!hasOnlyAllowedKeys(rawData, IPC_SHARED_DATA_KEYS, 'AF_SHARED_DATA')) {
+                return null;
+            }
+            for (const key of IPC_SHARED_DATA_KEYS) {
+                const value = rawData[key];
+                if (!isPlainObject(value)) {
+                    logLocalIframeIPCTrace('explorer', 'AF_SHARED_DATA rejected: invalid data bucket', { key });
+                    return null;
+                }
+            }
+            return deepFreeze(cloneJsonData(rawData));
+        }
+
+        let parentSharedDataCache = null;
+
+        function requestParentBridgeData() {
+            if (!isLocalIframeIPCEnabled()) {
+                logLocalIframeIPCTrace('explorer', 'parent data request skipped: IPC disabled');
+                return;
+            }
+
+            if (hasActiveParentIPCChannel()) {
+                sendParentIPCRequest('AF_REQUEST_THEME');
+                sendParentIPCRequest('AF_REQUEST_SHARED_DATA');
+                return;
+            }
+
+            try {
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage({ type: 'AF_REQUEST_THEME' }, '*');
+                    window.parent.postMessage({ type: 'AF_REQUEST_SHARED_DATA' }, '*');
+                    logLocalIframeIPCTrace('explorer', 'parent bridge requests sent', { types: ['AF_REQUEST_THEME', 'AF_REQUEST_SHARED_DATA'] });
+                }
+            } catch (e) {
+                logLocalIframeIPCTrace('explorer', 'parent bridge request error', { error: String(e && e.message ? e.message : e) });
+                // Ignore when parent messaging is unavailable
+            }
+        }
+
+        function initParentBridgeHandlers() {
+            if (!isLocalIframeIPCEnabled()) {
+                logLocalIframeIPCTrace('explorer', 'bridge handlers skipped: IPC disabled');
+                return;
+            }
+            logLocalIframeIPCTrace('explorer', 'bridge handlers initialized');
+
+            const allowLegacyWindowMessages = typeof MessageChannel !== 'function';
+
+            const handleChannelMessage = (event) => {
+                const message = event.data;
+                if (!message || typeof message !== 'object') return;
+                if (!IPC_PORT_INBOUND_MESSAGE_TYPES.has(message.type)) {
+                    logLocalIframeIPCTrace('explorer', 'channel message rejected: unknown type', { type: message.type || null });
+                    return;
+                }
+                const allowedMessageKeys = IPC_PORT_INBOUND_MESSAGE_KEYS[message.type];
+                if (!hasOnlyAllowedKeys(message, allowedMessageKeys, `Channel ${message.type}`)) {
+                    return;
+                }
+                if (message.nonce !== parentIpcNonce) {
+                    logLocalIframeIPCTrace('explorer', 'channel message rejected: nonce mismatch', { type: message.type || null });
+                    return;
+                }
+
+                if (message.type === 'AF_THEME_SYNC') {
+                    const mode = normalizeThemeMode(message.mode || currentTheme.mode);
+                    const scheme = normalizeThemeScheme(mode, message.scheme || 'default');
+                    applyTheme(mode, scheme, false);
+                    logLocalIframeIPCTrace('explorer', 'theme applied from parent', { mode, scheme });
+                    return;
+                }
+
+                if (message.type === 'AF_SHARED_DATA' && message.data && typeof message.data === 'object') {
+                    const validatedSharedData = validateAndFreezeSharedDataPayload(message.data);
+                    if (!validatedSharedData) {
+                        logLocalIframeIPCTrace('explorer', 'shared data rejected by validation');
+                        return;
+                    }
+                    parentSharedDataCache = validatedSharedData;
+                    logLocalIframeIPCTrace('explorer', 'shared data received from parent');
+                    if (!state.data.techniques || Object.keys(state.data.techniques).length === 0) {
+                        logLocalIframeIPCTrace('explorer', 'loadData triggered after parent shared data');
+                        loadData().catch((err) => {
+                            setStatus('Failed to load data');
+                            console.error(err);
+                        });
+                    }
+                }
+            };
+
+            window.addEventListener('message', (event) => {
+                const message = event.data;
+                if (!message || typeof message !== 'object') return;
+                if (event.source !== window.parent) {
+                    logLocalIframeIPCTrace('explorer', 'message rejected: unknown source window');
+                    return;
+                }
+
+                if (message.type === IPC_CHANNEL_BOOTSTRAP_TYPE) {
+                    if (!hasOnlyAllowedKeys(message, IPC_BOOTSTRAP_MESSAGE_KEYS, 'IPC bootstrap')) {
+                        return;
+                    }
+                    if (message.channel !== 'explorer') {
+                        logLocalIframeIPCTrace('explorer', 'bootstrap rejected: unexpected channel', { channel: message.channel || null });
+                        return;
+                    }
+                    if (typeof message.nonce !== 'string' || !message.nonce) {
+                        logLocalIframeIPCTrace('explorer', 'bootstrap rejected: invalid nonce');
+                        return;
+                    }
+                    const transferredPort = event.ports && event.ports[0];
+                    if (!transferredPort || typeof transferredPort.postMessage !== 'function') {
+                        logLocalIframeIPCTrace('explorer', 'bootstrap rejected: missing message port');
+                        return;
+                    }
+                    setParentIPCChannel(transferredPort, message.nonce);
+                    parentIpcPort.onmessage = handleChannelMessage;
+                    if (typeof parentIpcPort.start === 'function') parentIpcPort.start();
+                    logLocalIframeIPCTrace('explorer', 'channel bootstrap accepted');
+                    requestParentBridgeData();
+                    return;
+                }
+
+                if (!allowLegacyWindowMessages) {
+                    logLocalIframeIPCTrace('explorer', 'window message rejected: channel mode active', { type: message.type || null });
+                    return;
+                }
+
+                if (!IPC_INBOUND_MESSAGE_TYPES.has(message.type)) {
+                    logLocalIframeIPCTrace('explorer', 'message rejected: unknown type', { type: message.type || null });
+                    return;
+                }
+                const allowedMessageKeys = IPC_INBOUND_MESSAGE_KEYS[message.type];
+                if (!hasOnlyAllowedKeys(message, allowedMessageKeys, `IPC ${message.type}`)) {
+                    return;
+                }
+                logLocalIframeIPCTrace('explorer', 'message received', { type: message.type || null });
+
+                if (message.type === 'AF_THEME_SYNC') {
+                    const mode = normalizeThemeMode(message.mode || currentTheme.mode);
+                    const scheme = normalizeThemeScheme(mode, message.scheme || 'default');
+                    applyTheme(mode, scheme, false);
+                    logLocalIframeIPCTrace('explorer', 'theme applied from parent', { mode, scheme });
+                    return;
+                }
+
+                if (message.type === 'AF_SHARED_DATA' && message.data && typeof message.data === 'object') {
+                    const validatedSharedData = validateAndFreezeSharedDataPayload(message.data);
+                    if (!validatedSharedData) {
+                        logLocalIframeIPCTrace('explorer', 'shared data rejected by validation');
+                        return;
+                    }
+                    parentSharedDataCache = validatedSharedData;
+                    logLocalIframeIPCTrace('explorer', 'shared data received from parent');
+                    if (!state.data.techniques || Object.keys(state.data.techniques).length === 0) {
+                        logLocalIframeIPCTrace('explorer', 'loadData triggered after parent shared data');
+                        loadData().catch((err) => {
+                            setStatus('Failed to load data');
+                            console.error(err);
+                        });
+                    }
+                }
+            });
+        }
         const state = {
             data: {
                 techniques: {},
@@ -581,6 +878,110 @@
             search: '',
             selection: { type: null, id: null }
         };
+
+        const OFFLINE_RESOURCE_FILES = ['attack-techniques.json', 'capec-full.json', 'cwe-full.json'];
+        const offlineResourceStore = {
+            jsonByFileName: new Map(),
+            promptPromise: null
+        };
+
+        function isFileProtocolRuntime() {
+            return typeof window !== 'undefined' && window.location && window.location.protocol === 'file:';
+        }
+
+        function cloneJsonData(data) {
+            if (typeof structuredClone === 'function') return structuredClone(data);
+            return JSON.parse(JSON.stringify(data));
+        }
+
+        const DANGEROUS_OBJECT_KEYS = new Set(['__proto__', 'prototype', 'constructor']);
+
+        function parseJsonSafe(text) {
+            return JSON.parse(text, (key, value) => {
+                if (typeof key === 'string' && DANGEROUS_OBJECT_KEYS.has(key)) return undefined;
+                return value;
+            });
+        }
+
+        function readLocalFileText(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(reader.error || new Error('Failed reading local file'));
+                reader.readAsText(file);
+            });
+        }
+
+        async function promptOfflineResourceFiles(requiredFileNames = OFFLINE_RESOURCE_FILES) {
+            if (offlineResourceStore.promptPromise) {
+                await offlineResourceStore.promptPromise;
+                return;
+            }
+
+            offlineResourceStore.promptPromise = new Promise((resolve, reject) => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.json,application/json';
+                input.multiple = true;
+                input.setAttribute('webkitdirectory', '');
+                input.setAttribute('directory', '');
+                input.style.display = 'none';
+
+                const cleanup = () => {
+                    if (input.parentNode) input.parentNode.removeChild(input);
+                };
+
+                input.addEventListener('change', async () => {
+                    try {
+                        const files = Array.from(input.files || []);
+                        if (!files.length) throw new Error('No resource files selected');
+
+                        const nextMap = new Map(offlineResourceStore.jsonByFileName);
+                        for (const file of files) {
+                            if (!file.name || !file.name.toLowerCase().endsWith('.json')) continue;
+                            const text = await readLocalFileText(file);
+                            nextMap.set(file.name, parseJsonSafe(text));
+                        }
+
+                        const missing = requiredFileNames.filter(name => !nextMap.has(name));
+                        if (missing.length) throw new Error(`Missing selected resources: ${missing.join(', ')}`);
+
+                        offlineResourceStore.jsonByFileName = nextMap;
+                        resolve();
+                    } catch (err) {
+                        reject(err);
+                    } finally {
+                        cleanup();
+                    }
+                }, { once: true });
+
+                document.body.appendChild(input);
+                input.click();
+            });
+
+            try {
+                await offlineResourceStore.promptPromise;
+            } finally {
+                offlineResourceStore.promptPromise = null;
+            }
+        }
+
+        function enableOfflineSelectionUI() {
+            const status = document.getElementById('status');
+            status.textContent = 'Offline mode: click here to select local resource files.';
+            status.style.cursor = 'pointer';
+            status.onclick = async () => {
+                try {
+                    status.textContent = 'Select local resources...';
+                    await promptOfflineResourceFiles();
+                    status.style.cursor = '';
+                    status.onclick = null;
+                    await loadData();
+                } catch (err) {
+                    status.textContent = 'Offline load failed: ' + (err && err.message ? err.message : String(err));
+                }
+            };
+        }
 
         const SEARCH_LIMIT = 10;
 
@@ -603,6 +1004,7 @@
         // fall back to local implementation when running standalone.
         // See FINDINGS.md KCE-SEC-011 — keep in sync with InputSecurity.escapeHtml().
         const _parentSec = (function () {
+            if (!isLocalIframeIPCEnabled()) return null;
             try { return window.parent?.InputSecurity; } catch (e) { return null; }
         })();
 
@@ -1200,13 +1602,68 @@
             });
         }
 
+        function getParentSharedDataLoader() {
+            if (!isLocalIframeIPCEnabled()) return null;
+            if (typeof MessageChannel === 'function') {
+                logLocalIframeIPCTrace('explorer', 'direct parent shared data loader disabled: channel mode active');
+                return null;
+            }
+            try {
+                if (window.parent && window.parent !== window && typeof window.parent.getAttackFlowSharedData === 'function') {
+                    logLocalIframeIPCTrace('explorer', 'using direct parent shared data loader');
+                    return window.parent.getAttackFlowSharedData.bind(window.parent);
+                }
+            } catch (e) {
+                logLocalIframeIPCTrace('explorer', 'direct parent shared data loader unavailable', { error: String(e && e.message ? e.message : e) });
+                return null;
+            }
+            return null;
+        }
+
+        function enableLeaveSiteConfirmation() {
+            window.addEventListener('beforeunload', (e) => {
+                e.preventDefault();
+                e.returnValue = '';
+                return '';
+            });
+        }
+
         async function loadData() {
             setStatus('Loading data...');
-            const [attack, capec, cwe] = await Promise.all([
-                fetch('resources/attack-techniques.json').then(r => r.json()),
-                fetch('resources/capec-full.json').then(r => r.json()),
-                fetch('resources/cwe-full.json').then(r => r.json())
-            ]);
+            const sharedLoader = getParentSharedDataLoader();
+            let attack;
+            let capec;
+            let cwe;
+
+            if (sharedLoader) {
+                const shared = await sharedLoader();
+                attack = shared.attack || {};
+                capec = { patterns: shared.capecPatterns || {} };
+                cwe = { weaknesses: shared.cweWeaknesses || {} };
+            } else if (parentSharedDataCache) {
+                attack = cloneJsonData(parentSharedDataCache.attack || {});
+                capec = { patterns: cloneJsonData(parentSharedDataCache.capecPatterns || {}) };
+                cwe = { weaknesses: cloneJsonData(parentSharedDataCache.cweWeaknesses || {}) };
+            } else if (isLocalIframeIPCEnabled() && window.parent && window.parent !== window) {
+                setStatus('Waiting for parent data...');
+                requestParentBridgeData();
+                return;
+            } else if (isFileProtocolRuntime()) {
+                const hasAll = OFFLINE_RESOURCE_FILES.every(name => offlineResourceStore.jsonByFileName.has(name));
+                if (!hasAll) {
+                    enableOfflineSelectionUI();
+                    return;
+                }
+                attack = cloneJsonData(offlineResourceStore.jsonByFileName.get('attack-techniques.json') || {});
+                capec = cloneJsonData(offlineResourceStore.jsonByFileName.get('capec-full.json') || {});
+                cwe = cloneJsonData(offlineResourceStore.jsonByFileName.get('cwe-full.json') || {});
+            } else {
+                [attack, capec, cwe] = await Promise.all([
+                    fetch('resources/attack-techniques.json').then(r => r.json()),
+                    fetch('resources/capec-full.json').then(r => r.json()),
+                    fetch('resources/cwe-full.json').then(r => r.json())
+                ]);
+            }
 
             state.data.techniques = attack;
             state.data.capecs = capec.patterns || {};
@@ -1248,11 +1705,21 @@
         }
 
         initThemeControls();
+        logLocalIframeIPCSplash('explorer');
+        initParentBridgeHandlers();
+        requestParentBridgeData();
         window.addEventListener('storage', (e) => {
             if (e.key === THEME_STORAGE_KEYS.mode) {
                 syncThemeFromStorage();
             }
         });
+        if (typeof CONFIG !== 'undefined') {
+            if (CONFIG.navigation?.confirmOnLeave !== false) {
+                enableLeaveSiteConfirmation();
+            }
+        } else {
+            enableLeaveSiteConfirmation();
+        }
         initEvents();
         loadData().catch(err => {
             setStatus('Failed to load data');

@@ -812,3 +812,15 @@ function getStixObjectDefinition(type) {
 function getVocabulary(key) {
     return STIX_VOCABULARIES[key] || [];
 }
+
+if (typeof window !== 'undefined') {
+    window.STIX_VERSION = STIX_VERSION;
+    window.STIX_ID_PATTERN = STIX_ID_PATTERN;
+    window.STIX_KILL_CHAIN_PHASES = STIX_KILL_CHAIN_PHASES;
+    window.STIX_VOCABULARIES = STIX_VOCABULARIES;
+    window.STIX_COMMON_PROPERTIES = STIX_COMMON_PROPERTIES;
+    window.STIX_OBJECT_DEFS = STIX_OBJECT_DEFS;
+    window.STIX_SCHEMA = STIX_SCHEMA;
+    window.getStixObjectDefinition = getStixObjectDefinition;
+    window.getVocabulary = getVocabulary;
+}

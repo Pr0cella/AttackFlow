@@ -36,6 +36,7 @@
             --capec-color: #8b5cf6;
             --cwe-color: #f59e0b;
             --attack-color: #3b82f6;
+            --danger: #ef4444;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -213,7 +214,7 @@
 
         .theme-toggle[data-mode="light"]:hover
         {
-            background: #3d6bb7;
+            background: var(--text-primary);
         }
 
         .theme-toggle[data-mode="light"]:hover .theme-icon.theme-light > svg
@@ -249,6 +250,34 @@
             background: rgba(113, 113, 122, 0.25);
         }
 
+        .view-btn > svg
+        /* #view-killchain > svg,
+        #view-relationship > svg */
+         {
+            width: 1.2rem;
+            height: 1.2rem;
+            vertical-align: middle;
+            fill: var(--text-secondary);
+        }
+
+        #view-relationship.active > svg,
+        #view-relationship:hover > svg,
+        #view-killchain.active > svg,
+        #view-killchain:hover > svg {
+            fill: var(--capec-color);
+        }
+
+        #view-explorer:hover > svg,
+        #view-explorer.active > svg {
+            fill: var(--attack-color);
+        }
+
+        #view-builder:hover > svg,
+        #view-builder.active > svg {
+            fill: var(--custom-color);
+        }
+        
+
         .view-btn {
             padding: 5px 12px;
             border: none;
@@ -262,12 +291,12 @@
         }
 
         .view-btn.active {
-            background: var(--accent);
+            background: rgba(113, 113, 122, 0.15);
             color: var(--text-primary);
         }
 
         .view-btn:hover {
-            background: rgba(113, 113, 122, 0.15);
+            background: var(--meta-default-bg);
             color: var(--text-primary);
         }
 
@@ -371,16 +400,19 @@
             transition: all 0.15s;
         }
 
-        .btn:hover { 
+        /*.btn:hover:not(.danger) { 
             color: var(--text-primary);
             background: var(--accent);
             border-color: var(--accent); 
-        }
+        }*/
+
         .btn.active { background: var(--accent); border-color: var(--accent); }
         .btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
+        .btn:not(.danger):hover { color: var(--text-primary); border-color: var(--accent); }
+        .danger:hover { border-color: var(--danger) !important; color: var(--danger) !important; background: var(--bg-phase)!important; }
 
         /* Dropdown */
         .dropdown {
@@ -849,7 +881,10 @@
             transition: all 0.15s;
         }
 
-        .import-btn:hover { border-color: var(--attack-color); color: var(--text-primary); }
+        .import-btn:hover { 
+            border-color: var(--attack-color); 
+            color: var(--text-primary); 
+        }
 
         /* Main Content */
         .content {
@@ -3295,6 +3330,24 @@
             background: #2563eb;
         }
 
+        .loading-bypass {
+            display: none;
+            padding: 8px 16px;
+            background: transparent;
+            color: var(--text-secondary, #a1a1aa);
+            border: 1px solid var(--border-color, #3f3f46);
+            border-radius: 4px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: color 0.15s, border-color 0.15s, background 0.15s;
+        }
+
+        .loading-bypass:hover {
+            color: var(--text-primary, #e4e4e7);
+            border-color: var(--accent, #3b82f6);
+            background: rgba(255, 255, 255, 0.06);
+        }
+
         .loading-hint {
             display: none;
             color: var(--text-secondary, #a1a1aa);
@@ -3314,7 +3367,8 @@
 <body>
     <div class="loading" id="loading">
         <div class="loading-text">Loading data...</div>
-        <button class="loading-dismiss" id="loading-dismiss" onclick="document.getElementById('loading').classList.add('hidden'); renderAll();">Continue Without Data</button>
+        <button class="loading-dismiss" id="loading-dismiss" onclick="hideLoadingOverlay()">Continue Without Data</button>
+        <button class="loading-bypass" id="loading-bypass" onclick="hideLoadingOverlay()">I know what I’m doing</button>
         <div class="loading-hint" id="loading-hint">You can still import ATT&CK Navigator layers, create STIX objects, and import saved kill chains.</div>
     </div>
 
@@ -3346,17 +3400,29 @@
                 <div class="header-nav">
                     <div class="view-toggle">
                         <div class="view-tab-group active" id="view-editor-group">
-                            <button class="view-btn active" id="view-killchain" onclick="setView('killchain')">Kill Chain Editor</button>
+                            <button class="view-btn active" id="view-killchain" onclick="setView('killchain')">
+                                Kill Chain Editor 
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M451.5 160C434.9 160 418.8 164.5 404.7 172.7C388.9 156.7 370.5 143.3 350.2 133.2C378.4 109.2 414.3 96 451.5 96C537.9 96 608 166 608 252.5C608 294 591.5 333.8 562.2 363.1L491.1 434.2C461.8 463.5 422 480 380.5 480C294.1 480 224 410 224 323.5C224 322 224 320.5 224.1 319C224.6 301.3 239.3 287.4 257 287.9C274.7 288.4 288.6 303.1 288.1 320.8C288.1 321.7 288.1 322.6 288.1 323.4C288.1 374.5 329.5 415.9 380.6 415.9C405.1 415.9 428.6 406.2 446 388.8L517.1 317.7C534.4 300.4 544.2 276.8 544.2 252.3C544.2 201.2 502.8 159.8 451.7 159.8zM307.2 237.3C305.3 236.5 303.4 235.4 301.7 234.2C289.1 227.7 274.7 224 259.6 224C235.1 224 211.6 233.7 194.2 251.1L123.1 322.2C105.8 339.5 96 363.1 96 387.6C96 438.7 137.4 480.1 188.5 480.1C205 480.1 221.1 475.7 235.2 467.5C251 483.5 269.4 496.9 289.8 507C261.6 530.9 225.8 544.2 188.5 544.2C102.1 544.2 32 474.2 32 387.7C32 346.2 48.5 306.4 77.8 277.1L148.9 206C178.2 176.7 218 160.2 259.5 160.2C346.1 160.2 416 230.8 416 317.1C416 318.4 416 319.7 416 321C415.6 338.7 400.9 352.6 383.2 352.2C365.5 351.8 351.6 337.1 352 319.4C352 318.6 352 317.9 352 317.1C352 283.4 334 253.8 307.2 237.5z"/></svg>
+                            </button>
                             <span class="view-breadcrumb">
                                 <span class="breadcrumb-sep"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" style="height: 0.8rem;width: 1rem;vertical-align: middle;transform: rotate(180deg);"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M169.4 297.4C156.9 309.9 156.9 330.2 169.4 342.7L361.4 534.7C373.9 547.2 394.2 547.2 406.7 534.7C419.2 522.2 419.2 501.9 406.7 489.4L237.3 320L406.6 150.6C419.1 138.1 419.1 117.8 406.6 105.3C394.1 92.8 373.8 92.8 361.3 105.3L169.3 297.3z"></path></svg></span>
-                                <button class="view-btn view-btn-crumb" id="view-relationship" onclick="setView('relationship')">Relationships</button>
+                                <button class="view-btn view-btn-crumb" id="view-relationship" onclick="setView('relationship')">
+                                    Relationships 
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M482.4 221.9C517.7 213.6 544 181.9 544 144C544 99.8 508.2 64 464 64C420.6 64 385.3 98.5 384 141.5L200.2 215.1C185.7 200.8 165.9 192 144 192C99.8 192 64 227.8 64 272C64 316.2 99.8 352 144 352C156.2 352 167.8 349.3 178.1 344.4L323.7 471.8C321.3 479.4 320 487.6 320 496C320 540.2 355.8 576 400 576C444.2 576 480 540.2 480 496C480 468.3 466 443.9 444.6 429.6L482.4 221.9zM220.3 296.2C222.5 289.3 223.8 282 224 274.5L407.8 201C411.4 204.5 415.2 207.7 419.4 210.5L381.6 418.1C376.1 419.4 370.8 421.2 365.8 423.6L220.3 296.2z"></path></svg>
+                                </button>
                             </span>
                         </div>
                         <div class="view-tab-group" id="view-explorer-group">
-                            <button class="view-btn" id="view-explorer" onclick="setView('explorer')">Relationship Explorer</button>
+                            <button class="view-btn" id="view-explorer" onclick="setView('explorer')">
+                                Relationship Explorer 
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M256 128C256 110.3 270.3 96 288 96L352 96C369.7 96 384 110.3 384 128L384 192C384 209.7 369.7 224 352 224L344 224L344 288L464 288C503.8 288 536 320.2 536 360L536 416L544 416C561.7 416 576 430.3 576 448L576 512C576 529.7 561.7 544 544 544L480 544C462.3 544 448 529.7 448 512L448 448C448 430.3 462.3 416 480 416L488 416L488 360C488 346.7 477.3 336 464 336L344 336L344 416L352 416C369.7 416 384 430.3 384 448L384 512C384 529.7 369.7 544 352 544L288 544C270.3 544 256 529.7 256 512L256 448C256 430.3 270.3 416 288 416L296 416L296 336L176 336C162.7 336 152 346.7 152 360L152 416L160 416C177.7 416 192 430.3 192 448L192 512C192 529.7 177.7 544 160 544L96 544C78.3 544 64 529.7 64 512L64 448C64 430.3 78.3 416 96 416L104 416L104 360C104 320.2 136.2 288 176 288L296 288L296 224L288 224C270.3 224 256 209.7 256 192L256 128z"></path></svg>
+                            </button>
                         </div>
                         <div class="view-tab-group" id="view-builder-group">
-                            <button class="view-btn" id="view-builder" onclick="setView('stix-builder')">STIX Composer</button>
+                            <button class="view-btn" id="view-builder" onclick="setView('stix-builder')">
+                                STIX Composer 
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M468 64C487.2 64 505.6 71.6 519.1 85.2L554.8 120.9C568.4 134.4 576 152.8 576 172C576 191.2 568.4 209.6 554.8 223.1L509.9 268L372 130.1L416.9 85.2C430.4 71.6 448.8 64 468 64zM122.9 379.1L338.1 164L476 301.9L260.9 517.1C250.2 527.8 236.8 535.6 222.2 539.7L94.4 575.1C86.1 577.4 77.1 575.1 71 568.9C64.9 562.7 62.5 553.8 64.8 545.5L100.4 417.8C104.5 403.2 112.2 389.9 123 379.1zM289.4 144.8L144.8 289.4L75.7 220.3C60.1 204.7 60.1 179.4 75.7 163.7L163.7 75.7C179.3 60.1 204.6 60.1 220.3 75.7L226.2 81.6L169.9 137.9C162.1 145.7 162.1 158.4 169.9 166.2C177.7 174 190.4 174 198.2 166.2L254.5 109.9L289.4 144.8zM495.2 350.6L530.1 385.5L473.8 441.8C466 449.6 466 462.3 473.8 470.1C481.6 477.9 494.3 477.9 502.1 470.1L558.4 413.8L564.3 419.7C579.9 435.3 579.9 460.6 564.3 476.3L476.3 564.3C460.7 579.9 435.4 579.9 419.7 564.3L350.6 495.2L495.2 350.6z"/></svg>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -3366,7 +3432,9 @@
                 <div class="control-group">
                     <button class="btn" onclick="expandAll()">Expand</button>
                     <button class="btn" onclick="collapseAll()">Collapse</button>
-                    <button class="btn" onclick="clearAssignments()">Clear</button>
+                    <span width="1px" style="border-left:1px solid var(--border-color); height: 16px; display: inline-block;"></span>
+                    <button class="btn danger" onclick="clearAssignments()">Clear</button>
+                    <span width="1px" style="border-left:1px solid var(--border-color); height: 16px; display: inline-block;"></span>
                     <div class="dropdown" id="export-dropdown">
                         <button class="btn" onclick="toggleDropdown('export-dropdown')">Export <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M297.4 438.6C309.9 451.1 330.2 451.1 342.7 438.6L502.7 278.6C515.2 266.1 515.2 245.8 502.7 233.3C490.2 220.8 469.9 220.8 457.4 233.3L320 370.7L182.6 233.4C170.1 220.9 149.8 220.9 137.3 233.4C124.8 245.9 124.8 266.2 137.3 278.7L297.3 438.7z"/></svg></button>
                         <div class="dropdown-content">
@@ -3413,11 +3481,11 @@
                                     <input type="file" accept=".json" onchange="importNavigator(event)" style="display: none;">
                                 </label>
                                 <button class="import-btn" onclick="openCsvImportModal()">Import CSV</button>
-                                <button class="import-btn" onclick="resetAttackTechniques()">Reset</button>
+                                <button class="import-btn danger" onclick="resetAttackTechniques()">Reset</button>
                             </div>
                         </div>
                         <div class="search-bar">
-                            <input type="text" class="search-input" id="search-attack" placeholder="Search techniques... (supports CSV list)" oninput="filterEntities('attack')">
+                            <input type="text" class="search-input" id="search-attack" placeholder="Search techniques separated by comma..." oninput="filterEntities('attack')">
                         </div>
                         <div class="filter-row" id="filter-attack">
                             <button class="filter-btn active" data-filter="all" onclick="setFilter('attack', 'all')">All</button>
@@ -3431,7 +3499,7 @@
                     <!-- CAPEC Tab -->
                     <div class="tab-panel" id="tab-capec">
                         <div class="search-bar">
-                            <input type="text" class="search-input" id="search-capec" placeholder="Search patterns... (supports CSV list)" oninput="filterEntities('capec')">
+                            <input type="text" class="search-input" id="search-capec" placeholder="Search patterns separated by comma..." oninput="filterEntities('capec')">
                         </div>
                         <div class="filter-row" id="filter-capec">
                             <button class="filter-btn active" data-filter="all" onclick="setFilter('capec', 'all')">All</button>
@@ -3445,7 +3513,7 @@
                     <!-- CWE Tab -->
                     <div class="tab-panel" id="tab-cwe">
                         <div class="search-bar">
-                            <input type="text" class="search-input" id="search-cwe" placeholder="Search weaknesses... (supports CSV list)" oninput="filterEntities('cwe')">
+                            <input type="text" class="search-input" id="search-cwe" placeholder="Search weaknesses separated by comma..." oninput="filterEntities('cwe')">
                         </div>
                         <div class="filter-row" id="filter-cwe">
                             <button class="filter-btn active" data-filter="all" onclick="setFilter('cwe', 'all')">All</button>
@@ -3465,7 +3533,7 @@
                                     Import STIX Bundle
                                     <input type="file" accept=".json" onchange="importStixBundle(event)" style="display: none;">
                                 </label>
-                                <button class="import-btn" onclick="clearStixLibrary()">Clear All Items</button>
+                                <button class="import-btn danger" onclick="clearStixLibrary()">Clear All Items</button>
                             </div>
                         </div>
                         <div class="search-bar">
@@ -3483,11 +3551,11 @@
             </div>
 
             <div class="explorer-container" id="explorer-container">
-                <iframe class="explorer-frame" src="explorer.html" title="Relationship Explorer"></iframe>
+                <iframe class="explorer-frame" src="explorer.html" title="Relationship Explorer" sandbox="allow-scripts allow-same-origin allow-modals"></iframe>
             </div>
 
             <div class="stix-builder-container" id="stix-builder-container">
-                <iframe class="stix-builder-frame" src="stix-builder.html" title="STIX Composer"></iframe>
+                <iframe class="stix-builder-frame" src="stix-builder.html" title="STIX Composer" sandbox="allow-scripts allow-same-origin allow-modals"></iframe>
             </div>
 
             <!-- Content -->
@@ -3966,6 +4034,12 @@
         
         async function loadVersion() {
             try {
+                if (typeof window !== 'undefined' && window.location && window.location.protocol === 'file:') {
+                    APP_VERSION = (typeof CONFIG !== 'undefined' && CONFIG.version) ? CONFIG.version : APP_VERSION;
+                    const versionEl = document.getElementById('app-version');
+                    if (versionEl) versionEl.textContent = 'v' + APP_VERSION;
+                    return;
+                }
                 const res = await fetch('CHANGELOG.md');
                 const text = await res.text();
                 const match = text.match(/^## \[([\d.]+)\]/m);
@@ -4244,6 +4318,27 @@
         }
 
         // Encode < and > in any JSON-loaded strings
+        const DANGEROUS_OBJECT_KEYS = new Set(['__proto__', 'prototype', 'constructor']);
+
+        function isDangerousObjectKey(key) {
+            return typeof key === 'string' && DANGEROUS_OBJECT_KEYS.has(key);
+        }
+
+        function createSafeObject() {
+            return Object.create(null);
+        }
+
+        function hasOwn(obj, key) {
+            return !!obj && Object.prototype.hasOwnProperty.call(obj, key);
+        }
+
+        function parseJsonSafe(text) {
+            return JSON.parse(text, (key, value) => {
+                if (isDangerousObjectKey(key)) return undefined;
+                return value;
+            });
+        }
+
         function stripAngleBracketsFromJson(value) {
             if (typeof value === 'string') {
                 return value.replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -4252,8 +4347,9 @@
                 return value.map(stripAngleBracketsFromJson);
             }
             if (value && typeof value === 'object') {
-                const cleaned = {};
+                const cleaned = createSafeObject();
                 for (const [key, val] of Object.entries(value)) {
+                    if (isDangerousObjectKey(key)) continue;
                     cleaned[key] = stripAngleBracketsFromJson(val);
                 }
                 return cleaned;
@@ -4931,56 +5027,780 @@
         // ============================================================
         // DATA LOADING
         // ============================================================
+        const SHARED_DATA_ENDPOINTS = {
+            attack: 'resources/attack-techniques.json',
+            capec: 'resources/capec-full.json',
+            cwe: 'resources/cwe-full.json',
+            techniqueToCapec: 'resources/technique-to-capec.json',
+            capecToTechnique: 'resources/capec-to-technique.json',
+            cweToCapec: 'resources/cwe-to-capec.json'
+        };
+
+        const REQUIRED_OFFLINE_RESOURCE_FILES = Object.values(SHARED_DATA_ENDPOINTS).map(path => path.split('/').pop());
+
+        const OFFLINE_RESOURCE_STORE = {
+            jsonByFileName: new Map(),
+            promptPromise: null
+        };
+
+        function isFileProtocolRuntime() {
+            return typeof window !== 'undefined' && window.location && window.location.protocol === 'file:';
+        }
+
+        function getFileNameFromPath(path) {
+            const normalized = String(path || '');
+            const parts = normalized.split('/');
+            return parts[parts.length - 1] || normalized;
+        }
+
+        function cloneJsonData(data) {
+            if (typeof structuredClone === 'function') {
+                return structuredClone(data);
+            }
+            return JSON.parse(JSON.stringify(data));
+        }
+
+        function readLocalFileText(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(reader.error || new Error('Failed reading local file'));
+                reader.readAsText(file);
+            });
+        }
+
+        async function promptOfflineResourceFiles(requiredFileNames = []) {
+            if (OFFLINE_RESOURCE_STORE.promptPromise) {
+                await OFFLINE_RESOURCE_STORE.promptPromise;
+                return;
+            }
+
+            OFFLINE_RESOURCE_STORE.promptPromise = new Promise((resolve, reject) => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.json,application/json';
+                input.multiple = true;
+                input.setAttribute('webkitdirectory', '');
+                input.setAttribute('directory', '');
+                input.style.display = 'none';
+
+                const cleanup = () => {
+                    if (input.parentNode) input.parentNode.removeChild(input);
+                };
+
+                input.addEventListener('change', async () => {
+                    try {
+                        const files = Array.from(input.files || []);
+                        if (!files.length) {
+                            throw new Error('No resource files selected');
+                        }
+
+                        const nextMap = new Map(OFFLINE_RESOURCE_STORE.jsonByFileName);
+                        for (const file of files) {
+                            const name = file.name;
+                            if (!name || !name.toLowerCase().endsWith('.json')) continue;
+                            const text = await readLocalFileText(file);
+                            const parsed = parseJsonSafe(text);
+                            nextMap.set(name, parsed);
+                        }
+
+                        const missing = requiredFileNames.filter(name => !nextMap.has(name));
+                        if (missing.length) {
+                            throw new Error(`Missing selected resources: ${missing.join(', ')}`);
+                        }
+
+                        OFFLINE_RESOURCE_STORE.jsonByFileName = nextMap;
+                        resolve();
+                    } catch (err) {
+                        reject(err);
+                    } finally {
+                        cleanup();
+                    }
+                }, { once: true });
+
+                document.body.appendChild(input);
+                showToast('Select your local resources folder (or JSON files) to continue');
+                input.click();
+            });
+
+            try {
+                await OFFLINE_RESOURCE_STORE.promptPromise;
+            } finally {
+                OFFLINE_RESOURCE_STORE.promptPromise = null;
+            }
+        }
+
+        async function fetchJsonResource(resourcePath) {
+            if (!isFileProtocolRuntime()) {
+                const response = await fetch(resourcePath);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch ${resourcePath}: HTTP ${response.status}`);
+                }
+                return response.json();
+            }
+
+            const fileName = getFileNameFromPath(resourcePath);
+            if (!OFFLINE_RESOURCE_STORE.jsonByFileName.has(fileName)) {
+                throw new Error(`OFFLINE_RESOURCE_SELECTION_REQUIRED:${fileName}`);
+            }
+
+            const localJson = OFFLINE_RESOURCE_STORE.jsonByFileName.get(fileName);
+            if (typeof localJson === 'undefined') {
+                throw new Error(`Local resource not available: ${fileName}`);
+            }
+
+            return cloneJsonData(localJson);
+        }
+
+        function enableOfflineResourceSelectionUI(message) {
+            const loadingEl = document.getElementById('loading');
+            const loadingText = loadingEl ? loadingEl.querySelector('.loading-text') : null;
+            const loadingHint = document.getElementById('loading-hint');
+            const loadingDismiss = document.getElementById('loading-dismiss');
+            const loadingBypass = document.getElementById('loading-bypass');
+
+            if (loadingText) {
+                loadingText.textContent = message || 'Offline mode requires local resource files.';
+            }
+            if (loadingHint) {
+                loadingHint.style.display = 'block';
+                loadingHint.textContent = 'Click "Select Local Resources" and choose the resources folder (or required JSON files).';
+            }
+            if (loadingDismiss) {
+                loadingDismiss.style.display = 'inline-block';
+                loadingDismiss.textContent = 'Select Local Resources';
+                loadingDismiss.onclick = async () => {
+                    try {
+                        loadingDismiss.disabled = true;
+                        await promptOfflineResourceFiles(REQUIRED_OFFLINE_RESOURCE_FILES);
+                        await loadData();
+                    } catch (err) {
+                        if (loadingText) {
+                            loadingText.textContent = 'Offline resource selection failed: ' + (err && err.message ? err.message : String(err));
+                        }
+                    } finally {
+                        loadingDismiss.disabled = false;
+                    }
+                };
+            }
+            if (loadingBypass) {
+                loadingBypass.style.display = 'inline-block';
+                loadingBypass.textContent = 'I know what I\'m doing';
+                loadingBypass.onclick = hideLoadingOverlay;
+            }
+        }
+
+        function hideLoadingOverlay() {
+            const loadingEl = document.getElementById('loading');
+            if (loadingEl) loadingEl.classList.add('hidden');
+            renderAll();
+        }
+
+        function getSharedDataCache() {
+            if (!window.AttackFlowSharedData) {
+                window.AttackFlowSharedData = {
+                    promise: null,
+                    data: null,
+                    loadedAt: 0
+                };
+            }
+            return window.AttackFlowSharedData;
+        }
+
+        function isLocalIframeIPCEnabled() {
+            if (!isFileProtocolRuntime()) return false;
+            return typeof CONFIG === 'undefined' || CONFIG.navigation?.enableLocalIframeIPC !== false;
+        }
+
+        function isLocalIframeIPCTraceEnabled() {
+            return typeof CONFIG !== 'undefined' && CONFIG.debugging?.traceLocalIframeIPCLogs === true;
+        }
+
+        const IPC_INBOUND_MESSAGE_TYPES = new Set(['AF_REQUEST_THEME', 'AF_REQUEST_SHARED_DATA']);
+        const IPC_INBOUND_MESSAGE_KEYS = {
+            AF_REQUEST_THEME: new Set(['type']),
+            AF_REQUEST_SHARED_DATA: new Set(['type'])
+        };
+        const IPC_PORT_INBOUND_MESSAGE_TYPES = new Set(['AF_REQUEST_THEME', 'AF_REQUEST_SHARED_DATA']);
+        const IPC_PORT_INBOUND_MESSAGE_KEYS = {
+            AF_REQUEST_THEME: new Set(['type', 'nonce']),
+            AF_REQUEST_SHARED_DATA: new Set(['type', 'nonce'])
+        };
+        const IPC_BOOTSTRAP_MESSAGE_KEYS = new Set(['type', 'channel', 'nonce']);
+        const IPC_CHANNEL_BOOTSTRAP_TYPE = 'AF_IPC_PORT_INIT';
+        const IPC_SHARED_DATA_KEYS = new Set(['attack', 'capecPatterns', 'cweWeaknesses', 'techniqueToCapec', 'capecToTechnique', 'cweToCapec']);
+        const IPC_RATE_LIMIT_DEFAULTS = {
+            enabled: true,
+            refillPerSecond: 1,
+            burst: 2
+        };
+
+        const IPC_FRAME_CHANNELS = {
+            explorer: { port: null, nonce: '', frameSelector: '.explorer-frame', rateBuckets: Object.create(null) },
+            'stix-builder': { port: null, nonce: '', frameSelector: '.stix-builder-frame', rateBuckets: Object.create(null) }
+        };
+
+        function logLocalIframeIPCSplash(context) {
+            const protocol = (typeof window !== 'undefined' && window.location && window.location.protocol) ? window.location.protocol : 'unknown';
+            const configured = typeof CONFIG === 'undefined' ? 'unset' : (CONFIG.navigation?.enableLocalIframeIPC !== false);
+            const active = isLocalIframeIPCEnabled();
+            console.info(`[AF IPC][${context}] local iframe IPC status`, {
+                protocol,
+                configured,
+                active,
+                trace: isLocalIframeIPCTraceEnabled(),
+                messageChannel: typeof MessageChannel === 'function'
+            });
+        }
+
+        function logLocalIframeIPCTrace(context, message, details) {
+            if (!isLocalIframeIPCTraceEnabled()) return;
+            if (typeof details === 'undefined') {
+                console.log(`[AF IPC][${context}] ${message}`);
+                return;
+            }
+            console.log(`[AF IPC][${context}] ${message}`, details);
+        }
+
+        function getLocalIframeIPCRateLimitConfig() {
+            const cfg = (typeof CONFIG !== 'undefined' && CONFIG.debugging?.localIframeIPCRateLimit)
+                ? CONFIG.debugging.localIframeIPCRateLimit
+                : {};
+            const enabled = cfg.enabled !== false;
+            const refillPerSecond = Number.isFinite(cfg.refillPerSecond) && cfg.refillPerSecond > 0
+                ? cfg.refillPerSecond
+                : IPC_RATE_LIMIT_DEFAULTS.refillPerSecond;
+            const burst = Number.isFinite(cfg.burst) && cfg.burst > 0
+                ? cfg.burst
+                : IPC_RATE_LIMIT_DEFAULTS.burst;
+            return {
+                enabled,
+                refillPerSecond,
+                burst
+            };
+        }
+
+        function isIPCRequestRateAllowed(frameKey, messageType, transport) {
+            const rateLimit = getLocalIframeIPCRateLimitConfig();
+            if (!rateLimit.enabled) return true;
+
+            const frameState = getIPCFrameState(frameKey);
+            if (!frameState) {
+                logLocalIframeIPCTrace('index', 'rate-limit fallback: unknown frame, allow request', { frameKey, messageType, transport });
+                return true;
+            }
+
+            if (!frameState.rateBuckets || typeof frameState.rateBuckets !== 'object') {
+                frameState.rateBuckets = Object.create(null);
+            }
+
+            const now = Date.now();
+            const bucketKey = String(messageType || 'unknown');
+            let bucket = frameState.rateBuckets[bucketKey];
+            if (!bucket) {
+                bucket = {
+                    tokens: rateLimit.burst,
+                    lastRefillMs: now
+                };
+                frameState.rateBuckets[bucketKey] = bucket;
+            }
+
+            const elapsedMs = Math.max(0, now - bucket.lastRefillMs);
+            if (elapsedMs > 0) {
+                const refillTokens = (elapsedMs / 1000) * rateLimit.refillPerSecond;
+                bucket.tokens = Math.min(rateLimit.burst, bucket.tokens + refillTokens);
+                bucket.lastRefillMs = now;
+            }
+
+            if (bucket.tokens < 1) {
+                logLocalIframeIPCTrace('index', 'rate-limit throttle: request blocked', {
+                    frameKey,
+                    messageType,
+                    transport,
+                    tokens: bucket.tokens
+                });
+                return false;
+            }
+
+            bucket.tokens -= 1;
+            return true;
+        }
+
+        function isPlainObject(value) {
+            return !!value && typeof value === 'object' && !Array.isArray(value);
+        }
+
+        function hasOnlyAllowedKeys(value, allowedKeys, contextLabel) {
+            if (!isPlainObject(value)) {
+                logLocalIframeIPCTrace('index', `${contextLabel} rejected: payload is not object`);
+                return false;
+            }
+            const keys = Object.keys(value);
+            for (const key of keys) {
+                if (!allowedKeys.has(key)) {
+                    logLocalIframeIPCTrace('index', `${contextLabel} rejected: unknown key`, { key });
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function deepFreeze(value) {
+            if (!value || typeof value !== 'object' || Object.isFrozen(value)) return value;
+            Object.getOwnPropertyNames(value).forEach((name) => {
+                const child = value[name];
+                if (child && typeof child === 'object') deepFreeze(child);
+            });
+            return Object.freeze(value);
+        }
+
+        function createLocalIPCNonce() {
+            const timestampPart = Date.now().toString(36);
+            const perfPart = (typeof performance !== 'undefined' && typeof performance.now === 'function')
+                ? Math.floor(performance.now() * 1000).toString(36)
+                : 'nop';
+            const randomPart = (() => {
+                try {
+                    if (typeof crypto !== 'undefined' && crypto && typeof crypto.getRandomValues === 'function') {
+                        const bytes = new Uint8Array(16);
+                        crypto.getRandomValues(bytes);
+                        return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+                    }
+                } catch (e) {
+                    // fall through to Math.random fallback
+                }
+                const samples = [];
+                for (let i = 0; i < 6; i++) {
+                    samples.push(Math.floor(Math.random() * 0x100000000).toString(36));
+                }
+                return samples.join('');
+            })();
+            return `afipc-${timestampPart}-${perfPart}-${randomPart}`;
+        }
+
+        function isKnownIPCSourceWindow(sourceWindow) {
+            if (!sourceWindow) return false;
+            const explorerWin = getExplorerFrameEl()?.contentWindow || null;
+            const builderWin = getStixBuilderFrameEl()?.contentWindow || null;
+            return sourceWindow === explorerWin || sourceWindow === builderWin;
+        }
+
+        function resolveFrameKeyFromSourceWindow(sourceWindow) {
+            if (!sourceWindow) return null;
+            const explorerWin = getExplorerFrameEl()?.contentWindow || null;
+            if (sourceWindow === explorerWin) return 'explorer';
+            const builderWin = getStixBuilderFrameEl()?.contentWindow || null;
+            if (sourceWindow === builderWin) return 'stix-builder';
+            return null;
+        }
+
+        function getIPCFrameState(frameKey) {
+            return IPC_FRAME_CHANNELS[frameKey] || null;
+        }
+
+        function clearIPCFrameChannel(frameKey) {
+            const frameState = getIPCFrameState(frameKey);
+            if (!frameState) return;
+            if (frameState.port) {
+                try {
+                    frameState.port.onmessage = null;
+                    frameState.port.close();
+                } catch (e) {
+                    // ignore close errors
+                }
+            }
+            frameState.port = null;
+            frameState.nonce = '';
+            frameState.rateBuckets = Object.create(null);
+        }
+
+        function sendIPCMessageViaChannel(frameKey, message) {
+            const frameState = getIPCFrameState(frameKey);
+            if (!frameState || !frameState.port || !frameState.nonce) return false;
+            try {
+                frameState.port.postMessage({ ...message, nonce: frameState.nonce });
+                logLocalIframeIPCTrace('index', 'channel message sent', { frameKey, type: message?.type || null });
+                return true;
+            } catch (e) {
+                logLocalIframeIPCTrace('index', 'channel message send failed', { frameKey, type: message?.type || null, error: String(e && e.message ? e.message : e) });
+                return false;
+            }
+        }
+
+        function setupIPCChannelForFrame(frameKey) {
+            if (!isLocalIframeIPCEnabled() || typeof MessageChannel !== 'function') return false;
+            const frameState = getIPCFrameState(frameKey);
+            if (!frameState) return false;
+
+            const frameEl = document.querySelector(frameState.frameSelector);
+            const frameWindow = frameEl?.contentWindow;
+            if (!frameWindow) {
+                logLocalIframeIPCTrace('index', 'channel setup skipped: frame unavailable', { frameKey });
+                return false;
+            }
+
+            clearIPCFrameChannel(frameKey);
+            const channel = new MessageChannel();
+            const nonce = createLocalIPCNonce();
+
+            frameState.port = channel.port1;
+            frameState.nonce = nonce;
+            frameState.port.onmessage = (event) => {
+                const message = event.data;
+                if (!message || typeof message !== 'object') return;
+
+                if (!IPC_PORT_INBOUND_MESSAGE_TYPES.has(message.type)) {
+                    logLocalIframeIPCTrace('index', 'channel message rejected: unknown type', { frameKey, type: message.type || null });
+                    return;
+                }
+
+                const allowedKeys = IPC_PORT_INBOUND_MESSAGE_KEYS[message.type];
+                if (!hasOnlyAllowedKeys(message, allowedKeys, `Channel ${message.type}`)) {
+                    return;
+                }
+
+                if (message.nonce !== frameState.nonce) {
+                    logLocalIframeIPCTrace('index', 'channel message rejected: nonce mismatch', { frameKey, type: message.type || null });
+                    return;
+                }
+
+                if (!isIPCRequestRateAllowed(frameKey, message.type, 'channel')) {
+                    return;
+                }
+
+                if (message.type === 'AF_REQUEST_THEME') {
+                    sendIPCMessageViaChannel(frameKey, {
+                        type: 'AF_THEME_SYNC',
+                        mode: currentTheme?.mode || 'light',
+                        scheme: currentTheme?.scheme || 'default'
+                    });
+                    return;
+                }
+
+                if (message.type === 'AF_REQUEST_SHARED_DATA') {
+                    if (frameKey !== 'explorer') {
+                        logLocalIframeIPCTrace('index', 'channel shared-data request rejected: frame not allowed', { frameKey });
+                        return;
+                    }
+                    const cache = getSharedDataCache();
+                    const immutablePayload = cache.data ? buildImmutableSharedDataPayload(cache.data) : null;
+                    if (!immutablePayload) {
+                        logLocalIframeIPCTrace('index', 'channel shared-data response skipped: payload unavailable');
+                        return;
+                    }
+                    sendIPCMessageViaChannel(frameKey, {
+                        type: 'AF_SHARED_DATA',
+                        data: immutablePayload
+                    });
+                }
+            };
+            frameState.port.start();
+
+            try {
+                frameWindow.postMessage({
+                    type: IPC_CHANNEL_BOOTSTRAP_TYPE,
+                    channel: frameKey,
+                    nonce
+                }, '*', [channel.port2]);
+                logLocalIframeIPCTrace('index', 'channel bootstrap sent', { frameKey });
+                return true;
+            } catch (e) {
+                logLocalIframeIPCTrace('index', 'channel bootstrap failed', { frameKey, error: String(e && e.message ? e.message : e) });
+                clearIPCFrameChannel(frameKey);
+                return false;
+            }
+        }
+
+        function buildImmutableSharedDataPayload(rawData) {
+            if (!isPlainObject(rawData)) {
+                logLocalIframeIPCTrace('index', 'AF_SHARED_DATA rejected: shared cache is not object');
+                return null;
+            }
+            if (!hasOnlyAllowedKeys(rawData, IPC_SHARED_DATA_KEYS, 'AF_SHARED_DATA')) {
+                return null;
+            }
+            for (const key of IPC_SHARED_DATA_KEYS) {
+                const value = rawData[key];
+                if (!isPlainObject(value)) {
+                    logLocalIframeIPCTrace('index', 'AF_SHARED_DATA rejected: invalid data bucket', { key });
+                    return null;
+                }
+            }
+            const cloned = cloneJsonData(rawData);
+            return deepFreeze(cloned);
+        }
+
+        function getExplorerFrameEl() {
+            return document.querySelector('.explorer-frame');
+        }
+
+        function getStixBuilderFrameEl() {
+            return document.querySelector('.stix-builder-frame');
+        }
+
+        function postMessageToFrame(frameEl, payload) {
+            if (!isLocalIframeIPCEnabled()) {
+                logLocalIframeIPCTrace('index', 'postMessage blocked: IPC disabled', { type: payload?.type || null });
+                return;
+            }
+            try {
+                if (frameEl && frameEl.contentWindow) {
+                    frameEl.contentWindow.postMessage(payload, '*');
+                    logLocalIframeIPCTrace('index', 'postMessage sent', { type: payload?.type || null });
+                } else {
+                    logLocalIframeIPCTrace('index', 'postMessage skipped: frame unavailable', { type: payload?.type || null });
+                }
+            } catch (e) {
+                logLocalIframeIPCTrace('index', 'postMessage error', { type: payload?.type || null, error: String(e && e.message ? e.message : e) });
+                // Ignore cross-context messaging errors
+            }
+        }
+
+        function broadcastSharedDataToExplorer() {
+            if (!isLocalIframeIPCEnabled()) {
+                logLocalIframeIPCTrace('index', 'shared-data broadcast blocked: IPC disabled');
+                return;
+            }
+            const cache = getSharedDataCache();
+            if (!cache.data) {
+                logLocalIframeIPCTrace('index', 'shared-data broadcast skipped: cache empty');
+                return;
+            }
+            const immutablePayload = buildImmutableSharedDataPayload(cache.data);
+            if (!immutablePayload) {
+                logLocalIframeIPCTrace('index', 'shared-data broadcast skipped: payload validation failed');
+                return;
+            }
+            if (sendIPCMessageViaChannel('explorer', {
+                type: 'AF_SHARED_DATA',
+                data: immutablePayload
+            })) {
+                logLocalIframeIPCTrace('index', 'shared-data broadcast sent via channel');
+                return;
+            }
+            postMessageToFrame(getExplorerFrameEl(), {
+                type: 'AF_SHARED_DATA',
+                data: immutablePayload
+            });
+            logLocalIframeIPCTrace('index', 'shared-data broadcast queued');
+        }
+
+        function broadcastThemeToEmbeddedViews() {
+            if (!isLocalIframeIPCEnabled()) {
+                logLocalIframeIPCTrace('index', 'theme broadcast blocked: IPC disabled');
+                return;
+            }
+            const payload = {
+                type: 'AF_THEME_SYNC',
+                mode: currentTheme?.mode || 'light',
+                scheme: currentTheme?.scheme || 'default'
+            };
+            sendIPCMessageViaChannel('explorer', payload);
+            sendIPCMessageViaChannel('stix-builder', payload);
+            postMessageToFrame(getExplorerFrameEl(), payload);
+            postMessageToFrame(getStixBuilderFrameEl(), payload);
+            logLocalIframeIPCTrace('index', 'theme broadcast queued', { mode: payload.mode, scheme: payload.scheme });
+        }
+
+        function initEmbeddedMessageBridge() {
+            if (!isLocalIframeIPCEnabled()) {
+                logLocalIframeIPCTrace('index', 'bridge init skipped: IPC disabled');
+                return;
+            }
+            logLocalIframeIPCTrace('index', 'bridge initialized');
+
+            const allowLegacyWindowRequests = typeof MessageChannel !== 'function';
+            window.addEventListener('message', (event) => {
+                const message = event.data;
+                if (!message || typeof message !== 'object') return;
+                if (!isKnownIPCSourceWindow(event.source)) {
+                    logLocalIframeIPCTrace('index', 'message rejected: unknown source window');
+                    return;
+                }
+                logLocalIframeIPCTrace('index', 'message received', { type: message.type || null });
+
+                if (!allowLegacyWindowRequests) {
+                    if (message.type !== IPC_CHANNEL_BOOTSTRAP_TYPE && message.type !== 'AF_THEME_SYNC' && message.type !== 'AF_SHARED_DATA') {
+                        logLocalIframeIPCTrace('index', 'legacy window message rejected: channel mode active', { type: message.type || null });
+                    }
+                    return;
+                }
+
+                if (!IPC_INBOUND_MESSAGE_TYPES.has(message.type)) {
+                    logLocalIframeIPCTrace('index', 'message rejected: unknown type', { type: message.type || null });
+                    return;
+                }
+
+                const allowedMessageKeys = IPC_INBOUND_MESSAGE_KEYS[message.type];
+                if (!hasOnlyAllowedKeys(message, allowedMessageKeys, `IPC ${message.type}`)) {
+                    return;
+                }
+
+                const frameKey = resolveFrameKeyFromSourceWindow(event.source);
+                if (!frameKey) {
+                    logLocalIframeIPCTrace('index', 'legacy message rejected: frame resolution failed');
+                    return;
+                }
+                if (!isIPCRequestRateAllowed(frameKey, message.type, 'window')) {
+                    return;
+                }
+
+                if (message.type === 'AF_REQUEST_THEME') {
+                    if (event.source && typeof event.source.postMessage === 'function') {
+                        event.source.postMessage({
+                            type: 'AF_THEME_SYNC',
+                            mode: currentTheme?.mode || 'light',
+                            scheme: currentTheme?.scheme || 'default'
+                        }, '*');
+                        logLocalIframeIPCTrace('index', 'responded with theme sync');
+                    }
+                    return;
+                }
+
+                if (message.type === 'AF_REQUEST_SHARED_DATA') {
+                    const cache = getSharedDataCache();
+                    const immutablePayload = cache.data ? buildImmutableSharedDataPayload(cache.data) : null;
+                    if (immutablePayload && event.source && typeof event.source.postMessage === 'function') {
+                        event.source.postMessage({
+                            type: 'AF_SHARED_DATA',
+                            data: immutablePayload
+                        }, '*');
+                        logLocalIframeIPCTrace('index', 'responded with shared data');
+                    } else {
+                        logLocalIframeIPCTrace('index', 'shared-data request not fulfilled: cache/source unavailable');
+                    }
+                }
+            });
+
+            const explorerFrame = getExplorerFrameEl();
+            if (explorerFrame) {
+                explorerFrame.addEventListener('load', () => {
+                    logLocalIframeIPCTrace('index', 'explorer iframe load detected');
+                    setupIPCChannelForFrame('explorer');
+                    broadcastThemeToEmbeddedViews();
+                    broadcastSharedDataToExplorer();
+                });
+            }
+
+            const builderFrame = getStixBuilderFrameEl();
+            if (builderFrame) {
+                builderFrame.addEventListener('load', () => {
+                    logLocalIframeIPCTrace('index', 'stix-builder iframe load detected');
+                    setupIPCChannelForFrame('stix-builder');
+                    broadcastThemeToEmbeddedViews();
+                });
+            }
+        }
+
+        async function loadSharedLibraryData(forceReload = false) {
+            const cache = getSharedDataCache();
+
+            if (!forceReload && cache.data) {
+                return cache.data;
+            }
+
+            if (!forceReload && cache.promise) {
+                return cache.promise;
+            }
+
+            cache.promise = (async () => {
+                const [attackJson, capecJson, cweJson, t2cJson, c2tJson, c2cJson] = await Promise.all([
+                    fetchJsonResource(SHARED_DATA_ENDPOINTS.attack),
+                    fetchJsonResource(SHARED_DATA_ENDPOINTS.capec),
+                    fetchJsonResource(SHARED_DATA_ENDPOINTS.cwe),
+                    fetchJsonResource(SHARED_DATA_ENDPOINTS.techniqueToCapec),
+                    fetchJsonResource(SHARED_DATA_ENDPOINTS.capecToTechnique),
+                    fetchJsonResource(SHARED_DATA_ENDPOINTS.cweToCapec)
+                ]);
+
+                const attack = stripAngleBracketsFromJson(attackJson);
+                const capec = stripAngleBracketsFromJson(capecJson);
+                const cwe = stripAngleBracketsFromJson(cweJson);
+                const techniqueToCapec = stripAngleBracketsFromJson(t2cJson);
+                const capecToTechnique = stripAngleBracketsFromJson(c2tJson);
+                const cweToCapec = stripAngleBracketsFromJson(c2cJson);
+
+                const data = {
+                    attack,
+                    capecPatterns: capec.patterns || {},
+                    cweWeaknesses: cwe.weaknesses || {},
+                    techniqueToCapec,
+                    capecToTechnique,
+                    cweToCapec
+                };
+
+                cache.data = data;
+                cache.loadedAt = Date.now();
+                broadcastSharedDataToExplorer();
+                return data;
+            })().catch(err => {
+                cache.promise = null;
+                throw err;
+            });
+
+            const result = await cache.promise;
+            cache.promise = null;
+            return result;
+        }
+
+        window.getAttackFlowSharedData = function (options) {
+            const forceReload = !!(options && options.forceReload);
+            return loadSharedLibraryData(forceReload);
+        };
+
         async function loadData() {
             try {
-                // Load ATT&CK techniques data
-                const attackRes = await fetch('resources/attack-techniques.json');
-                state.library.techniques = stripAngleBracketsFromJson(await attackRes.json());
-                
-                // Load CAPEC data
-                const capecRes = await fetch('resources/capec-full.json');
-                const capecData = stripAngleBracketsFromJson(await capecRes.json());
-                state.library.capecs = capecData.patterns;
-                
-                // Load CWE data
-                const cweRes = await fetch('resources/cwe-full.json');
-                const cweData = stripAngleBracketsFromJson(await cweRes.json());
-                state.library.cwes = cweData.weaknesses;
-                
-                // Load mappings
-                const t2cRes = await fetch('resources/technique-to-capec.json');
-                state.techniqueToCapec = stripAngleBracketsFromJson(await t2cRes.json());
-                
-                const c2tRes = await fetch('resources/capec-to-technique.json');
-                state.capecToTechnique = stripAngleBracketsFromJson(await c2tRes.json());
-                
-                const c2cRes = await fetch('resources/cwe-to-capec.json');
-                state.cweToCapec = stripAngleBracketsFromJson(await c2cRes.json());
+                const shared = await loadSharedLibraryData();
+
+                state.library.techniques = { ...shared.attack };
+                state.library.capecs = { ...shared.capecPatterns };
+                state.library.cwes = { ...shared.cweWeaknesses };
+                state.techniqueToCapec = shared.techniqueToCapec;
+                state.capecToTechnique = shared.capecToTechnique;
+                state.cweToCapec = shared.cweToCapec;
                 
                 console.log(`Loaded: ${Object.keys(state.library.techniques).length} techniques, ${Object.keys(state.library.capecs).length} CAPECs, ${Object.keys(state.library.cwes).length} CWEs`);
                 
                 // Preserve full technique library for Navigator import enrichment
                 state._baseTechniques = { ...state.library.techniques };
+
+                broadcastSharedDataToExplorer();
                 
                 document.getElementById('loading').classList.add('hidden');
                 renderAll();
             } catch (err) {
                 console.error('Failed to load data:', err);
+                if (isFileProtocolRuntime() && String(err && err.message || '').startsWith('OFFLINE_RESOURCE_SELECTION_REQUIRED:')) {
+                    enableOfflineResourceSelectionUI('Offline mode requires local resource selection.');
+                    return;
+                }
                 // KCE-SEC-009: Use textContent instead of innerHTML for error messages
                 const loadingEl = document.getElementById('loading');
                 const loadingText = loadingEl.querySelector('.loading-text');
                 loadingText.textContent = 'Error loading data: ' + err.message;
                 // Show dismiss button and hint so user can still use the app
-                document.getElementById('loading-dismiss').style.display = 'inline-block';
-                document.getElementById('loading-hint').style.display = 'block';
+                const loadingDismiss = document.getElementById('loading-dismiss');
+                const loadingBypass = document.getElementById('loading-bypass');
+                const loadingHint = document.getElementById('loading-hint');
+                if (loadingDismiss) {
+                    loadingDismiss.style.display = 'inline-block';
+                    loadingDismiss.textContent = 'Continue Without Data';
+                    loadingDismiss.onclick = hideLoadingOverlay;
+                }
+                if (loadingBypass) {
+                    loadingBypass.style.display = 'none';
+                }
+                if (loadingHint) {
+                    loadingHint.style.display = 'block';
+                }
             }
         }
 
         // Load Navigator layer (replaces technique library; preserves mappings & CAPEC/CWE)
         async function loadNavigator(domain) {
             try {
-                const res = await fetch(`resources/Nav_Layer_${domain.toUpperCase()}.json`);
-                const layer = stripAngleBracketsFromJson(await res.json());
+                const layerJson = await fetchJsonResource(`resources/Nav_Layer_${domain.toUpperCase()}.json`);
+                const layer = stripAngleBracketsFromJson(layerJson);
                 
                 // Replace technique library (mappings & CAPEC/CWE stay intact)
                 // Enrich from base library when available for full metadata
@@ -5019,9 +5839,8 @@
             if (state._baseTechniques && Object.keys(state._baseTechniques).length > 0) {
                 return state._baseTechniques;
             }
-            const attackRes = await fetch('resources/attack-techniques.json');
-            const data = stripAngleBracketsFromJson(await attackRes.json());
-            state._baseTechniques = { ...data };
+            const shared = await loadSharedLibraryData();
+            state._baseTechniques = { ...shared.attack };
             return state._baseTechniques;
         }
 
@@ -5096,10 +5915,9 @@
 
         async function resetAttackTechniques() {
             try {
-                const attackRes = await fetch('resources/attack-techniques.json');
-                const data = stripAngleBracketsFromJson(await attackRes.json());
-                state._baseTechniques = { ...data };
-                state.library.techniques = { ...data };
+                const shared = await loadSharedLibraryData(true);
+                state._baseTechniques = { ...shared.attack };
+                state.library.techniques = { ...shared.attack };
                 showToast('ATT&CK techniques reset');
                 filterEntities('attack');
             } catch (err) {
@@ -5121,7 +5939,7 @@
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {
-                    const layer = stripAngleBracketsFromJson(JSON.parse(e.target.result));
+                    const layer = stripAngleBracketsFromJson(parseJsonSafe(e.target.result));
                     
                     // KCE-SEC-003: Validate it's an object (basic schema check)
                     if (typeof layer !== 'object' || layer === null || Array.isArray(layer)) {
@@ -5249,6 +6067,7 @@
             document.documentElement.dataset.theme = resolvedMode;
             currentTheme = { mode: resolvedMode, scheme: resolvedScheme };
             updateThemeControls();
+            broadcastThemeToEmbeddedViews();
             if (persist) {
                 try {
                     localStorage.setItem(THEME_STORAGE_KEYS.mode, resolvedMode);
@@ -5720,7 +6539,7 @@
                 const safeId = esc(result.id);
                 const safeName = esc(result.name || '');
                 return `
-                    <button class="global-search-item" draggable="true"
+                    <button class="global-search-item entity-item ${escAttr(result.type)}" draggable="true"
                         ondragstart="handleDragStart(event, '${escAttr(result.type)}', '${escAttr(result.id)}')"
                         ondragend="handleDragEnd(event)"
                         onclick="openGlobalSearchResult('${escAttr(result.type)}', '${escAttr(result.id)}')">
@@ -5964,7 +6783,7 @@
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {
-                    const rawData = JSON.parse(e.target.result);
+                    const rawData = parseJsonSafe(e.target.result);
                     const data = stripAngleBracketsFromJson(rawData);
 
                     // Validate top-level bundle structure
@@ -6142,7 +6961,8 @@
                 const coreKeys = new Set(['name', 'description', 'labels']);
                 const specFields = [...(typeDef.required || []), ...(typeDef.optional || [])].filter(f => !coreKeys.has(f.key));
                 for (const field of specFields) {
-                    if (!(field.key in obj)) continue;
+                    if (!field || isDangerousObjectKey(field.key)) continue;
+                    if (!hasOwn(obj, field.key)) continue;
                     const raw = obj[field.key];
                     if (field.type === 'boolean') {
                         entry[field.key] = !!raw;
@@ -8368,7 +9188,7 @@
             }
 
             // Validate schema version if present
-            if (data.schemaVersion && !/^\d+\.\d+(\.\d+)?$/.test(data.schemaVersion)) {
+            if (hasOwn(data, 'schemaVersion') && data.schemaVersion && !/^\d+\.\d+(\.\d+)?$/.test(data.schemaVersion)) {
                 return { valid: false, error: 'Invalid schema version format' };
             }
 
@@ -8398,7 +9218,7 @@
             }
 
             // Validate optional title
-            if (data.title !== undefined && data.title !== null) {
+            if (hasOwn(data, 'title') && data.title !== undefined && data.title !== null) {
                 if (typeof data.title !== 'string') {
                     return { valid: false, error: 'title must be a string' };
                 }
@@ -8582,11 +9402,15 @@
 
         function sanitizeImportedData(data) {
             const sanitized = {
-                assignments: {}
+                assignments: createSafeObject()
             };
 
             // Sanitize assignments
-            for (const [phaseKey, phaseData] of Object.entries(data.assignments || {})) {
+            const assignmentSource = (data && typeof data === 'object' && data.assignments && typeof data.assignments === 'object')
+                ? data.assignments
+                : createSafeObject();
+            for (const [phaseKey, phaseData] of Object.entries(assignmentSource)) {
+                if (isDangerousObjectKey(phaseKey)) continue;
                 sanitized.assignments[phaseKey] = {
                     techniques: [],
                     capecs: [],
@@ -8674,11 +9498,12 @@
 
             // Sanitize custom library
             if (data.customLibrary && typeof data.customLibrary === 'object') {
-                sanitized.customLibrary = {};
+                sanitized.customLibrary = createSafeObject();
                 const maxItems = 500;
                 let count = 0;
                 for (const [id, item] of Object.entries(data.customLibrary)) {
                     if (count >= maxItems) break;
+                    if (isDangerousObjectKey(id)) continue;
                     if (!STIX_ID_PATTERN.test(id)) continue;
                     if (!item || typeof item !== 'object') continue;
                     const stixType = id.split('--')[0];
@@ -8708,7 +9533,8 @@
                         const coreKeys = new Set(['name', 'description', 'labels']);
                         const specFields = [...(typeDef.required || []), ...(typeDef.optional || [])].filter(f => !coreKeys.has(f.key));
                         for (const field of specFields) {
-                            if (!(field.key in item)) continue;
+                            if (!field || isDangerousObjectKey(field.key)) continue;
+                            if (!hasOwn(item, field.key)) continue;
                             const raw = item[field.key];
                             if (field.type === 'boolean') {
                                 entry[field.key] = !!raw;
@@ -8753,7 +9579,7 @@
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {
-                    const rawData = JSON.parse(e.target.result);
+                    const rawData = parseJsonSafe(e.target.result);
                     const data = stripAngleBracketsFromJson(rawData);
 
                     // Validate structure before processing
@@ -9401,6 +10227,10 @@
             modal.classList.add('visible');
             
             try {
+                if (typeof window !== 'undefined' && window.location && window.location.protocol === 'file:') {
+                    content.textContent = 'Changelog preview is unavailable in file:// mode. Open via localhost to load CHANGELOG.md dynamically.';
+                    return;
+                }
                 const res = await fetch('CHANGELOG.md');
                 const text = await res.text();
                 content.textContent = text;
@@ -9456,6 +10286,7 @@
         // INITIALIZATION
         // ============================================================
         initThemeControls();
+        logLocalIframeIPCSplash('index');
         window.addEventListener('storage', (e) => {
             if (e.key === THEME_STORAGE_KEYS.mode) {
                 syncThemeFromStorage();
@@ -9468,6 +10299,7 @@
         } else {
             enableLeaveSiteConfirmation();
         }
+        initEmbeddedMessageBridge();
         applyNavigationConfig();
         initAssignments();
         initCompactMode();

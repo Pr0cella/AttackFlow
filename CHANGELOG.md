@@ -11,13 +11,26 @@
 - **CSV Technique Import**: Paste technique IDs via CSV or newline into a modal to replace the ATT&CK library; includes a Reset ATT&CK action to restore base data.
 - **Global Search**: Expanded global search panel with ranked mixed-type results (ATT&CK/CAPEC/CWE), Sticky mode, and drag-and-drop from results.
 - **CSV ID Search**: Comma-separated ID search for ATT&CK, CAPEC, and CWE (supports numeric-only CAPEC/CWE entries).
+- **Local iframe IPC bridge (local-mode only)**: Parent/iframe communication path between `index.html`, `explorer.html`, and `stix-builder.html` for theme sync and shared data handoff.
+- **IPC debug controls**: Added `CONFIG.debugging.traceLocalIframeIPCLogs` and `CONFIG.debugging.localIframeIPCRateLimit` for traceability and request throttling.
+- **IPC API docs**: Added dedicated short technical documentation in `IPC_API-DOCS.md`.
 
 ### Changed
 **UI Improvements**: Redesigned Navigation & other UI Elements, consolidated all Theme toggles into one
 - Phase item Explore/Edit actions now reveal on hover like Delete.
 
-### Fixed
-- **CVE Sources**: CVE extraction now includes `metadata.cves` in addition to legacy fields.
+### Security
+- **Iframe containment**: Embedded explorer/composer iframes now use sandbox containment (`allow-scripts allow-same-origin`).
+- **Prototype pollution hardening**: Import parsing/sanitization now blocks dangerous keys (`__proto__`, `constructor`, `prototype`), uses safe JSON reviver parsing, null-prototype object collectors, and own-property checks in dynamic import field mapping.
+
+#### Local IPC Hardening
+- **Source pinning**: IPC messages are accepted only from expected frame windows.
+- **Strict schema enforcement**: IPC message types and keys are allowlisted; unknown keys/types are rejected and traced.
+- **Immutable shared payload**: `AF_SHARED_DATA` is shape-validated, cloned, and deep-frozen before IPC send/use.
+- **Rate limiting**: Token-bucket throttling (configurable) for incoming IPC requests per frame and request type.
+- **Data loading behavior**: Explorer can consume validated shared data from parent in local iframe mode to reduce redundant fetch/load paths.
+- **IPC transport hardening**: Prefer `MessageChannel` per iframe with session nonce binding; window-level requests are kept as controlled fallback only.
+
 
 ## [2.8.0] - 2026-02-14
 

@@ -179,7 +179,7 @@ const CONFIG = {
     display: {
         maxNameLength: 200,      // Max width for entity names in tags
         maxDescLength: 800,      // Max description length in detail panel
-        maxMitigations: 8,       // Max mitigations to show
+        maxMitigations: 20,       // Max mitigations to show
         maxReferences: 3,        // Max references to show
         maxTitleLength: 200,     // Max kill chain title length
         maxCustomLabels: 20,     // Max labels per custom STIX item
@@ -194,10 +194,21 @@ const CONFIG = {
         clearStixOnKillChainImport: true   // Auto-clear STIX library before importing a kill chain
     },
 
+    // Debugging controls
+    debugging: {
+        traceLocalIframeIPCLogs: true, // Enable full local iframe IPC trace logs in console
+        localIframeIPCRateLimit: {
+            enabled: true,      // Apply request throttling for local iframe IPC request messages
+            refillPerSecond: 1, // Token refill rate per second
+            burst: 2            // Max burst per frame per request type
+        }
+    },
+
     // Navigation behavior
     navigation: {
         confirmOnLeave: true,    // Show confirmation dialog before leaving the page
-        showStixBuilder: true    // Toggle STIX Composer view in navigation
+        showStixBuilder: true,   // Toggle STIX Composer view in navigation
+        enableLocalIframeIPC: false // Enable postMessage iframe bridge only for file:// local mode
     }
 };
 

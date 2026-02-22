@@ -14,9 +14,27 @@
         object-src 'none';
         base-uri 'self';
         form-action 'self';
+        frame-ancestors 'self';
     ">
     <title>AttackFlow - STIX Composer</title>
     <script src="config.js"></script>
+    <script>
+        (function syncThemeHelpersFromParent() {
+            try {
+                const allowParentCoupling = (
+                    typeof window !== 'undefined' &&
+                    window.location &&
+                    window.location.protocol === 'file:' &&
+                    (typeof CONFIG === 'undefined' || CONFIG.navigation?.enableLocalIframeIPC !== false)
+                );
+                if (allowParentCoupling && window.parent && window.parent !== window && window.parent.CONFIG) {
+                    window.CONFIG = window.parent.CONFIG;
+                }
+            } catch (e) {
+                // Keep local config/theme helpers when parent access is unavailable
+            }
+        })();
+    </script>
     <script src="stix-builder.config.js"></script>
     <link rel="stylesheet" href="stix-visualization/stix_visualizer/application.css">
     <style>
@@ -969,6 +987,198 @@
             }
         }
 
+        function isLocalIframeIPCEnabled() {
+            if (!(typeof window !== 'undefined' && window.location && window.location.protocol === 'file:')) return false;
+            return typeof CONFIG === 'undefined' || CONFIG.navigation?.enableLocalIframeIPC !== false;
+        }
+
+        function isLocalIframeIPCTraceEnabled() {
+            return typeof CONFIG !== 'undefined' && CONFIG.debugging?.traceLocalIframeIPCLogs === true;
+        }
+
+        const IPC_INBOUND_MESSAGE_TYPES = new Set(['AF_THEME_SYNC']);
+        const IPC_INBOUND_MESSAGE_KEYS = {
+            AF_THEME_SYNC: new Set(['type', 'mode', 'scheme'])
+        };
+        const IPC_PORT_INBOUND_MESSAGE_TYPES = new Set(['AF_THEME_SYNC']);
+        const IPC_PORT_INBOUND_MESSAGE_KEYS = {
+            AF_THEME_SYNC: new Set(['type', 'mode', 'scheme', 'nonce'])
+        };
+        const IPC_BOOTSTRAP_MESSAGE_KEYS = new Set(['type', 'channel', 'nonce']);
+        const IPC_CHANNEL_BOOTSTRAP_TYPE = 'AF_IPC_PORT_INIT';
+
+        function logLocalIframeIPCSplash(context) {
+            const protocol = (typeof window !== 'undefined' && window.location && window.location.protocol) ? window.location.protocol : 'unknown';
+            const configured = typeof CONFIG === 'undefined' ? 'unset' : (CONFIG.navigation?.enableLocalIframeIPC !== false);
+            const active = isLocalIframeIPCEnabled();
+            console.info(`[AF IPC][${context}] local iframe IPC status`, {
+                protocol,
+                configured,
+                active,
+                trace: isLocalIframeIPCTraceEnabled()
+            });
+        }
+
+        function logLocalIframeIPCTrace(context, message, details) {
+            if (!isLocalIframeIPCTraceEnabled()) return;
+            if (typeof details === 'undefined') {
+                console.log(`[AF IPC][${context}] ${message}`);
+                return;
+            }
+            console.log(`[AF IPC][${context}] ${message}`, details);
+        }
+
+        function isPlainObject(value) {
+            return !!value && typeof value === 'object' && !Array.isArray(value);
+        }
+
+        function hasOnlyAllowedKeys(value, allowedKeys, contextLabel) {
+            if (!isPlainObject(value)) {
+                logLocalIframeIPCTrace('stix-builder', `${contextLabel} rejected: payload is not object`);
+                return false;
+            }
+            const keys = Object.keys(value);
+            for (const key of keys) {
+                if (!allowedKeys.has(key)) {
+                    logLocalIframeIPCTrace('stix-builder', `${contextLabel} rejected: unknown key`, { key });
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        let parentIpcPort = null;
+        let parentIpcNonce = '';
+
+        function hasActiveParentIPCChannel() {
+            return !!parentIpcPort && !!parentIpcNonce;
+        }
+
+        function setParentIPCChannel(port, nonce) {
+            if (parentIpcPort) {
+                try {
+                    parentIpcPort.onmessage = null;
+                    parentIpcPort.close();
+                } catch (e) {
+                    // ignore close errors
+                }
+            }
+            parentIpcPort = port;
+            parentIpcNonce = nonce;
+        }
+
+        function requestParentTheme() {
+            if (!isLocalIframeIPCEnabled()) {
+                logLocalIframeIPCTrace('stix-builder', 'parent theme request skipped: IPC disabled');
+                return;
+            }
+
+            if (hasActiveParentIPCChannel()) {
+                try {
+                    parentIpcPort.postMessage({ type: 'AF_REQUEST_THEME', nonce: parentIpcNonce });
+                    logLocalIframeIPCTrace('stix-builder', 'parent theme request sent via channel', { type: 'AF_REQUEST_THEME' });
+                    return;
+                } catch (e) {
+                    logLocalIframeIPCTrace('stix-builder', 'parent theme channel request failed', { error: String(e && e.message ? e.message : e) });
+                }
+            }
+
+            try {
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage({ type: 'AF_REQUEST_THEME' }, '*');
+                    logLocalIframeIPCTrace('stix-builder', 'parent theme request sent', { type: 'AF_REQUEST_THEME' });
+                }
+            } catch (e) {
+                logLocalIframeIPCTrace('stix-builder', 'parent theme request error', { error: String(e && e.message ? e.message : e) });
+                // Ignore when parent messaging is unavailable
+            }
+        }
+
+        function initParentThemeBridge() {
+            if (!isLocalIframeIPCEnabled()) {
+                logLocalIframeIPCTrace('stix-builder', 'theme bridge skipped: IPC disabled');
+                return;
+            }
+            logLocalIframeIPCTrace('stix-builder', 'theme bridge initialized');
+
+            const allowLegacyWindowMessages = typeof MessageChannel !== 'function';
+
+            const handleChannelMessage = (event) => {
+                const message = event.data;
+                if (!message || typeof message !== 'object') return;
+                if (!IPC_PORT_INBOUND_MESSAGE_TYPES.has(message.type)) {
+                    logLocalIframeIPCTrace('stix-builder', 'channel message rejected: unknown type', { type: message.type || null });
+                    return;
+                }
+                const allowedMessageKeys = IPC_PORT_INBOUND_MESSAGE_KEYS[message.type];
+                if (!hasOnlyAllowedKeys(message, allowedMessageKeys, `Channel ${message.type}`)) {
+                    return;
+                }
+                if (message.nonce !== parentIpcNonce) {
+                    logLocalIframeIPCTrace('stix-builder', 'channel message rejected: nonce mismatch', { type: message.type || null });
+                    return;
+                }
+                logLocalIframeIPCTrace('stix-builder', 'theme sync message received');
+                const mode = normalizeThemeMode(message.mode || currentTheme.mode);
+                const scheme = normalizeThemeScheme(mode, message.scheme || 'default');
+                applyTheme(mode, scheme, false);
+                logLocalIframeIPCTrace('stix-builder', 'theme applied from parent', { mode, scheme });
+            };
+
+            window.addEventListener('message', (event) => {
+                const message = event.data;
+                if (!message || typeof message !== 'object') return;
+                if (event.source !== window.parent) {
+                    logLocalIframeIPCTrace('stix-builder', 'message rejected: unknown source window');
+                    return;
+                }
+
+                if (message.type === IPC_CHANNEL_BOOTSTRAP_TYPE) {
+                    if (!hasOnlyAllowedKeys(message, IPC_BOOTSTRAP_MESSAGE_KEYS, 'IPC bootstrap')) {
+                        return;
+                    }
+                    if (message.channel !== 'stix-builder') {
+                        logLocalIframeIPCTrace('stix-builder', 'bootstrap rejected: unexpected channel', { channel: message.channel || null });
+                        return;
+                    }
+                    if (typeof message.nonce !== 'string' || !message.nonce) {
+                        logLocalIframeIPCTrace('stix-builder', 'bootstrap rejected: invalid nonce');
+                        return;
+                    }
+                    const transferredPort = event.ports && event.ports[0];
+                    if (!transferredPort || typeof transferredPort.postMessage !== 'function') {
+                        logLocalIframeIPCTrace('stix-builder', 'bootstrap rejected: missing message port');
+                        return;
+                    }
+                    setParentIPCChannel(transferredPort, message.nonce);
+                    parentIpcPort.onmessage = handleChannelMessage;
+                    if (typeof parentIpcPort.start === 'function') parentIpcPort.start();
+                    logLocalIframeIPCTrace('stix-builder', 'channel bootstrap accepted');
+                    requestParentTheme();
+                    return;
+                }
+
+                if (!allowLegacyWindowMessages) {
+                    logLocalIframeIPCTrace('stix-builder', 'window message rejected: channel mode active', { type: message.type || null });
+                    return;
+                }
+
+                if (!IPC_INBOUND_MESSAGE_TYPES.has(message.type)) {
+                    logLocalIframeIPCTrace('stix-builder', 'message rejected: unknown type', { type: message.type || null });
+                    return;
+                }
+                const allowedMessageKeys = IPC_INBOUND_MESSAGE_KEYS[message.type];
+                if (!hasOnlyAllowedKeys(message, allowedMessageKeys, `IPC ${message.type}`)) {
+                    return;
+                }
+                logLocalIframeIPCTrace('stix-builder', 'theme sync message received');
+                const mode = normalizeThemeMode(message.mode || currentTheme.mode);
+                const scheme = normalizeThemeScheme(mode, message.scheme || 'default');
+                applyTheme(mode, scheme, false);
+                logLocalIframeIPCTrace('stix-builder', 'theme applied from parent', { mode, scheme });
+            });
+        }
+
         function generateUUID() {
             return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
                 const r = Math.random() * 16 | 0;
@@ -977,11 +1187,33 @@
             });
         }
 
+        const DANGEROUS_OBJECT_KEYS = new Set(['__proto__', 'prototype', 'constructor']);
+
+        function isDangerousObjectKey(key) {
+            return typeof key === 'string' && DANGEROUS_OBJECT_KEYS.has(key);
+        }
+
+        function createSafeObject() {
+            return Object.create(null);
+        }
+
+        function hasOwn(obj, key) {
+            return !!obj && Object.prototype.hasOwnProperty.call(obj, key);
+        }
+
+        function parseJsonSafe(text) {
+            return JSON.parse(text, (key, value) => {
+                if (isDangerousObjectKey(key)) return undefined;
+                return value;
+            });
+        }
+
         function stripAngleBracketsFromJson(obj) {
             if (Array.isArray(obj)) return obj.map(stripAngleBracketsFromJson);
             if (obj && typeof obj === 'object') {
-                const out = {};
+                const out = createSafeObject();
                 Object.entries(obj).forEach(([k, v]) => {
+                    if (isDangerousObjectKey(k)) return;
                     out[k] = stripAngleBracketsFromJson(v);
                 });
                 return out;
@@ -1051,11 +1283,57 @@
             }
         }
 
+        const ACTIVE_STIX_VERSION = (typeof STIX_VERSION !== 'undefined' && typeof STIX_VERSION === 'string' && STIX_VERSION)
+            ? STIX_VERSION
+            : (typeof window !== 'undefined' && typeof window.STIX_VERSION === 'string' && window.STIX_VERSION)
+            ? window.STIX_VERSION
+            : '2.1';
+
+        const ACTIVE_STIX_ID_PATTERN = (typeof STIX_ID_PATTERN !== 'undefined' && STIX_ID_PATTERN instanceof RegExp)
+            ? STIX_ID_PATTERN
+            : (typeof window !== 'undefined' && window.STIX_ID_PATTERN instanceof RegExp)
+            ? window.STIX_ID_PATTERN
+            : /^[a-z][a-z0-9-]*--[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+        const ACTIVE_STIX_OBJECT_DEFS = (typeof STIX_OBJECT_DEFS !== 'undefined' && STIX_OBJECT_DEFS)
+            ? STIX_OBJECT_DEFS
+            : (typeof window !== 'undefined' && window.STIX_OBJECT_DEFS)
+            ? window.STIX_OBJECT_DEFS
+            : {};
+
+        const ACTIVE_STIX_COMMON_PROPERTIES = (typeof STIX_COMMON_PROPERTIES !== 'undefined' && STIX_COMMON_PROPERTIES)
+            ? STIX_COMMON_PROPERTIES
+            : (typeof window !== 'undefined' && window.STIX_COMMON_PROPERTIES)
+            ? window.STIX_COMMON_PROPERTIES
+            : { required: [], optional: [] };
+
+        const ACTIVE_STIX_KILL_CHAIN_PHASES = (typeof STIX_KILL_CHAIN_PHASES !== 'undefined' && STIX_KILL_CHAIN_PHASES)
+            ? STIX_KILL_CHAIN_PHASES
+            : (typeof window !== 'undefined' && window.STIX_KILL_CHAIN_PHASES)
+            ? window.STIX_KILL_CHAIN_PHASES
+            : {};
+
+        const resolveStixObjectDefinition = (typeof getStixObjectDefinition === 'function')
+            ? getStixObjectDefinition
+            : (typeof window !== 'undefined' && typeof window.getStixObjectDefinition === 'function')
+            ? window.getStixObjectDefinition.bind(window)
+            : function (type) {
+                return ACTIVE_STIX_OBJECT_DEFS[type] || null;
+            };
+
+        const resolveVocabulary = (typeof getVocabulary === 'function')
+            ? getVocabulary
+            : (typeof window !== 'undefined' && typeof window.getVocabulary === 'function')
+            ? window.getVocabulary.bind(window)
+            : function () {
+                return [];
+            };
+
         const state = {
             bundle: {
                 type: 'bundle',
                 id: 'bundle--' + generateUUID(),
-                spec_version: STIX_VERSION,
+                spec_version: ACTIVE_STIX_VERSION,
                 objects: []
             },
             objectsById: new Map(),
@@ -1081,7 +1359,7 @@
         };
 
         function getObjectCategory(type) {
-            const def = getStixObjectDefinition(type);
+            const def = resolveStixObjectDefinition(type);
             return def?.category || 'sdo';
         }
 
@@ -1092,8 +1370,8 @@
         function buildAddTypeOptions() {
             const select = document.getElementById('add-type');
             select.innerHTML = '';
-            Object.keys(STIX_OBJECT_DEFS).forEach((type) => {
-                const def = getStixObjectDefinition(type);
+            Object.keys(ACTIVE_STIX_OBJECT_DEFS).forEach((type) => {
+                const def = resolveStixObjectDefinition(type);
                 const option = document.createElement('option');
                 option.value = type;
                 option.textContent = def?.label || type;
@@ -1180,12 +1458,12 @@
         }
 
         function createDefaultObject(type) {
-            const def = getStixObjectDefinition(type);
+            const def = resolveStixObjectDefinition(type);
             if (!def) return null;
             const obj = {
                 type: type,
                 id: type + '--' + generateUUID(),
-                spec_version: STIX_VERSION
+                spec_version: ACTIVE_STIX_VERSION
             };
             if (def.category !== 'sco') {
                 const now = new Date().toISOString();
@@ -1194,7 +1472,7 @@
             }
             const requiredFields = def.required || [];
             requiredFields.forEach((field) => {
-                if (field.key in obj) return;
+                if (hasOwn(obj, field.key)) return;
                 obj[field.key] = getDefaultForField(field);
             });
             return obj;
@@ -1262,9 +1540,9 @@
                 return;
             }
 
-            const def = getStixObjectDefinition(obj.type);
+            const def = resolveStixObjectDefinition(obj.type);
             const commonFields = def?.category !== 'sco'
-                ? [...(STIX_COMMON_PROPERTIES.required || []), ...(STIX_COMMON_PROPERTIES.optional || [])]
+                ? [...(ACTIVE_STIX_COMMON_PROPERTIES.required || []), ...(ACTIVE_STIX_COMMON_PROPERTIES.optional || [])]
                 : [
                     { key: 'type', label: 'Type', type: 'string', description: 'STIX object type.' },
                     { key: 'spec_version', label: 'Spec Version', type: 'string', description: 'STIX spec version.' },
@@ -1310,7 +1588,7 @@
         }
 
         function isRequiredField(field, def, isCommon) {
-            if (isCommon) return (STIX_COMMON_PROPERTIES.required || []).some((f) => f.key === field.key);
+            if (isCommon) return (ACTIVE_STIX_COMMON_PROPERTIES.required || []).some((f) => f.key === field.key);
             return (def?.required || []).some((f) => f.key === field.key);
         }
 
@@ -1379,7 +1657,7 @@
         }
 
         function renderEnumField(field, key, value) {
-            const options = field.options || (field.vocabulary ? getVocabulary(field.vocabulary) : []);
+            const options = field.options || (field.vocabulary ? resolveVocabulary(field.vocabulary) : []);
             return `
                 <select data-field="${key}" data-type="enum">
                     <option value="">Select...</option>
@@ -1389,7 +1667,7 @@
         }
 
         function renderOpenVocabField(field, key, value) {
-            const options = field.vocabulary ? getVocabulary(field.vocabulary) : [];
+            const options = field.vocabulary ? resolveVocabulary(field.vocabulary) : [];
             const listId = `list-${key}`;
             return `
                 <input type="text" data-field="${key}" data-type="open-vocab" list="${listId}" value="${escAttr(value || '')}">
@@ -1401,7 +1679,7 @@
 
         function renderListField(field, key, values) {
             const listId = `list-${key}-${Math.random().toString(36).slice(2, 7)}`;
-            const options = field.vocabulary ? getVocabulary(field.vocabulary) : [];
+            const options = field.vocabulary ? resolveVocabulary(field.vocabulary) : [];
             const items = (values || []).map((item, index) => {
                 const input = field.type === 'list:open-vocab'
                     ? `<input type="text" data-list-field="${key}" data-index="${index}" list="${listId}" value="${escAttr(item || '')}">`
@@ -1445,10 +1723,10 @@
 
         function renderKillChainField(key, values) {
             const items = (values || []).map((item, index) => {
-                const chainOptions = Object.keys(STIX_KILL_CHAIN_PHASES).map((kc) =>
+                const chainOptions = Object.keys(ACTIVE_STIX_KILL_CHAIN_PHASES).map((kc) =>
                     `<option value="${escAttr(kc)}" ${kc === item.kill_chain_name ? 'selected' : ''}>${esc(kc)}</option>`
                 ).join('');
-                const phaseOptions = (STIX_KILL_CHAIN_PHASES[item.kill_chain_name] || []).map((p) =>
+                const phaseOptions = (ACTIVE_STIX_KILL_CHAIN_PHASES[item.kill_chain_name] || []).map((p) =>
                     `<option value="${escAttr(p)}" ${p === item.phase_name ? 'selected' : ''}>${esc(p)}</option>`
                 ).join('');
                 return `
@@ -1594,7 +1872,7 @@
         function renderMarkingDefinitionField(obj, key, value) {
             const type = obj.definition_type || '';
             if (type === 'tlp') {
-                const options = getVocabulary('tlp-ov');
+                const options = resolveVocabulary('tlp-ov');
                 return `
                     <select data-marking-field="${key}" data-marking-type="tlp">
                         <option value="">Select...</option>
@@ -1686,7 +1964,7 @@
             state.bundle = {
                 type: 'bundle',
                 id: 'bundle--' + generateUUID(),
-                spec_version: STIX_VERSION,
+                spec_version: ACTIVE_STIX_VERSION,
                 objects: []
             };
             state.objectsById = new Map();
@@ -1708,10 +1986,11 @@
         }
 
         function sanitizeDictionary(raw, maxItems = INPUT_LIMITS.maxListItems) {
-            const out = {};
+            const out = createSafeObject();
             if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
             Object.entries(raw).slice(0, maxItems).forEach(([k, v]) => {
                 const key = sanitizeImportedString(k, 200);
+                if (isDangerousObjectKey(key)) return;
                 const value = sanitizeImportedString(String(v ?? ''), INPUT_LIMITS.maxStringLength);
                 if (key) out[key] = value;
             });
@@ -1719,10 +1998,11 @@
         }
 
         function sanitizeExtensions(raw, maxItems = INPUT_LIMITS.maxListItems) {
-            const out = {};
+            const out = createSafeObject();
             if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
             Object.entries(raw).slice(0, maxItems).forEach(([k, v]) => {
                 const key = sanitizeImportedString(k, 200);
+                if (isDangerousObjectKey(key)) return;
                 if (!key) return;
                 out[key] = sanitizeDictionary(v || {});
             });
@@ -1790,15 +2070,15 @@
 
         function sanitizeImportedObject(obj) {
             if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return null;
-            const def = getStixObjectDefinition(obj.type);
+            const def = resolveStixObjectDefinition(obj.type);
             if (!def) return null;
-            if (!obj.id || typeof obj.id !== 'string' || !STIX_ID_PATTERN.test(obj.id)) return null;
+            if (!obj.id || typeof obj.id !== 'string' || !ACTIVE_STIX_ID_PATTERN.test(obj.id)) return null;
             if (obj.id.split('--')[0] !== obj.type) return null;
 
             const clean = {
                 type: obj.type,
                 id: obj.id,
-                spec_version: STIX_VERSION
+                spec_version: ACTIVE_STIX_VERSION
             };
 
             if (def.category !== 'sco') {
@@ -1807,11 +2087,12 @@
             }
 
             const commonFields = def.category !== 'sco'
-                ? [...(STIX_COMMON_PROPERTIES.optional || [])]
+                ? [...(ACTIVE_STIX_COMMON_PROPERTIES.optional || [])]
                 : [];
             const fields = [...commonFields, ...(def.required || []), ...(def.optional || [])];
             fields.forEach((field) => {
-                if (!(field.key in obj)) return;
+                if (!field || isDangerousObjectKey(field.key)) return;
+                if (!hasOwn(obj, field.key)) return;
                 const value = sanitizeImportedFieldValue(field, obj[field.key]);
                 if (value !== null && value !== undefined && value !== '') {
                     clean[field.key] = value;
@@ -1825,7 +2106,7 @@
             const clean = {
                 type: 'bundle',
                 id: bundle.id,
-                spec_version: STIX_VERSION,
+                spec_version: ACTIVE_STIX_VERSION,
                 objects: []
             };
             for (const obj of bundle.objects) {
@@ -1869,8 +2150,8 @@
         function validateBundle() {
             const issues = [];
             if (state.bundle.type !== 'bundle') issues.push('Bundle type must be "bundle"');
-            if (!STIX_ID_PATTERN.test(state.bundle.id)) issues.push('Bundle id must be a valid STIX id');
-            if (state.bundle.spec_version !== STIX_VERSION) issues.push('Bundle spec_version must be 2.1');
+            if (!ACTIVE_STIX_ID_PATTERN.test(state.bundle.id)) issues.push('Bundle id must be a valid STIX id');
+            if (state.bundle.spec_version !== ACTIVE_STIX_VERSION) issues.push('Bundle spec_version must be 2.1');
             if (!Array.isArray(state.bundle.objects)) issues.push('Bundle objects must be an array');
 
             const ids = new Set();
@@ -1879,23 +2160,23 @@
                     issues.push('Bundle contains invalid object');
                     return;
                 }
-                if (!obj.type || !STIX_OBJECT_DEFS[obj.type]) {
+                if (!obj.type || !ACTIVE_STIX_OBJECT_DEFS[obj.type]) {
                     issues.push(`Unknown object type: ${obj.type}`);
                     return;
                 }
-                if (!obj.id || !STIX_ID_PATTERN.test(obj.id)) {
+                if (!obj.id || !ACTIVE_STIX_ID_PATTERN.test(obj.id)) {
                     issues.push(`Invalid id for ${obj.type}`);
                 } else if (ids.has(obj.id)) {
                     issues.push(`Duplicate id: ${obj.id}`);
                 } else {
                     ids.add(obj.id);
                 }
-                if (obj.spec_version !== STIX_VERSION) {
+                if (obj.spec_version !== ACTIVE_STIX_VERSION) {
                     issues.push(`${obj.type} ${obj.id} spec_version must be 2.1`);
                 }
-                const def = getStixObjectDefinition(obj.type);
+                const def = resolveStixObjectDefinition(obj.type);
                 const required = def?.required || [];
-                const common = def?.category !== 'sco' ? (STIX_COMMON_PROPERTIES.required || []) : [];
+                const common = def?.category !== 'sco' ? (ACTIVE_STIX_COMMON_PROPERTIES.required || []) : [];
                 [...common, ...required].forEach((field) => {
                     if (!hasValue(obj[field.key], field.type)) {
                         issues.push(`${obj.type} ${obj.id} missing ${field.key}`);
@@ -1926,7 +2207,7 @@
                 if (value === undefined || value === null || value === '') return;
                 switch (field.type) {
                     case 'identifier':
-                        if (!STIX_ID_PATTERN.test(value)) issues.push(`${obj.type} ${obj.id} invalid ${field.key}`);
+                        if (!ACTIVE_STIX_ID_PATTERN.test(value)) issues.push(`${obj.type} ${obj.id} invalid ${field.key}`);
                         break;
                     case 'timestamp':
                         if (Number.isNaN(Date.parse(value))) issues.push(`${obj.type} ${obj.id} invalid ${field.key} timestamp`);
@@ -1941,7 +2222,7 @@
                         break;
                     case 'enum':
                         if (field.options && !field.options.includes(value)) issues.push(`${obj.type} ${obj.id} ${field.key} invalid enum`);
-                        if (field.vocabulary && !getVocabulary(field.vocabulary).includes(value)) issues.push(`${obj.type} ${obj.id} ${field.key} invalid enum`);
+                        if (field.vocabulary && !resolveVocabulary(field.vocabulary).includes(value)) issues.push(`${obj.type} ${obj.id} ${field.key} invalid enum`);
                         break;
                     case 'open-vocab':
                         if (typeof value !== 'string' || !value.trim()) issues.push(`${obj.type} ${obj.id} ${field.key} required`);
@@ -1950,7 +2231,7 @@
                     case 'object-marking-refs':
                         if (!Array.isArray(value)) issues.push(`${obj.type} ${obj.id} ${field.key} must be list`);
                         (value || []).forEach((id) => {
-                            if (!STIX_ID_PATTERN.test(id)) issues.push(`${obj.type} ${obj.id} ${field.key} has invalid ref`);
+                            if (!ACTIVE_STIX_ID_PATTERN.test(id)) issues.push(`${obj.type} ${obj.id} ${field.key} has invalid ref`);
                         });
                         break;
                     case 'kill-chain-phases':
@@ -1967,7 +2248,7 @@
                         break;
                     case 'marking-definition':
                         if (obj.definition_type === 'tlp') {
-                            if (!value.tlp || !getVocabulary('tlp-ov').includes(value.tlp)) issues.push(`${obj.type} ${obj.id} invalid tlp marking`);
+                            if (!value.tlp || !resolveVocabulary('tlp-ov').includes(value.tlp)) issues.push(`${obj.type} ${obj.id} invalid tlp marking`);
                         } else if (obj.definition_type === 'statement') {
                             if (!value.statement) issues.push(`${obj.type} ${obj.id} invalid statement marking`);
                         }
@@ -2341,7 +2622,7 @@
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {
-                    const rawData = JSON.parse(e.target.result);
+                    const rawData = parseJsonSafe(e.target.result);
                     const raw = stripAngleBracketsFromJson(rawData);
                     if (!raw || typeof raw !== 'object' || raw.type !== 'bundle') throw new Error('Invalid bundle');
                     if (!Array.isArray(raw.objects)) throw new Error('Bundle objects missing');
@@ -2357,7 +2638,7 @@
                         state.bundle = {
                             type: 'bundle',
                             id: raw.id || ('bundle--' + generateUUID()),
-                            spec_version: raw.spec_version || STIX_VERSION,
+                            spec_version: raw.spec_version || ACTIVE_STIX_VERSION,
                             objects: []
                         };
                         state.objectsById = new Map();
@@ -2433,14 +2714,38 @@
             });
         }
 
+        function enableLeaveSiteConfirmation() {
+            window.addEventListener('beforeunload', (e) => {
+                e.preventDefault();
+                e.returnValue = '';
+                return '';
+            });
+        }
+
         initThemeControls();
+        logLocalIframeIPCSplash('stix-builder');
+        initParentThemeBridge();
+        requestParentTheme();
         window.addEventListener('storage', (e) => {
             if (e.key === THEME_STORAGE_KEYS.mode) {
                 syncThemeFromStorage();
             }
         });
+        if (typeof CONFIG !== 'undefined') {
+            if (CONFIG.navigation?.confirmOnLeave !== false) {
+                enableLeaveSiteConfirmation();
+            }
+        } else {
+            enableLeaveSiteConfirmation();
+        }
         applyInputGuards();
-        buildAddTypeOptions();
+        if (!Object.keys(ACTIVE_STIX_OBJECT_DEFS).length) {
+            updateStatus(false, 'STIX config failed to load');
+            showToast('Error: STIX configuration unavailable');
+            initEvents();
+        } else {
+            buildAddTypeOptions();
+        }
         renderTabs();
         renderObjectList();
         renderEditor();
