@@ -3364,6 +3364,20 @@
             margin-top: 2rem;
         }
 
+        .loading-context-info {
+            display: none;
+            color: var(--cwe-color);
+            font-size: 0.75rem;
+            text-align: center;
+            max-width: 560px;
+            line-height: 1.5;
+            margin-top: 0.75rem;
+            padding: 0.55rem 0.7rem;
+            border: 1px solid var(--border-color, #3f3f46);
+            border-radius: 6px;
+            background: rgba(245, 158, 11, 0.08);
+        }
+
         /* Scrollbar */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: var(--bg-dark); }
@@ -3377,6 +3391,7 @@
         <button class="loading-dismiss" id="loading-dismiss" onclick="hideLoadingOverlay()">Continue Without Data</button>
         <button class="loading-bypass" id="loading-bypass" onclick="hideLoadingOverlay()">I know what I’m doing</button>
         <div class="loading-hint" id="loading-hint">You can still import ATT&CK Navigator layers, create STIX objects, and import saved kill chains.</div>
+        <div class="loading-context-info" id="loading-context-info"></div>
     </div>
 
     <div class="app">
@@ -5217,6 +5232,21 @@
         function isLocalIframeIPCEnabled() {
             if (!isFileProtocolRuntime()) return false;
             return typeof CONFIG === 'undefined' || CONFIG.ConfigIframeIPC?.enableLocalIframeIPC !== false;
+        }
+
+        function updateLoadingContextInfo() {
+            const infoEl = document.getElementById('loading-context-info');
+            if (!infoEl) return;
+
+            const shouldWarn = isFileProtocolRuntime() && !isLocalIframeIPCEnabled();
+            if (!shouldWarn) {
+                infoEl.style.display = 'none';
+                infoEl.textContent = '';
+                return;
+            }
+
+            infoEl.style.display = 'block';
+            infoEl.textContent = 'Running from file:// with local iframe IPC bridge disabled. Theme sync, Embedded Relationship Explorer and STIX Composer sync features will not work as expected unless ConfigIframeIPC.enableLocalIframeIPC is enabled.';
         }
 
         function isLocalIframeIPCTraceEnabled() {
@@ -10453,6 +10483,7 @@
         // ============================================================
         initThemeControls();
         logLocalIframeIPCSplash('index');
+        updateLoadingContextInfo();
         window.addEventListener('storage', (e) => {
             if (e.key === THEME_STORAGE_KEYS.mode) {
                 syncThemeFromStorage();
