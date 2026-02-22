@@ -601,6 +601,14 @@
         const IPC_BOOTSTRAP_MESSAGE_KEYS = new Set(['type', 'channel', 'nonce']);
         const IPC_CHANNEL_BOOTSTRAP_TYPE = 'AF_IPC_PORT_INIT';
         const IPC_SHARED_DATA_KEYS = new Set(['attack', 'capecPatterns', 'cweWeaknesses', 'techniqueToCapec', 'capecToTechnique', 'cweToCapec']);
+        const IPC_BOOTSTRAP_WAIT_DEFAULTS = {
+            timeoutMs: 1200,
+            maxRetries: 3,
+            retryBaseDelayMs: 250,
+            retryBackoffMultiplier: 2,
+            maxRetryDelayMs: 2000,
+            graceMs: 300
+        };
 
         function logLocalIframeIPCSplash(context) {
             const protocol = (typeof window !== 'undefined' && window.location && window.location.protocol) ? window.location.protocol : 'unknown';
@@ -653,6 +661,10 @@
 
         let parentIpcPort = null;
         let parentIpcNonce = '';
+        let parentIPCBootstrapReceived = false;
+        let parentIPCWaitTimerId = null;
+        let parentIPCBootstrapFailed = false;
+        let parentDataPendingLoad = false;
 
         function hasActiveParentIPCChannel() {
             return !!parentIpcPort && !!parentIpcNonce;
@@ -669,6 +681,75 @@
             }
             parentIpcPort = port;
             parentIpcNonce = nonce;
+        }
+
+        function clearParentIPCWaitTimer() {
+            if (!parentIPCWaitTimerId) return;
+            clearTimeout(parentIPCWaitTimerId);
+            parentIPCWaitTimerId = null;
+        }
+
+        function getLocalIframeIPCBootstrapConfig() {
+            const cfg = (typeof CONFIG !== 'undefined' && CONFIG.debugging?.localIframeIPCBootstrap)
+                ? CONFIG.debugging.localIframeIPCBootstrap
+                : {};
+            const timeoutMs = Number.isFinite(cfg.timeoutMs) && cfg.timeoutMs >= 200
+                ? Math.floor(cfg.timeoutMs)
+                : IPC_BOOTSTRAP_WAIT_DEFAULTS.timeoutMs;
+            const maxRetries = Number.isFinite(cfg.maxRetries) && cfg.maxRetries >= 1
+                ? Math.floor(cfg.maxRetries)
+                : IPC_BOOTSTRAP_WAIT_DEFAULTS.maxRetries;
+            const retryBaseDelayMs = Number.isFinite(cfg.retryBaseDelayMs) && cfg.retryBaseDelayMs >= 0
+                ? Math.floor(cfg.retryBaseDelayMs)
+                : IPC_BOOTSTRAP_WAIT_DEFAULTS.retryBaseDelayMs;
+            const retryBackoffMultiplier = Number.isFinite(cfg.retryBackoffMultiplier) && cfg.retryBackoffMultiplier >= 1
+                ? cfg.retryBackoffMultiplier
+                : IPC_BOOTSTRAP_WAIT_DEFAULTS.retryBackoffMultiplier;
+            const maxRetryDelayMs = Number.isFinite(cfg.maxRetryDelayMs) && cfg.maxRetryDelayMs >= retryBaseDelayMs
+                ? Math.floor(cfg.maxRetryDelayMs)
+                : IPC_BOOTSTRAP_WAIT_DEFAULTS.maxRetryDelayMs;
+            const graceMs = Number.isFinite(cfg.graceMs) && cfg.graceMs >= 0
+                ? Math.floor(cfg.graceMs)
+                : IPC_BOOTSTRAP_WAIT_DEFAULTS.graceMs;
+            return {
+                timeoutMs,
+                maxRetries,
+                retryBaseDelayMs,
+                retryBackoffMultiplier,
+                maxRetryDelayMs,
+                graceMs
+            };
+        }
+
+        function estimateBootstrapFailureWindowMs() {
+            const cfg = getLocalIframeIPCBootstrapConfig();
+            let delayTotal = 0;
+            for (let attempt = 2; attempt <= cfg.maxRetries; attempt += 1) {
+                const exponent = Math.max(0, attempt - 2);
+                const computedDelay = cfg.retryBaseDelayMs * Math.pow(cfg.retryBackoffMultiplier, exponent);
+                delayTotal += Math.min(cfg.maxRetryDelayMs, computedDelay);
+            }
+            return (cfg.timeoutMs * cfg.maxRetries) + delayTotal + cfg.graceMs;
+        }
+
+        function scheduleParentIPCBootstrapFailureWatch() {
+            if (!isLocalIframeIPCEnabled()) return;
+            if (parentIPCBootstrapReceived || hasActiveParentIPCChannel()) return;
+            clearParentIPCWaitTimer();
+            const waitMs = estimateBootstrapFailureWindowMs();
+            parentIPCWaitTimerId = window.setTimeout(() => {
+                if (parentIPCBootstrapReceived || hasActiveParentIPCChannel()) return;
+                parentIPCBootstrapFailed = true;
+                logLocalIframeIPCTrace('explorer', 'parent channel bootstrap failed after retries', { waitMs });
+                setStatus('Parent IPC unavailable; loading local data...');
+                if (parentDataPendingLoad) {
+                    parentDataPendingLoad = false;
+                    loadData().catch((err) => {
+                        setStatus('Failed to load data');
+                        console.error(err);
+                    });
+                }
+            }, waitMs);
         }
 
         function sendParentIPCRequest(type) {
@@ -795,6 +876,9 @@
                         return;
                     }
                     setParentIPCChannel(transferredPort, message.nonce);
+                    parentIPCBootstrapReceived = true;
+                    parentIPCBootstrapFailed = false;
+                    clearParentIPCWaitTimer();
                     parentIpcPort.onmessage = handleChannelMessage;
                     if (typeof parentIpcPort.start === 'function') parentIpcPort.start();
                     logLocalIframeIPCTrace('explorer', 'channel bootstrap accepted');
@@ -804,6 +888,8 @@
 
                 logLocalIframeIPCTrace('explorer', 'window message rejected: channel-only mode', { type: message.type || null });
             });
+
+            scheduleParentIPCBootstrapFailureWatch();
         }
         const state = {
             data: {
@@ -1568,6 +1654,7 @@
 
         async function loadData() {
             setStatus('Loading data...');
+            parentDataPendingLoad = false;
             const sharedLoader = getParentSharedDataLoader();
             let attack;
             let capec;
@@ -1597,9 +1684,15 @@
                 capec = { patterns: cloneJsonData(parentSharedDataCache.capecPatterns || {}) };
                 cwe = { weaknesses: cloneJsonData(parentSharedDataCache.cweWeaknesses || {}) };
             } else if (isLocalIframeIPCEnabled() && window.parent && window.parent !== window) {
-                setStatus('Waiting for parent data...');
-                requestParentBridgeData();
-                return;
+                if (parentIPCBootstrapFailed) {
+                    logLocalIframeIPCTrace('explorer', 'parent IPC bootstrap unavailable; falling back to local data flow');
+                } else {
+                    parentDataPendingLoad = true;
+                    setStatus('Waiting for parent data...');
+                    requestParentBridgeData();
+                    scheduleParentIPCBootstrapFailureWatch();
+                    return;
+                }
             } else if (isFileProtocolRuntime()) {
                 const hasAll = OFFLINE_RESOURCE_FILES.every(name => offlineResourceStore.jsonByFileName.has(name));
                 if (!hasAll) {
