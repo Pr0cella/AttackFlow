@@ -4,8 +4,27 @@
   <head>
     <meta charset="utf-8"/>
     <link href="../css/cti_flatly_2024-05-07-bootstrap.css" rel="stylesheet">
-    <link rel="stylesheet" type="text/css" href="./stix_visualizer/application.css" />
-    <script src="./stix_visualizer/require.js" data-main="./stix_visualizer/application"></script>
+    <script src="../config.js"></script>
+    <script>
+      (function configureStixVisualizerAvailability() {
+        const enabled = (typeof CONFIG === 'undefined') || (CONFIG.visualizer?.enabled !== false);
+        window.AF_STIX_VISUALIZER_ENABLED = enabled;
+        if (!enabled) return;
+
+        const head = document.head || document.getElementsByTagName('head')[0];
+
+        const css = document.createElement('link');
+        css.rel = 'stylesheet';
+        css.type = 'text/css';
+        css.href = './stix_visualizer/application.css';
+        head.appendChild(css);
+
+        const script = document.createElement('script');
+        script.src = './stix_visualizer/require.js';
+        script.setAttribute('data-main', './stix_visualizer/application');
+        head.appendChild(script);
+      })();
+    </script>
   </head>
 
   <body>

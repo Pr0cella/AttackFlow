@@ -36,7 +36,25 @@
         })();
     </script>
     <script src="stix-builder.config.js"></script>
-    <link rel="stylesheet" href="stix-visualization/stix_visualizer/application.css">
+    <script>
+        (function configureStixVisualizerAvailability() {
+            const enabled = (typeof CONFIG === 'undefined') || (CONFIG.visualizer?.enabled !== false);
+            window.AF_STIX_VISUALIZER_ENABLED = enabled;
+            if (!enabled) return;
+
+            const head = document.head || document.getElementsByTagName('head')[0];
+
+            const visualizerCss = document.createElement('link');
+            visualizerCss.rel = 'stylesheet';
+            visualizerCss.href = 'stix-visualization/stix_visualizer/application.css';
+            head.appendChild(visualizerCss);
+
+            const visualizerScript = document.createElement('script');
+            visualizerScript.src = 'stix-visualization/stix_visualizer/require.js';
+            visualizerScript.setAttribute('data-main', 'stix-visualization/stix_visualizer/application');
+            head.appendChild(visualizerScript);
+        })();
+    </script>
     <style>
         :root {
             --bg-dark: #f8fafc;
@@ -874,6 +892,8 @@
             scheme: 'default'
         };
 
+        const VISUALIZER_ENABLED = window.AF_STIX_VISUALIZER_ENABLED !== false;
+
         const InputSecurity = {
             escapeHtml(str) {
                 if (str === null || str === undefined) return '';
@@ -1610,6 +1630,12 @@
         }
 
         function setCenterMode(mode) {
+            if (mode === 'visualizer' && !VISUALIZER_ENABLED) {
+                state.ui.centerMode = 'editor';
+                showToast('Visualizer is disabled by configuration');
+                renderCenterMode();
+                return;
+            }
             state.ui.centerMode = mode;
             renderCenterMode();
         }
@@ -1619,15 +1645,21 @@
             const visualizer = document.getElementById('visualizer-pane');
             const modeEditor = document.getElementById('mode-editor');
             const modeVisualizer = document.getElementById('mode-visualizer');
+            const visualizeBundle = document.getElementById('visualize-bundle');
             const bundlePane = document.getElementById('bundle-pane');
             const visualizerSidePane = document.getElementById('visualizer-side-pane');
             const rightPaneBody = document.getElementById('right-pane-body');
-            const isVisualizer = state.ui.centerMode === 'visualizer';
+            if (!VISUALIZER_ENABLED && state.ui.centerMode === 'visualizer') {
+                state.ui.centerMode = 'editor';
+            }
+            const isVisualizer = VISUALIZER_ENABLED && state.ui.centerMode === 'visualizer';
 
             editor.classList.toggle('hidden', isVisualizer);
             visualizer.classList.toggle('active', isVisualizer);
             modeEditor.classList.toggle('active', !isVisualizer);
             modeVisualizer.classList.toggle('active', isVisualizer);
+            modeVisualizer.classList.toggle('hidden', !VISUALIZER_ENABLED);
+            visualizeBundle.classList.toggle('hidden', !VISUALIZER_ENABLED);
             bundlePane.classList.toggle('hidden', isVisualizer);
             visualizerSidePane.classList.toggle('active', isVisualizer);
             rightPaneBody.classList.toggle('no-scroll', isVisualizer);
@@ -2164,6 +2196,10 @@
         }
 
         function renderVisualizer() {
+            if (!VISUALIZER_ENABLED) {
+                showToast('Visualizer is disabled by configuration');
+                return;
+            }
             const issues = validateBundle();
             if (issues.length) {
                 showToast(issues[0]);
@@ -2799,6 +2835,5 @@
         renderCenterMode();
         initEvents();
     </script>
-    <script src="stix-visualization/stix_visualizer/require.js" data-main="stix-visualization/stix_visualizer/application"></script>
 </body>
 </html>

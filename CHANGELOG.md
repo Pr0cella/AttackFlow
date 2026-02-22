@@ -6,6 +6,7 @@
 ### Added
 - **STIX Composer**: New STIX 2.1 editor interface for creating & sharing STIX 2.1 objects and bundles.
 - **STIX Visualizer**: Composer-Integrated STIX visualizer view with verbose JSON validator. Reports bundle <-> STIX specification mismatches.
+- **Visualizer kill-switch config**: Added `CONFIG.visualizer.enabled` to fully disable STIX visualizer loading/execution paths.
 - **Mitigation Relationships**: Mitigation column added to the relationship view, sourced from techniques in each chain.
 - **Phase Details Modal**: New modal for phase rollups (click phase in relationship view or use the Phase Details button on phase headers). Designed as high level phase overview for contained items, attached metadata & CVEs, related mitigations and average severity/confidence scores.
 - **CSV Technique Import**: Paste technique IDs via CSV or newline into a modal to replace the ATT&CK library; includes a Reset ATT&CK action to restore base data.
@@ -18,6 +19,7 @@
 ### Changed
 **UI Improvements**: Redesigned Navigation & other UI Elements, consolidated all Theme toggles into one
 - Phase item Explore/Edit actions now reveal on hover like Delete.
+- **Resource loading behavior (visualizer disabled mode)**: STIX Composer and standalone STIX visualizer now avoid loading visualizer-owned and bundled third-party resources when `CONFIG.visualizer.enabled` is `false`.
 
 ### Security
 - **Iframe containment**: Embedded explorer/composer iframes now use sandbox containment (`allow-scripts allow-same-origin`).

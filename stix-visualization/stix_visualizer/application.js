@@ -1,4 +1,14 @@
 "use strict";
+if (typeof window !== "undefined" && window.AF_STIX_VISUALIZER_ENABLED === false) {
+    window.AttackFlowStixViz = {
+        onSelect: null,
+        render: function () { return null; },
+        reset: function () { return null; },
+        applyTheme: function () { return null; },
+        select: function () { return null; },
+        selectAndPopulate: function () { return null; }
+    };
+} else {
 /*
 Stix2viz and visjs are packaged in a way that makes them work as Jupyter
 notebook extensions.  Part of the extension installation process involves
@@ -901,3 +911,4 @@ require(["domReady!", "stix2viz/stix2viz/stix2viz"], function (document, stix2vi
     document.getElementById("timeline").addEventListener("input", sliderChangeHandler, false);
     document.getElementById("timelineCheckbox").addEventListener("change", sliderChangeHandler, false);
 });
+}

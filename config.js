@@ -221,6 +221,11 @@ const CONFIG = {
     navigation: {
         confirmOnLeave: true,    // Show confirmation dialog before leaving the page
         showStixBuilder: true    // Toggle STIX Composer view in navigation
+    },
+
+    // Visualizer behavior
+    visualizer: {
+        enabled: true // Disable to prevent visualizer resources from loading/executing
     }
 };
 

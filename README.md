@@ -12,9 +12,19 @@ An editor for creating enriched Cyber Kill Chain assessments by mapping MITRE AT
 ## Features
 
 ### Implementation
-- **Vanilla CSS & JavaScript** — No external dependencies, runs in any browser
-- **Offline Operation** — No CDN, no remote requests, no third-party dependencies
-- **Lightweight Theming Engine** — Toggle configurable light/dark theme with shared settings (via `config.js`) across views 
+- **Vanilla CSS & JavaScript** 
+    - Core modules have no external dependencies or any third party libraries.
+    - No build step and no package-manager runtime dependencies, runs in any browser
+- **Offline Operation** 
+    - No CDN or remote runtime requests; module dependencies are vendored locally and modules can be disabled.
+    - Can be used offline in a browser by opening the `index.html` file. 
+    - Offline module communication is achieved via hardened IPC channels only allowed in `file://` protocol context. Disabled by default in `config.js`. See [Local iframe IPC](#Local-iframe-IPC) for detailed information.
+    - In case the IPC Bridge is disabled or fails to initialise the application falls back to manual import of the `resources` directory
+- **STIX Visualizer Module** — Modular Visualization of STIX Bundles
+    - Visualizer Module can be disabled via `config.js` flag. See [STIX Visualizer Toggle](#STIX-Visualizer-Toggle)
+    - For a list of bundled runtime dependencies used by the visualizer see: [STIX Visualizer Dependencies](#Bundled-STIX-Visualizer-Dependencies)
+- **Lightweight Theming Engine** 
+    - Toggle configurable light/dark theme with shared settings (via `config.js`) across views 
 
 ### Resource Corpus
 - **Unified Kill Chain** — Map entities to IN → THROUGH → OUT phases
@@ -172,7 +182,7 @@ Please do not hesitate to create an issue / pull request or contact me directly 
 - **XXE Protection** — Secure XML parsing with entity expansion disabled
 - **CSV Safety** — Formula injection protection on exports
 
-### Prototype Pollution Hardening (v2.9.0)
+### Prototype Pollution Hardening
 
 Import paths and JSON processing include explicit prototype pollution defenses:
 
@@ -181,7 +191,7 @@ Import paths and JSON processing include explicit prototype pollution defenses:
 - **Null-prototype accumulators** — sanitized object collectors use `Object.create(null)` for untrusted key maps.
 - **Own-property checks** — import logic uses own-property guards for dynamic field copy to avoid inherited-property abuse.
 
-### Local iframe IPC (v2.9.0)
+### Local iframe IPC
 
 AttackFlow includes a local-use IPC bridge between `index.html` (parent) and embedded `explorer.html` / `stix-builder.html` iframes. This allows using all features by simply opening the `index.html` file in a browser, letting the IPC bridge handle all data exchange between iframes. 
 
@@ -212,6 +222,23 @@ Configuration in `config.js`:
 - `CONFIG.debugging.localIframeIPCBootstrap.graceMs`
 
 See `IPC_API-DOCS.md` for concise architecture and threat-model documentation.
+
+### STIX Visualizer Toggle
+
+The integrated STIX visualizer can be fully disabled via config:
+
+- `CONFIG.visualizer.enabled = false`
+
+When disabled, AttackFlow prevents the visualizer from loading and executing by not injecting its own visualizer assets and bundled third-party visualizer libraries.
+
+### Bundled STIX Visualizer Dependencies
+
+The (STIX visualizer)[https://github.com/oasis-open/cti-stix-visualization] is shipped as vendored local files (no CDN):
+
+- RequireJS `2.3.6` (`stix-visualization/stix_visualizer/require.js`)
+- RequireJS domReady plugin `2.0.1` (`stix-visualization/stix_visualizer/domReady.js`)
+- vis-network (vendored build used by stix2viz; (`stix-visualization/stix_visualizer/stix2viz/visjs/vis-network.js`))
+- stix2viz module (`stix-visualization/stix_visualizer/stix2viz/stix2viz/stix2viz.js`)
 
 ### Security Objectives
 1. **No execution of untrusted content** from local or upstream data (MITRE JSON/XML, user-imported layers).
