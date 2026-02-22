@@ -225,7 +225,7 @@ Configuration in `config.js`:
 - `CONFIG.debugging.localIframeIPCBootstrap.maxRetryDelayMs`
 - `CONFIG.debugging.localIframeIPCBootstrap.graceMs`
 
-See (IPC API DOCS)[docs/dev/IPC_API-DOCS.md] for concise architecture and threat-model documentation.
+See [IPC API DOCS](docs/IPC_API-DOCS.md) for concise architecture and threat-model documentation.
 
 ### STIX Visualizer Toggle
 
