@@ -274,7 +274,7 @@
 
         #view-builder:hover > svg,
         #view-builder.active > svg {
-            fill: var(--custom-color);
+            fill: var(--cwe-color);
         }
         
 
@@ -3312,6 +3312,10 @@
             text-align: center;
             max-width: 500px;
             line-height: 1.5;
+            background: var(--bg-dark);
+            padding: 5px;
+            border-radius: 5px;
+            margin-bottom: 2rem;
         }
 
         .loading-dismiss {
@@ -3333,7 +3337,7 @@
         .loading-bypass {
             display: none;
             padding: 8px 16px;
-            background: transparent;
+            background: var(--bg-dark);
             color: var(--text-secondary, #a1a1aa);
             border: 1px solid var(--border-color, #3f3f46);
             border-radius: 4px;
