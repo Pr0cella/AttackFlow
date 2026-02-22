@@ -22,7 +22,7 @@
 - **Resource loading behavior (visualizer disabled mode)**: STIX Composer and standalone STIX visualizer now avoid loading visualizer-owned and bundled third-party resources when `CONFIG.visualizer.enabled` is `false`.
 
 ### Security
-- **Iframe containment**: Embedded explorer/composer iframes now use sandbox containment (`allow-scripts allow-same-origin`).
+- **Iframe containment**: Embedded explorer/composer iframes now use sandbox containment (`allow-scripts allow-same-origin allow-modals`).
 - **Prototype pollution hardening**: Import parsing/sanitization now blocks dangerous keys (`__proto__`, `constructor`, `prototype`), uses safe JSON reviver parsing, null-prototype object collectors, and own-property checks in dynamic import field mapping.
 
 #### Shared Loader Hardening
