@@ -5209,18 +5209,13 @@
 
         function isLocalIframeIPCEnabled() {
             if (!isFileProtocolRuntime()) return false;
-            return typeof CONFIG === 'undefined' || CONFIG.navigation?.enableLocalIframeIPC !== false;
+            return typeof CONFIG === 'undefined' || CONFIG.ConfigIframeIPC?.enableLocalIframeIPC !== false;
         }
 
         function isLocalIframeIPCTraceEnabled() {
             return typeof CONFIG !== 'undefined' && CONFIG.debugging?.traceLocalIframeIPCLogs === true;
         }
 
-        const IPC_INBOUND_MESSAGE_TYPES = new Set(['AF_REQUEST_THEME', 'AF_REQUEST_SHARED_DATA']);
-        const IPC_INBOUND_MESSAGE_KEYS = {
-            AF_REQUEST_THEME: new Set(['type']),
-            AF_REQUEST_SHARED_DATA: new Set(['type'])
-        };
         const IPC_PORT_INBOUND_MESSAGE_TYPES = new Set(['AF_REQUEST_THEME', 'AF_REQUEST_SHARED_DATA']);
         const IPC_PORT_INBOUND_MESSAGE_KEYS = {
             AF_REQUEST_THEME: new Set(['type', 'nonce']),
@@ -5234,6 +5229,13 @@
             refillPerSecond: 1,
             burst: 2
         };
+        const IPC_BOOTSTRAP_DEFAULTS = {
+            timeoutMs: 1200,
+            maxRetries: 3,
+            retryBaseDelayMs: 250,
+            retryBackoffMultiplier: 2,
+            maxRetryDelayMs: 2000
+        };
         const SHARED_DATA_LIMITS = {
             maxTechniqueEntries: 10000,
             maxCapecEntries: 10000,
@@ -5245,13 +5247,31 @@
         };
 
         const IPC_FRAME_CHANNELS = {
-            explorer: { port: null, nonce: '', frameSelector: '.explorer-frame', rateBuckets: Object.create(null) },
-            'stix-builder': { port: null, nonce: '', frameSelector: '.stix-builder-frame', rateBuckets: Object.create(null) }
+            explorer: {
+                port: null,
+                nonce: '',
+                frameSelector: '.explorer-frame',
+                rateBuckets: Object.create(null),
+                bootstrapTimerId: null,
+                bootstrapAttempt: 0,
+                bootstrapComplete: false,
+                bootstrapExhausted: false
+            },
+            'stix-builder': {
+                port: null,
+                nonce: '',
+                frameSelector: '.stix-builder-frame',
+                rateBuckets: Object.create(null),
+                bootstrapTimerId: null,
+                bootstrapAttempt: 0,
+                bootstrapComplete: false,
+                bootstrapExhausted: false
+            }
         };
 
         function logLocalIframeIPCSplash(context) {
             const protocol = (typeof window !== 'undefined' && window.location && window.location.protocol) ? window.location.protocol : 'unknown';
-            const configured = typeof CONFIG === 'undefined' ? 'unset' : (CONFIG.navigation?.enableLocalIframeIPC !== false);
+            const configured = typeof CONFIG === 'undefined' ? 'unset' : (CONFIG.ConfigIframeIPC?.enableLocalIframeIPC !== false);
             const active = isLocalIframeIPCEnabled();
             console.info(`[AF IPC][${context}] local iframe IPC status`, {
                 protocol,
@@ -5286,6 +5306,34 @@
                 enabled,
                 refillPerSecond,
                 burst
+            };
+        }
+
+        function getLocalIframeIPCBootstrapConfig() {
+            const cfg = (typeof CONFIG !== 'undefined' && CONFIG.debugging?.localIframeIPCBootstrap)
+                ? CONFIG.debugging.localIframeIPCBootstrap
+                : {};
+            const timeoutMs = Number.isFinite(cfg.timeoutMs) && cfg.timeoutMs >= 200
+                ? Math.floor(cfg.timeoutMs)
+                : IPC_BOOTSTRAP_DEFAULTS.timeoutMs;
+            const maxRetries = Number.isFinite(cfg.maxRetries) && cfg.maxRetries >= 1
+                ? Math.floor(cfg.maxRetries)
+                : IPC_BOOTSTRAP_DEFAULTS.maxRetries;
+            const retryBaseDelayMs = Number.isFinite(cfg.retryBaseDelayMs) && cfg.retryBaseDelayMs >= 0
+                ? Math.floor(cfg.retryBaseDelayMs)
+                : IPC_BOOTSTRAP_DEFAULTS.retryBaseDelayMs;
+            const retryBackoffMultiplier = Number.isFinite(cfg.retryBackoffMultiplier) && cfg.retryBackoffMultiplier >= 1
+                ? cfg.retryBackoffMultiplier
+                : IPC_BOOTSTRAP_DEFAULTS.retryBackoffMultiplier;
+            const maxRetryDelayMs = Number.isFinite(cfg.maxRetryDelayMs) && cfg.maxRetryDelayMs >= retryBaseDelayMs
+                ? Math.floor(cfg.maxRetryDelayMs)
+                : IPC_BOOTSTRAP_DEFAULTS.maxRetryDelayMs;
+            return {
+                timeoutMs,
+                maxRetries,
+                retryBaseDelayMs,
+                retryBackoffMultiplier,
+                maxRetryDelayMs
             };
         }
 
@@ -5394,22 +5442,20 @@
             return sourceWindow === explorerWin || sourceWindow === builderWin;
         }
 
-        function resolveFrameKeyFromSourceWindow(sourceWindow) {
-            if (!sourceWindow) return null;
-            const explorerWin = getExplorerFrameEl()?.contentWindow || null;
-            if (sourceWindow === explorerWin) return 'explorer';
-            const builderWin = getStixBuilderFrameEl()?.contentWindow || null;
-            if (sourceWindow === builderWin) return 'stix-builder';
-            return null;
-        }
-
         function getIPCFrameState(frameKey) {
             return IPC_FRAME_CHANNELS[frameKey] || null;
         }
 
-        function clearIPCFrameChannel(frameKey) {
+        function clearIPCFrameBootstrapTimer(frameState) {
+            if (!frameState || !frameState.bootstrapTimerId) return;
+            clearTimeout(frameState.bootstrapTimerId);
+            frameState.bootstrapTimerId = null;
+        }
+
+        function clearIPCFrameChannel(frameKey, options = {}) {
             const frameState = getIPCFrameState(frameKey);
             if (!frameState) return;
+            clearIPCFrameBootstrapTimer(frameState);
             if (frameState.port) {
                 try {
                     frameState.port.onmessage = null;
@@ -5421,6 +5467,46 @@
             frameState.port = null;
             frameState.nonce = '';
             frameState.rateBuckets = Object.create(null);
+            frameState.bootstrapComplete = false;
+            if (options.resetBootstrapAttempt === true) {
+                frameState.bootstrapAttempt = 0;
+                frameState.bootstrapExhausted = false;
+            }
+        }
+
+        function scheduleIPCChannelBootstrapRetry(frameKey, reason) {
+            const frameState = getIPCFrameState(frameKey);
+            if (!frameState) return false;
+            const cfg = getLocalIframeIPCBootstrapConfig();
+            const currentAttempt = Number(frameState.bootstrapAttempt || 0);
+            if (currentAttempt >= cfg.maxRetries) {
+                frameState.bootstrapExhausted = true;
+                logLocalIframeIPCTrace('index', 'channel bootstrap retries exhausted', {
+                    frameKey,
+                    attempts: currentAttempt,
+                    reason
+                });
+                return false;
+            }
+
+            const nextAttempt = currentAttempt + 1;
+            const exponent = Math.max(0, nextAttempt - 2);
+            const computedDelay = cfg.retryBaseDelayMs * Math.pow(cfg.retryBackoffMultiplier, exponent);
+            const retryDelayMs = Math.min(cfg.maxRetryDelayMs, computedDelay);
+
+            logLocalIframeIPCTrace('index', 'channel bootstrap retry scheduled', {
+                frameKey,
+                nextAttempt,
+                retryDelayMs,
+                reason
+            });
+
+            window.setTimeout(() => {
+                const latestFrameState = getIPCFrameState(frameKey);
+                if (!latestFrameState || latestFrameState.bootstrapExhausted || latestFrameState.bootstrapComplete) return;
+                setupIPCChannelForFrame(frameKey, { attempt: nextAttempt, reason: 'retry' });
+            }, retryDelayMs);
+            return true;
         }
 
         function sendIPCMessageViaChannel(frameKey, message) {
@@ -5436,15 +5522,29 @@
             }
         }
 
-        function setupIPCChannelForFrame(frameKey) {
+        function setupIPCChannelForFrame(frameKey, options = {}) {
             if (!isLocalIframeIPCEnabled() || typeof MessageChannel !== 'function') return false;
             const frameState = getIPCFrameState(frameKey);
             if (!frameState) return false;
+            const cfg = getLocalIframeIPCBootstrapConfig();
+            const requestedAttempt = Number.isFinite(options.attempt) && options.attempt > 0
+                ? Math.floor(options.attempt)
+                : 1;
+
+            if (requestedAttempt === 1) {
+                frameState.bootstrapExhausted = false;
+            }
+            if (frameState.bootstrapExhausted) {
+                logLocalIframeIPCTrace('index', 'channel setup skipped: retries already exhausted', { frameKey });
+                return false;
+            }
 
             const frameEl = document.querySelector(frameState.frameSelector);
             const frameWindow = frameEl?.contentWindow;
             if (!frameWindow) {
                 logLocalIframeIPCTrace('index', 'channel setup skipped: frame unavailable', { frameKey });
+                frameState.bootstrapAttempt = requestedAttempt;
+                scheduleIPCChannelBootstrapRetry(frameKey, 'frame-unavailable');
                 return false;
             }
 
@@ -5452,11 +5552,23 @@
             const channel = new MessageChannel();
             const nonce = createLocalIPCNonce();
 
+            frameState.bootstrapAttempt = requestedAttempt;
+            frameState.bootstrapComplete = false;
             frameState.port = channel.port1;
             frameState.nonce = nonce;
             frameState.port.onmessage = (event) => {
                 const message = event.data;
                 if (!message || typeof message !== 'object') return;
+
+                if (!frameState.bootstrapComplete) {
+                    frameState.bootstrapComplete = true;
+                    frameState.bootstrapExhausted = false;
+                    clearIPCFrameBootstrapTimer(frameState);
+                    logLocalIframeIPCTrace('index', 'channel bootstrap established', {
+                        frameKey,
+                        attempt: frameState.bootstrapAttempt
+                    });
+                }
 
                 if (!IPC_PORT_INBOUND_MESSAGE_TYPES.has(message.type)) {
                     logLocalIframeIPCTrace('index', 'channel message rejected: unknown type', { frameKey, type: message.type || null });
@@ -5511,11 +5623,27 @@
                     channel: frameKey,
                     nonce
                 }, '*', [channel.port2]);
-                logLocalIframeIPCTrace('index', 'channel bootstrap sent', { frameKey });
+                logLocalIframeIPCTrace('index', 'channel bootstrap sent', { frameKey, attempt: requestedAttempt });
+
+                clearIPCFrameBootstrapTimer(frameState);
+                frameState.bootstrapTimerId = window.setTimeout(() => {
+                    const latestFrameState = getIPCFrameState(frameKey);
+                    if (!latestFrameState) return;
+                    if (latestFrameState.nonce !== nonce || latestFrameState.bootstrapComplete) return;
+
+                    logLocalIframeIPCTrace('index', 'channel bootstrap timeout', {
+                        frameKey,
+                        attempt: requestedAttempt,
+                        timeoutMs: cfg.timeoutMs
+                    });
+                    clearIPCFrameChannel(frameKey);
+                    scheduleIPCChannelBootstrapRetry(frameKey, 'timeout');
+                }, cfg.timeoutMs);
                 return true;
             } catch (e) {
                 logLocalIframeIPCTrace('index', 'channel bootstrap failed', { frameKey, error: String(e && e.message ? e.message : e) });
                 clearIPCFrameChannel(frameKey);
+                scheduleIPCChannelBootstrapRetry(frameKey, 'postMessage-error');
                 return false;
             }
         }
@@ -5626,24 +5754,6 @@
             return document.querySelector('.stix-builder-frame');
         }
 
-        function postMessageToFrame(frameEl, payload) {
-            if (!isLocalIframeIPCEnabled()) {
-                logLocalIframeIPCTrace('index', 'postMessage blocked: IPC disabled', { type: payload?.type || null });
-                return;
-            }
-            try {
-                if (frameEl && frameEl.contentWindow) {
-                    frameEl.contentWindow.postMessage(payload, '*');
-                    logLocalIframeIPCTrace('index', 'postMessage sent', { type: payload?.type || null });
-                } else {
-                    logLocalIframeIPCTrace('index', 'postMessage skipped: frame unavailable', { type: payload?.type || null });
-                }
-            } catch (e) {
-                logLocalIframeIPCTrace('index', 'postMessage error', { type: payload?.type || null, error: String(e && e.message ? e.message : e) });
-                // Ignore cross-context messaging errors
-            }
-        }
-
         function broadcastSharedDataToExplorer() {
             if (!isLocalIframeIPCEnabled()) {
                 logLocalIframeIPCTrace('index', 'shared-data broadcast blocked: IPC disabled');
@@ -5666,11 +5776,7 @@
                 logLocalIframeIPCTrace('index', 'shared-data broadcast sent via channel');
                 return;
             }
-            postMessageToFrame(getExplorerFrameEl(), {
-                type: 'AF_SHARED_DATA',
-                data: immutablePayload
-            });
-            logLocalIframeIPCTrace('index', 'shared-data broadcast queued');
+            logLocalIframeIPCTrace('index', 'shared-data broadcast skipped: channel unavailable');
         }
 
         function broadcastThemeToEmbeddedViews() {
@@ -5683,11 +5789,14 @@
                 mode: currentTheme?.mode || 'light',
                 scheme: currentTheme?.scheme || 'default'
             };
-            sendIPCMessageViaChannel('explorer', payload);
-            sendIPCMessageViaChannel('stix-builder', payload);
-            postMessageToFrame(getExplorerFrameEl(), payload);
-            postMessageToFrame(getStixBuilderFrameEl(), payload);
-            logLocalIframeIPCTrace('index', 'theme broadcast queued', { mode: payload.mode, scheme: payload.scheme });
+            const explorerSent = sendIPCMessageViaChannel('explorer', payload);
+            const builderSent = sendIPCMessageViaChannel('stix-builder', payload);
+            logLocalIframeIPCTrace('index', 'theme broadcast attempted via channel', {
+                mode: payload.mode,
+                scheme: payload.scheme,
+                explorerSent,
+                builderSent
+            });
         }
 
         function initEmbeddedMessageBridge() {
@@ -5697,7 +5806,6 @@
             }
             logLocalIframeIPCTrace('index', 'bridge initialized');
 
-            const allowLegacyWindowRequests = typeof MessageChannel !== 'function';
             window.addEventListener('message', (event) => {
                 const message = event.data;
                 if (!message || typeof message !== 'object') return;
@@ -5705,58 +5813,8 @@
                     logLocalIframeIPCTrace('index', 'message rejected: unknown source window');
                     return;
                 }
-                logLocalIframeIPCTrace('index', 'message received', { type: message.type || null });
-
-                if (!allowLegacyWindowRequests) {
-                    if (message.type !== IPC_CHANNEL_BOOTSTRAP_TYPE && message.type !== 'AF_THEME_SYNC' && message.type !== 'AF_SHARED_DATA') {
-                        logLocalIframeIPCTrace('index', 'legacy window message rejected: channel mode active', { type: message.type || null });
-                    }
-                    return;
-                }
-
-                if (!IPC_INBOUND_MESSAGE_TYPES.has(message.type)) {
-                    logLocalIframeIPCTrace('index', 'message rejected: unknown type', { type: message.type || null });
-                    return;
-                }
-
-                const allowedMessageKeys = IPC_INBOUND_MESSAGE_KEYS[message.type];
-                if (!hasOnlyAllowedKeys(message, allowedMessageKeys, `IPC ${message.type}`)) {
-                    return;
-                }
-
-                const frameKey = resolveFrameKeyFromSourceWindow(event.source);
-                if (!frameKey) {
-                    logLocalIframeIPCTrace('index', 'legacy message rejected: frame resolution failed');
-                    return;
-                }
-                if (!isIPCRequestRateAllowed(frameKey, message.type, 'window')) {
-                    return;
-                }
-
-                if (message.type === 'AF_REQUEST_THEME') {
-                    if (event.source && typeof event.source.postMessage === 'function') {
-                        event.source.postMessage({
-                            type: 'AF_THEME_SYNC',
-                            mode: currentTheme?.mode || 'light',
-                            scheme: currentTheme?.scheme || 'default'
-                        }, '*');
-                        logLocalIframeIPCTrace('index', 'responded with theme sync');
-                    }
-                    return;
-                }
-
-                if (message.type === 'AF_REQUEST_SHARED_DATA') {
-                    const cache = getSharedDataCache();
-                    const immutablePayload = cache.data ? buildImmutableSharedDataPayload(cache.data) : null;
-                    if (immutablePayload && event.source && typeof event.source.postMessage === 'function') {
-                        event.source.postMessage({
-                            type: 'AF_SHARED_DATA',
-                            data: immutablePayload
-                        }, '*');
-                        logLocalIframeIPCTrace('index', 'responded with shared data');
-                    } else {
-                        logLocalIframeIPCTrace('index', 'shared-data request not fulfilled: cache/source unavailable');
-                    }
+                if (message.type !== IPC_CHANNEL_BOOTSTRAP_TYPE) {
+                    logLocalIframeIPCTrace('index', 'window message rejected: channel-only mode', { type: message.type || null });
                 }
             });
 

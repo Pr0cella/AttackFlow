@@ -478,7 +478,7 @@
                     typeof window !== 'undefined' &&
                     window.location &&
                     window.location.protocol === 'file:' &&
-                    (typeof CONFIG === 'undefined' || CONFIG.navigation?.enableLocalIframeIPC !== false)
+                    (typeof CONFIG === 'undefined' || CONFIG.ConfigIframeIPC?.enableLocalIframeIPC !== false)
                 );
                 if (allowParentCoupling && window.parent && window.parent !== window && window.parent.CONFIG) {
                     window.CONFIG = window.parent.CONFIG;
@@ -582,18 +582,13 @@
 
         function isLocalIframeIPCEnabled() {
             if (!isFileProtocolRuntime()) return false;
-            return typeof CONFIG === 'undefined' || CONFIG.navigation?.enableLocalIframeIPC !== false;
+            return typeof CONFIG === 'undefined' || CONFIG.ConfigIframeIPC?.enableLocalIframeIPC !== false;
         }
 
         function isLocalIframeIPCTraceEnabled() {
             return typeof CONFIG !== 'undefined' && CONFIG.debugging?.traceLocalIframeIPCLogs === true;
         }
 
-        const IPC_INBOUND_MESSAGE_TYPES = new Set(['AF_THEME_SYNC', 'AF_SHARED_DATA']);
-        const IPC_INBOUND_MESSAGE_KEYS = {
-            AF_THEME_SYNC: new Set(['type', 'mode', 'scheme']),
-            AF_SHARED_DATA: new Set(['type', 'data'])
-        };
         const IPC_PORT_INBOUND_MESSAGE_TYPES = new Set(['AF_THEME_SYNC', 'AF_SHARED_DATA']);
         const IPC_PORT_INBOUND_MESSAGE_KEYS = {
             AF_THEME_SYNC: new Set(['type', 'mode', 'scheme', 'nonce']),
@@ -606,10 +601,18 @@
         const IPC_BOOTSTRAP_MESSAGE_KEYS = new Set(['type', 'channel', 'nonce']);
         const IPC_CHANNEL_BOOTSTRAP_TYPE = 'AF_IPC_PORT_INIT';
         const IPC_SHARED_DATA_KEYS = new Set(['attack', 'capecPatterns', 'cweWeaknesses', 'techniqueToCapec', 'capecToTechnique', 'cweToCapec']);
+        const IPC_BOOTSTRAP_WAIT_DEFAULTS = {
+            timeoutMs: 1200,
+            maxRetries: 3,
+            retryBaseDelayMs: 250,
+            retryBackoffMultiplier: 2,
+            maxRetryDelayMs: 2000,
+            graceMs: 300
+        };
 
         function logLocalIframeIPCSplash(context) {
             const protocol = (typeof window !== 'undefined' && window.location && window.location.protocol) ? window.location.protocol : 'unknown';
-            const configured = typeof CONFIG === 'undefined' ? 'unset' : (CONFIG.navigation?.enableLocalIframeIPC !== false);
+            const configured = typeof CONFIG === 'undefined' ? 'unset' : (CONFIG.ConfigIframeIPC?.enableLocalIframeIPC !== false);
             const active = isLocalIframeIPCEnabled();
             console.info(`[AF IPC][${context}] local iframe IPC status`, {
                 protocol,
@@ -658,6 +661,10 @@
 
         let parentIpcPort = null;
         let parentIpcNonce = '';
+        let parentIPCBootstrapReceived = false;
+        let parentIPCWaitTimerId = null;
+        let parentIPCBootstrapFailed = false;
+        let parentDataPendingLoad = false;
 
         function hasActiveParentIPCChannel() {
             return !!parentIpcPort && !!parentIpcNonce;
@@ -674,6 +681,75 @@
             }
             parentIpcPort = port;
             parentIpcNonce = nonce;
+        }
+
+        function clearParentIPCWaitTimer() {
+            if (!parentIPCWaitTimerId) return;
+            clearTimeout(parentIPCWaitTimerId);
+            parentIPCWaitTimerId = null;
+        }
+
+        function getLocalIframeIPCBootstrapConfig() {
+            const cfg = (typeof CONFIG !== 'undefined' && CONFIG.debugging?.localIframeIPCBootstrap)
+                ? CONFIG.debugging.localIframeIPCBootstrap
+                : {};
+            const timeoutMs = Number.isFinite(cfg.timeoutMs) && cfg.timeoutMs >= 200
+                ? Math.floor(cfg.timeoutMs)
+                : IPC_BOOTSTRAP_WAIT_DEFAULTS.timeoutMs;
+            const maxRetries = Number.isFinite(cfg.maxRetries) && cfg.maxRetries >= 1
+                ? Math.floor(cfg.maxRetries)
+                : IPC_BOOTSTRAP_WAIT_DEFAULTS.maxRetries;
+            const retryBaseDelayMs = Number.isFinite(cfg.retryBaseDelayMs) && cfg.retryBaseDelayMs >= 0
+                ? Math.floor(cfg.retryBaseDelayMs)
+                : IPC_BOOTSTRAP_WAIT_DEFAULTS.retryBaseDelayMs;
+            const retryBackoffMultiplier = Number.isFinite(cfg.retryBackoffMultiplier) && cfg.retryBackoffMultiplier >= 1
+                ? cfg.retryBackoffMultiplier
+                : IPC_BOOTSTRAP_WAIT_DEFAULTS.retryBackoffMultiplier;
+            const maxRetryDelayMs = Number.isFinite(cfg.maxRetryDelayMs) && cfg.maxRetryDelayMs >= retryBaseDelayMs
+                ? Math.floor(cfg.maxRetryDelayMs)
+                : IPC_BOOTSTRAP_WAIT_DEFAULTS.maxRetryDelayMs;
+            const graceMs = Number.isFinite(cfg.graceMs) && cfg.graceMs >= 0
+                ? Math.floor(cfg.graceMs)
+                : IPC_BOOTSTRAP_WAIT_DEFAULTS.graceMs;
+            return {
+                timeoutMs,
+                maxRetries,
+                retryBaseDelayMs,
+                retryBackoffMultiplier,
+                maxRetryDelayMs,
+                graceMs
+            };
+        }
+
+        function estimateBootstrapFailureWindowMs() {
+            const cfg = getLocalIframeIPCBootstrapConfig();
+            let delayTotal = 0;
+            for (let attempt = 2; attempt <= cfg.maxRetries; attempt += 1) {
+                const exponent = Math.max(0, attempt - 2);
+                const computedDelay = cfg.retryBaseDelayMs * Math.pow(cfg.retryBackoffMultiplier, exponent);
+                delayTotal += Math.min(cfg.maxRetryDelayMs, computedDelay);
+            }
+            return (cfg.timeoutMs * cfg.maxRetries) + delayTotal + cfg.graceMs;
+        }
+
+        function scheduleParentIPCBootstrapFailureWatch() {
+            if (!isLocalIframeIPCEnabled()) return;
+            if (parentIPCBootstrapReceived || hasActiveParentIPCChannel()) return;
+            clearParentIPCWaitTimer();
+            const waitMs = estimateBootstrapFailureWindowMs();
+            parentIPCWaitTimerId = window.setTimeout(() => {
+                if (parentIPCBootstrapReceived || hasActiveParentIPCChannel()) return;
+                parentIPCBootstrapFailed = true;
+                logLocalIframeIPCTrace('explorer', 'parent channel bootstrap failed after retries', { waitMs });
+                setStatus('Parent IPC unavailable; loading local data...');
+                if (parentDataPendingLoad) {
+                    parentDataPendingLoad = false;
+                    loadData().catch((err) => {
+                        setStatus('Failed to load data');
+                        console.error(err);
+                    });
+                }
+            }, waitMs);
         }
 
         function sendParentIPCRequest(type) {
@@ -722,16 +798,7 @@
                 return;
             }
 
-            try {
-                if (window.parent && window.parent !== window) {
-                    window.parent.postMessage({ type: 'AF_REQUEST_THEME' }, '*');
-                    window.parent.postMessage({ type: 'AF_REQUEST_SHARED_DATA' }, '*');
-                    logLocalIframeIPCTrace('explorer', 'parent bridge requests sent', { types: ['AF_REQUEST_THEME', 'AF_REQUEST_SHARED_DATA'] });
-                }
-            } catch (e) {
-                logLocalIframeIPCTrace('explorer', 'parent bridge request error', { error: String(e && e.message ? e.message : e) });
-                // Ignore when parent messaging is unavailable
-            }
+            logLocalIframeIPCTrace('explorer', 'parent data request skipped: channel unavailable');
         }
 
         function initParentBridgeHandlers() {
@@ -740,8 +807,6 @@
                 return;
             }
             logLocalIframeIPCTrace('explorer', 'bridge handlers initialized');
-
-            const allowLegacyWindowMessages = typeof MessageChannel !== 'function';
 
             const handleChannelMessage = (event) => {
                 const message = event.data;
@@ -811,6 +876,9 @@
                         return;
                     }
                     setParentIPCChannel(transferredPort, message.nonce);
+                    parentIPCBootstrapReceived = true;
+                    parentIPCBootstrapFailed = false;
+                    clearParentIPCWaitTimer();
                     parentIpcPort.onmessage = handleChannelMessage;
                     if (typeof parentIpcPort.start === 'function') parentIpcPort.start();
                     logLocalIframeIPCTrace('explorer', 'channel bootstrap accepted');
@@ -818,46 +886,10 @@
                     return;
                 }
 
-                if (!allowLegacyWindowMessages) {
-                    logLocalIframeIPCTrace('explorer', 'window message rejected: channel mode active', { type: message.type || null });
-                    return;
-                }
-
-                if (!IPC_INBOUND_MESSAGE_TYPES.has(message.type)) {
-                    logLocalIframeIPCTrace('explorer', 'message rejected: unknown type', { type: message.type || null });
-                    return;
-                }
-                const allowedMessageKeys = IPC_INBOUND_MESSAGE_KEYS[message.type];
-                if (!hasOnlyAllowedKeys(message, allowedMessageKeys, `IPC ${message.type}`)) {
-                    return;
-                }
-                logLocalIframeIPCTrace('explorer', 'message received', { type: message.type || null });
-
-                if (message.type === 'AF_THEME_SYNC') {
-                    const mode = normalizeThemeMode(message.mode || currentTheme.mode);
-                    const scheme = normalizeThemeScheme(mode, message.scheme || 'default');
-                    applyTheme(mode, scheme, false);
-                    logLocalIframeIPCTrace('explorer', 'theme applied from parent', { mode, scheme });
-                    return;
-                }
-
-                if (message.type === 'AF_SHARED_DATA' && message.data && typeof message.data === 'object') {
-                    const validatedSharedData = validateAndFreezeSharedDataPayload(message.data);
-                    if (!validatedSharedData) {
-                        logLocalIframeIPCTrace('explorer', 'shared data rejected by validation');
-                        return;
-                    }
-                    parentSharedDataCache = validatedSharedData;
-                    logLocalIframeIPCTrace('explorer', 'shared data received from parent');
-                    if (!state.data.techniques || Object.keys(state.data.techniques).length === 0) {
-                        logLocalIframeIPCTrace('explorer', 'loadData triggered after parent shared data');
-                        loadData().catch((err) => {
-                            setStatus('Failed to load data');
-                            console.error(err);
-                        });
-                    }
-                }
+                logLocalIframeIPCTrace('explorer', 'window message rejected: channel-only mode', { type: message.type || null });
             });
+
+            scheduleParentIPCBootstrapFailureWatch();
         }
         const state = {
             data: {
@@ -1608,19 +1640,7 @@
 
         function getParentSharedDataLoader() {
             if (!isLocalIframeIPCEnabled()) return null;
-            if (typeof MessageChannel === 'function') {
-                logLocalIframeIPCTrace('explorer', 'direct parent shared data loader disabled: channel mode active');
-                return null;
-            }
-            try {
-                if (window.parent && window.parent !== window && typeof window.parent.getAttackFlowSharedData === 'function') {
-                    logLocalIframeIPCTrace('explorer', 'using direct parent shared data loader');
-                    return window.parent.getAttackFlowSharedData.bind(window.parent);
-                }
-            } catch (e) {
-                logLocalIframeIPCTrace('explorer', 'direct parent shared data loader unavailable', { error: String(e && e.message ? e.message : e) });
-                return null;
-            }
+            logLocalIframeIPCTrace('explorer', 'direct parent shared data loader disabled: channel-only mode');
             return null;
         }
 
@@ -1634,6 +1654,7 @@
 
         async function loadData() {
             setStatus('Loading data...');
+            parentDataPendingLoad = false;
             const sharedLoader = getParentSharedDataLoader();
             let attack;
             let capec;
@@ -1663,9 +1684,15 @@
                 capec = { patterns: cloneJsonData(parentSharedDataCache.capecPatterns || {}) };
                 cwe = { weaknesses: cloneJsonData(parentSharedDataCache.cweWeaknesses || {}) };
             } else if (isLocalIframeIPCEnabled() && window.parent && window.parent !== window) {
-                setStatus('Waiting for parent data...');
-                requestParentBridgeData();
-                return;
+                if (parentIPCBootstrapFailed) {
+                    logLocalIframeIPCTrace('explorer', 'parent IPC bootstrap unavailable; falling back to local data flow');
+                } else {
+                    parentDataPendingLoad = true;
+                    setStatus('Waiting for parent data...');
+                    requestParentBridgeData();
+                    scheduleParentIPCBootstrapFailureWatch();
+                    return;
+                }
             } else if (isFileProtocolRuntime()) {
                 const hasAll = OFFLINE_RESOURCE_FILES.every(name => offlineResourceStore.jsonByFileName.has(name));
                 if (!hasAll) {

@@ -25,7 +25,7 @@
                     typeof window !== 'undefined' &&
                     window.location &&
                     window.location.protocol === 'file:' &&
-                    (typeof CONFIG === 'undefined' || CONFIG.navigation?.enableLocalIframeIPC !== false)
+                    (typeof CONFIG === 'undefined' || CONFIG.ConfigIframeIPC?.enableLocalIframeIPC !== false)
                 );
                 if (allowParentCoupling && window.parent && window.parent !== window && window.parent.CONFIG) {
                     window.CONFIG = window.parent.CONFIG;
@@ -989,27 +989,31 @@
 
         function isLocalIframeIPCEnabled() {
             if (!(typeof window !== 'undefined' && window.location && window.location.protocol === 'file:')) return false;
-            return typeof CONFIG === 'undefined' || CONFIG.navigation?.enableLocalIframeIPC !== false;
+            return typeof CONFIG === 'undefined' || CONFIG.ConfigIframeIPC?.enableLocalIframeIPC !== false;
         }
 
         function isLocalIframeIPCTraceEnabled() {
             return typeof CONFIG !== 'undefined' && CONFIG.debugging?.traceLocalIframeIPCLogs === true;
         }
 
-        const IPC_INBOUND_MESSAGE_TYPES = new Set(['AF_THEME_SYNC']);
-        const IPC_INBOUND_MESSAGE_KEYS = {
-            AF_THEME_SYNC: new Set(['type', 'mode', 'scheme'])
-        };
         const IPC_PORT_INBOUND_MESSAGE_TYPES = new Set(['AF_THEME_SYNC']);
         const IPC_PORT_INBOUND_MESSAGE_KEYS = {
             AF_THEME_SYNC: new Set(['type', 'mode', 'scheme', 'nonce'])
         };
         const IPC_BOOTSTRAP_MESSAGE_KEYS = new Set(['type', 'channel', 'nonce']);
         const IPC_CHANNEL_BOOTSTRAP_TYPE = 'AF_IPC_PORT_INIT';
+        const IPC_BOOTSTRAP_WAIT_DEFAULTS = {
+            timeoutMs: 1200,
+            maxRetries: 3,
+            retryBaseDelayMs: 250,
+            retryBackoffMultiplier: 2,
+            maxRetryDelayMs: 2000,
+            graceMs: 300
+        };
 
         function logLocalIframeIPCSplash(context) {
             const protocol = (typeof window !== 'undefined' && window.location && window.location.protocol) ? window.location.protocol : 'unknown';
-            const configured = typeof CONFIG === 'undefined' ? 'unset' : (CONFIG.navigation?.enableLocalIframeIPC !== false);
+            const configured = typeof CONFIG === 'undefined' ? 'unset' : (CONFIG.ConfigIframeIPC?.enableLocalIframeIPC !== false);
             const active = isLocalIframeIPCEnabled();
             console.info(`[AF IPC][${context}] local iframe IPC status`, {
                 protocol,
@@ -1049,6 +1053,9 @@
 
         let parentIpcPort = null;
         let parentIpcNonce = '';
+        let parentIPCBootstrapReceived = false;
+        let parentIPCWaitTimerId = null;
+        let parentIPCWarningShown = false;
 
         function hasActiveParentIPCChannel() {
             return !!parentIpcPort && !!parentIpcNonce;
@@ -1067,6 +1074,68 @@
             parentIpcNonce = nonce;
         }
 
+        function clearParentIPCWaitTimer() {
+            if (!parentIPCWaitTimerId) return;
+            clearTimeout(parentIPCWaitTimerId);
+            parentIPCWaitTimerId = null;
+        }
+
+        function getLocalIframeIPCBootstrapConfig() {
+            const cfg = (typeof CONFIG !== 'undefined' && CONFIG.debugging?.localIframeIPCBootstrap)
+                ? CONFIG.debugging.localIframeIPCBootstrap
+                : {};
+            const timeoutMs = Number.isFinite(cfg.timeoutMs) && cfg.timeoutMs >= 200
+                ? Math.floor(cfg.timeoutMs)
+                : IPC_BOOTSTRAP_WAIT_DEFAULTS.timeoutMs;
+            const maxRetries = Number.isFinite(cfg.maxRetries) && cfg.maxRetries >= 1
+                ? Math.floor(cfg.maxRetries)
+                : IPC_BOOTSTRAP_WAIT_DEFAULTS.maxRetries;
+            const retryBaseDelayMs = Number.isFinite(cfg.retryBaseDelayMs) && cfg.retryBaseDelayMs >= 0
+                ? Math.floor(cfg.retryBaseDelayMs)
+                : IPC_BOOTSTRAP_WAIT_DEFAULTS.retryBaseDelayMs;
+            const retryBackoffMultiplier = Number.isFinite(cfg.retryBackoffMultiplier) && cfg.retryBackoffMultiplier >= 1
+                ? cfg.retryBackoffMultiplier
+                : IPC_BOOTSTRAP_WAIT_DEFAULTS.retryBackoffMultiplier;
+            const maxRetryDelayMs = Number.isFinite(cfg.maxRetryDelayMs) && cfg.maxRetryDelayMs >= retryBaseDelayMs
+                ? Math.floor(cfg.maxRetryDelayMs)
+                : IPC_BOOTSTRAP_WAIT_DEFAULTS.maxRetryDelayMs;
+            const graceMs = Number.isFinite(cfg.graceMs) && cfg.graceMs >= 0
+                ? Math.floor(cfg.graceMs)
+                : IPC_BOOTSTRAP_WAIT_DEFAULTS.graceMs;
+            return {
+                timeoutMs,
+                maxRetries,
+                retryBaseDelayMs,
+                retryBackoffMultiplier,
+                maxRetryDelayMs,
+                graceMs
+            };
+        }
+
+        function estimateBootstrapFailureWindowMs() {
+            const cfg = getLocalIframeIPCBootstrapConfig();
+            let delayTotal = 0;
+            for (let attempt = 2; attempt <= cfg.maxRetries; attempt += 1) {
+                const exponent = Math.max(0, attempt - 2);
+                const computedDelay = cfg.retryBaseDelayMs * Math.pow(cfg.retryBackoffMultiplier, exponent);
+                delayTotal += Math.min(cfg.maxRetryDelayMs, computedDelay);
+            }
+            return (cfg.timeoutMs * cfg.maxRetries) + delayTotal + cfg.graceMs;
+        }
+
+        function scheduleParentIPCBootstrapFailureWatch() {
+            if (!isLocalIframeIPCEnabled()) return;
+            if (parentIPCBootstrapReceived || hasActiveParentIPCChannel()) return;
+            clearParentIPCWaitTimer();
+            const waitMs = estimateBootstrapFailureWindowMs();
+            parentIPCWaitTimerId = window.setTimeout(() => {
+                if (parentIPCBootstrapReceived || hasActiveParentIPCChannel() || parentIPCWarningShown) return;
+                parentIPCWarningShown = true;
+                logLocalIframeIPCTrace('stix-builder', 'parent channel bootstrap failed after retries', { waitMs });
+                showToast('Parent IPC unavailable; using local theme defaults');
+            }, waitMs);
+        }
+
         function requestParentTheme() {
             if (!isLocalIframeIPCEnabled()) {
                 logLocalIframeIPCTrace('stix-builder', 'parent theme request skipped: IPC disabled');
@@ -1083,15 +1152,7 @@
                 }
             }
 
-            try {
-                if (window.parent && window.parent !== window) {
-                    window.parent.postMessage({ type: 'AF_REQUEST_THEME' }, '*');
-                    logLocalIframeIPCTrace('stix-builder', 'parent theme request sent', { type: 'AF_REQUEST_THEME' });
-                }
-            } catch (e) {
-                logLocalIframeIPCTrace('stix-builder', 'parent theme request error', { error: String(e && e.message ? e.message : e) });
-                // Ignore when parent messaging is unavailable
-            }
+            logLocalIframeIPCTrace('stix-builder', 'parent theme request skipped: channel unavailable');
         }
 
         function initParentThemeBridge() {
@@ -1100,8 +1161,6 @@
                 return;
             }
             logLocalIframeIPCTrace('stix-builder', 'theme bridge initialized');
-
-            const allowLegacyWindowMessages = typeof MessageChannel !== 'function';
 
             const handleChannelMessage = (event) => {
                 const message = event.data;
@@ -1151,6 +1210,8 @@
                         return;
                     }
                     setParentIPCChannel(transferredPort, message.nonce);
+                    parentIPCBootstrapReceived = true;
+                    clearParentIPCWaitTimer();
                     parentIpcPort.onmessage = handleChannelMessage;
                     if (typeof parentIpcPort.start === 'function') parentIpcPort.start();
                     logLocalIframeIPCTrace('stix-builder', 'channel bootstrap accepted');
@@ -1158,25 +1219,10 @@
                     return;
                 }
 
-                if (!allowLegacyWindowMessages) {
-                    logLocalIframeIPCTrace('stix-builder', 'window message rejected: channel mode active', { type: message.type || null });
-                    return;
-                }
-
-                if (!IPC_INBOUND_MESSAGE_TYPES.has(message.type)) {
-                    logLocalIframeIPCTrace('stix-builder', 'message rejected: unknown type', { type: message.type || null });
-                    return;
-                }
-                const allowedMessageKeys = IPC_INBOUND_MESSAGE_KEYS[message.type];
-                if (!hasOnlyAllowedKeys(message, allowedMessageKeys, `IPC ${message.type}`)) {
-                    return;
-                }
-                logLocalIframeIPCTrace('stix-builder', 'theme sync message received');
-                const mode = normalizeThemeMode(message.mode || currentTheme.mode);
-                const scheme = normalizeThemeScheme(mode, message.scheme || 'default');
-                applyTheme(mode, scheme, false);
-                logLocalIframeIPCTrace('stix-builder', 'theme applied from parent', { mode, scheme });
+                logLocalIframeIPCTrace('stix-builder', 'window message rejected: channel-only mode', { type: message.type || null });
             });
+
+            scheduleParentIPCBootstrapFailureWatch();
         }
 
         function generateUUID() {

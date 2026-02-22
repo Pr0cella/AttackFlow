@@ -15,11 +15,12 @@ Provides a minimal, local-mode communication layer between `index.html` (parent)
   - Owns canonical shared data cache.
   - Bootstraps one `MessageChannel` per iframe.
   - Generates per-session nonce and binds it to each iframe channel.
+  - Applies bounded bootstrap timeout/retry/backoff and marks terminal retry exhaustion.
 - **Children**: `explorer.html`, `stix-builder.html`
   - Accept channel bootstrap from parent.
   - Send typed requests over channel.
   - Apply validated responses.
-- **Fallback**: Legacy `window.postMessage` request handling is used only when `MessageChannel` is unavailable.
+- **Recovery**: Children maintain explicit bootstrap-failure handling without falling back to legacy request/response messaging.
 
 ## Message Types
 Requests (child -> parent):
@@ -40,6 +41,8 @@ Bootstrap:
 - Immutable shared data: `AF_SHARED_DATA` is schema-checked, cloned, and deep-frozen.
 - Iframe containment: iframe sandbox is enabled (`allow-scripts allow-same-origin`).
 - Request throttling: per-frame, per-request-type token-bucket limits (configurable).
+- Channel-only transport: legacy window request/response IPC path removed.
+- Bootstrap resilience: bounded timeout + retry/backoff with terminal failure signaling in child views.
 
 ## Threat Model (Local)
 Defends against:
@@ -53,8 +56,14 @@ Assumptions:
 
 ## Configuration
 In `config.js`:
-- `CONFIG.navigation.enableLocalIframeIPC`
+- `CONFIG.ConfigIframeIPC.enableLocalIframeIPC`
 - `CONFIG.debugging.traceLocalIframeIPCLogs`
 - `CONFIG.debugging.localIframeIPCRateLimit.enabled`
 - `CONFIG.debugging.localIframeIPCRateLimit.refillPerSecond`
 - `CONFIG.debugging.localIframeIPCRateLimit.burst`
+- `CONFIG.debugging.localIframeIPCBootstrap.timeoutMs`
+- `CONFIG.debugging.localIframeIPCBootstrap.maxRetries`
+- `CONFIG.debugging.localIframeIPCBootstrap.retryBaseDelayMs`
+- `CONFIG.debugging.localIframeIPCBootstrap.retryBackoffMultiplier`
+- `CONFIG.debugging.localIframeIPCBootstrap.maxRetryDelayMs`
+- `CONFIG.debugging.localIframeIPCBootstrap.graceMs`
