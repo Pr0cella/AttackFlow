@@ -23,6 +23,13 @@
 - **Iframe containment**: Embedded explorer/composer iframes now use sandbox containment (`allow-scripts allow-same-origin`).
 - **Prototype pollution hardening**: Import parsing/sanitization now blocks dangerous keys (`__proto__`, `constructor`, `prototype`), uses safe JSON reviver parsing, null-prototype object collectors, and own-property checks in dynamic import field mapping.
 
+#### Shared Loader Hardening
+- **Pre-cache schema enforcement**: Parent shared dataset now validates required top-level shape before writing to `cache.data`.
+- **Size/count guardrails**: Shared dataset now enforces per-bucket entry limits and serialized size limits before cache write.
+- **IPC parity on limits**: `AF_SHARED_DATA` payload building now enforces the same shared-data limits at send-time, not only at ingest-time.
+- **Immutable loader snapshots**: `window.getAttackFlowSharedData()` now returns validated clone+freeze snapshots instead of exposing mutable cache references.
+- **Explorer fallback diagnostics**: Direct parent shared-loader errors/invalid payloads now emit debug trace diagnostics and safely fall back to alternate data sources.
+
 #### Local IPC Hardening
 - **Source pinning**: IPC messages are accepted only from expected frame windows.
 - **Strict schema enforcement**: IPC message types and keys are allowlisted; unknown keys/types are rejected and traced.

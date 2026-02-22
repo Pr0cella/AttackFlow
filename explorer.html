@@ -970,6 +970,8 @@
             const status = document.getElementById('status');
             status.textContent = 'Offline mode: click here to select local resource files.';
             status.style.cursor = 'pointer';
+            status.style.border = '1px dashed red';
+            status.style.background = 'rgba(255, 0, 0, 0.1)';
             status.onclick = async () => {
                 try {
                     status.textContent = 'Select local resources...';
@@ -977,6 +979,8 @@
                     status.style.cursor = '';
                     status.onclick = null;
                     await loadData();
+                    status.style.border = '';
+                    status.style.background = '';
                 } catch (err) {
                     status.textContent = 'Offline load failed: ' + (err && err.message ? err.message : String(err));
                 }
@@ -1634,12 +1638,26 @@
             let attack;
             let capec;
             let cwe;
+            let validatedLoaderSharedData = null;
 
             if (sharedLoader) {
-                const shared = await sharedLoader();
-                attack = shared.attack || {};
-                capec = { patterns: shared.capecPatterns || {} };
-                cwe = { weaknesses: shared.cweWeaknesses || {} };
+                try {
+                    const shared = await sharedLoader();
+                    validatedLoaderSharedData = validateAndFreezeSharedDataPayload(shared);
+                    if (!validatedLoaderSharedData) {
+                        logLocalIframeIPCTrace('explorer', 'direct shared loader payload invalid; falling back to alternate data source');
+                    }
+                } catch (e) {
+                    logLocalIframeIPCTrace('explorer', 'direct shared loader failed; falling back to alternate data source', {
+                        error: String(e && e.message ? e.message : e)
+                    });
+                }
+            }
+
+            if (validatedLoaderSharedData) {
+                attack = cloneJsonData(validatedLoaderSharedData.attack || {});
+                capec = { patterns: cloneJsonData(validatedLoaderSharedData.capecPatterns || {}) };
+                cwe = { weaknesses: cloneJsonData(validatedLoaderSharedData.cweWeaknesses || {}) };
             } else if (parentSharedDataCache) {
                 attack = cloneJsonData(parentSharedDataCache.attack || {});
                 capec = { patterns: cloneJsonData(parentSharedDataCache.capecPatterns || {}) };
