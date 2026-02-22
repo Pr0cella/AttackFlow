@@ -4,7 +4,7 @@
 ## [2.9.0] - 2026-02-21
 
 ### Added
-- **STIX Composer**: New STIX 2.1 editor interface for creating & sharing STIX 2.1 objects and bundles. Uses verbose JSON validator to report bundle <-> STIX specification mismatches.
+- **STIX Composer**: New STIX 2.1 editor interface for creating & sharing STIX 2.1 objects and bundles. Uses verbose JSON validator to report Bundle <-> Object <-> STIX specification mismatches.
 - **STIX Visualizer**: Composer-Integrated optional STIX visualizer module
 - **Visualizer kill-switch config**: Added `CONFIG.visualizer.enabled` to fully disable STIX visualizer loading/execution paths.
 - **Mitigation Relationships**: Mitigation column added to the relationship view, sourced from techniques in each chain.
