@@ -909,13 +909,13 @@
                     .replace(/>/g, '&gt;')
                     .replace(/"/g, '&quot;')
                     .replace(/'/g, '&#39;')
-                    .replace(/`/g, '&#96;');
+                    .replace(/`/g, '&#96;')
+                    .replace(/\\/g, '&#92;');
             },
             normalize(str, maxLength = 10000) {
                 if (str === null || str === undefined) return '';
                 return String(str)
                     .replace(/[\x00-\x1F\x7F]/g, '')
-                    .replace(/<script[^>]*>.*?<\/script>/gi, '')
                     .slice(0, maxLength);
             },
             sanitize(str, maxLength = 10000) {
@@ -1299,8 +1299,6 @@
             if (typeof str !== 'string') return '';
             return String(str)
                 .replace(/[\x00-\x1F\x7F]/g, '')
-                .replace(/<script[^>]*>.*?<\/script>/gi, '')
-                .replace(/on\w+\s*=/gi, '')
                 .replace(/[\[\]\{\};"'`]/g, '')
                 .replace(/</g, '&lt;').replace(/>/g, '&gt;')
                 .trim()

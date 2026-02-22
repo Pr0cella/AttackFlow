@@ -39,7 +39,7 @@ Bootstrap:
 - Strict allowlists: message types and payload keys are validated; unknown keys/types are rejected.
 - Nonce binding: channel messages must include correct session nonce.
 - Immutable shared data: `AF_SHARED_DATA` is schema-checked, cloned, and deep-frozen.
-- Iframe containment: iframe sandbox is enabled (`allow-scripts allow-same-origin`).
+- Iframe containment: iframe sandbox is enabled (`allow-scripts allow-same-origin allow-modals`).
 - Request throttling: per-frame, per-request-type token-bucket limits (configurable).
 - Channel-only transport: legacy window request/response IPC path removed.
 - Bootstrap resilience: bounded timeout + retry/backoff with terminal failure signaling in child views.
