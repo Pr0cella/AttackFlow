@@ -904,13 +904,13 @@
             encodeHtmlEntities(str) {
                 if (str === null || str === undefined) return '';
                 return String(str)
-                    .replace(/\\/g, '&#92;')
                     .replace(/&/g, '&amp;')
                     .replace(/</g, '&lt;')
                     .replace(/>/g, '&gt;')
                     .replace(/"/g, '&quot;')
                     .replace(/'/g, '&#39;')
-                    .replace(/`/g, '&#96;');
+                    .replace(/`/g, '&#96;')
+                    .replace(/\\/g, '&#92;');
             },
             normalize(str, maxLength = 10000) {
                 if (str === null || str === undefined) return '';
