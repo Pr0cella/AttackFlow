@@ -1,7 +1,7 @@
 # Changelog
 ---
 
-## [2.9.0] - 2026-02-21
+## [2.9.0] - 2026-02-22
 
 ### Added
 - **STIX Composer**: New STIX 2.1 editor interface for creating & sharing STIX 2.1 objects and bundles. Uses interactive JSON validator reporting to inspect and resolve Object <-> STIX specification mismatches.

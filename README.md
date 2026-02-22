@@ -46,18 +46,22 @@ An editor for creating enriched Cyber Kill Chain assessments by mapping MITRE AT
 - **Compact Mode** — Dense ID-only tags to fit large kill chains, collapsible sidebar & hiding empty phases
 - **STIX Editor** — Edit all spec-defined fields per SDO type with vocabulary dropdowns
 
-![Preview](preview.png)
+![Preview](/docs/images/preview.png)
 
 #### Kill Chain Relationships
-- **Browsable Mapping Explorer** — Browse kill chain related CAPEC → CWE → ATT&CK → Mitigation patterns per Phase in a dedicated view
+- **Browsable Mapping Explorer** — Browse kill chain related CAPEC → CWE → ATT&CK → Mitigation patterns per Phase in a dedicated view with phase detail modal dialogs
 
-![Relations View](relations.png)
+![Relations View](/docs/images/relations.png)
 
 ### Relationship Explorer 
 - **Integrated Resource Corpus Explorer** Explore & search the complete corpus of related ATT&CK ↔ CAPEC ↔ CWE ↔ Mitigations patterns
 - **Technique Cross-References** — Item relationships & techniques referenced by ID in descriptions link to the Relationship Explorer
 
-![Explorer View](explorer.png)
+![Explorer View](/docs/images/explorer.png)
+
+### STIX Composer
+#### Interactive STIX Object/Bundle Editor & Visualizer
+![Composer View](/docs/images/visualizer.png)
 
 ## Quick Start
 
@@ -221,7 +225,7 @@ Configuration in `config.js`:
 - `CONFIG.debugging.localIframeIPCBootstrap.maxRetryDelayMs`
 - `CONFIG.debugging.localIframeIPCBootstrap.graceMs`
 
-See `IPC_API-DOCS.md` for concise architecture and threat-model documentation.
+See (IPC API DOCS)[docs/dev/IPC_API-DOCS.md] for concise architecture and threat-model documentation.
 
 ### STIX Visualizer Toggle
 
@@ -233,7 +237,7 @@ When disabled, AttackFlow prevents the visualizer from loading and executing by 
 
 ### Bundled STIX Visualizer Dependencies
 
-The (STIX visualizer)[https://github.com/oasis-open/cti-stix-visualization] is shipped as vendored local files (no CDN):
+The [STIX visualizer](https://github.com/oasis-open/cti-stix-visualization)  is shipped as vendored local files (no CDN):
 
 - RequireJS `2.3.6` (`stix-visualization/stix_visualizer/require.js`)
 - RequireJS domReady plugin `2.0.1` (`stix-visualization/stix_visualizer/domReady.js`)
