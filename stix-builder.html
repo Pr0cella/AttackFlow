@@ -996,10 +996,6 @@
             return typeof CONFIG !== 'undefined' && CONFIG.debugging?.traceLocalIframeIPCLogs === true;
         }
 
-        const IPC_INBOUND_MESSAGE_TYPES = new Set(['AF_THEME_SYNC']);
-        const IPC_INBOUND_MESSAGE_KEYS = {
-            AF_THEME_SYNC: new Set(['type', 'mode', 'scheme'])
-        };
         const IPC_PORT_INBOUND_MESSAGE_TYPES = new Set(['AF_THEME_SYNC']);
         const IPC_PORT_INBOUND_MESSAGE_KEYS = {
             AF_THEME_SYNC: new Set(['type', 'mode', 'scheme', 'nonce'])
@@ -1083,15 +1079,7 @@
                 }
             }
 
-            try {
-                if (window.parent && window.parent !== window) {
-                    window.parent.postMessage({ type: 'AF_REQUEST_THEME' }, '*');
-                    logLocalIframeIPCTrace('stix-builder', 'parent theme request sent', { type: 'AF_REQUEST_THEME' });
-                }
-            } catch (e) {
-                logLocalIframeIPCTrace('stix-builder', 'parent theme request error', { error: String(e && e.message ? e.message : e) });
-                // Ignore when parent messaging is unavailable
-            }
+            logLocalIframeIPCTrace('stix-builder', 'parent theme request skipped: channel unavailable');
         }
 
         function initParentThemeBridge() {
@@ -1100,8 +1088,6 @@
                 return;
             }
             logLocalIframeIPCTrace('stix-builder', 'theme bridge initialized');
-
-            const allowLegacyWindowMessages = typeof MessageChannel !== 'function';
 
             const handleChannelMessage = (event) => {
                 const message = event.data;
@@ -1158,24 +1144,7 @@
                     return;
                 }
 
-                if (!allowLegacyWindowMessages) {
-                    logLocalIframeIPCTrace('stix-builder', 'window message rejected: channel mode active', { type: message.type || null });
-                    return;
-                }
-
-                if (!IPC_INBOUND_MESSAGE_TYPES.has(message.type)) {
-                    logLocalIframeIPCTrace('stix-builder', 'message rejected: unknown type', { type: message.type || null });
-                    return;
-                }
-                const allowedMessageKeys = IPC_INBOUND_MESSAGE_KEYS[message.type];
-                if (!hasOnlyAllowedKeys(message, allowedMessageKeys, `IPC ${message.type}`)) {
-                    return;
-                }
-                logLocalIframeIPCTrace('stix-builder', 'theme sync message received');
-                const mode = normalizeThemeMode(message.mode || currentTheme.mode);
-                const scheme = normalizeThemeScheme(mode, message.scheme || 'default');
-                applyTheme(mode, scheme, false);
-                logLocalIframeIPCTrace('stix-builder', 'theme applied from parent', { mode, scheme });
+                logLocalIframeIPCTrace('stix-builder', 'window message rejected: channel-only mode', { type: message.type || null });
             });
         }
 

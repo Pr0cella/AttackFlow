@@ -5216,11 +5216,6 @@
             return typeof CONFIG !== 'undefined' && CONFIG.debugging?.traceLocalIframeIPCLogs === true;
         }
 
-        const IPC_INBOUND_MESSAGE_TYPES = new Set(['AF_REQUEST_THEME', 'AF_REQUEST_SHARED_DATA']);
-        const IPC_INBOUND_MESSAGE_KEYS = {
-            AF_REQUEST_THEME: new Set(['type']),
-            AF_REQUEST_SHARED_DATA: new Set(['type'])
-        };
         const IPC_PORT_INBOUND_MESSAGE_TYPES = new Set(['AF_REQUEST_THEME', 'AF_REQUEST_SHARED_DATA']);
         const IPC_PORT_INBOUND_MESSAGE_KEYS = {
             AF_REQUEST_THEME: new Set(['type', 'nonce']),
@@ -5392,15 +5387,6 @@
             const explorerWin = getExplorerFrameEl()?.contentWindow || null;
             const builderWin = getStixBuilderFrameEl()?.contentWindow || null;
             return sourceWindow === explorerWin || sourceWindow === builderWin;
-        }
-
-        function resolveFrameKeyFromSourceWindow(sourceWindow) {
-            if (!sourceWindow) return null;
-            const explorerWin = getExplorerFrameEl()?.contentWindow || null;
-            if (sourceWindow === explorerWin) return 'explorer';
-            const builderWin = getStixBuilderFrameEl()?.contentWindow || null;
-            if (sourceWindow === builderWin) return 'stix-builder';
-            return null;
         }
 
         function getIPCFrameState(frameKey) {
@@ -5626,24 +5612,6 @@
             return document.querySelector('.stix-builder-frame');
         }
 
-        function postMessageToFrame(frameEl, payload) {
-            if (!isLocalIframeIPCEnabled()) {
-                logLocalIframeIPCTrace('index', 'postMessage blocked: IPC disabled', { type: payload?.type || null });
-                return;
-            }
-            try {
-                if (frameEl && frameEl.contentWindow) {
-                    frameEl.contentWindow.postMessage(payload, '*');
-                    logLocalIframeIPCTrace('index', 'postMessage sent', { type: payload?.type || null });
-                } else {
-                    logLocalIframeIPCTrace('index', 'postMessage skipped: frame unavailable', { type: payload?.type || null });
-                }
-            } catch (e) {
-                logLocalIframeIPCTrace('index', 'postMessage error', { type: payload?.type || null, error: String(e && e.message ? e.message : e) });
-                // Ignore cross-context messaging errors
-            }
-        }
-
         function broadcastSharedDataToExplorer() {
             if (!isLocalIframeIPCEnabled()) {
                 logLocalIframeIPCTrace('index', 'shared-data broadcast blocked: IPC disabled');
@@ -5666,11 +5634,7 @@
                 logLocalIframeIPCTrace('index', 'shared-data broadcast sent via channel');
                 return;
             }
-            postMessageToFrame(getExplorerFrameEl(), {
-                type: 'AF_SHARED_DATA',
-                data: immutablePayload
-            });
-            logLocalIframeIPCTrace('index', 'shared-data broadcast queued');
+            logLocalIframeIPCTrace('index', 'shared-data broadcast skipped: channel unavailable');
         }
 
         function broadcastThemeToEmbeddedViews() {
@@ -5683,11 +5647,14 @@
                 mode: currentTheme?.mode || 'light',
                 scheme: currentTheme?.scheme || 'default'
             };
-            sendIPCMessageViaChannel('explorer', payload);
-            sendIPCMessageViaChannel('stix-builder', payload);
-            postMessageToFrame(getExplorerFrameEl(), payload);
-            postMessageToFrame(getStixBuilderFrameEl(), payload);
-            logLocalIframeIPCTrace('index', 'theme broadcast queued', { mode: payload.mode, scheme: payload.scheme });
+            const explorerSent = sendIPCMessageViaChannel('explorer', payload);
+            const builderSent = sendIPCMessageViaChannel('stix-builder', payload);
+            logLocalIframeIPCTrace('index', 'theme broadcast attempted via channel', {
+                mode: payload.mode,
+                scheme: payload.scheme,
+                explorerSent,
+                builderSent
+            });
         }
 
         function initEmbeddedMessageBridge() {
@@ -5697,7 +5664,6 @@
             }
             logLocalIframeIPCTrace('index', 'bridge initialized');
 
-            const allowLegacyWindowRequests = typeof MessageChannel !== 'function';
             window.addEventListener('message', (event) => {
                 const message = event.data;
                 if (!message || typeof message !== 'object') return;
@@ -5705,58 +5671,8 @@
                     logLocalIframeIPCTrace('index', 'message rejected: unknown source window');
                     return;
                 }
-                logLocalIframeIPCTrace('index', 'message received', { type: message.type || null });
-
-                if (!allowLegacyWindowRequests) {
-                    if (message.type !== IPC_CHANNEL_BOOTSTRAP_TYPE && message.type !== 'AF_THEME_SYNC' && message.type !== 'AF_SHARED_DATA') {
-                        logLocalIframeIPCTrace('index', 'legacy window message rejected: channel mode active', { type: message.type || null });
-                    }
-                    return;
-                }
-
-                if (!IPC_INBOUND_MESSAGE_TYPES.has(message.type)) {
-                    logLocalIframeIPCTrace('index', 'message rejected: unknown type', { type: message.type || null });
-                    return;
-                }
-
-                const allowedMessageKeys = IPC_INBOUND_MESSAGE_KEYS[message.type];
-                if (!hasOnlyAllowedKeys(message, allowedMessageKeys, `IPC ${message.type}`)) {
-                    return;
-                }
-
-                const frameKey = resolveFrameKeyFromSourceWindow(event.source);
-                if (!frameKey) {
-                    logLocalIframeIPCTrace('index', 'legacy message rejected: frame resolution failed');
-                    return;
-                }
-                if (!isIPCRequestRateAllowed(frameKey, message.type, 'window')) {
-                    return;
-                }
-
-                if (message.type === 'AF_REQUEST_THEME') {
-                    if (event.source && typeof event.source.postMessage === 'function') {
-                        event.source.postMessage({
-                            type: 'AF_THEME_SYNC',
-                            mode: currentTheme?.mode || 'light',
-                            scheme: currentTheme?.scheme || 'default'
-                        }, '*');
-                        logLocalIframeIPCTrace('index', 'responded with theme sync');
-                    }
-                    return;
-                }
-
-                if (message.type === 'AF_REQUEST_SHARED_DATA') {
-                    const cache = getSharedDataCache();
-                    const immutablePayload = cache.data ? buildImmutableSharedDataPayload(cache.data) : null;
-                    if (immutablePayload && event.source && typeof event.source.postMessage === 'function') {
-                        event.source.postMessage({
-                            type: 'AF_SHARED_DATA',
-                            data: immutablePayload
-                        }, '*');
-                        logLocalIframeIPCTrace('index', 'responded with shared data');
-                    } else {
-                        logLocalIframeIPCTrace('index', 'shared-data request not fulfilled: cache/source unavailable');
-                    }
+                if (message.type !== IPC_CHANNEL_BOOTSTRAP_TYPE) {
+                    logLocalIframeIPCTrace('index', 'window message rejected: channel-only mode', { type: message.type || null });
                 }
             });
 

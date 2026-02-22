@@ -589,11 +589,6 @@
             return typeof CONFIG !== 'undefined' && CONFIG.debugging?.traceLocalIframeIPCLogs === true;
         }
 
-        const IPC_INBOUND_MESSAGE_TYPES = new Set(['AF_THEME_SYNC', 'AF_SHARED_DATA']);
-        const IPC_INBOUND_MESSAGE_KEYS = {
-            AF_THEME_SYNC: new Set(['type', 'mode', 'scheme']),
-            AF_SHARED_DATA: new Set(['type', 'data'])
-        };
         const IPC_PORT_INBOUND_MESSAGE_TYPES = new Set(['AF_THEME_SYNC', 'AF_SHARED_DATA']);
         const IPC_PORT_INBOUND_MESSAGE_KEYS = {
             AF_THEME_SYNC: new Set(['type', 'mode', 'scheme', 'nonce']),
@@ -722,16 +717,7 @@
                 return;
             }
 
-            try {
-                if (window.parent && window.parent !== window) {
-                    window.parent.postMessage({ type: 'AF_REQUEST_THEME' }, '*');
-                    window.parent.postMessage({ type: 'AF_REQUEST_SHARED_DATA' }, '*');
-                    logLocalIframeIPCTrace('explorer', 'parent bridge requests sent', { types: ['AF_REQUEST_THEME', 'AF_REQUEST_SHARED_DATA'] });
-                }
-            } catch (e) {
-                logLocalIframeIPCTrace('explorer', 'parent bridge request error', { error: String(e && e.message ? e.message : e) });
-                // Ignore when parent messaging is unavailable
-            }
+            logLocalIframeIPCTrace('explorer', 'parent data request skipped: channel unavailable');
         }
 
         function initParentBridgeHandlers() {
@@ -740,8 +726,6 @@
                 return;
             }
             logLocalIframeIPCTrace('explorer', 'bridge handlers initialized');
-
-            const allowLegacyWindowMessages = typeof MessageChannel !== 'function';
 
             const handleChannelMessage = (event) => {
                 const message = event.data;
@@ -818,45 +802,7 @@
                     return;
                 }
 
-                if (!allowLegacyWindowMessages) {
-                    logLocalIframeIPCTrace('explorer', 'window message rejected: channel mode active', { type: message.type || null });
-                    return;
-                }
-
-                if (!IPC_INBOUND_MESSAGE_TYPES.has(message.type)) {
-                    logLocalIframeIPCTrace('explorer', 'message rejected: unknown type', { type: message.type || null });
-                    return;
-                }
-                const allowedMessageKeys = IPC_INBOUND_MESSAGE_KEYS[message.type];
-                if (!hasOnlyAllowedKeys(message, allowedMessageKeys, `IPC ${message.type}`)) {
-                    return;
-                }
-                logLocalIframeIPCTrace('explorer', 'message received', { type: message.type || null });
-
-                if (message.type === 'AF_THEME_SYNC') {
-                    const mode = normalizeThemeMode(message.mode || currentTheme.mode);
-                    const scheme = normalizeThemeScheme(mode, message.scheme || 'default');
-                    applyTheme(mode, scheme, false);
-                    logLocalIframeIPCTrace('explorer', 'theme applied from parent', { mode, scheme });
-                    return;
-                }
-
-                if (message.type === 'AF_SHARED_DATA' && message.data && typeof message.data === 'object') {
-                    const validatedSharedData = validateAndFreezeSharedDataPayload(message.data);
-                    if (!validatedSharedData) {
-                        logLocalIframeIPCTrace('explorer', 'shared data rejected by validation');
-                        return;
-                    }
-                    parentSharedDataCache = validatedSharedData;
-                    logLocalIframeIPCTrace('explorer', 'shared data received from parent');
-                    if (!state.data.techniques || Object.keys(state.data.techniques).length === 0) {
-                        logLocalIframeIPCTrace('explorer', 'loadData triggered after parent shared data');
-                        loadData().catch((err) => {
-                            setStatus('Failed to load data');
-                            console.error(err);
-                        });
-                    }
-                }
+                logLocalIframeIPCTrace('explorer', 'window message rejected: channel-only mode', { type: message.type || null });
             });
         }
         const state = {
@@ -1608,19 +1554,7 @@
 
         function getParentSharedDataLoader() {
             if (!isLocalIframeIPCEnabled()) return null;
-            if (typeof MessageChannel === 'function') {
-                logLocalIframeIPCTrace('explorer', 'direct parent shared data loader disabled: channel mode active');
-                return null;
-            }
-            try {
-                if (window.parent && window.parent !== window && typeof window.parent.getAttackFlowSharedData === 'function') {
-                    logLocalIframeIPCTrace('explorer', 'using direct parent shared data loader');
-                    return window.parent.getAttackFlowSharedData.bind(window.parent);
-                }
-            } catch (e) {
-                logLocalIframeIPCTrace('explorer', 'direct parent shared data loader unavailable', { error: String(e && e.message ? e.message : e) });
-                return null;
-            }
+            logLocalIframeIPCTrace('explorer', 'direct parent shared data loader disabled: channel-only mode');
             return null;
         }
 
