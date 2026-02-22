@@ -478,7 +478,7 @@
                     typeof window !== 'undefined' &&
                     window.location &&
                     window.location.protocol === 'file:' &&
-                    (typeof CONFIG === 'undefined' || CONFIG.navigation?.enableLocalIframeIPC !== false)
+                    (typeof CONFIG === 'undefined' || CONFIG.ConfigIframeIPC?.enableLocalIframeIPC !== false)
                 );
                 if (allowParentCoupling && window.parent && window.parent !== window && window.parent.CONFIG) {
                     window.CONFIG = window.parent.CONFIG;
@@ -582,7 +582,7 @@
 
         function isLocalIframeIPCEnabled() {
             if (!isFileProtocolRuntime()) return false;
-            return typeof CONFIG === 'undefined' || CONFIG.navigation?.enableLocalIframeIPC !== false;
+            return typeof CONFIG === 'undefined' || CONFIG.ConfigIframeIPC?.enableLocalIframeIPC !== false;
         }
 
         function isLocalIframeIPCTraceEnabled() {
@@ -609,7 +609,7 @@
 
         function logLocalIframeIPCSplash(context) {
             const protocol = (typeof window !== 'undefined' && window.location && window.location.protocol) ? window.location.protocol : 'unknown';
-            const configured = typeof CONFIG === 'undefined' ? 'unset' : (CONFIG.navigation?.enableLocalIframeIPC !== false);
+            const configured = typeof CONFIG === 'undefined' ? 'unset' : (CONFIG.ConfigIframeIPC?.enableLocalIframeIPC !== false);
             const active = isLocalIframeIPCEnabled();
             console.info(`[AF IPC][${context}] local iframe IPC status`, {
                 protocol,

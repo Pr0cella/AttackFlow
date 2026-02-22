@@ -204,11 +204,15 @@ const CONFIG = {
         }
     },
 
+    // Local iframe IPC behavior
+    ConfigIframeIPC: {
+        enableLocalIframeIPC: true // Enable iframe IPC bridge only for file:// local mode
+    },
+
     // Navigation behavior
     navigation: {
         confirmOnLeave: true,    // Show confirmation dialog before leaving the page
-        showStixBuilder: true,   // Toggle STIX Composer view in navigation
-        enableLocalIframeIPC: false // Enable iframe IPC bridge only for file:// local mode
+        showStixBuilder: true    // Toggle STIX Composer view in navigation
     }
 };
 
