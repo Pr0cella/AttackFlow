@@ -904,6 +904,7 @@
             encodeHtmlEntities(str) {
                 if (str === null || str === undefined) return '';
                 return String(str)
+                    .replace(/\\/g, '&#92;')
                     .replace(/&/g, '&amp;')
                     .replace(/</g, '&lt;')
                     .replace(/>/g, '&gt;')
@@ -915,7 +916,6 @@
                 if (str === null || str === undefined) return '';
                 return String(str)
                     .replace(/[\x00-\x1F\x7F]/g, '')
-                    .replace(/<script[^>]*>.*?<\/script>/gi, '')
                     .slice(0, maxLength);
             },
             sanitize(str, maxLength = 10000) {
@@ -1299,8 +1299,6 @@
             if (typeof str !== 'string') return '';
             return String(str)
                 .replace(/[\x00-\x1F\x7F]/g, '')
-                .replace(/<script[^>]*>.*?<\/script>/gi, '')
-                .replace(/on\w+\s*=/gi, '')
                 .replace(/[\[\]\{\};"'`]/g, '')
                 .replace(/</g, '&lt;').replace(/>/g, '&gt;')
                 .trim()

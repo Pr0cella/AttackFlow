@@ -4091,6 +4091,7 @@
             encodeHtmlEntities(str) {
                 if (str === null || str === undefined) return '';
                 return String(str)
+                    .replace(/\\/g, '&#92;')
                     .replace(/&/g, '&amp;')
                     .replace(/</g, '&lt;')
                     .replace(/>/g, '&gt;')
@@ -4109,7 +4110,6 @@
                 // (see sanitize() and sanitizeForStorage()).  KCE-SEC-010.
                 return String(str)
                     .replace(/[\x00-\x1F\x7F]/g, '')  // Remove control chars
-                    .replace(/<script[^>]*>.*?<\/script>/gi, '')  // Remove script tags
                     .slice(0, maxLength);
             },
             
@@ -4213,7 +4213,6 @@
                 : /[\x00-\x1F\x7F]/g;
             return String(text)
                 .replace(controlPattern, '')
-                .replace(/<script[^>]*>.*?<\/script>/gi, '')
                 .slice(0, maxLength);
         }
 
@@ -8889,9 +8888,8 @@
                     ? `<span class="phase-details-chip">Group: ${esc(item.groupLabel)}</span>`
                     : '';
 
-                const openAction = item.type === 'custom'
-                    ? `openEntityModal('custom', '${InputSecurity.encodeHtmlEntities(item.id)}', '${InputSecurity.encodeHtmlEntities(phaseKey)}', '${InputSecurity.encodeHtmlEntities(item.instanceId || '')}')`
-                    : `openEntityModal('${escAttr(item.type)}', '${escAttr(item.id)}', '${escAttr(phaseKey)}', '${escAttr(item.instanceId || '')}')`;
+                const encodeInlineJsArg = (value) => InputSecurity.encodeHtmlEntities(JSON.stringify(String(value ?? '')));
+                const openAction = `openEntityModal(${encodeInlineJsArg(item.type)}, ${encodeInlineJsArg(item.id)}, ${encodeInlineJsArg(phaseKey)}, ${encodeInlineJsArg(item.instanceId || '')})`;
 
                 return `
                     <div class="phase-details-item clickable" onclick="${openAction}">
@@ -9432,8 +9430,6 @@
             // Normalize, remove dangerous chars, limit length
             return String(str)
                 .replace(/[\x00-\x1F\x7F]/g, '')  // Control chars
-                .replace(/<script[^>]*>.*?<\/script>/gi, '')  // Script tags
-                .replace(/on\w+\s*=/gi, '')  // Event handlers (onmouseover=, onerror=, etc.)
                 .replace(/[\[\]\{\};"'`]/g, '')  // Blocked chars including double quotes
                 .replace(/--+/g, '')  // SQL comments
                 .replace(/</g, '&lt;').replace(/>/g, '&gt;')  // Encode angle brackets
