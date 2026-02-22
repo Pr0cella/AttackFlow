@@ -970,6 +970,8 @@
             const status = document.getElementById('status');
             status.textContent = 'Offline mode: click here to select local resource files.';
             status.style.cursor = 'pointer';
+            status.style.border = '1px dashed red';
+            status.style.background = 'rgba(255, 0, 0, 0.1)';
             status.onclick = async () => {
                 try {
                     status.textContent = 'Select local resources...';
@@ -977,6 +979,8 @@
                     status.style.cursor = '';
                     status.onclick = null;
                     await loadData();
+                    status.style.border = '';
+                    status.style.background = '';
                 } catch (err) {
                     status.textContent = 'Offline load failed: ' + (err && err.message ? err.message : String(err));
                 }
