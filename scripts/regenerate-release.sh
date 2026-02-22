@@ -1,6 +1,6 @@
 #!/bin/bash
 # Rebuild release artifacts in release/
-# Copies root-level .html and .js files, plus resources/
+# Copies root-level .html and .js files, plus resources/ and stix-visualization/
 
 set -euo pipefail
 
@@ -69,6 +69,14 @@ if [ -d "$SRC/resources" ]; then
     echo "  resources/"
 else
     echo "Warning: resources/ directory not found in source"
+fi
+
+if [ -d "$SRC/stix-visualization" ]; then
+    echo "Copying stix-visualization directory..."
+    rsync -a --delete "$SRC/stix-visualization/" "$RELEASE_DIR/stix-visualization/"
+    echo "  stix-visualization/"
+else
+    echo "Warning: stix-visualization/ directory not found in source"
 fi
 
 echo ""
