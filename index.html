@@ -4714,8 +4714,8 @@
             const group = (phaseData.groups || []).find(g => g.groupId === groupId);
             if (!group) return;
             group.collapsed = !group.collapsed;
-            const escapedId = window.CSS && CSS.escape ? CSS.escape(groupId) : groupId.replace(/"/g, '\\"');
-            const groupEl = document.querySelector(`.phase-group[data-group-id="${escapedId}"]`);
+            const groupEl = Array.from(document.querySelectorAll('.phase-group'))
+                .find(el => el?.dataset?.groupId === groupId);
             if (groupEl) {
                 groupEl.classList.toggle('collapsed', group.collapsed);
             } else {
