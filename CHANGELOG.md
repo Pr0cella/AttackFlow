@@ -36,7 +36,8 @@
 - **Immutable shared payload**: `AF_SHARED_DATA` is shape-validated, cloned, and deep-frozen before IPC send/use.
 - **Rate limiting**: Token-bucket throttling (configurable) for incoming IPC requests per frame and request type.
 - **Data loading behavior**: Explorer can consume validated shared data from parent in local iframe mode to reduce redundant fetch/load paths.
-- **IPC transport hardening**: Prefer `MessageChannel` per iframe with session nonce binding; window-level requests are kept as controlled fallback only.
+- **IPC transport hardening**: Channel-only `MessageChannel` transport with session nonce binding; legacy window request/response fallback path removed.
+- **Bootstrap resilience**: Parent channel bootstrap now uses bounded timeout/retry/backoff; explorer and stix-builder expose explicit terminal bootstrap-failure recovery behavior without legacy transport.
 
 
 ## [2.8.0] - 2026-02-14

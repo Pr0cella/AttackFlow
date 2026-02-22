@@ -196,17 +196,25 @@ const CONFIG = {
 
     // Debugging controls
     debugging: {
-        traceLocalIframeIPCLogs: true, // Enable full local iframe IPC trace logs in console
+        traceLocalIframeIPCLogs: false, // Enable full local iframe IPC trace logs in console
         localIframeIPCRateLimit: {
             enabled: true,      // Apply request throttling for local iframe IPC request messages
             refillPerSecond: 1, // Token refill rate per second
             burst: 2            // Max burst per frame per request type
+        },
+        localIframeIPCBootstrap: {
+            timeoutMs: 1200,            // Per-attempt bootstrap timeout in milliseconds
+            maxRetries: 3,              // Total bootstrap attempts before terminal failure
+            retryBaseDelayMs: 250,      // Base delay before retry attempts
+            retryBackoffMultiplier: 2,  // Exponential backoff multiplier
+            maxRetryDelayMs: 2000,      // Upper bound for retry delay
+            graceMs: 300                // Extra wait for child-side terminal-failure watch
         }
     },
 
     // Local iframe IPC behavior
     ConfigIframeIPC: {
-        enableLocalIframeIPC: true // Enable iframe IPC bridge only for file:// local mode
+        enableLocalIframeIPC: false // Enable iframe IPC bridge only for file:// local mode
     },
 
     // Navigation behavior
