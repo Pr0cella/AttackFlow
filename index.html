@@ -3389,7 +3389,7 @@
     <div class="loading" id="loading">
         <div class="loading-text">Loading data...</div>
         <button class="loading-dismiss" id="loading-dismiss" onclick="hideLoadingOverlay()">Continue Without Data</button>
-        <button class="loading-bypass" id="loading-bypass" onclick="hideLoadingOverlay()">I know what I’m doing</button>
+        <button class="loading-bypass" id="loading-bypass" onclick="hideLoadingOverlay()">Continue Without Data</button>
         <div class="loading-hint" id="loading-hint">You can still import ATT&CK Navigator layers, create STIX objects, and import saved kill chains.</div>
         <div class="loading-context-info" id="loading-context-info"></div>
     </div>
@@ -5207,7 +5207,7 @@
             }
             if (loadingBypass) {
                 loadingBypass.style.display = 'inline-block';
-                loadingBypass.textContent = 'I know what I\'m doing';
+                loadingBypass.textContent = 'Continue Without Data';
                 loadingBypass.onclick = hideLoadingOverlay;
             }
         }
