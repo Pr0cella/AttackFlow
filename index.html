@@ -5306,6 +5306,7 @@
         };
 
         function logLocalIframeIPCSplash(context) {
+            if (!isFileProtocolRuntime() && !isLocalIframeIPCTraceEnabled()) return;
             const protocol = (typeof window !== 'undefined' && window.location && window.location.protocol) ? window.location.protocol : 'unknown';
             const configured = typeof CONFIG === 'undefined' ? 'unset' : (CONFIG.ConfigIframeIPC?.enableLocalIframeIPC !== false);
             const active = isLocalIframeIPCEnabled();
