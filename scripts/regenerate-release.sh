@@ -1,6 +1,7 @@
 #!/bin/bash
 # Rebuild release artifacts in release/
-# Copies root-level .html and .js files, plus resources/ and stix-visualization/
+# Regenerates documentation artifacts, then copies root-level .html and .js files,
+# plus resources/ and stix-visualization/
 
 set -euo pipefail
 
@@ -32,6 +33,16 @@ esac
 echo ""
 echo "Clearing release directory..."
 find "$RELEASE_DIR" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+
+echo "Regenerating generated function index..."
+PYTHON_BIN="${PYTHON_BIN:-python3}"
+if ! command -v "$PYTHON_BIN" >/dev/null 2>&1; then
+    echo "Error: $PYTHON_BIN not found. Set PYTHON_BIN or install python3."
+    exit 1
+fi
+
+"$PYTHON_BIN" "$SRC/scripts/generate-function-index.py"
+echo "  docs/FUNCTION_INDEX.generated.md"
 
 echo "Copying root HTML/JS files..."
 found_root_files=false

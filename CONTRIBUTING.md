@@ -26,6 +26,11 @@ Contributions are welcome. Please read the following guidelines before submittin
 - Follow existing code style and naming conventions
 - Keep functions focused and well-documented
 - Test drag-and-drop, import/export, and metadata editing
+- Keep docs in sync with shipped behavior:
+	- Update `CHANGELOG.md` for user-visible and security-relevant changes
+	- Update `README.md` when setup, usage, or feature surface changes
+	- Update `DOCUMENTATION.md` for architecture/runtime behavior changes
+	- Update `docs/FUNCTION_INDEX.md` and regenerate `docs/FUNCTION_INDEX.generated.md` when function surfaces change
 
 ## Data Updates
 

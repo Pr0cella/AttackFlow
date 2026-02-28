@@ -1,10 +1,10 @@
 # ![](favicon.ico) AttackFlow - Kill Chain Editor & Visualizer
 
-An editor for creating enriched Cyber Kill Chain assessments by mapping MITRE ATT&CK, CAPEC, CWE & STIX 2.1 objects to the Unified Kill Chain framework and enriching phase parts with additional data. Visualize and assess complex attack scenarios easily by combining flexible TTPs with atomic IOCs and forensic data.
+An editor for creating enriched Cyber Kill Chain assessments by mapping MITRE ATT&CK, CAPEC, CWE, and STIX 2.1 objects to the Unified Kill Chain framework, and enriching phase entries with additional metadata. Visualize and assess complex attack scenarios by combining flexible TTP mappings with atomic observables, CVE/CVSS context, and STIX intelligence objects.
 
 ### Work in progress 
 
-![Version](https://img.shields.io/badge/version-2.9.0-blue)
+![Version](https://img.shields.io/badge/version-2.9.1-blue)
 [![MITRE ATT&CK® 18](https://img.shields.io/badge/MITRE%20ATT%26CK®-v18-red)](https://attack.mitre.org/versions/v18/)
 ![License](https://img.shields.io/badge/license-Apache%202.0-green)
 ![Dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)
@@ -18,8 +18,8 @@ An editor for creating enriched Cyber Kill Chain assessments by mapping MITRE AT
 - **Offline Operation** 
     - No CDN or remote runtime requests; module dependencies are vendored locally and modules can be disabled.
     - Can be used offline in a browser by opening the `index.html` file. 
-    - Offline module communication is achieved via hardened IPC channels only allowed in `file://` protocol context. Disabled by default in `config.js`. See [Local iframe IPC](#Local-iframe-IPC) for detailed information.
-    - In case the IPC Bridge is disabled or fails to initialise the application falls back to manual import of the `resources` directory
+    - Offline module communication uses a hardened iframe IPC bridge (`MessageChannel`, nonce binding, allowlisted payloads) in `file://` mode. Disabled by default in `config.js`. See [Local iframe IPC](#local-iframe-ipc).
+    - If the IPC bridge is disabled or unavailable, AttackFlow falls back to local resource selection for required JSON datasets.
 - **STIX Visualizer Module** — Modular Visualization of STIX Bundles
     - Visualizer Module can be disabled via `config.js` flag. See [STIX Visualizer Toggle](#STIX-Visualizer-Toggle)
     - For a list of bundled runtime dependencies used by the visualizer see: [STIX Visualizer Dependencies](#Bundled-STIX-Visualizer-Dependencies)
@@ -30,7 +30,7 @@ An editor for creating enriched Cyber Kill Chain assessments by mapping MITRE AT
 - **Unified Kill Chain** — Map entities to IN → THROUGH → OUT phases
 - **Multi-Domain ATT&CK** — 898 techniques across Enterprise, Mobile, and ICS
 - **CAPEC/CWE Integration** — Link attack patterns and weaknesses
-- **STIX 2.1 Objects** — Create and manage all 18 SDO types plus custom objects
+- **STIX 2.1 Objects** — Create and manage all 19 configured SDO types (including `x-custom`)
 
 ### Import & Sharing
 - **Import/Export** — JSON sharing, CSV exports (with mitigation rows), and STIX 2.1 bundle exports (with mitigations and relationships)
@@ -54,7 +54,7 @@ An editor for creating enriched Cyber Kill Chain assessments by mapping MITRE AT
 ![Relations View](/docs/images/relations.png)
 
 ### Relationship Explorer 
-- **Integrated Resource Corpus Explorer** Explore & search the complete corpus of related ATT&CK ↔ CAPEC ↔ CWE ↔ Mitigations patterns
+- **Integrated Resource Corpus Explorer** — Explore and search the complete ATT&CK ↔ CAPEC ↔ CWE ↔ Mitigation corpus
 - **Technique Cross-References** — Item relationships & techniques referenced by ID in descriptions link to the Relationship Explorer
 
 ![Explorer View](/docs/images/explorer.png)
@@ -79,7 +79,13 @@ The Relationship Explorer is a second main view that lets you investigate ATT&CK
 10. Enable compact mode for dense layouts when needed
 11. Export your attack chain as JSON, CSV, or STIX Bundle
 
-## Usecases
+### Quick Start (Local `file://` mode)
+
+1. Optionally enable local iframe IPC via `CONFIG.ConfigIframeIPC.enableLocalIframeIPC = true`.
+2. Open `index.html` directly in a browser.
+3. If prompted, select your local `resources/*.json` files (or the full resources directory) to populate the corpus.
+
+## Use Cases
 
 See the usecases [README](docs/Usecases/README.md) for details.
 
@@ -180,7 +186,7 @@ Please do not hesitate to create an issue / pull request or contact me directly 
 
 - **Input Blocking** — Dangerous characters (`` < > [ ] { } " ' ; -- ` ``) blocked at input level
 - **Output Encoding** — All user-supplied values HTML-encoded before rendering
-- **DOM-Safe Rendering** — Uses `textContent` and DOM APIs instead of `innerHTML`
+- **Defensive Rendering** — Dynamic template rendering is output-encoded and sanitized before insertion
 - **Import Validation** — File size, item count, and pattern validation on imports
 - **Sanitized Data** — Source data cleaned of embedded markup during extraction
 - **XXE Protection** — Secure XML parsing with entity expansion disabled
@@ -226,6 +232,10 @@ Configuration in `config.js`:
 - `CONFIG.debugging.localIframeIPCBootstrap.graceMs`
 
 See [IPC API DOCS](docs/IPC_API-DOCS.md) for concise architecture and threat-model documentation.
+
+For a complete maintainer-oriented function inventory across runtime files, see [Function Index](docs/FUNCTION_INDEX.md).
+
+For the auto-generated declaration inventory, see [Generated Function Index](docs/FUNCTION_INDEX.generated.md).
 
 ### STIX Visualizer Toggle
 
@@ -280,8 +290,8 @@ python3 scripts/extract-data.py      # Parse CAPEC/CWE
 - Just drop the files on a webserver, (optionally) set CSP headers and navigate to index.html.
 
 ### For local use (in a browser):
-1. Set `CONFIG.ConfigIframeIPC.enableLocalIframeIPC` to `true` and open the `index.html` file in a web browser.
-2. Upload the `resources/` directory as instructed to populate the framework database and use all application features.
+1. Optionally set `CONFIG.ConfigIframeIPC.enableLocalIframeIPC` to `true` and open `index.html` in a browser.
+2. When prompted in `file://` mode, select local `resources/*.json` files (or the full resources directory) to populate the framework dataset.
 
 ## Contributing & Reporting Issues
 
