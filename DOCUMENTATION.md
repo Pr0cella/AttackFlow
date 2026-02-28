@@ -549,4 +549,21 @@ Suggested split of current monolith:
 
 ---
 
+## 11. Function Index Reference
+
+For a comprehensive, maintainable function inventory (grouped by file and subsystem), see:
+
+- **`docs/FUNCTION_INDEX.md`**
+- **`docs/FUNCTION_INDEX.generated.md`** (auto-generated inventory)
+
+This index is intentionally line-agnostic to reduce churn while remaining onboarding-friendly for maintainers.
+
+Refresh generated index with:
+
+```bash
+python3 scripts/generate-function-index.py
+```
+
+---
+
 *Generated for AttackFlow v2.9.0 from current workspace sources (`index.html`, `config.js`, `stix-config.js`, `docs/IPC_API-DOCS.md`).*

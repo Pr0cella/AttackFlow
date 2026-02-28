@@ -4,7 +4,7 @@ An editor for creating enriched Cyber Kill Chain assessments by mapping MITRE AT
 
 ### Work in progress 
 
-![Version](https://img.shields.io/badge/version-2.9.0-blue)
+![Version](https://img.shields.io/badge/version-2.9.1-blue)
 [![MITRE ATT&CK® 18](https://img.shields.io/badge/MITRE%20ATT%26CK®-v18-red)](https://attack.mitre.org/versions/v18/)
 ![License](https://img.shields.io/badge/license-Apache%202.0-green)
 ![Dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)
@@ -232,6 +232,10 @@ Configuration in `config.js`:
 - `CONFIG.debugging.localIframeIPCBootstrap.graceMs`
 
 See [IPC API DOCS](docs/IPC_API-DOCS.md) for concise architecture and threat-model documentation.
+
+For a complete maintainer-oriented function inventory across runtime files, see [Function Index](docs/FUNCTION_INDEX.md).
+
+For the auto-generated declaration inventory, see [Generated Function Index](docs/FUNCTION_INDEX.generated.md).
 
 ### STIX Visualizer Toggle
 

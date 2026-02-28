@@ -1,6 +1,17 @@
 # Changelog
 ---
 
+## [2.9.1] - 2026-02-28
+
+### Added
+- **Function index generator**: Added `scripts/generate-function-index.py` to auto-generate `docs/FUNCTION_INDEX.generated.md` from runtime source function declarations.
+- **Generated function inventory**: Added `docs/FUNCTION_INDEX.generated.md` as a machine-generated reference for maintainers.
+
+### Changed
+- **Updated Documentation**: `DOCUMENTATION.md` has been simplified & updated to v2.9.0.
+- **Documentation cross-linking**: Added references to curated and generated function indexes in `README.md` and `DOCUMENTATION.md`.
+- **Release regeneration workflow**: `scripts/regenerate-release.sh` now regenerates `docs/FUNCTION_INDEX.generated.md` before rebuilding `release/` artifacts.
+
 ## [2.9.0] - 2026-02-22
 
 ### Added
@@ -815,7 +826,7 @@ handleDrop(event, phaseKey)       // Performs assignment
 
 ---
 
-## Development Notes for AI Agents
+## Development Notes
 
 ### File Structure Understanding
 ```
