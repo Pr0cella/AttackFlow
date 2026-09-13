@@ -103,16 +103,34 @@ def load_config_paths(project_dir):
 
 def resolve_paths(project_dir, patterns):
     """Resolve glob patterns to a unique list of JSON files."""
+    project_dir = project_dir.resolve()
+    allowed_relative_roots = (Path('resources'), Path('frameworks/ATTCK'))
+    allowed_roots = tuple((project_dir / root).resolve() for root in allowed_relative_roots)
     files = set()
     for pattern in patterns:
-        if os.path.isabs(pattern):
-            matches = glob.glob(pattern, recursive=True)
-        else:
-            matches = glob.glob(str(project_dir / pattern), recursive=True)
+        relative_pattern = Path(pattern)
+        if (not pattern or '\0' in pattern or relative_pattern.is_absolute()
+                or '..' in relative_pattern.parts):
+            raise ValueError(f'Unsafe sanitization path: {pattern!r}')
+        if not any(relative_pattern.parts[:len(root.parts)] == root.parts
+                   for root in allowed_relative_roots):
+            raise ValueError(f'Sanitization path is outside allowed roots: {pattern!r}')
+
+        matches = glob.glob(str(project_dir / relative_pattern), recursive=True)
         for match in matches:
             p = Path(match)
-            if p.is_file() and p.suffix.lower() == '.json':
-                files.add(p)
+            relative_match = p.relative_to(project_dir)
+            current = project_dir
+            for part in relative_match.parts:
+                current /= part
+                if current.is_symlink():
+                    raise ValueError(f'Symlinked sanitization path is not allowed: {p}')
+
+            resolved = p.resolve()
+            if not any(resolved == root or root in resolved.parents for root in allowed_roots):
+                raise ValueError(f'Sanitization path is outside allowed roots: {p}')
+            if resolved.is_file() and resolved.suffix.lower() == '.json':
+                files.add(resolved)
     return sorted(files)
 
 
@@ -128,7 +146,11 @@ def main():
 
     config_paths = load_config_paths(project_dir)
     patterns = config_paths + args.path
-    json_files = resolve_paths(project_dir, patterns)
+    try:
+        json_files = resolve_paths(project_dir, patterns)
+    except ValueError as exc:
+        print(f'  Error: {exc}')
+        return 1
 
     if not json_files:
         print('  Warning: No JSON files found for sanitization')

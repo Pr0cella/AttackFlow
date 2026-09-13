@@ -280,7 +280,7 @@ python3 scripts/extract-attack.py    # Parse ATT&CK techniques
 python3 scripts/extract-data.py      # Parse CAPEC/CWE
 
 # File paths are configurable in config.js under sources.*
-# JSON sanitization paths are configurable in config.js under sanitize.paths
+# JSON sanitization paths are project-relative and restricted to resources/ and frameworks/ATTCK/
 # Sanitization runs before and after parsing to keep source and generated files clean
 ```
 
