@@ -5716,20 +5716,7 @@
         }
 
         function buildImmutableSharedDataPayload(rawData) {
-            if (!isPlainObject(rawData)) {
-                logLocalIframeIPCTrace('index', 'AF_SHARED_DATA rejected: shared cache is not object');
-                return null;
-            }
-            if (!hasOnlyAllowedKeys(rawData, IPC_SHARED_DATA_KEYS, 'AF_SHARED_DATA')) {
-                return null;
-            }
-            for (const key of IPC_SHARED_DATA_KEYS) {
-                const value = rawData[key];
-                if (!isPlainObject(value)) {
-                    logLocalIframeIPCTrace('index', 'AF_SHARED_DATA rejected: invalid data bucket', { key });
-                    return null;
-                }
-            }
+            if (!validateSharedDatasetShape(rawData)) return null;
             if (!enforceSharedDatasetLimits(rawData)) {
                 logLocalIframeIPCTrace('index', 'AF_SHARED_DATA rejected: shared cache exceeds configured limits');
                 return null;
@@ -5750,6 +5737,20 @@
                 if (!isPlainObject(rawData[key])) {
                     logLocalIframeIPCTrace('index', 'shared loader dataset rejected: invalid top-level bucket', { key });
                     return false;
+                }
+            }
+            for (const [bucket, pattern] of [
+                ['attack', IMPORT_LIMITS.techniqueIdPattern],
+                ['capecPatterns', /^CAPEC-\d+$/],
+                ['cweWeaknesses', /^CWE-\d+$/]
+            ]) {
+                for (const [key, record] of Object.entries(rawData[bucket])) {
+                    if (!isPlainObject(record) || !hasOwn(record, 'id')
+                        || typeof record.id !== 'string' || record.id !== key
+                        || pattern.exec(record.id)?.[0] !== record.id) {
+                        logLocalIframeIPCTrace('index', 'shared loader dataset rejected: invalid framework record ID', { bucket });
+                        return false;
+                    }
                 }
             }
             return true;
@@ -5909,6 +5910,9 @@
             const cache = getSharedDataCache();
 
             if (!forceReload && cache.data) {
+                if (!validateSharedDatasetShape(cache.data)) {
+                    throw new Error('Shared dataset validation failed');
+                }
                 return cache.data;
             }
 
@@ -6766,9 +6770,10 @@
                 const safeName = esc(result.name || '');
                 return `
                     <button class="global-search-item entity-item ${escAttr(result.type)}" draggable="true"
-                        ondragstart="handleDragStart(event, '${escAttr(result.type)}', '${escAttr(result.id)}')"
+                        data-entity-type="${InputSecurity.encodeHtmlEntities(result.type)}" data-entity-id="${InputSecurity.encodeHtmlEntities(result.id)}"
+                        ondragstart="handleDragStart(event, this.dataset.entityType, this.dataset.entityId)"
                         ondragend="handleDragEnd(event)"
-                        onclick="openGlobalSearchResult('${escAttr(result.type)}', '${escAttr(result.id)}')">
+                        onclick="openGlobalSearchResult(this.dataset.entityType, this.dataset.entityId)">
                         <div class="global-search-meta">
                             <span class="global-search-type ${escAttr(result.type)}">${esc(typeLabel)}</span>
                             <span>${safeId}</span>
@@ -6892,9 +6897,10 @@
                     const tacticBadge = entity.tactics?.length ? `<span class="entity-badge">${esc(entity.tactics[0])}</span>` : '';
                     html += `
                         <div class="entity-item attack ${isSelected ? 'selected' : ''}" 
-                             onclick="selectEntity('attack', '${esc(entity.id)}')"
+                             data-entity-id="${InputSecurity.encodeHtmlEntities(entity.id)}"
+                             onclick="selectEntity('attack', this.dataset.entityId)"
                              draggable="true"
-                             ondragstart="handleDragStart(event, 'attack', '${esc(entity.id)}')"
+                             ondragstart="handleDragStart(event, 'attack', this.dataset.entityId)"
                              ondragend="handleDragEnd(event)"
                              title="${escAttr(entity.description ? entity.description.substring(0, 200) + '...' : '')}">
                             <div class="entity-header">
@@ -6913,9 +6919,10 @@
                                          entity.severity?.toLowerCase().includes('medium') ? 'severity-medium' : 'severity-low';
                     html += `
                         <div class="entity-item capec ${isSelected ? 'selected' : ''}"
-                             onclick="selectEntity('capec', '${esc(entity.id)}')"
+                             data-entity-id="${InputSecurity.encodeHtmlEntities(entity.id)}"
+                             onclick="selectEntity('capec', this.dataset.entityId)"
                              draggable="true"
-                             ondragstart="handleDragStart(event, 'capec', '${esc(entity.id)}')"
+                             ondragstart="handleDragStart(event, 'capec', this.dataset.entityId)"
                              ondragend="handleDragEnd(event)">
                             <div class="entity-header">
                                 <span class="entity-id">${esc(entity.id)}</span>
@@ -6931,9 +6938,10 @@
                 } else if (type === 'cwe') {
                     html += `
                         <div class="entity-item cwe ${isSelected ? 'selected' : ''}"
-                             onclick="selectEntity('cwe', '${esc(entity.id)}')"
+                             data-entity-id="${InputSecurity.encodeHtmlEntities(entity.id)}"
+                             onclick="selectEntity('cwe', this.dataset.entityId)"
                              draggable="true"
-                             ondragstart="handleDragStart(event, 'cwe', '${esc(entity.id)}')"
+                             ondragstart="handleDragStart(event, 'cwe', this.dataset.entityId)"
                              ondragend="handleDragEnd(event)">
                             <div class="entity-header">
                                 <span class="entity-id">${esc(entity.id)}</span>
