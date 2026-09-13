@@ -162,7 +162,7 @@ Each assigned item supports:
 | **Confidence** | Assessment confidence: 0% (Unknown) to 100% (High) |
 | **CVE-ID(s)** | Vulnerability references (e.g., CVE-2024-12345) |
 | **CVE Score** | Optional per-CVE score (0.0–10.0) |
-| **CVSS Vector** | Optional per-CVE CVSS 3.1 vector string |
+| **CVSS Vector** | Optional per-CVE CVSS 3.0, 3.1, or 4.0 vector string |
 | **Comments** | Free-text notes |
 | **Hyperlinks** | External references with labels |
 | **Observables** | Threat indicators (IPs, hashes, domains, etc.) |

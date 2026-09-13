@@ -2,6 +2,9 @@
 ---
 ## [2.9.2] - 2026-04-30
 
+### Fixed
+- Fixed a security issue where malicious text appended to a CVSS vector could inject HTML attributes into a vulnerability tooltip.
+
 ### Added 
 - Small HTML Docstring with project info
 
