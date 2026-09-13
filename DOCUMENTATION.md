@@ -211,6 +211,8 @@ Behavior:
 - HTTP context: standard `fetch` path.
 - `file://` context: local file selection and cloned JSON store.
 - shared dataset validated for schema + limits before reuse/broadcast.
+- `validateSharedDatasetShape` requires every ATT&CK, CAPEC, and CWE record to own a string `id` matching its dictionary key and framework format (`T1234`/`T1234.001`, `CAPEC-123`, `CWE-123`). Invalid records reject the dataset before cache write or reuse. `buildImmutableSharedDataPayload` reuses this validation before cloning/freezing data for sharing. A failed reload retains the previous cache.
+- Framework list and global-search click/drag handlers consume quote-safe encoded `data-*` attributes instead of interpolating record IDs into JavaScript.
 
 ### 6.5 LOCAL IFRAME IPC BRIDGE
 

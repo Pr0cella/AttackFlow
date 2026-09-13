@@ -2,6 +2,9 @@
 ---
 ## [2.9.2] - 2026-04-30
 
+### Fixed
+- Fixed an issue where IDs in internal framework data would not be validated correctly. ATT&CK, CAPEC, and CWE records now require matching dictionary keys before caching or sharing, and list/search controls handle IDs safely
+
 ### Added 
 - Small HTML Docstring with project info
 
