@@ -4,6 +4,7 @@
 
 ### Added
 - Support for CVSS v4 vector strings phase item metadata
+- Automated test suite is now included in the repository under `tests/`: Playwright browser tests for app loading, import validation, and security hardening, plus an import validation runner that checks every fixture against the live app
 
 ### Fixed
 - Fixed an issue where IDs in internal framework data would not be validated correctly. ATT&CK, CAPEC, and CWE records now require matching dictionary keys before caching or sharing, and list/search controls handle IDs safely

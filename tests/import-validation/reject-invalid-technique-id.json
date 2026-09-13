@@ -1,0 +1,13 @@
+{
+  "_comment": "MUST FAIL: Invalid technique ID format",
+  "version": "2.4.2",
+  "assignments": {
+    "in:reconnaissance": {
+      "techniques": [
+        { "id": "INVALID-ID" }
+      ],
+      "capecs": [],
+      "cwes": []
+    }
+  }
+}

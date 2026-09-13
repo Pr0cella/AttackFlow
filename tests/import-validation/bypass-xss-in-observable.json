@@ -1,0 +1,18 @@
+{
+  "_comment": "SHOULD FAIL: Event handler XSS in observable value",
+  "version": "2.4.2",
+  "assignments": {
+    "in:reconnaissance": {
+      "techniques": [
+        {
+          "id": "T1595",
+          "observables": [
+            { "type": "threat-actor", "value": "APT29\" onmouseover=\"alert(1)\" data-x=\"" }
+          ]
+        }
+      ],
+      "capecs": [],
+      "cwes": []
+    }
+  }
+}

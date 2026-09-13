@@ -1,0 +1,13 @@
+{
+  "_comment": "MUST FAIL: Invalid CVE format",
+  "version": "2.4.2",
+  "assignments": {
+    "in:exploitation": {
+      "techniques": [
+        { "id": "T1190", "cve": "CVE-INVALID" }
+      ],
+      "capecs": [],
+      "cwes": []
+    }
+  }
+}

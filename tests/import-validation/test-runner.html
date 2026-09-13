@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Kill Chain Import Validation Tests</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: system-ui, sans-serif; background: #1a1a2e; color: #eee; padding: 20px; max-width: 1200px; margin: 0 auto; }
+        h1 { color: #4ecdc4; }
+        h2 { color: #95a5a6; border-bottom: 1px solid #333; padding-bottom: 10px; margin-top: 30px; }
+        .test-grid { display: grid; gap: 10px; }
+        .test-card { background: #16213e; padding: 15px; border-radius: 8px; border-left: 4px solid #666; }
+        .test-card.pass { border-left-color: #2ecc71; }
+        .test-card.fail { border-left-color: #e74c3c; }
+        .test-card.warn { border-left-color: #f39c12; }
+        .test-card.pending { border-left-color: #3498db; }
+        .test-name { font-weight: bold; font-family: monospace; }
+        .test-status { float: right; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+        .test-status.pass { background: #2ecc71; color: #000; }
+        .test-status.fail { background: #e74c3c; }
+        .test-status.warn { background: #f39c12; color: #000; }
+        .test-status.pending { background: #3498db; }
+        .test-details { margin-top: 10px; font-size: 13px; color: #aaa; }
+        .test-error { color: #e74c3c; font-family: monospace; font-size: 12px; margin-top: 5px; }
+        .test-sanitized { color: #f39c12; font-family: monospace; font-size: 11px; margin-top: 5px; white-space: pre-wrap; max-height: 100px; overflow: auto; }
+        button { background: #4ecdc4; color: #000; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 14px; margin-right: 10px; }
+        button:hover { background: #3db9b0; }
+        .summary { background: #0f3460; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+        .summary-stat { display: inline-block; margin-right: 30px; }
+        .summary-stat strong { font-size: 24px; }
+    </style>
+</head>
+<body>
+    <h1>Kill Chain Import Validation Tests</h1>
+    
+    <div class="summary">
+        <div class="summary-stat"><strong id="total">0</strong> Total</div>
+        <div class="summary-stat" style="color:#2ecc71"><strong id="passed">0</strong> Passed</div>
+        <div class="summary-stat" style="color:#e74c3c"><strong id="failed">0</strong> Failed</div>
+        <div class="summary-stat" style="color:#f39c12"><strong id="warnings">0</strong> Warnings</div>
+    </div>
+    
+    <button onclick="runAllTests()">Run All Tests</button>
+    <button onclick="location.reload()">Reset</button>
+    
+    <h2>Valid Files (Should Pass)</h2>
+    <div id="valid-tests" class="test-grid"></div>
+    
+    <h2>Security Bypass Attempts (Check Sanitization)</h2>
+    <div id="bypass-tests" class="test-grid"></div>
+    
+    <h2>Invalid Files (Should Reject)</h2>
+    <div id="reject-tests" class="test-grid"></div>
+
+    <script>
+        // Validation functions are loaded from the real app in a hidden same-origin
+        // iframe, so this runner always exercises the current index.html code.
+        // Serve the repository over HTTP; fetch() and iframe access do not work from file://.
+        const APP_URL = '../../index.html';
+        const APP_LOAD_TIMEOUT_MS = 60000;
+        const POLLUTION_MARKERS = ['polluted', 'pwned', 'isAdmin', 'afPolluted'];
+        let appWindowPromise = null;
+
+        function loadApp() {
+            if (appWindowPromise) return appWindowPromise;
+            appWindowPromise = new Promise((resolve, reject) => {
+                const frame = document.createElement('iframe');
+                frame.hidden = true;
+                frame.title = 'AttackFlow validation host';
+                frame.src = APP_URL;
+                frame.addEventListener('load', () => {
+                    const started = Date.now();
+                    (function waitForApp() {
+                        let win;
+                        try {
+                            win = frame.contentWindow;
+                            const loading = win.document.getElementById('loading');
+                            if (typeof win.sanitizeImportedData === 'function' && loading && loading.classList.contains('hidden')) {
+                                resolve(win);
+                                return;
+                            }
+                        } catch (err) {
+                            reject(new Error('Cannot access index.html; serve the repository over HTTP'));
+                            return;
+                        }
+                        if (Date.now() - started > APP_LOAD_TIMEOUT_MS) {
+                            reject(new Error('Timed out waiting for index.html to finish loading'));
+                            return;
+                        }
+                        setTimeout(waitForApp, 100);
+                    })();
+                });
+                document.body.appendChild(frame);
+            });
+            return appWindowPromise;
+        }
+
+        function clearPrototypePollutionMarkers(appWindow) {
+            [window, appWindow].forEach((realm) => {
+                POLLUTION_MARKERS.forEach((key) => {
+                    if (Object.prototype.hasOwnProperty.call(realm.Object.prototype, key)) {
+                        delete realm.Object.prototype[key];
+                    }
+                });
+            });
+        }
+
+        // Inert text such as "onerror=alert(1)" is preserved analyst evidence; only flag
+        // markup that could execute: raw tags, quote-prefixed handlers, or script URLs.
+        function findExecutableMarkup(serialized) {
+            const issues = [];
+            if (/<\s*\/?\s*[a-z!]/i.test(serialized)) issues.push('raw HTML tag');
+            if (/(?:\\"|')\s*on\w+\s*=/i.test(serialized)) issues.push('attribute breakout with event handler');
+            if (/javascript:/i.test(serialized)) issues.push('javascript: URL');
+            if (/data:text\/html/i.test(serialized)) issues.push('data:text/html URL');
+            return issues;
+        }
+
+        function isPrototypePolluted(appWindow) {
+            return [window, appWindow].some((realm) => {
+                const markerObj = new realm.Object();
+                return POLLUTION_MARKERS.some((key) => markerObj[key] === true);
+            });
+        }
+
+        // Test files
+        const testFiles = {
+            valid: [
+                'valid-minimal.json',
+                'valid-full-metadata.json',
+                'valid-subtechniques.json',
+                '../../examples/demo.json'
+            ],
+            bypass: [
+                'bypass-xss-in-comments.json',
+                'bypass-xss-in-observable.json',
+                'bypass-javascript-url.json',
+                'bypass-data-url.json',
+                'bypass-prototype-pollution.json',
+                'bypass-prototype-pollution-nested.json',
+                'bypass-prototype-constructor-prototype.json',
+                'bypass-group-id-xss.json',
+                'bypass-cvss-trailing-attribute.json',
+                'bypass-sql-injection-markers.json',
+                'bypass-unicode-escapes.json',
+                'bypass-html-entities.json'
+            ],
+            reject: [
+                'reject-invalid-technique-id.json',
+                'reject-missing-assignments.json',
+                'reject-invalid-phase-key.json',
+                'reject-techniques-not-array.json',
+                'reject-invalid-score.json',
+                'reject-invalid-cve.json',
+                'reject-invalid-cvss.json',
+                'reject-invalid-observable-type.json',
+                'reject-not-object.json',
+                'reject-null.json',
+                'reject-array-root.json',
+                'reject-invalid-json.json',
+                'reject-confidence-overflow.json',
+                'reject-invalid-view.json',
+                'reject-xss-in-activeTab.json'
+            ]
+        };
+
+        let results = { passed: 0, failed: 0, warnings: 0 };
+
+        function getTestId(file) {
+            return `test-${file.replace(/[^a-z0-9_-]/gi, '_')}`;
+        }
+
+        function createTestCard(file, category) {
+            const card = document.createElement('div');
+            card.className = 'test-card pending';
+            card.id = getTestId(file);
+            card.innerHTML = `
+                <span class="test-status pending">PENDING</span>
+                <span class="test-name">${file}</span>
+                <div class="test-details">Waiting...</div>
+            `;
+            return card;
+        }
+
+        function updateTestCard(file, status, details, sanitized = null, error = null) {
+            const card = document.getElementById(getTestId(file));
+            if (!card) return;
+            
+            card.className = `test-card ${status}`;
+            card.querySelector('.test-status').className = `test-status ${status}`;
+            card.querySelector('.test-status').textContent = status.toUpperCase();
+            card.querySelector('.test-details').textContent = details;
+            
+            if (error) {
+                const errDiv = document.createElement('div');
+                errDiv.className = 'test-error';
+                errDiv.textContent = error;
+                card.appendChild(errDiv);
+            }
+            
+            if (sanitized) {
+                const sanDiv = document.createElement('div');
+                sanDiv.className = 'test-sanitized';
+                sanDiv.textContent = 'Sanitized: ' + JSON.stringify(sanitized, null, 2).slice(0, 500);
+                card.appendChild(sanDiv);
+            }
+        }
+
+        function getAssignmentMetadata(assignment) {
+            return assignment && assignment.metadata && typeof assignment.metadata === 'object'
+                ? assignment.metadata
+                : null;
+        }
+
+        function collectAssignments(assignments) {
+            const all = [];
+            for (const phase of Object.values(assignments || {})) {
+                (phase.techniques || []).forEach(a => all.push({ type: 'attack', assignment: a }));
+                (phase.capecs || []).forEach(a => all.push({ type: 'capec', assignment: a }));
+                (phase.cwes || []).forEach(a => all.push({ type: 'cwe', assignment: a }));
+            }
+            return all;
+        }
+
+        function getReconTechnique(sanitized) {
+            return sanitized.assignments?.['IN:reconnaissance']?.techniques?.[0]
+                || sanitized.assignments?.['in:reconnaissance']?.techniques?.[0];
+        }
+
+        function validateDemoFeatures(sanitized) {
+            const issues = [];
+            const assignments = sanitized.assignments || {};
+            const all = collectAssignments(assignments);
+
+            const hasTech = all.some(a => a.type === 'attack');
+            const hasCapec = all.some(a => a.type === 'capec');
+            const hasCwe = all.some(a => a.type === 'cwe');
+            if (!hasTech || !hasCapec || !hasCwe) {
+                issues.push('Expected techniques, CAPECs, and CWEs to be present');
+            }
+
+            const phasesUsed = Object.values(assignments).filter(p =>
+                (p.techniques || []).length + (p.capecs || []).length + (p.cwes || []).length > 0
+            ).length;
+            if (phasesUsed < 8) {
+                issues.push(`Expected coverage across at least 8 phases, found ${phasesUsed}`);
+            }
+
+            const metas = all.map(a => getAssignmentMetadata(a.assignment)).filter(Boolean);
+            const hasCve = metas.some(m => m.cveId);
+            const hasCvss = metas.some(m => m.cvssVector || (m.cveEntries || []).some(entry => entry.vector));
+            const hasLinks = metas.some(m => Array.isArray(m.hyperlinks) && m.hyperlinks.length > 0);
+            const hasObservables = metas.some(m => Array.isArray(m.observables) && m.observables.length > 0);
+            const hasComments = metas.some(m => m.comments && m.comments.trim());
+            const hasConfidence = metas.some(m => typeof m.confidence === 'number' && m.confidence > 0);
+            const hasScore = metas.some(m => m.score && m.score !== 'unclassified');
+
+            if (!hasCve) issues.push('Expected at least one CVE');
+            if (!hasCvss) issues.push('Expected at least one CVSS vector');
+            if (!hasLinks) issues.push('Expected at least one hyperlink');
+            if (!hasObservables) issues.push('Expected at least one observable');
+            if (!hasComments) issues.push('Expected at least one comment');
+            if (!hasConfidence) issues.push('Expected at least one confidence value');
+            if (!hasScore) issues.push('Expected at least one scored item');
+
+            const unsafeMarkup = findExecutableMarkup(JSON.stringify(sanitized));
+            if (unsafeMarkup.length > 0) {
+                issues.push('Sanitized output still contains unsafe markup: ' + unsafeMarkup.join(', '));
+            }
+
+            return issues;
+        }
+
+        async function runTest(file, category) {
+            try {
+                const app = await loadApp();
+                const { parseJsonSafe, validateKillChainImport, sanitizeImportedData } = app;
+                clearPrototypePollutionMarkers(app);
+                const response = await fetch(file);
+                if (!response.ok) throw new Error(`Could not load fixture (HTTP ${response.status})`);
+                const text = await response.text();
+
+                let data;
+                try {
+                    data = parseJsonSafe(text);
+                } catch (parseErr) {
+                    if (category === 'reject') {
+                        updateTestCard(file, 'pass', 'JSON parse failed as expected');
+                        results.passed++;
+                    } else {
+                        updateTestCard(file, 'fail', 'Unexpected JSON parse failure', null, parseErr.message);
+                        results.failed++;
+                    }
+                    return;
+                }
+
+                const validation = validateKillChainImport(data);
+                
+                if (category === 'valid') {
+                    if (validation.valid) {
+                        const sanitized = sanitizeImportedData(data);
+                        if (file.includes('demo.json')) {
+                            const issues = validateDemoFeatures(sanitized);
+                            if (issues.length > 0) {
+                                updateTestCard(file, 'fail', 'Demo feature checks failed', sanitized, issues.join('; '));
+                                results.failed++;
+                            } else {
+                                updateTestCard(file, 'pass', 'Validated, sanitized, and feature checks passed', sanitized);
+                                results.passed++;
+                            }
+                        } else {
+                            updateTestCard(file, 'pass', 'Validated and sanitized successfully', sanitized);
+                            results.passed++;
+                        }
+                    } else {
+                        updateTestCard(file, 'fail', 'Validation failed unexpectedly', null, validation.error);
+                        results.failed++;
+                    }
+                } else if (category === 'reject') {
+                    if (!validation.valid) {
+                        updateTestCard(file, 'pass', 'Rejected as expected: ' + validation.error);
+                        results.passed++;
+                    } else {
+                        // Even if validation passes, check if sanitization strips malicious content
+                        const sanitized = sanitizeImportedData(data);
+                        const hasContent = Object.values(sanitized.assignments).some(p => 
+                            p.techniques.length > 0 || p.capecs.length > 0 || p.cwes.length > 0
+                        );
+                        if (!hasContent && file.includes('invalid-technique-id')) {
+                            updateTestCard(file, 'pass', 'Assignment silently dropped during sanitization', sanitized);
+                            results.passed++;
+                        } else if (file.includes('confidence-overflow')) {
+                            // Check confidence was clamped
+                            const tech = getReconTechnique(sanitized);
+                            const meta = getAssignmentMetadata(tech);
+                            if (meta && meta.confidence === 100) {
+                                updateTestCard(file, 'pass', 'Confidence clamped to 100', sanitized);
+                                results.passed++;
+                            } else {
+                                updateTestCard(file, 'warn', 'Confidence not clamped as expected', sanitized);
+                                results.warnings++;
+                            }
+                        } else if (file.includes('invalid-view') || file.includes('activeTab')) {
+                            if (!sanitized.view && !sanitized.activeTab) {
+                                updateTestCard(file, 'pass', 'Invalid view/activeTab not applied', sanitized);
+                                results.passed++;
+                            } else {
+                                updateTestCard(file, 'warn', 'Invalid value was applied', sanitized);
+                                results.warnings++;
+                            }
+                        } else if (file.includes('invalid-score') || file.includes('invalid-cve') || file.includes('invalid-cvss') || file.includes('invalid-observable')) {
+                            const tech = getReconTechnique(sanitized);
+                            const meta = getAssignmentMetadata(tech) || {};
+                            const badScore = file.includes('invalid-score') && meta.score === 'unclassified';
+                            const badCve = file.includes('invalid-cve') && !meta.cveId;
+                            const badCvss = file.includes('invalid-cvss') && !meta.cvssVector;
+                            const badObs = file.includes('invalid-observable') && (!meta.observables || meta.observables.length === 0);
+                            if (badScore || badCve || badCvss || badObs) {
+                                updateTestCard(file, 'pass', 'Invalid field silently dropped', sanitized);
+                                results.passed++;
+                            } else {
+                                updateTestCard(file, 'warn', 'Invalid field may have been preserved', sanitized);
+                                results.warnings++;
+                            }
+                        } else {
+                            updateTestCard(file, 'warn', 'Validation passed but expected rejection', sanitized, validation.error);
+                            results.warnings++;
+                        }
+                    }
+                } else if (category === 'bypass') {
+                    const sanitized = sanitizeImportedData(data);
+                    const sanitizedStr = JSON.stringify(sanitized);
+                    
+                    const unsafeMarkup = findExecutableMarkup(sanitizedStr);
+                    const hasSqlComment = /--/.test(sanitizedStr);
+                    const polluted = isPrototypePolluted(app);
+                    const assignmentsHasNullProto = Object.getPrototypeOf(sanitized.assignments) === null;
+                    
+                    if (polluted) {
+                        updateTestCard(file, 'fail', 'Prototype pollution detected in runtime objects', sanitized);
+                        results.failed++;
+                    } else if (!assignmentsHasNullProto && file.includes('prototype-pollution')) {
+                        updateTestCard(file, 'warn', 'Sanitized assignments object is not null-prototype', sanitized);
+                        results.warnings++;
+                    } else if (unsafeMarkup.length > 0) {
+                        updateTestCard(file, 'fail', 'Dangerous content NOT sanitized!', sanitized, unsafeMarkup.join(', '));
+                        results.failed++;
+                    } else if (hasSqlComment && file.includes('sql')) {
+                        updateTestCard(file, 'warn', 'SQL markers may remain', sanitized);
+                        results.warnings++;
+                    } else {
+                        updateTestCard(file, 'pass', 'Dangerous content sanitized', sanitized);
+                        results.passed++;
+                    }
+                }
+                
+            } catch (err) {
+                updateTestCard(file, 'fail', 'Test error', null, err.message);
+                results.failed++;
+            }
+        }
+
+        function updateSummary() {
+            document.getElementById('total').textContent = results.passed + results.failed + results.warnings;
+            document.getElementById('passed').textContent = results.passed;
+            document.getElementById('failed').textContent = results.failed;
+            document.getElementById('warnings').textContent = results.warnings;
+        }
+
+        async function runAllTests() {
+            results = { passed: 0, failed: 0, warnings: 0 };
+            
+            for (const file of testFiles.valid) {
+                await runTest(file, 'valid');
+            }
+            for (const file of testFiles.bypass) {
+                await runTest(file, 'bypass');
+            }
+            for (const file of testFiles.reject) {
+                await runTest(file, 'reject');
+            }
+            
+            updateSummary();
+        }
+
+        // Initialize test cards
+        function init() {
+            const validContainer = document.getElementById('valid-tests');
+            const bypassContainer = document.getElementById('bypass-tests');
+            const rejectContainer = document.getElementById('reject-tests');
+            
+            testFiles.valid.forEach(f => validContainer.appendChild(createTestCard(f, 'valid')));
+            testFiles.bypass.forEach(f => bypassContainer.appendChild(createTestCard(f, 'bypass')));
+            testFiles.reject.forEach(f => rejectContainer.appendChild(createTestCard(f, 'reject')));
+            
+            document.getElementById('total').textContent = 
+                testFiles.valid.length + testFiles.bypass.length + testFiles.reject.length;
+        }
+
+        init();
+    </script>
+</body>
+</html>

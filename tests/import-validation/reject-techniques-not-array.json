@@ -1,0 +1,11 @@
+{
+  "_comment": "MUST FAIL: techniques is not an array",
+  "version": "2.4.2",
+  "assignments": {
+    "in:reconnaissance": {
+      "techniques": "not-an-array",
+      "capecs": [],
+      "cwes": []
+    }
+  }
+}

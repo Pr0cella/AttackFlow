@@ -1,0 +1,16 @@
+{
+  "_comment": "SHOULD BE SANITIZED: HTML entity encoded angle brackets with event handler - onerror= should be stripped",
+  "version": "2.4.2",
+  "assignments": {
+    "in:reconnaissance": {
+      "techniques": [
+        {
+          "id": "T1595",
+          "comments": "&lt;img src=x onerror=alert(1)&gt;"
+        }
+      ],
+      "capecs": [],
+      "cwes": []
+    }
+  }
+}

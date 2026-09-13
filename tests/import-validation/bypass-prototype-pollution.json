@@ -1,0 +1,14 @@
+{
+  "_comment": "SHOULD FAIL: Prototype pollution attempt via __proto__",
+  "version": "2.4.2",
+  "assignments": {
+    "__proto__": {
+      "polluted": true
+    },
+    "in:reconnaissance": {
+      "techniques": [{ "id": "T1595" }],
+      "capecs": [],
+      "cwes": []
+    }
+  }
+}

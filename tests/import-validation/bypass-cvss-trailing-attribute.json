@@ -1,0 +1,21 @@
+{
+  "_comment": "SHOULD PASS SANITIZED: valid-looking CVSS prefix with trailing attribute injection",
+  "version": "2.9.2",
+  "schema": "killchain-export-lite",
+  "assignments": {
+    "IN:reconnaissance": {
+      "techniques": [
+        {
+          "id": "T1595",
+          "metadata": {
+            "score": "high",
+            "cveId": "CVE-2024-12345",
+            "cvssVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H\" onclick=\"alert(1)"
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": []
+    }
+  }
+}

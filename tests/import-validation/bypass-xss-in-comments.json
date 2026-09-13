@@ -1,0 +1,17 @@
+{
+  "_comment": "SHOULD FAIL: XSS payload in comments - but may pass if not properly sanitized on render",
+  "version": "2.4.2",
+  "assignments": {
+    "in:reconnaissance": {
+      "techniques": [
+        {
+          "id": "T1595",
+          "score": "high",
+          "comments": "<script>alert('XSS')</script>Malicious comment"
+        }
+      ],
+      "capecs": [],
+      "cwes": []
+    }
+  }
+}

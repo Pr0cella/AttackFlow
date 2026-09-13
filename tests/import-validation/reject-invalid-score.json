@@ -1,0 +1,13 @@
+{
+  "_comment": "MUST FAIL: Invalid score value",
+  "version": "2.4.2",
+  "assignments": {
+    "in:reconnaissance": {
+      "techniques": [
+        { "id": "T1595", "score": "super-critical" }
+      ],
+      "capecs": [],
+      "cwes": []
+    }
+  }
+}

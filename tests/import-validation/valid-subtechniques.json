@@ -1,0 +1,24 @@
+{
+  "version": "2.4.2",
+  "schema": "killchain-export-lite",
+  "exportedAt": "2026-01-30T10:00:00.000Z",
+  "assignments": {
+    "in:delivery": {
+      "techniques": [
+        { "id": "T1566.001", "score": "high", "comments": "Spearphishing attachment" },
+        { "id": "T1566.002", "score": "medium", "comments": "Spearphishing link" },
+        { "id": "T1566.003", "score": "low", "comments": "Spearphishing via service" }
+      ],
+      "capecs": [],
+      "cwes": []
+    },
+    "through:execution": {
+      "techniques": [
+        { "id": "T1059.001", "score": "critical", "comments": "PowerShell execution" },
+        { "id": "T1059.003", "score": "high", "comments": "Windows Command Shell" }
+      ],
+      "capecs": [],
+      "cwes": []
+    }
+  }
+}

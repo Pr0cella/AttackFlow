@@ -1,0 +1,13 @@
+{
+  "_comment": "MUST FAIL: Invalid CVSS vector",
+  "version": "2.4.2",
+  "assignments": {
+    "in:exploitation": {
+      "techniques": [
+        { "id": "T1190", "cvss": "CVSS:2.0/AV:N/AC:L/Au:N/C:C/I:C/A:C" }
+      ],
+      "capecs": [],
+      "cwes": []
+    }
+  }
+}

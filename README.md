@@ -104,6 +104,16 @@ See the usecases [README](docs/Usecases/README.md) for details.
 - **Grouping demo**: Import [examples/grouping-demo.json](examples/grouping-demo.json) for a ransomware-focused TTP mapping that showcases grouping.
 - **STIX demo**: Import [examples/stix-demo.json](examples/stix-demo.json) for a full STIX 2.1 showcase with all 19 SDO types across UKC phases.
 - **STIX bundle**: Import [examples/Operation-Midnight-Eclipse-stix-bundle.json](examples/Operation-Midnight-Eclipse-stix-bundle.json) via the STIX tab's "Import STIX Bundle" button to test STIX bundle parsing (25 SDOs across 19 types + 18 phase-relationship SROs).
+
+### Automated Tests
+
+The repository includes an automated test suite in [tests/](tests/). Playwright browser tests cover app loading, kill chain import validation, and security hardening for imports, group controls, CVSS vectors, framework data, and the STIX Composer. Known open issues are marked as expected failures, so a passing run means nothing has regressed. Playwright is not bundled with AttackFlow; install it once, then run the suite from the repository root. The configuration starts a local HTTP server automatically. The import fixtures and their expected behavior are described in the [import validation test suite README](tests/import-validation/README.md).
+
+```bash
+npm install --no-save @playwright/test && npx playwright install chromium
+npx playwright test --workers=1
+```
+
 ## Project Structure
 
 ```
@@ -121,6 +131,9 @@ See the usecases [README](docs/Usecases/README.md) for details.
 │   ├── extract-attack.py           # ATT&CK STIX bundle parser
 │   ├── extract-data.py             # CAPEC/CWE XML parser
 │   └── sanitize-json.py            # Remove markup from data files
+├── tests/
+│   ├── e2e/                        # Playwright browser tests
+│   └── import-validation/          # Import fixtures and browser test runner
 ├── frameworks/                     # Source data (configure paths in config.js)
 │   ├── ATTCK/
 │   │   ├── ENTERPRISE.json         # Enterprise ATT&CK STIX bundle

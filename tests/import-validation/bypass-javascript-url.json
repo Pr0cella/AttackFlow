@@ -1,0 +1,18 @@
+{
+  "_comment": "SHOULD FAIL: JavaScript URL in hyperlink",
+  "version": "2.4.2",
+  "assignments": {
+    "in:exploitation": {
+      "techniques": [
+        {
+          "id": "T1190",
+          "hyperlinks": [
+            { "label": "Click me", "url": "javascript:alert(document.cookie)" }
+          ]
+        }
+      ],
+      "capecs": [],
+      "cwes": []
+    }
+  }
+}

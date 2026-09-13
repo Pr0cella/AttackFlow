@@ -1,0 +1,18 @@
+{
+  "_comment": "SHOULD FAIL: Data URL with base64 encoded script",
+  "version": "2.4.2",
+  "assignments": {
+    "in:exploitation": {
+      "techniques": [
+        {
+          "id": "T1190",
+          "hyperlinks": [
+            { "label": "Data URL", "url": "data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==" }
+          ]
+        }
+      ],
+      "capecs": [],
+      "cwes": []
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "_comment": "Prototype pollution attempt through nested __proto__ keys",
+  "version": "2.9.0",
+  "assignments": {
+    "in:reconnaissance": {
+      "techniques": [
+        {
+          "id": "T1595",
+          "metadata": {
+            "comments": "normal",
+            "__proto__": {
+              "polluted": true
+            }
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": []
+    }
+  },
+  "customLibrary": {
+    "__proto__": {
+      "isAdmin": true
+    }
+  }
+}

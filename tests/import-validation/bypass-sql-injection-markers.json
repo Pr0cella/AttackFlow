@@ -1,0 +1,16 @@
+{
+  "_comment": "SHOULD FAIL: SQL injection markers in comments (should be stripped)",
+  "version": "2.4.2",
+  "assignments": {
+    "in:exploitation": {
+      "techniques": [
+        {
+          "id": "T1190",
+          "comments": "'; DROP TABLE users; --"
+        }
+      ],
+      "capecs": [],
+      "cwes": []
+    }
+  }
+}

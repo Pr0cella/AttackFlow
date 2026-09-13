@@ -1,0 +1,13 @@
+{
+  "_comment": "MUST FAIL: Confidence out of range (should be clamped to 0-100)",
+  "version": "2.4.2",
+  "assignments": {
+    "in:reconnaissance": {
+      "techniques": [
+        { "id": "T1595", "confidence": 999 }
+      ],
+      "capecs": [],
+      "cwes": []
+    }
+  }
+}
