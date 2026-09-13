@@ -101,6 +101,7 @@ Update strategy:
 ### Metadata / Assignment / Type Utilities
 
 - `createDefaultMetadata`
+- `normalizeCvssVector`
 - `getCveEntries`
 - `getCveList`
 - `normalizeCveMetadata`

@@ -4165,8 +4165,8 @@
                     return { valid, message: valid ? null : 'CVE format: CVE-YYYY-NNNNN' };
                 },
                 cvssVector(v) {
-                    const valid = /^CVSS:3\.[01]\/AV:[NALP]\/AC:[LH]\/PR:[NLH]\/UI:[NR]\/S:[UC]\/C:[NLH]\/I:[NLH]\/A:[NLH]/.test(v);
-                    return { valid, message: valid ? null : 'Invalid CVSS 3.x vector string' };
+                    const valid = normalizeCvssVector(v) !== '';
+                    return { valid, message: valid ? null : 'Invalid CVSS 3.0, 3.1, or 4.0 vector string' };
                 },
                 filename(v) {
                     const valid = /^[^<>:"/\\|?*\x00-\x1F]+$/.test(v) && v.length <= 255;
@@ -4398,11 +4398,39 @@
             };
         }
 
+        // unchanged vectorString patterns from FIRST's official CVSS schemas.
+        const CVSS_VECTOR_PATTERNS = [
+            // https://www.first.org/cvss/cvss-v3.0.json
+            new RegExp("^CVSS:3[.]0/((AV:[NALP]|AC:[LH]|PR:[NLH]|UI:[NR]|S:[UC]|[CIA]:[NLH]|E:[XUPFH]|RL:[XOTWU]|RC:[XURC]|[CIA]R:[XLMH]|MAV:[XNALP]|MAC:[XLH]|MPR:[XNLH]|MUI:[XNR]|MS:[XUC]|M[CIA]:[XNLH])/)*(AV:[NALP]|AC:[LH]|PR:[NLH]|UI:[NR]|S:[UC]|[CIA]:[NLH]|E:[XUPFH]|RL:[XOTWU]|RC:[XURC]|[CIA]R:[XLMH]|MAV:[XNALP]|MAC:[XLH]|MPR:[XNLH]|MUI:[XNR]|MS:[XUC]|M[CIA]:[XNLH])$"),
+            // https://www.first.org/cvss/cvss-v3.1.json
+            new RegExp("^CVSS:3[.]1/((AV:[NALP]|AC:[LH]|PR:[NLH]|UI:[NR]|S:[UC]|[CIA]:[NLH]|E:[XUPFH]|RL:[XOTWU]|RC:[XURC]|[CIA]R:[XLMH]|MAV:[XNALP]|MAC:[XLH]|MPR:[XNLH]|MUI:[XNR]|MS:[XUC]|M[CIA]:[XNLH])/)*(AV:[NALP]|AC:[LH]|PR:[NLH]|UI:[NR]|S:[UC]|[CIA]:[NLH]|E:[XUPFH]|RL:[XOTWU]|RC:[XURC]|[CIA]R:[XLMH]|MAV:[XNALP]|MAC:[XLH]|MPR:[XNLH]|MUI:[XNR]|MS:[XUC]|M[CIA]:[XNLH])$"),
+            // https://www.first.org/cvss/cvss-v4.0.json
+            new RegExp("^CVSS:4[.]0/AV:[NALP]/AC:[LH]/AT:[NP]/PR:[NLH]/UI:[NPA]/VC:[HLN]/VI:[HLN]/VA:[HLN]/SC:[HLN]/SI:[HLN]/SA:[HLN](/E:[XAPU])?(/CR:[XHML])?(/IR:[XHML])?(/AR:[XHML])?(/MAV:[XNALP])?(/MAC:[XLH])?(/MAT:[XNP])?(/MPR:[XNLH])?(/MUI:[XNPA])?(/MVC:[XNLH])?(/MVI:[XNLH])?(/MVA:[XNLH])?(/MSC:[XNLH])?(/MSI:[XNLHS])?(/MSA:[XNLHS])?(/S:[XNP])?(/AU:[XNY])?(/R:[XAUI])?(/V:[XDC])?(/RE:[XLMH])?(/U:(X|Clear|Green|Amber|Red))?$"),
+        ];
+
+        function normalizeCvssVector(value) {
+            if (typeof value !== 'string') return '';
+            const vector = value.trim();
+            if (!CVSS_VECTOR_PATTERNS.some(pattern => pattern.test(vector))) return '';
+            // FIRST's 3.x calculator also checks completeness and duplicate metrics.
+            // https://www.first.org/cvss/v3.1/specification-document#Vector-String
+            if (vector.startsWith('CVSS:3.')) {
+                const metrics = new Set();
+                for (const part of vector.split('/').slice(1)) {
+                    const metric = part.split(':')[0];
+                    if (metrics.has(metric)) return '';
+                    metrics.add(metric);
+                }
+                if (!['AV', 'AC', 'PR', 'UI', 'S', 'C', 'I', 'A'].every(metric => metrics.has(metric))) return '';
+            }
+            return vector;
+        }
+
         function getCveEntries(metadata) {
             const entries = [];
             const pushEntry = (entry) => {
                 const id = (entry?.id || entry?.cveId || '').toString().trim().toUpperCase();
-                const vector = (entry?.vector || entry?.cvssVector || '').toString().trim();
+                const vector = normalizeCvssVector(entry?.vector || entry?.cvssVector);
                 const scoreRaw = entry?.score;
                 const score = typeof scoreRaw === 'number' ? scoreRaw : (scoreRaw ? parseFloat(scoreRaw) : null);
                 if (id) {
@@ -4426,7 +4454,7 @@
                     .map(value => (value || '').trim().toUpperCase())
                     .filter(Boolean);
                 normalized.forEach(id => {
-                    entries.push({ id, score: null, vector: (metadata?.cvssVector || '').trim() });
+                    entries.push({ id, score: null, vector: normalizeCvssVector(metadata?.cvssVector || metadata?.cvss) });
                 });
             }
 
@@ -8357,7 +8385,7 @@
                         if (entry.vector) parts.push(entry.vector);
                         return parts.length ? `${entry.id} (${parts.join(', ')})` : entry.id;
                     }).join(', ');
-                    metaIcons += `<span class="meta-icon has-cve" title="${esc(cveTitle)}">
+                    metaIcons += `<span class="meta-icon has-cve" title="${InputSecurity.encodeHtmlEntities(cveTitle)}">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v7a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-7a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5Zm-3 8V7a3 3 0 1 1 6 0v3H9Zm3 3a2 2 0 0 1 1 3.732V18h-2v-1.268A2 2 0 0 1 12 13Z"/></svg>
                     <span>${esc(cveLabel)}</span>
                 </span>`;
@@ -9516,14 +9544,8 @@
                             score = Math.round(scoreValue * 10) / 10;
                         }
                     }
-                    let vector = '';
                     const vectorRaw = typeof entry.vector === 'string' ? entry.vector : (typeof entry.cvssVector === 'string' ? entry.cvssVector : '');
-                    if (vectorRaw) {
-                        const cvss = vectorRaw.trim();
-                        if (/^CVSS:3\.[01]\/AV:[NALP]\/AC:[LH]\/PR:[NLH]\/UI:[NR]\/S:[UC]\/C:[NLH]\/I:[NLH]\/A:[NLH]/.test(cvss)) {
-                            vector = cvss;
-                        }
-                    }
+                    const vector = normalizeCvssVector(vectorRaw);
                     cveEntries.push({ id, score, vector });
                 });
             }
@@ -9540,9 +9562,7 @@
             }
 
             const cvssSource = sourceMeta.cvssVector || sourceMeta.cvss;
-            const legacyVector = (typeof cvssSource === 'string' && /^CVSS:3\.[01]\/AV:[NALP]\/AC:[LH]\/PR:[NLH]\/UI:[NR]\/S:[UC]\/C:[NLH]\/I:[NLH]\/A:[NLH]/.test(cvssSource.trim()))
-                ? cvssSource.trim()
-                : '';
+            const legacyVector = normalizeCvssVector(cvssSource);
 
             const normalizedCves = [...new Set(
                 cveValues
@@ -10314,7 +10334,7 @@
                 const inputs = row.querySelectorAll('input');
                 const idRaw = sanitizeForStorage(inputs[0].value, 50).toUpperCase();
                 const scoreRaw = sanitizeForStorage(inputs[1].value, 10);
-                const vectorRaw = sanitizeForStorage(inputs[2].value, 200);
+                const vectorRaw = inputs[2].value.trim();
 
                 inputs.forEach(input => input.classList.remove('invalid'));
 
