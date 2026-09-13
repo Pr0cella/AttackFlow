@@ -2,6 +2,9 @@
 ---
 ## [2.9.3] - 2026-09-13
 
+### Added
+- Support for CVSS v4 vector strings phase item metadata
+
 ### Fixed
 - Fixed an issue where IDs in internal framework data would not be validated correctly. ATT&CK, CAPEC, and CWE records now require matching dictionary keys before caching or sharing, and list/search controls handle IDs safely
 - Fixed an issue where malicious text appended to a CVSS vector could inject HTML attributes into a vulnerability tooltip
