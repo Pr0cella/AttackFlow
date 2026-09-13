@@ -6,12 +6,12 @@ Generated: 2026-09-13 07:44:56 UTC
 
 ## Coverage
 
-- `index.html`: 247 functions
+- `index.html`: 248 functions
 - `explorer.html`: 63 functions
 - `stix-builder.html`: 94 functions
 - `config.js`: 2 functions
 - `stix-config.js`: 4 functions
-- **Total**: 410 functions
+- **Total**: 411 functions
 
 ---
 
@@ -32,6 +32,239 @@ Generated: 2026-09-13 07:44:56 UTC
 - `L4359` `parseJsonSafe` (declaration) — `function parseJsonSafe(text) {`
 - `L4366` `stripAngleBracketsFromJson` (declaration) — `function stripAngleBracketsFromJson(value) {`
 - `L4388` `createDefaultMetadata` (declaration) — `function createDefaultMetadata() {`
+- `L4411` `normalizeCvssVector` (declaration) — `function normalizeCvssVector(value) {`
+- `L4429` `getCveEntries` (declaration) — `function getCveEntries(metadata) {`
+- `L4431` `pushEntry` (arrow-function) — `const pushEntry = (entry) => {`
+- `L4464` `getCveList` (declaration) — `function getCveList(metadata) {`
+- `L4470` `normalizeCveMetadata` (declaration) — `function normalizeCveMetadata(metadata) {`
+- `L4480` `getConfidenceLabel` (declaration) — `function getConfidenceLabel(value) {`
+- `L4488` `getConfidenceClass` (declaration) — `function getConfidenceClass(value) {`
+- `L4497` `createAssignmentInstanceId` (declaration) — `function createAssignmentInstanceId() {`
+- `L4503` `migrateAssignment` (declaration) — `function migrateAssignment(idOrObj) {`
+- `L4519` `getAssignmentId` (declaration) — `function getAssignmentId(assignment) {`
+- `L4524` `getAssignmentMetadata` (declaration) — `function getAssignmentMetadata(assignment) {`
+- `L4529` `getAssignmentInstanceId` (declaration) — `function getAssignmentInstanceId(assignment) {`
+- `L4593` `generateUUID` (declaration) — `function generateUUID() {`
+- `L4601` `generateStixId` (declaration) — `function generateStixId(stixType) {`
+- `L4610` `uuidv5` (declaration) — `function uuidv5(namespace, name) {`
+- `L4625` `sha1Bytes` (declaration) — `function sha1Bytes(msgBytes) {`
+- `L4656` `mitigationStixId` (declaration) — `function mitigationStixId(mitreId) {`
+- `L4660` `techniqueStixId` (declaration) — `function techniqueStixId(techId) {`
+- `L4664` `getPhaseUngroupedItems` (declaration) — `function getPhaseUngroupedItems(phaseData, type) {`
+- `L4670` `getPhaseGroupedItems` (declaration) — `function getPhaseGroupedItems(phaseData, type) {`
+- `L4675` `getAllPhaseItemsByType` (declaration) — `function getAllPhaseItemsByType(phaseData, type) {`
+- `L4679` `ensurePhaseLayout` (declaration) — `function ensurePhaseLayout(phaseKey, phaseData) {`
+- `L4722` `generateGroupId` (declaration) — `function generateGroupId() {`
+- `L4726` `createGroup` (declaration) — `function createGroup(phaseKey) {`
+- `L4742` `toggleGroupCollapse` (declaration) — `function toggleGroupCollapse(phaseKey, groupId) {`
+- `L4757` `startRenameGroup` (declaration) — `function startRenameGroup(phaseKey, groupId) {`
+- `L4773` `commitRenameGroup` (declaration) — `function commitRenameGroup(phaseKey, groupId, value, cancel = false) {`
+- `L4786` `removeGroup` (declaration) — `function removeGroup(phaseKey, groupId) {`
+- `L4811` `extractAssignmentInstance` (declaration) — `function extractAssignmentInstance(phaseKey, type, instanceId) {`
+- `L4836` `moveGroupBetweenPhases` (declaration) — `function moveGroupBetweenPhases(fromPhase, toPhase, groupId) {`
+- `L4853` `findAssignment` (declaration) — `function findAssignment(phaseKey, entityType, id, instanceId = null) {`
+- `L4878` `updateAssignmentMetadata` (declaration) — `function updateAssignmentMetadata(phaseKey, entityType, id, newMetadata, instanceId = null) {`
+- `L4997` `formatPhaseName` (declaration) — `function formatPhaseName(id) {`
+- `L5002` `initAssignments` (declaration) — `function initAssignments() {`
+- `L5020` `commitKillChainTitle` (declaration) — `function commitKillChainTitle(el) {`
+- `L5028` `syncTitleToDOM` (declaration) — `function syncTitleToDOM() {`
+- `L5034` `commitKillChainDescription` (declaration) — `function commitKillChainDescription(el) {`
+- `L5044` `syncDescriptionToDOM` (declaration) — `function syncDescriptionToDOM() {`
+- `L5054` `toggleDescriptionPanel` (declaration) — `function toggleDescriptionPanel() {`
+- `L5059` `updateDescriptionHint` (declaration) — `function updateDescriptionHint() {`
+- `L5071` `updateDescriptionCounter` (declaration) — `function updateDescriptionCounter() {`
+- `L5098` `isFileProtocolRuntime` (declaration) — `function isFileProtocolRuntime() {`
+- `L5102` `getFileNameFromPath` (declaration) — `function getFileNameFromPath(path) {`
+- `L5108` `cloneJsonData` (declaration) — `function cloneJsonData(data) {`
+- `L5115` `readLocalFileText` (declaration) — `function readLocalFileText(file) {`
+- `L5124` `promptOfflineResourceFiles` (async-declaration) — `async function promptOfflineResourceFiles(requiredFileNames = []) {`
+- `L5139` `cleanup` (arrow-function) — `const cleanup = () => {`
+- `L5185` `fetchJsonResource` (async-declaration) — `async function fetchJsonResource(resourcePath) {`
+- `L5207` `enableOfflineResourceSelectionUI` (declaration) — `function enableOfflineResourceSelectionUI(message) {`
+- `L5245` `hideLoadingOverlay` (declaration) — `function hideLoadingOverlay() {`
+- `L5251` `getSharedDataCache` (declaration) — `function getSharedDataCache() {`
+- `L5262` `isLocalIframeIPCEnabled` (declaration) — `function isLocalIframeIPCEnabled() {`
+- `L5267` `updateLoadingContextInfo` (declaration) — `function updateLoadingContextInfo() {`
+- `L5282` `isLocalIframeIPCTraceEnabled` (declaration) — `function isLocalIframeIPCTraceEnabled() {`
+- `L5339` `logLocalIframeIPCSplash` (declaration) — `function logLocalIframeIPCSplash(context) {`
+- `L5352` `logLocalIframeIPCTrace` (declaration) — `function logLocalIframeIPCTrace(context, message, details) {`
+- `L5361` `getLocalIframeIPCRateLimitConfig` (declaration) — `function getLocalIframeIPCRateLimitConfig() {`
+- `L5379` `getLocalIframeIPCBootstrapConfig` (declaration) — `function getLocalIframeIPCBootstrapConfig() {`
+- `L5407` `isIPCRequestRateAllowed` (declaration) — `function isIPCRequestRateAllowed(frameKey, messageType, transport) {`
+- `L5453` `isPlainObject` (declaration) — `function isPlainObject(value) {`
+- `L5457` `hasOnlyAllowedKeys` (declaration) — `function hasOnlyAllowedKeys(value, allowedKeys, contextLabel) {`
+- `L5472` `deepFreeze` (declaration) — `function deepFreeze(value) {`
+- `L5481` `createLocalIPCNonce` (declaration) — `function createLocalIPCNonce() {`
+- `L5486` `randomPart` (arrow-function) — `const randomPart = (() => {`
+- `L5505` `isKnownIPCSourceWindow` (declaration) — `function isKnownIPCSourceWindow(sourceWindow) {`
+- `L5512` `getIPCFrameState` (declaration) — `function getIPCFrameState(frameKey) {`
+- `L5516` `clearIPCFrameBootstrapTimer` (declaration) — `function clearIPCFrameBootstrapTimer(frameState) {`
+- `L5522` `clearIPCFrameChannel` (declaration) — `function clearIPCFrameChannel(frameKey, options = {}) {`
+- `L5544` `scheduleIPCChannelBootstrapRetry` (declaration) — `function scheduleIPCChannelBootstrapRetry(frameKey, reason) {`
+- `L5579` `sendIPCMessageViaChannel` (declaration) — `function sendIPCMessageViaChannel(frameKey, message) {`
+- `L5592` `setupIPCChannelForFrame` (declaration) — `function setupIPCChannelForFrame(frameKey, options = {}) {`
+- `L5718` `buildImmutableSharedDataPayload` (declaration) — `function buildImmutableSharedDataPayload(rawData) {`
+- `L5741` `validateSharedDatasetShape` (declaration) — `function validateSharedDatasetShape(rawData) {`
+- `L5758` `estimateJsonByteSize` (declaration) — `function estimateJsonByteSize(value) {`
+- `L5772` `enforceSharedDatasetLimits` (declaration) — `function enforceSharedDatasetLimits(rawData) {`
+- `L5816` `getExplorerFrameEl` (declaration) — `function getExplorerFrameEl() {`
+- `L5820` `getStixBuilderFrameEl` (declaration) — `function getStixBuilderFrameEl() {`
+- `L5824` `broadcastSharedDataToExplorer` (declaration) — `function broadcastSharedDataToExplorer() {`
+- `L5849` `broadcastThemeToEmbeddedViews` (declaration) — `function broadcastThemeToEmbeddedViews() {`
+- `L5869` `initEmbeddedMessageBridge` (declaration) — `function initEmbeddedMessageBridge() {`
+- `L5908` `loadSharedLibraryData` (async-declaration) — `async function loadSharedLibraryData(forceReload = false) {`
+- `L5977` `loadData` (async-declaration) — `async function loadData() {`
+- `L6026` `loadNavigator` (async-declaration) — `async function loadNavigator(domain) {`
+- `L6064` `ensureBaseTechniquesLoaded` (async-declaration) — `async function ensureBaseTechniquesLoaded() {`
+- `L6073` `parseTechniqueIdInput` (declaration) — `function parseTechniqueIdInput(raw) {`
+- `L6089` `applyTechniqueList` (async-declaration) — `async function applyTechniqueList(ids) {`
+- `L6106` `openCsvImportModal` (declaration) — `function openCsvImportModal() {`
+- `L6114` `closeCsvImportModal` (declaration) — `function closeCsvImportModal(event) {`
+- `L6119` `submitCsvImport` (async-declaration) — `async function submitCsvImport() {`
+- `L6142` `resetAttackTechniques` (async-declaration) — `async function resetAttackTechniques() {`
+- `L6154` `importNavigator` (declaration) — `function importNavigator(event) {`
+- `L6231` `detectDomain` (declaration) — `function detectDomain(techId) {`
+- `L6239` `getTechniqueName` (declaration) — `function getTechniqueName(techId) {`
+- `L6262` `getPreferredThemeMode` (declaration) — `function getPreferredThemeMode() {`
+- `L6272` `normalizeThemeMode` (declaration) — `function normalizeThemeMode(mode) {`
+- `L6276` `normalizeThemeScheme` (declaration) — `function normalizeThemeScheme(mode, scheme) {`
+- `L6284` `applyTheme` (declaration) — `function applyTheme(mode, scheme, persist = true) {`
+- `L6306` `updateThemeControls` (declaration) — `function updateThemeControls() {`
+- `L6315` `toggleThemeMode` (declaration) — `function toggleThemeMode() {`
+- `L6321` `initThemeControls` (declaration) — `function initThemeControls() {`
+- `L6333` `syncThemeFromStorage` (declaration) — `function syncThemeFromStorage() {`
+- `L6347` `isStixBuilderEnabled` (declaration) — `function isStixBuilderEnabled() {`
+- `L6351` `setView` (declaration) — `function setView(view) {`
+- `L6405` `applyNavigationConfig` (declaration) — `function applyNavigationConfig() {`
+- `L6430` `toggleSidebar` (declaration) — `function toggleSidebar() {`
+- `L6437` `toggleLayer` (declaration) — `function toggleLayer(layer) {`
+- `L6445` `updateHideEmptyControl` (declaration) — `function updateHideEmptyControl() {`
+- `L6452` `updateCompactControls` (declaration) — `function updateCompactControls() {`
+- `L6459` `setCompactMode` (declaration) — `function setCompactMode(enabled, persist = true) {`
+- `L6488` `toggleCompactMode` (declaration) — `function toggleCompactMode() {`
+- `L6492` `updateCommentsControls` (declaration) — `function updateCommentsControls() {`
+- `L6499` `toggleItemComment` (declaration) — `function toggleItemComment(el) {`
+- `L6505` `toggleAllComments` (declaration) — `function toggleAllComments() {`
+- `L6518` `initCompactMode` (declaration) — `function initCompactMode() {`
+- `L6536` `applyCompactLayout` (declaration) — `function applyCompactLayout() {`
+- `L6551` `toggleHideEmpty` (declaration) — `function toggleHideEmpty() {`
+- `L6561` `openMitigationExplorer` (declaration) — `function openMitigationExplorer(mitigationId) {`
+- `L6577` `openEntityExplorer` (declaration) — `function openEntityExplorer(type, id) {`
+- `L6591` `switchTab` (declaration) — `function switchTab(tab) {`
+- `L6599` `setFilter` (declaration) — `function setFilter(type, filter) {`
+- `L6607` `setGlobalSearch` (declaration) — `function setGlobalSearch(value) {`
+- `L6618` `openGlobalSearch` (declaration) — `function openGlobalSearch() {`
+- `L6624` `closeGlobalSearch` (declaration) — `function closeGlobalSearch(force = false) {`
+- `L6633` `toggleGlobalSearchExpanded` (declaration) — `function toggleGlobalSearchExpanded(event) {`
+- `L6648` `setGlobalSearchSticky` (declaration) — `function setGlobalSearchSticky(enabled) {`
+- `L6653` `updateGlobalSearchUI` (declaration) — `function updateGlobalSearchUI() {`
+- `L6669` `initGlobalSearch` (declaration) — `function initGlobalSearch() {`
+- `L6690` `rankGlobalEntity` (declaration) — `function rankGlobalEntity(entity, type, term, tokens) {`
+- `L6724` `buildGlobalSearchResults` (declaration) — `function buildGlobalSearchResults(term) {`
+- `L6746` `renderGlobalSearchResults` (declaration) — `function renderGlobalSearchResults() {`
+- `L6782` `openGlobalSearchResult` (declaration) — `function openGlobalSearchResult(type, id) {`
+- `L6791` `matchesGlobalSearch` (declaration) — `function matchesGlobalSearch(entity, type, term) {`
+- `L6802` `parseCommaIdList` (declaration) — `function parseCommaIdList(raw, pattern, prefix = '') {`
+- `L6825` `filterEntities` (declaration) — `function filterEntities(type) {`
+- `L6977` `isEntityAssigned` (declaration) — `function isEntityAssigned(type, id) {`
+- `L6999` `importStixBundle` (declaration) — `function importStixBundle(event) {`
+- `L7119` `clearStixLibrary` (declaration) — `function clearStixLibrary() {`
+- `L7145` `sanitizeStixBundleObject` (declaration) — `function sanitizeStixBundleObject(obj, stixType, stixId) {`
+- `L7216` `populateStixTypeDropdown` (declaration) — `function populateStixTypeDropdown() {`
+- `L7237` `toggleCustomTypeName` (declaration) — `function toggleCustomTypeName() {`
+- `L7243` `openCreateCustomModal` (declaration) — `function openCreateCustomModal() {`
+- `L7254` `closeCreateCustomModal` (declaration) — `function closeCreateCustomModal(event) {`
+- `L7259` `createCustomItem` (declaration) — `function createCustomItem() {`
+- `L7322` `deleteCustomItem` (declaration) — `function deleteCustomItem(id) {`
+- `L7348` `openStixEditor` (declaration) — `function openStixEditor(id, phaseKey, instanceId) {`
+- `L7409` `closeStixEditor` (declaration) — `function closeStixEditor(event) {`
+- `L7415` `saveStixEditor` (declaration) — `function saveStixEditor() {`
+- `L7482` `buildStixReadonlyField` (declaration) — `function buildStixReadonlyField(label, value) {`
+- `L7489` `buildStixTextField` (declaration) — `function buildStixTextField(id, label, value, required, maxLen, placeholder) {`
+- `L7497` `buildStixTextareaField` (declaration) — `function buildStixTextareaField(id, label, value, required, maxLen, placeholder) {`
+- `L7505` `buildStixFieldFromSpec` (declaration) — `function buildStixFieldFromSpec(field, item, required) {`
+- `L7611` `getEntityName` (declaration) — `function getEntityName(type, id) {`
+- `L7629` `renderDescriptionWithBadges` (declaration) — `function renderDescriptionWithBadges(escapedText) {`
+- `L7642` `selectEntity` (declaration) — `function selectEntity(type, id) {`
+- `L7652` `isSafeHttpUrl` (declaration) — `function isSafeHttpUrl(url) {`
+- `L7665` `isValidEntityId` (declaration) — `function isValidEntityId(type, id) {`
+- `L7678` `buildEntityDetail` (declaration) — `function buildEntityDetail(type, id) {`
+- `L7893` `buildStixPropertySummary` (declaration) — `function buildStixPropertySummary(id) {`
+- `L7934` `buildMetadataSummary` (declaration) — `function buildMetadataSummary(type, id, phaseKey, instanceId) {`
+- `L8003` `openEntityModal` (declaration) — `function openEntityModal(type, id, phaseKey, instanceId) {`
+- `L8021` `closeEntityModal` (declaration) — `function closeEntityModal(event) {`
+- `L8026` `showDetail` (declaration) — `function showDetail(type, id) {`
+- `L8043` `closeDetail` (declaration) — `function closeDetail() {`
+- `L8049` `findEntityPhase` (declaration) — `function findEntityPhase(type, id) {`
+- `L8062` `handleDragStart` (declaration) — `function handleDragStart(event, type, id) {`
+- `L8074` `handleDragEnd` (declaration) — `function handleDragEnd(event) {`
+- `L8084` `handleDragOver` (declaration) — `function handleDragOver(event) {`
+- `L8090` `handleDragLeave` (declaration) — `function handleDragLeave(event) {`
+- `L8094` `handleDrop` (declaration) — `function handleDrop(event, phaseKey) {`
+- `L8147` `handleAssignmentDragStart` (declaration) — `function handleAssignmentDragStart(event, type, id, phaseKey, instanceId, sourceGroupId) {`
+- `L8158` `handleGroupDragStart` (declaration) — `function handleGroupDragStart(event, phaseKey, groupId) {`
+- `L8169` `handleGroupDrop` (declaration) — `function handleGroupDrop(event, phaseKey, groupId) {`
+- `L8209` `renderKillChain` (declaration) — `function renderKillChain() {`
+- `L8340` `renderEntityTag` (declaration) — `function renderEntityTag(type, id, name, metadata, phaseKey, instanceId, sourceGroupId = null) {`
+- `L8481` `getRelationshipChainId` (declaration) — `function getRelationshipChainId(chain) {`
+- `L8488` `renderRelationshipView` (declaration) — `function renderRelationshipView() {`
+- `L8494` `collectMitigations` (arrow-function) — `const collectMitigations = (techIds) => {`
+- `L8636` `expandRelationshipMitigations` (declaration) — `function expandRelationshipMitigations(chainId) {`
+- `L8650` `getAverageScoreLabel` (declaration) — `function getAverageScoreLabel(avg) {`
+- `L8658` `buildPhaseDetails` (declaration) — `function buildPhaseDetails(phaseKey) {`
+- `L8670` `collectItems` (arrow-function) — `const collectItems = (type) => getAllPhaseItemsByType(phaseData, type).map((assignment) => {`
+- `L8694` `getPhaseItemRelationships` (declaration) — `function getPhaseItemRelationships(type, id) {`
+- `L8727` `getPhaseAverages` (declaration) — `function getPhaseAverages(itemsByType) {`
+- `L8757` `buildPhaseCveEntries` (declaration) — `function buildPhaseCveEntries(itemsByType) {`
+- `L8774` `buildPhaseMitigations` (declaration) — `function buildPhaseMitigations(itemsByType) {`
+- `L8810` `renderPhaseMitigationSection` (declaration) — `function renderPhaseMitigationSection(itemsByType) {`
+- `L8850` `renderPhaseCveSection` (declaration) — `function renderPhaseCveSection(itemsByType) {`
+- `L8882` `renderPhaseDetailsSection` (declaration) — `function renderPhaseDetailsSection(title, items, phaseKey) {`
+- `L8909` `addRelation` (arrow-function) — `const addRelation = (label, values) => {`
+- `L8922` `encodeInlineJsArg` (arrow-function) — `const encodeInlineJsArg = (value) => InputSecurity.encodeHtmlEntities(JSON.stringify(String(value ?? '')));`
+- `L8951` `openPhaseDetails` (declaration) — `function openPhaseDetails(phaseKey) {`
+- `L8989` `closePhaseDetails` (declaration) — `function closePhaseDetails(event) {`
+- `L8994` `renderStats` (declaration) — `function renderStats() {`
+- `L9022` `togglePhase` (declaration) — `function togglePhase(header) {`
+- `L9026` `removeAssignment` (declaration) — `function removeAssignment(type, id, phaseKey, instanceId) {`
+- `L9066` `expandAll` (declaration) — `function expandAll() {`
+- `L9070` `collapseAll` (declaration) — `function collapseAll() {`
+- `L9074` `clearAssignments` (declaration) — `function clearAssignments() {`
+- `L9085` `exportJSON` (declaration) — `function exportJSON() {`
+- `L9120` `buildSTIXBundle` (declaration) — `function buildSTIXBundle() {`
+- `L9270` `addRelationship` (declaration) — `function addRelationship(objects, seen, sourceId, targetId, phaseKey, timestamp) {`
+- `L9295` `exportSTIXBundle` (declaration) — `function exportSTIXBundle() {`
+- `L9316` `triggerImportKillChain` (declaration) — `function triggerImportKillChain() {`
+- `L9321` `ensureAssignmentShape` (declaration) — `function ensureAssignmentShape(assignments) {`
+- `L9350` `ensureLibraryFallbacks` (declaration) — `function ensureLibraryFallbacks(assignments) {`
+- `L9405` `validateKillChainImport` (declaration) — `function validateKillChainImport(data) {`
+- `L9458` `sanitizeImportedString` (declaration) — `function sanitizeImportedString(str, maxLength = KILLCHAIN_IMPORT_LIMITS.maxStringLength) {`
+- `L9471` `sanitizeImportedAssignment` (declaration) — `function sanitizeImportedAssignment(assignment) {`
+- `L9489` `sanitizeImportedCustomAssignment` (declaration) — `function sanitizeImportedCustomAssignment(assignment) {`
+- `L9508` `sanitizeAssignmentMetadata` (declaration) — `function sanitizeAssignmentMetadata(assignment) {`
+- `L9618` `sanitizeImportedData` (declaration) — `function sanitizeImportedData(data) {`
+- `L9783` `importKillChain` (declaration) — `function importKillChain(event) {`
+- `L9869` `exportCSV` (declaration) — `function exportCSV() {`
+- `L9922` `formatConfidence` (arrow-function) — `const formatConfidence = (meta) => {`
+- `L9927` `formatCveList` (arrow-function) — `const formatCveList = (meta) => {`
+- `L10050` `sanitizeForCsv` (arrow-function) — `const sanitizeForCsv = (value) => {`
+- `L10084` `toggleDropdown` (declaration) — `function toggleDropdown(id) {`
+- `L10093` `closeDropdowns` (declaration) — `function closeDropdowns() {`
+- `L10119` `openMetadataEditor` (declaration) — `function openMetadataEditor(type, id, phaseKey, instanceId) {`
+- `L10172` `closeMetadataEditor` (declaration) — `function closeMetadataEditor(event) {`
+- `L10178` `selectScore` (declaration) — `function selectScore(value) {`
+- `L10184` `updateConfidenceLabel` (declaration) — `function updateConfidenceLabel(value) {`
+- `L10192` `addCveRow` (declaration) — `function addCveRow(id = '', score = '', vector = '') {`
+- `L10227` `addHyperlinkRow` (declaration) — `function addHyperlinkRow(label = '', url = '') {`
+- `L10254` `addObservableRow` (declaration) — `function addObservableRow(type = 'ipv4-addr', value = '') {`
+- `L10285` `saveMetadata` (declaration) — `function saveMetadata() {`
+- `L10426` `showUsageGuide` (declaration) — `function showUsageGuide() {`
+- `L10430` `closeUsageGuide` (declaration) — `function closeUsageGuide(event) {`
+- `L10439` `showChangelog` (async-declaration) — `async function showChangelog() {`
+- `L10457` `closeChangelog` (declaration) — `function closeChangelog(event) {`
+- `L10472` `showToast` (declaration) — `function showToast(message) {`
+- `L10479` `renderAll` (declaration) — `function renderAll() {`
+- `L10492` `enableLeaveSiteConfirmation` (declaration) — `function enableLeaveSiteConfirmation() {`
 - `L4401` `getCveEntries` (declaration) — `function getCveEntries(metadata) {`
 - `L4403` `pushEntry` (arrow-function) — `const pushEntry = (entry) => {`
 - `L4436` `getCveList` (declaration) — `function getCveList(metadata) {`
@@ -264,6 +497,167 @@ Generated: 2026-09-13 07:44:56 UTC
 - `L10460` `showToast` (declaration) — `function showToast(message) {`
 - `L10467` `renderAll` (declaration) — `function renderAll() {`
 - `L10480` `enableLeaveSiteConfirmation` (declaration) — `function enableLeaveSiteConfirmation() {`
+- `L5713` `validateSharedDatasetShape` (declaration) — `function validateSharedDatasetShape(rawData) {`
+- `L5730` `estimateJsonByteSize` (declaration) — `function estimateJsonByteSize(value) {`
+- `L5744` `enforceSharedDatasetLimits` (declaration) — `function enforceSharedDatasetLimits(rawData) {`
+- `L5788` `getExplorerFrameEl` (declaration) — `function getExplorerFrameEl() {`
+- `L5792` `getStixBuilderFrameEl` (declaration) — `function getStixBuilderFrameEl() {`
+- `L5796` `broadcastSharedDataToExplorer` (declaration) — `function broadcastSharedDataToExplorer() {`
+- `L5821` `broadcastThemeToEmbeddedViews` (declaration) — `function broadcastThemeToEmbeddedViews() {`
+- `L5841` `initEmbeddedMessageBridge` (declaration) — `function initEmbeddedMessageBridge() {`
+- `L5880` `loadSharedLibraryData` (async-declaration) — `async function loadSharedLibraryData(forceReload = false) {`
+- `L5949` `loadData` (async-declaration) — `async function loadData() {`
+- `L5998` `loadNavigator` (async-declaration) — `async function loadNavigator(domain) {`
+- `L6036` `ensureBaseTechniquesLoaded` (async-declaration) — `async function ensureBaseTechniquesLoaded() {`
+- `L6045` `parseTechniqueIdInput` (declaration) — `function parseTechniqueIdInput(raw) {`
+- `L6061` `applyTechniqueList` (async-declaration) — `async function applyTechniqueList(ids) {`
+- `L6078` `openCsvImportModal` (declaration) — `function openCsvImportModal() {`
+- `L6086` `closeCsvImportModal` (declaration) — `function closeCsvImportModal(event) {`
+- `L6091` `submitCsvImport` (async-declaration) — `async function submitCsvImport() {`
+- `L6114` `resetAttackTechniques` (async-declaration) — `async function resetAttackTechniques() {`
+- `L6126` `importNavigator` (declaration) — `function importNavigator(event) {`
+- `L6203` `detectDomain` (declaration) — `function detectDomain(techId) {`
+- `L6211` `getTechniqueName` (declaration) — `function getTechniqueName(techId) {`
+- `L6234` `getPreferredThemeMode` (declaration) — `function getPreferredThemeMode() {`
+- `L6244` `normalizeThemeMode` (declaration) — `function normalizeThemeMode(mode) {`
+- `L6248` `normalizeThemeScheme` (declaration) — `function normalizeThemeScheme(mode, scheme) {`
+- `L6256` `applyTheme` (declaration) — `function applyTheme(mode, scheme, persist = true) {`
+- `L6278` `updateThemeControls` (declaration) — `function updateThemeControls() {`
+- `L6287` `toggleThemeMode` (declaration) — `function toggleThemeMode() {`
+- `L6293` `initThemeControls` (declaration) — `function initThemeControls() {`
+- `L6305` `syncThemeFromStorage` (declaration) — `function syncThemeFromStorage() {`
+- `L6319` `isStixBuilderEnabled` (declaration) — `function isStixBuilderEnabled() {`
+- `L6323` `setView` (declaration) — `function setView(view) {`
+- `L6377` `applyNavigationConfig` (declaration) — `function applyNavigationConfig() {`
+- `L6402` `toggleSidebar` (declaration) — `function toggleSidebar() {`
+- `L6409` `toggleLayer` (declaration) — `function toggleLayer(layer) {`
+- `L6417` `updateHideEmptyControl` (declaration) — `function updateHideEmptyControl() {`
+- `L6424` `updateCompactControls` (declaration) — `function updateCompactControls() {`
+- `L6431` `setCompactMode` (declaration) — `function setCompactMode(enabled, persist = true) {`
+- `L6460` `toggleCompactMode` (declaration) — `function toggleCompactMode() {`
+- `L6464` `updateCommentsControls` (declaration) — `function updateCommentsControls() {`
+- `L6471` `toggleItemComment` (declaration) — `function toggleItemComment(el) {`
+- `L6477` `toggleAllComments` (declaration) — `function toggleAllComments() {`
+- `L6490` `initCompactMode` (declaration) — `function initCompactMode() {`
+- `L6508` `applyCompactLayout` (declaration) — `function applyCompactLayout() {`
+- `L6523` `toggleHideEmpty` (declaration) — `function toggleHideEmpty() {`
+- `L6533` `openMitigationExplorer` (declaration) — `function openMitigationExplorer(mitigationId) {`
+- `L6549` `openEntityExplorer` (declaration) — `function openEntityExplorer(type, id) {`
+- `L6563` `switchTab` (declaration) — `function switchTab(tab) {`
+- `L6571` `setFilter` (declaration) — `function setFilter(type, filter) {`
+- `L6579` `setGlobalSearch` (declaration) — `function setGlobalSearch(value) {`
+- `L6590` `openGlobalSearch` (declaration) — `function openGlobalSearch() {`
+- `L6596` `closeGlobalSearch` (declaration) — `function closeGlobalSearch(force = false) {`
+- `L6605` `toggleGlobalSearchExpanded` (declaration) — `function toggleGlobalSearchExpanded(event) {`
+- `L6620` `setGlobalSearchSticky` (declaration) — `function setGlobalSearchSticky(enabled) {`
+- `L6625` `updateGlobalSearchUI` (declaration) — `function updateGlobalSearchUI() {`
+- `L6641` `initGlobalSearch` (declaration) — `function initGlobalSearch() {`
+- `L6662` `rankGlobalEntity` (declaration) — `function rankGlobalEntity(entity, type, term, tokens) {`
+- `L6696` `buildGlobalSearchResults` (declaration) — `function buildGlobalSearchResults(term) {`
+- `L6718` `renderGlobalSearchResults` (declaration) — `function renderGlobalSearchResults() {`
+- `L6754` `openGlobalSearchResult` (declaration) — `function openGlobalSearchResult(type, id) {`
+- `L6763` `matchesGlobalSearch` (declaration) — `function matchesGlobalSearch(entity, type, term) {`
+- `L6774` `parseCommaIdList` (declaration) — `function parseCommaIdList(raw, pattern, prefix = '') {`
+- `L6797` `filterEntities` (declaration) — `function filterEntities(type) {`
+- `L6949` `isEntityAssigned` (declaration) — `function isEntityAssigned(type, id) {`
+- `L6971` `importStixBundle` (declaration) — `function importStixBundle(event) {`
+- `L7091` `clearStixLibrary` (declaration) — `function clearStixLibrary() {`
+- `L7117` `sanitizeStixBundleObject` (declaration) — `function sanitizeStixBundleObject(obj, stixType, stixId) {`
+- `L7188` `populateStixTypeDropdown` (declaration) — `function populateStixTypeDropdown() {`
+- `L7209` `toggleCustomTypeName` (declaration) — `function toggleCustomTypeName() {`
+- `L7215` `openCreateCustomModal` (declaration) — `function openCreateCustomModal() {`
+- `L7226` `closeCreateCustomModal` (declaration) — `function closeCreateCustomModal(event) {`
+- `L7231` `createCustomItem` (declaration) — `function createCustomItem() {`
+- `L7294` `deleteCustomItem` (declaration) — `function deleteCustomItem(id) {`
+- `L7320` `openStixEditor` (declaration) — `function openStixEditor(id, phaseKey, instanceId) {`
+- `L7381` `closeStixEditor` (declaration) — `function closeStixEditor(event) {`
+- `L7387` `saveStixEditor` (declaration) — `function saveStixEditor() {`
+- `L7454` `buildStixReadonlyField` (declaration) — `function buildStixReadonlyField(label, value) {`
+- `L7461` `buildStixTextField` (declaration) — `function buildStixTextField(id, label, value, required, maxLen, placeholder) {`
+- `L7469` `buildStixTextareaField` (declaration) — `function buildStixTextareaField(id, label, value, required, maxLen, placeholder) {`
+- `L7477` `buildStixFieldFromSpec` (declaration) — `function buildStixFieldFromSpec(field, item, required) {`
+- `L7583` `getEntityName` (declaration) — `function getEntityName(type, id) {`
+- `L7601` `renderDescriptionWithBadges` (declaration) — `function renderDescriptionWithBadges(escapedText) {`
+- `L7614` `selectEntity` (declaration) — `function selectEntity(type, id) {`
+- `L7624` `isSafeHttpUrl` (declaration) — `function isSafeHttpUrl(url) {`
+- `L7637` `isValidEntityId` (declaration) — `function isValidEntityId(type, id) {`
+- `L7650` `buildEntityDetail` (declaration) — `function buildEntityDetail(type, id) {`
+- `L7865` `buildStixPropertySummary` (declaration) — `function buildStixPropertySummary(id) {`
+- `L7906` `buildMetadataSummary` (declaration) — `function buildMetadataSummary(type, id, phaseKey, instanceId) {`
+- `L7975` `openEntityModal` (declaration) — `function openEntityModal(type, id, phaseKey, instanceId) {`
+- `L7993` `closeEntityModal` (declaration) — `function closeEntityModal(event) {`
+- `L7998` `showDetail` (declaration) — `function showDetail(type, id) {`
+- `L8015` `closeDetail` (declaration) — `function closeDetail() {`
+- `L8021` `findEntityPhase` (declaration) — `function findEntityPhase(type, id) {`
+- `L8034` `handleDragStart` (declaration) — `function handleDragStart(event, type, id) {`
+- `L8046` `handleDragEnd` (declaration) — `function handleDragEnd(event) {`
+- `L8056` `handleDragOver` (declaration) — `function handleDragOver(event) {`
+- `L8062` `handleDragLeave` (declaration) — `function handleDragLeave(event) {`
+- `L8066` `handleDrop` (declaration) — `function handleDrop(event, phaseKey) {`
+- `L8119` `handleAssignmentDragStart` (declaration) — `function handleAssignmentDragStart(event, type, id, phaseKey, instanceId, sourceGroupId) {`
+- `L8130` `handleGroupDragStart` (declaration) — `function handleGroupDragStart(event, phaseKey, groupId) {`
+- `L8141` `handleGroupDrop` (declaration) — `function handleGroupDrop(event, phaseKey, groupId) {`
+- `L8181` `renderKillChain` (declaration) — `function renderKillChain() {`
+- `L8313` `renderEntityTag` (declaration) — `function renderEntityTag(type, id, name, metadata, phaseKey, instanceId, sourceGroupId = null) {`
+- `L8454` `getRelationshipChainId` (declaration) — `function getRelationshipChainId(chain) {`
+- `L8461` `renderRelationshipView` (declaration) — `function renderRelationshipView() {`
+- `L8467` `collectMitigations` (arrow-function) — `const collectMitigations = (techIds) => {`
+- `L8609` `expandRelationshipMitigations` (declaration) — `function expandRelationshipMitigations(chainId) {`
+- `L8623` `getAverageScoreLabel` (declaration) — `function getAverageScoreLabel(avg) {`
+- `L8631` `buildPhaseDetails` (declaration) — `function buildPhaseDetails(phaseKey) {`
+- `L8643` `collectItems` (arrow-function) — `const collectItems = (type) => getAllPhaseItemsByType(phaseData, type).map((assignment) => {`
+- `L8667` `getPhaseItemRelationships` (declaration) — `function getPhaseItemRelationships(type, id) {`
+- `L8700` `getPhaseAverages` (declaration) — `function getPhaseAverages(itemsByType) {`
+- `L8730` `buildPhaseCveEntries` (declaration) — `function buildPhaseCveEntries(itemsByType) {`
+- `L8747` `buildPhaseMitigations` (declaration) — `function buildPhaseMitigations(itemsByType) {`
+- `L8783` `renderPhaseMitigationSection` (declaration) — `function renderPhaseMitigationSection(itemsByType) {`
+- `L8823` `renderPhaseCveSection` (declaration) — `function renderPhaseCveSection(itemsByType) {`
+- `L8855` `renderPhaseDetailsSection` (declaration) — `function renderPhaseDetailsSection(title, items, phaseKey) {`
+- `L8882` `addRelation` (arrow-function) — `const addRelation = (label, values) => {`
+- `L8895` `encodeInlineJsArg` (arrow-function) — `const encodeInlineJsArg = (value) => InputSecurity.encodeHtmlEntities(JSON.stringify(String(value ?? '')));`
+- `L8924` `openPhaseDetails` (declaration) — `function openPhaseDetails(phaseKey) {`
+- `L8962` `closePhaseDetails` (declaration) — `function closePhaseDetails(event) {`
+- `L8967` `renderStats` (declaration) — `function renderStats() {`
+- `L8995` `togglePhase` (declaration) — `function togglePhase(header) {`
+- `L8999` `removeAssignment` (declaration) — `function removeAssignment(type, id, phaseKey, instanceId) {`
+- `L9039` `expandAll` (declaration) — `function expandAll() {`
+- `L9043` `collapseAll` (declaration) — `function collapseAll() {`
+- `L9047` `clearAssignments` (declaration) — `function clearAssignments() {`
+- `L9058` `exportJSON` (declaration) — `function exportJSON() {`
+- `L9093` `buildSTIXBundle` (declaration) — `function buildSTIXBundle() {`
+- `L9243` `addRelationship` (declaration) — `function addRelationship(objects, seen, sourceId, targetId, phaseKey, timestamp) {`
+- `L9268` `exportSTIXBundle` (declaration) — `function exportSTIXBundle() {`
+- `L9289` `triggerImportKillChain` (declaration) — `function triggerImportKillChain() {`
+- `L9294` `ensureAssignmentShape` (declaration) — `function ensureAssignmentShape(assignments) {`
+- `L9323` `ensureLibraryFallbacks` (declaration) — `function ensureLibraryFallbacks(assignments) {`
+- `L9378` `validateKillChainImport` (declaration) — `function validateKillChainImport(data) {`
+- `L9431` `sanitizeImportedString` (declaration) — `function sanitizeImportedString(str, maxLength = KILLCHAIN_IMPORT_LIMITS.maxStringLength) {`
+- `L9444` `sanitizeImportedAssignment` (declaration) — `function sanitizeImportedAssignment(assignment) {`
+- `L9462` `sanitizeImportedCustomAssignment` (declaration) — `function sanitizeImportedCustomAssignment(assignment) {`
+- `L9481` `sanitizeAssignmentMetadata` (declaration) — `function sanitizeAssignmentMetadata(assignment) {`
+- `L9599` `sanitizeImportedData` (declaration) — `function sanitizeImportedData(data) {`
+- `L9792` `importKillChain` (declaration) — `function importKillChain(event) {`
+- `L9878` `exportCSV` (declaration) — `function exportCSV() {`
+- `L9931` `formatConfidence` (arrow-function) — `const formatConfidence = (meta) => {`
+- `L9936` `formatCveList` (arrow-function) — `const formatCveList = (meta) => {`
+- `L10059` `sanitizeForCsv` (arrow-function) — `const sanitizeForCsv = (value) => {`
+- `L10093` `toggleDropdown` (declaration) — `function toggleDropdown(id) {`
+- `L10102` `closeDropdowns` (declaration) — `function closeDropdowns() {`
+- `L10128` `openMetadataEditor` (declaration) — `function openMetadataEditor(type, id, phaseKey, instanceId) {`
+- `L10181` `closeMetadataEditor` (declaration) — `function closeMetadataEditor(event) {`
+- `L10187` `selectScore` (declaration) — `function selectScore(value) {`
+- `L10193` `updateConfidenceLabel` (declaration) — `function updateConfidenceLabel(value) {`
+- `L10201` `addCveRow` (declaration) — `function addCveRow(id = '', score = '', vector = '') {`
+- `L10236` `addHyperlinkRow` (declaration) — `function addHyperlinkRow(label = '', url = '') {`
+- `L10263` `addObservableRow` (declaration) — `function addObservableRow(type = 'ipv4-addr', value = '') {`
+- `L10294` `saveMetadata` (declaration) — `function saveMetadata() {`
+- `L10435` `showUsageGuide` (declaration) — `function showUsageGuide() {`
+- `L10439` `closeUsageGuide` (declaration) — `function closeUsageGuide(event) {`
+- `L10448` `showChangelog` (async-declaration) — `async function showChangelog() {`
+- `L10466` `closeChangelog` (declaration) — `function closeChangelog(event) {`
+- `L10481` `showToast` (declaration) — `function showToast(message) {`
+- `L10488` `renderAll` (declaration) — `function renderAll() {`
+- `L10501` `enableLeaveSiteConfirmation` (declaration) — `function enableLeaveSiteConfirmation() {`
 
 ## `explorer.html`
 

@@ -4,6 +4,9 @@
 
 ### Fixed
 - Fixed an issue where IDs in internal framework data would not be validated correctly. ATT&CK, CAPEC, and CWE records now require matching dictionary keys before caching or sharing, and list/search controls handle IDs safely
+- Fixed a security issue where malicious text appended to a CVSS vector could inject HTML attributes into a vulnerability tooltip.
+- Fixed an issue where malicious group IDs in imported files could run JavaScript when users interacted with a group. Invalid or duplicate IDs are now replaced, and group controls handle IDs safely
+- Fixed group renaming so pressing Escape cancels the edit without saving it
 
 ### Added 
 - Small HTML Docstring with project info

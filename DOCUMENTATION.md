@@ -160,6 +160,8 @@ Major additions reflected in v2.9.0 runtime:
 ### 6.2 METADATA + TYPE MAPPING + ASSIGNMENT/GROUP LOGIC
 
 - Metadata normalization now handles `cveEntries`, legacy `cveId`/`cveIds`, and optional `cves` payloads.
+- `normalizeCvssVector` trims string inputs and uses unchanged `vectorString` regexes from FIRST's [3.0](https://www.first.org/cvss/cvss-v3.0.json), [3.1](https://www.first.org/cvss/cvss-v3.1.json), and [4.0](https://www.first.org/cvss/cvss-v4.0.json) schemas. For 3.x, it also rejects missing base metrics and duplicate metrics as required by the [specification](https://www.first.org/cvss/v3.1/specification-document#Vector-String) and checked by FIRST's calculator. These checks permit any metric order in 3.x; the 4.0 regex enforces its mandatory order. Official optional metrics are supported.
+- Invalid or non-string vectors become empty during import/display normalization; the metadata editor rejects invalid nonempty vectors on save. Empty vectors remain optional. Current CVE entries and legacy `cvssVector`/`cvss` fields use the shared normalizer, and CVE tooltip attributes use `InputSecurity.encodeHtmlEntities`. Vector validation does not calculate or verify numeric CVSS scores.
 - Confidence buckets changed to:
   - labels: `Unknown / Low / Medium / High`
   - classes: `unknown / low / medium / high`
@@ -371,6 +373,8 @@ Import:
 - `sanitizeImportedData(data)`
 - `ensureAssignmentShape`, `ensureLibraryFallbacks`
 - `importKillChain(event)`
+
+Imported group IDs must match `grp-{base36 timestamp}-{1 to 5 lowercase alphanumeric characters}`. Invalid IDs and duplicates within a phase receive new IDs. Layout references are remapped; ambiguous duplicate references retain the first group, and later groups are appended by `ensurePhaseLayout`. Group controls read encoded `data-*` values through static handlers. Group rename saves on Enter or blur and cancels on Escape.
 
 ### 6.13 METADATA EDITOR + MODALS + INIT
 
