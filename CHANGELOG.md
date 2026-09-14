@@ -4,18 +4,18 @@
 ## [2.9.3] - 2026-09-13
 
 ### Added
-- Support for CVSS v4 vector strings in phase item metadata
-- Automated test suite is now included in the repository under `tests/`: Playwright browser tests for app loading, import validation, and security hardening, plus an import validation runner that checks every fixture against the live app
+- **CVSS v4 Support**: Support for CVSS v4 vector strings in phase item metadata
+- **Automated Test Suite**: Automated test suite is now included in the repository under `tests/`: Playwright browser tests for app loading, import validation, and security hardening, plus an import validation runner that checks every fixture against the live app
 
 ### Fixed
-- Fixed an issue where IDs in internal framework data would not be validated correctly. ATT&CK, CAPEC, and CWE records now require matching dictionary keys before caching or sharing, and list/search controls handle IDs safely
-- Fixed an issue where malicious text appended to a CVSS vector could inject HTML attributes into a vulnerability tooltip
-- Fixed an issue where malicious group IDs in imported files could run JavaScript when users interacted with such a group. Invalid or duplicate IDs are now replaced, and group controls handle IDs safely
-- Fixed group renaming so pressing Escape cancels the edit without saving it
-- STIX bundle export and the bundle embedded in JSON export now preserve stored properties correctly
-- Incompatible value shapes now stop the download and report the affected property instead of omitting them
-- Main-editor typing and kill-chain/STIX imports now preserve punctuation, repeated hyphens and STIX pattern characters
-- Untrusted text is now contextually encoded
+- **Framework Record ID Validation**: Fixed an issue where IDs in internal framework data would not be validated correctly. ATT&CK, CAPEC, and CWE records now require matching dictionary keys before caching or sharing, and list/search controls handle IDs safely
+- **CVSS Tooltip Injection**: Fixed an issue where malicious text appended to a CVSS vector could inject HTML attributes into a vulnerability tooltip
+- **Group ID Injection**: Fixed an issue where malicious group IDs in imported files could run JavaScript when users interacted with such a group. Invalid or duplicate IDs are now replaced, and group controls handle IDs safely
+- **Group Rename Cancel**: Fixed group renaming so pressing Escape cancels the edit without saving it
+- **STIX Property Export**: STIX bundle export and the bundle embedded in JSON export now preserve stored properties correctly
+- **Export Value Validation**: Incompatible value shapes now stop the download and report the affected property instead of omitting them
+- **Input Preservation**: Main-editor typing and kill-chain/STIX imports now preserve punctuation, repeated hyphens and STIX pattern characters
+- **Contextual Output Encoding**: Imported and user-entered text is now escaped where it is displayed, in page text, attributes, and links, so preserved special characters render as literal text rather than markup
 
 ## [2.9.2] - 2026-04-30
 
