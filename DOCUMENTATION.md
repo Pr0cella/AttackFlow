@@ -364,6 +364,8 @@ Export:
 - `exportSTIXBundle()`
 - `exportCSV()` with formula-injection hardening (`sanitizeForCsv` prefix guard)
 
+Custom SDO export is descriptor-allowlisted. It preserves exact stored strings, booleans, finite integers, and cloned string lists; absent values are omitted. A populated supported property with an incompatible shape aborts either download entry point with a property-specific diagnostic. Structured descriptor types such as `kill-chain-phases` and `external-references`, optional common STIX properties, arbitrary internal fields, and `customTypeName` are not projected. Missing required properties are not synthesized, and successful projection is not a general STIX conformance check.
+
 Import:
 
 - `KILLCHAIN_IMPORT_LIMITS`

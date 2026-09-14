@@ -9111,9 +9111,15 @@
             // Generate embedded STIX bundle if custom items exist
             const customIds = Object.keys(state.library.custom);
             if (customIds.length > 0) {
-                exportData.stixBundle = buildSTIXBundle();
+                try {
+                    exportData.stixBundle = buildSTIXBundle();
+                } catch (err) {
+                    const message = err && typeof err.message === 'string' ? err.message : 'Unknown export error';
+                    showToast('JSON export failed: ' + InputSecurity.escapeHtml(message));
+                    return;
+                }
             }
-            
+
             const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -9141,7 +9147,74 @@
                     name: item.name || ''
                 };
                 if (item.description) sdo.description = item.description;
-                if (item.labels && item.labels.length > 0) sdo.labels = item.labels;
+                if (item.labels && item.labels.length > 0) sdo.labels = item.labels.slice();
+
+                const typeDef = (typeof STIX_OBJECTS !== 'undefined'
+                    && !isDangerousObjectKey(item.stixType)
+                    && hasOwn(STIX_OBJECTS, item.stixType))
+                    ? STIX_OBJECTS[item.stixType]
+                    : null;
+                if (typeDef) {
+                    const coreKeys = new Set([
+                        'type', 'spec_version', 'id', 'created', 'modified',
+                        'name', 'description', 'labels', 'customTypeName'
+                    ]);
+                    const scalarTypes = new Set(['string', 'text', 'enum', 'open-vocab', 'timestamp', 'identifier']);
+                    const listTypes = new Set(['list', 'list:open-vocab']);
+                    const fields = [...(typeDef.required || []), ...(typeDef.optional || [])];
+
+                    for (const field of fields) {
+                        if (!field || typeof field.key !== 'string' || isDangerousObjectKey(field.key)) continue;
+                        if (coreKeys.has(field.key) || !hasOwn(item, field.key)) continue;
+
+                        const value = item[field.key];
+                        if (value === undefined || value === null || value === ''
+                            || (Array.isArray(value) && value.length === 0)) continue;
+
+                        let expectedType = '';
+                        if (scalarTypes.has(field.type)) {
+                            if (typeof value === 'string') {
+                                sdo[field.key] = value;
+                                continue;
+                            }
+                            expectedType = 'string';
+                        } else if (field.type === 'boolean') {
+                            if (typeof value === 'boolean') {
+                                sdo[field.key] = value;
+                                continue;
+                            }
+                            expectedType = 'boolean';
+                        } else if (field.type === 'integer') {
+                            if (typeof value === 'number' && Number.isFinite(value) && Number.isInteger(value)) {
+                                sdo[field.key] = value;
+                                continue;
+                            }
+                            expectedType = 'finite integer';
+                        } else if (listTypes.has(field.type)) {
+                            let validList = Array.isArray(value);
+                            if (validList) {
+                                for (let index = 0; index < value.length; index++) {
+                                    if (!hasOwn(value, index) || typeof value[index] !== 'string') {
+                                        validList = false;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (validList) {
+                                sdo[field.key] = value.slice();
+                                continue;
+                            }
+                            expectedType = 'array of strings';
+                        } else {
+                            // Structured descriptor types are not supported by the main editor/export projection.
+                            continue;
+                        }
+
+                        throw new TypeError(
+                            `Cannot export STIX property "${item.stixType}.${field.key}": expected ${expectedType}.`
+                        );
+                    }
+                }
                 objects.push(sdo);
             }
 
@@ -9310,7 +9383,14 @@
                 showToast('No STIX objects to export');
                 return;
             }
-            const bundle = buildSTIXBundle();
+            let bundle;
+            try {
+                bundle = buildSTIXBundle();
+            } catch (err) {
+                const message = err && typeof err.message === 'string' ? err.message : 'Unknown export error';
+                showToast('STIX export failed: ' + InputSecurity.escapeHtml(message));
+                return;
+            }
             const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');

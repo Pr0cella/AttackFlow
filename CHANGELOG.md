@@ -1,5 +1,11 @@
 # Changelog
 ---
+## [Unreleased]
+
+### Fixed
+- STIX bundle export and the bundle embedded in JSON export now preserve stored properties correctly
+- Incompatible value shapes now stop the download and report the affected property instead of omitting them
+
 ## [2.9.3] - 2026-09-13
 
 ### Added
