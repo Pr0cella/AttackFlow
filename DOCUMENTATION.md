@@ -1,6 +1,6 @@
 # AttackFlow — Monolithic API Reference
 
-> **Version:** 2.9.0  
+> **Version:** 2.9.3  
 > **Scope:** Documents the current inline JavaScript implementation in `index.html` and companion `config.js` + `stix-config.js` (plus embedded iframe IPC surface used by `explorer.html` and `stix-builder.html`).  
 > **Purpose:** Definitive implementation reference for ongoing hardening and v3 modularization planning.
 
