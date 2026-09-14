@@ -258,7 +258,6 @@ test.describe('Import hardening', () => {
   });
 
   test('preserves indicator STIX fields through kill chain import and bundle export', async ({ page }) => {
-    test.fail(true, 'Known gap AF-RC-003: bundle export omits type-specific indicator fields');
     await openApp(page);
 
     const indicatorId = 'indicator--11111111-1111-4111-8111-111111111111';
@@ -311,7 +310,6 @@ test.describe('Import hardening', () => {
   });
 
   test('preserves STIX pattern syntax through the assignment editor UI', async ({ page }) => {
-    test.fail(true, 'Known gap AF-RC-003: editor input guards and bundle export alter STIX patterns');
     await openApp(page);
 
     const indicatorId = 'indicator--77777777-7777-4777-8777-777777777777';
