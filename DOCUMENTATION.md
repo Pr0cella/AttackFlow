@@ -40,7 +40,7 @@ AttackFlow is a zero-build browser SPA with all core runtime logic inside inline
 
 - No bundler, no module system, global-scope runtime.
 - Mutable app state lives in a single `state` object.
-- Rendering is template-string + `innerHTML` driven, protected by strict sanitization and validator guards.
+- Rendering is template-string + `innerHTML` driven, protected by contextual output encoding, validation, and targeted sanitization.
 - Companion scripts:
   - `config.js` (theme/config/import behavior/debug toggles)
   - `stix-config.js` (STIX SDO schemas + vocabularies + helpers)
@@ -147,15 +147,17 @@ Major additions reflected in v2.9.0 runtime:
   - validators (CVE/CVSS/hash/IP/domain/url/filename)
   - `validateObservable(type, value)` dispatch
 - Input guard stack (`applyInputGuards`) covers:
-  - `keydown`, `beforeinput`, `paste`, `drop`, `input`
+  - `paste`, `drop`, `input`
+  - printable punctuation is not blocked during native keyboard or `beforeinput` handling
 - Added sanitizer primitives:
   - `normalizeUserInput(text, maxLength, allowNewlines)`
   - `sanitizeUserInputText(text, allowNewlines)`
   - `sanitizeForStorage(text, maxLength)`
+- Main-editor evidence helpers preserve printable characters, including repeated hyphens and STIX pattern punctuation. They retain control-character removal and length limits; storage commits also trim surrounding whitespace. The older restrictive `InputSecurity.sanitize` remains unchanged for its existing non-evidence call sites.
 - Prototype pollution defenses:
   - `DANGEROUS_OBJECT_KEYS`
   - `isDangerousObjectKey`, `createSafeObject`, `hasOwn`, `parseJsonSafe`
-  - recursive loader sanitizer `stripAngleBracketsFromJson`
+  - recursive loader sanitizer `stripAngleBracketsFromJson`, retained for framework and Navigator inputs
 
 ### 6.2 METADATA + TYPE MAPPING + ASSIGNMENT/GROUP LOGIC
 
@@ -375,6 +377,8 @@ Import:
 - `sanitizeImportedData(data)`
 - `ensureAssignmentShape`, `ensureLibraryFallbacks`
 - `importKillChain(event)`
+
+Kill-chain and STIX bundle imports keep printable strings unencoded in state after safe JSON parsing, validation, control-character removal, trimming, and length enforcement. Rendering uses text escaping or quote-safe attribute encoding at the destination. Metadata hyperlinks are validated against the HTTP(S)-only URL policy before storage and encoded only when rendered; invalid links are omitted. Framework and Navigator loading retain their separate angle-bracket normalization. Composer has separate sanitization behavior and is not covered by this main-editor contract.
 
 Imported group IDs must match `grp-{base36 timestamp}-{1 to 5 lowercase alphanumeric characters}`. Invalid IDs and duplicates within a phase receive new IDs. Layout references are remapped; ambiguous duplicate references retain the first group, and later groups are appended by `ensurePhaseLayout`. Group controls read encoded `data-*` values through static handlers. Group rename saves on Enter or blur and cancels on Escape.
 

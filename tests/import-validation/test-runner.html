@@ -46,7 +46,7 @@
     <h2>Valid Files (Should Pass)</h2>
     <div id="valid-tests" class="test-grid"></div>
     
-    <h2>Security Bypass Attempts (Check Sanitization)</h2>
+    <h2>Security Bypass Attempts (Check Trust-Boundary Handling)</h2>
     <div id="bypass-tests" class="test-grid"></div>
     
     <h2>Invalid Files (Should Reject)</h2>
@@ -103,17 +103,6 @@
                     }
                 });
             });
-        }
-
-        // Inert text such as "onerror=alert(1)" is preserved analyst evidence; only flag
-        // markup that could execute: raw tags, quote-prefixed handlers, or script URLs.
-        function findExecutableMarkup(serialized) {
-            const issues = [];
-            if (/<\s*\/?\s*[a-z!]/i.test(serialized)) issues.push('raw HTML tag');
-            if (/(?:\\"|')\s*on\w+\s*=/i.test(serialized)) issues.push('attribute breakout with event handler');
-            if (/javascript:/i.test(serialized)) issues.push('javascript: URL');
-            if (/data:text\/html/i.test(serialized)) issues.push('data:text/html URL');
-            return issues;
         }
 
         function isPrototypePolluted(appWindow) {
@@ -218,6 +207,10 @@
                 (phase.techniques || []).forEach(a => all.push({ type: 'attack', assignment: a }));
                 (phase.capecs || []).forEach(a => all.push({ type: 'capec', assignment: a }));
                 (phase.cwes || []).forEach(a => all.push({ type: 'cwe', assignment: a }));
+                (phase.customItems || []).forEach(a => all.push({ type: 'custom', assignment: a }));
+                (phase.groups || []).forEach(group => {
+                    (group.items || []).forEach(a => all.push({ type: a.type || 'unknown', assignment: a }));
+                });
             }
             return all;
         }
@@ -225,6 +218,13 @@
         function getReconTechnique(sanitized) {
             return sanitized.assignments?.['IN:reconnaissance']?.techniques?.[0]
                 || sanitized.assignments?.['in:reconnaissance']?.techniques?.[0];
+        }
+
+        function findUnsafeNavigableLinks(sanitized) {
+            return collectAssignments(sanitized.assignments)
+                .flatMap(entry => getAssignmentMetadata(entry.assignment)?.hyperlinks || [])
+                .filter(link => typeof link?.url !== 'string'
+                    || !/^https?:\/\/[^\s<>"{}|\\^`\[\]]+$/.test(link.url));
         }
 
         function validateDemoFeatures(sanitized) {
@@ -263,9 +263,9 @@
             if (!hasConfidence) issues.push('Expected at least one confidence value');
             if (!hasScore) issues.push('Expected at least one scored item');
 
-            const unsafeMarkup = findExecutableMarkup(JSON.stringify(sanitized));
-            if (unsafeMarkup.length > 0) {
-                issues.push('Sanitized output still contains unsafe markup: ' + unsafeMarkup.join(', '));
+            const unsafeLinks = findUnsafeNavigableLinks(sanitized);
+            if (unsafeLinks.length > 0) {
+                issues.push('Sanitized output still contains unsafe navigable URLs');
             }
 
             return issues;
@@ -369,10 +369,7 @@
                     }
                 } else if (category === 'bypass') {
                     const sanitized = sanitizeImportedData(data);
-                    const sanitizedStr = JSON.stringify(sanitized);
-                    
-                    const unsafeMarkup = findExecutableMarkup(sanitizedStr);
-                    const hasSqlComment = /--/.test(sanitizedStr);
+                    const unsafeLinks = findUnsafeNavigableLinks(sanitized);
                     const polluted = isPrototypePolluted(app);
                     const assignmentsHasNullProto = Object.getPrototypeOf(sanitized.assignments) === null;
                     
@@ -382,14 +379,11 @@
                     } else if (!assignmentsHasNullProto && file.includes('prototype-pollution')) {
                         updateTestCard(file, 'warn', 'Sanitized assignments object is not null-prototype', sanitized);
                         results.warnings++;
-                    } else if (unsafeMarkup.length > 0) {
-                        updateTestCard(file, 'fail', 'Dangerous content NOT sanitized!', sanitized, unsafeMarkup.join(', '));
+                    } else if (unsafeLinks.length > 0) {
+                        updateTestCard(file, 'fail', 'Unsafe navigable URL preserved', sanitized);
                         results.failed++;
-                    } else if (hasSqlComment && file.includes('sql')) {
-                        updateTestCard(file, 'warn', 'SQL markers may remain', sanitized);
-                        results.warnings++;
                     } else {
-                        updateTestCard(file, 'pass', 'Dangerous content sanitized', sanitized);
+                        updateTestCard(file, 'pass', 'Untrusted evidence retained for encoded sinks; unsafe navigation removed', sanitized);
                         results.passed++;
                     }
                 }

@@ -63,7 +63,7 @@ test.describe('Import hardening', () => {
     expect(toast).toContain('Invalid phase key format');
   });
 
-  test('sanitizes bypass payload comments through import pipeline', async ({ page }) => {
+  test('preserves bypass payload comments as untrusted state', async ({ page }) => {
     await openApp(page);
 
     const rawFixture = fs.readFileSync(fixturePath('bypass-xss-in-comments.json'), 'utf8');
@@ -75,13 +75,16 @@ test.describe('Import hardening', () => {
       return phase?.techniques?.[0]?.metadata?.comments || '';
     }, rawFixture);
 
-    expect(sanitizedComment).toContain('Malicious comment');
-    expect(sanitizedComment).not.toContain('<script');
-    expect(sanitizedComment).not.toContain('<');
+    expect(sanitizedComment).toBe("<script>alert('XSS')</script>Malicious comment");
   });
 
-  test('sanitizes comments after UI import with valid phase keys', async ({ page }) => {
+  test('renders imported hostile-looking comments as inert text', async ({ page }) => {
     await openApp(page);
+
+    await page.evaluate(() => {
+      (window as any).__importCommentExecuted = false;
+    });
+    const comment = '<img data-import-comment-injected src=x onerror="window.__importCommentExecuted=true">Kept';
 
     const payload = {
       version: '2.9.1',
@@ -91,7 +94,7 @@ test.describe('Import hardening', () => {
           techniques: [
             {
               id: 'T1595',
-              comments: '<script>alert(1)</script>Kept',
+              comments: comment,
               score: 'high',
             },
           ],
@@ -109,14 +112,14 @@ test.describe('Import hardening', () => {
 
     expect(toast).toContain('Imported kill chain');
 
-    const comment = await page.evaluate((data) => {
-      const sanitized = (window as any).sanitizeImportedData(data);
-      return sanitized.assignments?.['IN:reconnaissance']?.techniques?.[0]?.metadata?.comments || '';
-    }, payload);
+    const storedComment = await page.evaluate(() => {
+      return eval('state').assignments['IN:reconnaissance'].techniques[0]?.metadata?.comments || '';
+    });
 
-    expect(comment).toContain('Kept');
-    expect(comment).not.toContain('<script');
-    expect(comment).not.toContain('<');
+    expect(storedComment).toBe(comment);
+    await expect(page.locator('.tag-comment-content').first()).toHaveText(comment);
+    await expect(page.locator('[data-import-comment-injected]')).toHaveCount(0);
+    expect(await page.evaluate(() => (window as any).__importCommentExecuted)).toBe(false);
   });
 
   test('drops CVSS vectors with trailing attribute payloads', async ({ page }) => {
@@ -142,15 +145,15 @@ test.describe('Import hardening', () => {
       const phase = sanitized.assignments?.['IN:reconnaissance'];
       return {
         groupId: phase?.groups?.[0]?.groupId || '',
+        groupLabel: phase?.groups?.[0]?.label || '',
         layoutGroupId: phase?.layout?.[0]?.groupId || '',
-        serialized: JSON.stringify(sanitized),
       };
     }, rawFixture);
 
     expect(result.groupId).toMatch(/^grp-[a-z0-9]+-[a-z0-9]{1,24}$/);
     expect(result.layoutGroupId).toBe(result.groupId);
-    expect(result.serialized).not.toContain('onclick');
-    expect(result.serialized).not.toContain('<script');
+    expect(result.groupId).not.toContain('onclick');
+    expect(result.groupLabel).toBe('Group <script>alert(1)</script>');
   });
 
   test('keeps delegated group controls scoped to sanitized imported ids', async ({ page }) => {
@@ -163,6 +166,8 @@ test.describe('Import hardening', () => {
     const group = page.locator('.phase-group').first();
     const groupId = await group.getAttribute('data-group-id');
     expect(groupId).toMatch(/^grp-[a-z0-9]+-[a-z0-9]{1,24}$/);
+    await expect(group.locator('.phase-group-title')).toHaveText('Group <script>alert(1)</script>');
+    await expect(group.locator('script')).toHaveCount(0);
 
     await group.locator('.phase-group-header').click();
     await expect(group).toHaveClass(/collapsed/);

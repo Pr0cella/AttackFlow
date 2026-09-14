@@ -4103,7 +4103,7 @@
                     .replace(/\\/g, '&#92;');
             },
 
-            // Normalize input: remove control chars, strip script tags, trim, limit length
+            // Normalize input: remove control chars and limit length
             normalize(str, maxLength = 1000) {
                 if (str === null || str === undefined) return '';
                 // NOTE: Do NOT add .trim() here — normalize() is called on every
@@ -4203,8 +4203,6 @@
         const esc = (str) => InputSecurity.escapeHtml(str);
         const escAttr = (str) => InputSecurity.sanitizeAttr(str);
 
-        const BLOCKED_INPUT_CHARS = new Set(['<', '>', '[', ']', '{', '}', '"', "'", '`', ';']);
-
         function isTextInputElement(el) {
             return el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA');
         }
@@ -4220,17 +4218,11 @@
         }
 
         function sanitizeUserInputText(text, allowNewlines = false) {
-            let value = normalizeUserInput(text, 10000, allowNewlines);
-            value = value.replace(/[\[\]\{\};"'`]/g, '');
-            value = value.replace(/--+/g, '');
-            return value;
+            return normalizeUserInput(text, 10000, allowNewlines);
         }
 
         function sanitizeForStorage(text, maxLength = 1000) {
-            let value = InputSecurity.normalize(text, maxLength).trim();
-            value = value.replace(/[\[\]\{\};"'`]/g, '');
-            value = value.replace(/--+/g, '');
-            return value;
+            return InputSecurity.normalize(text, maxLength).trim();
         }
 
         function truncateAtBoundary(text, maxLen = 500) {
@@ -4247,42 +4239,6 @@
         }
 
         function applyInputGuards() {
-            document.addEventListener('keydown', (e) => {
-                const target = e.target;
-                if (!isTextInputElement(target)) return;
-                if (e.ctrlKey || e.metaKey || e.altKey) return;
-
-                const key = e.key;
-                if (BLOCKED_INPUT_CHARS.has(key)) {
-                    e.preventDefault();
-                    return;
-                }
-
-                if (key === '-') {
-                    const value = target.value || '';
-                    const start = target.selectionStart ?? 0;
-                    const end = target.selectionEnd ?? start;
-                    const prev = start > 0 ? value[start - 1] : '';
-                    const next = end < value.length ? value[end] : '';
-                    if (prev === '-' || next === '-') {
-                        e.preventDefault();
-                    }
-                }
-            });
-
-            document.addEventListener('beforeinput', (e) => {
-                const target = e.target;
-                if (!isTextInputElement(target)) return;
-                if (e.inputType === 'insertText' && e.data) {
-                    if ([...e.data].some(ch => BLOCKED_INPUT_CHARS.has(ch))) {
-                        e.preventDefault();
-                    }
-                    if (e.data.includes('--')) {
-                        e.preventDefault();
-                    }
-                }
-            });
-
             document.addEventListener('paste', (e) => {
                 const target = e.target;
                 if (!isTextInputElement(target)) return;
@@ -4341,7 +4297,7 @@
             });
         }
 
-        // Encode < and > in any JSON-loaded strings
+        // Safe object construction and loader-only angle encoding
         const DANGEROUS_OBJECT_KEYS = new Set(['__proto__', 'prototype', 'constructor']);
 
         function isDangerousObjectKey(key) {
@@ -6960,7 +6916,7 @@
                              draggable="true"
                              ondragstart="handleDragStart(event, 'custom', '${esc(entity.id)}')"
                              ondragend="handleDragEnd(event)"
-                             title="${escAttr(entity.description ? entity.description.substring(0, 200) : '')}">
+                             title="${InputSecurity.encodeHtmlEntities(entity.description ? entity.description.substring(0, 200) : '')}">
                             <div class="entity-header">
                                 <span class="entity-id">${esc(shortId)}</span>
                                 <span class="entity-badge stix-badge">${esc(stixLabel)}${customTypeName}</span>
@@ -7017,8 +6973,7 @@
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {
-                    const rawData = parseJsonSafe(e.target.result);
-                    const data = stripAngleBracketsFromJson(rawData);
+                    const data = parseJsonSafe(e.target.result);
 
                     // Validate top-level bundle structure
                     if (typeof data !== 'object' || data === null || Array.isArray(data)) {
@@ -7490,7 +7445,7 @@
         function buildStixReadonlyField(label, value) {
             return `<div class="stix-field-group">
                 <label>${esc(label)}</label>
-                <input type="text" value="${esc(value)}" readonly>
+                <input type="text" value="${InputSecurity.encodeHtmlEntities(value)}" readonly>
             </div>`;
         }
 
@@ -7498,7 +7453,7 @@
             const reqMark = required ? '<span class="field-required">*</span>' : '';
             return `<div class="stix-field-group">
                 <label>${esc(label)}${reqMark}</label>
-                <input type="text" id="${esc(id)}" value="${esc(value)}" maxlength="${maxLen || 200}" placeholder="${esc(placeholder || '')}" spellcheck="false">
+                <input type="text" id="${InputSecurity.encodeHtmlEntities(id)}" value="${InputSecurity.encodeHtmlEntities(value)}" maxlength="${maxLen || 200}" placeholder="${InputSecurity.encodeHtmlEntities(placeholder || '')}" spellcheck="false">
             </div>`;
         }
 
@@ -7506,7 +7461,7 @@
             const reqMark = required ? '<span class="field-required">*</span>' : '';
             return `<div class="stix-field-group">
                 <label>${esc(label)}${reqMark}</label>
-                <textarea id="${esc(id)}" maxlength="${maxLen || 2000}" rows="3" placeholder="${esc(placeholder || '')}">${esc(value)}</textarea>
+                <textarea id="${InputSecurity.encodeHtmlEntities(id)}" maxlength="${maxLen || 2000}" rows="3" placeholder="${InputSecurity.encodeHtmlEntities(placeholder || '')}">${esc(value)}</textarea>
             </div>`;
         }
 
@@ -7520,14 +7475,14 @@
                 case 'string':
                     return `<div class="stix-field-group">
                         <label>${esc(field.label)}${reqMark}</label>
-                        <input type="text" id="${esc(fieldId)}" value="${esc(currentVal || '')}" maxlength="2000" placeholder="${esc(field.placeholder || '')}" spellcheck="false">
+                        <input type="text" id="${InputSecurity.encodeHtmlEntities(fieldId)}" value="${InputSecurity.encodeHtmlEntities(currentVal || '')}" maxlength="2000" placeholder="${InputSecurity.encodeHtmlEntities(field.placeholder || '')}" spellcheck="false">
                         ${hint}
                     </div>`;
 
                 case 'text':
                     return `<div class="stix-field-group">
                         <label>${esc(field.label)}${reqMark}</label>
-                        <textarea id="${esc(fieldId)}" maxlength="5000" rows="3" placeholder="${esc(field.placeholder || '')}">${esc(currentVal || '')}</textarea>
+                        <textarea id="${InputSecurity.encodeHtmlEntities(fieldId)}" maxlength="5000" rows="3" placeholder="${InputSecurity.encodeHtmlEntities(field.placeholder || '')}">${esc(currentVal || '')}</textarea>
                         ${hint}
                     </div>`;
 
@@ -7537,17 +7492,17 @@
                     let opts = '<option value="">— Select —</option>';
                     for (const v of vocabValues) {
                         const sel = (currentVal === v) ? ' selected' : '';
-                        opts += `<option value="${esc(v)}"${sel}>${esc(v)}</option>`;
+                        opts += `<option value="${InputSecurity.encodeHtmlEntities(v)}"${sel}>${esc(v)}</option>`;
                     }
                     if (field.type === 'open-vocab') {
                         // If current value is not in vocab, add it as option
                         if (currentVal && !vocabValues.includes(currentVal)) {
-                            opts += `<option value="${esc(currentVal)}" selected>${esc(currentVal)} (custom)</option>`;
+                            opts += `<option value="${InputSecurity.encodeHtmlEntities(currentVal)}" selected>${esc(currentVal)} (custom)</option>`;
                         }
                     }
                     return `<div class="stix-field-group">
                         <label>${esc(field.label)}${reqMark}</label>
-                        <select id="${esc(fieldId)}">${opts}</select>
+                        <select id="${InputSecurity.encodeHtmlEntities(fieldId)}">${opts}</select>
                         ${hint}
                     </div>`;
                 }
@@ -7560,7 +7515,7 @@
                         : '';
                     return `<div class="stix-field-group">
                         <label>${esc(field.label)} <span style="color:var(--text-secondary);font-weight:normal;">(comma-separated)</span>${reqMark}</label>
-                        <input type="text" id="${esc(fieldId)}" value="${esc(arrVal)}" maxlength="2000" spellcheck="false">
+                        <input type="text" id="${InputSecurity.encodeHtmlEntities(fieldId)}" value="${InputSecurity.encodeHtmlEntities(arrVal)}" maxlength="2000" spellcheck="false">
                         ${hint}${vocabHint}
                     </div>`;
                 }
@@ -7568,14 +7523,14 @@
                 case 'integer':
                     return `<div class="stix-field-group">
                         <label>${esc(field.label)}${reqMark}</label>
-                        <input type="number" id="${esc(fieldId)}" value="${currentVal != null ? currentVal : ''}" spellcheck="false">
+                        <input type="number" id="${InputSecurity.encodeHtmlEntities(fieldId)}" value="${InputSecurity.encodeHtmlEntities(currentVal != null ? currentVal : '')}" spellcheck="false">
                         ${hint}
                     </div>`;
 
                 case 'boolean':
                     return `<div class="stix-field-group">
                         <label style="display:inline-flex;align-items:center;gap:6px;">
-                            <input type="checkbox" id="${esc(fieldId)}" ${currentVal ? 'checked' : ''} style="width:auto;">
+                            <input type="checkbox" id="${InputSecurity.encodeHtmlEntities(fieldId)}" ${currentVal ? 'checked' : ''} style="width:auto;">
                             ${esc(field.label)}${reqMark}
                         </label>
                         ${hint}
@@ -7584,14 +7539,14 @@
                 case 'timestamp':
                     return `<div class="stix-field-group">
                         <label>${esc(field.label)}${reqMark}</label>
-                        <input type="text" id="${esc(fieldId)}" value="${esc(currentVal || '')}" placeholder="YYYY-MM-DDThh:mm:ss.sssZ" spellcheck="false">
+                        <input type="text" id="${InputSecurity.encodeHtmlEntities(fieldId)}" value="${InputSecurity.encodeHtmlEntities(currentVal || '')}" placeholder="YYYY-MM-DDThh:mm:ss.sssZ" spellcheck="false">
                         ${hint}
                     </div>`;
 
                 case 'identifier':
                     return `<div class="stix-field-group">
                         <label>${esc(field.label)}${reqMark}</label>
-                        <input type="text" id="${esc(fieldId)}" value="${esc(currentVal || '')}" placeholder="${esc(field.placeholder || 'type--uuid')}" spellcheck="false">
+                        <input type="text" id="${InputSecurity.encodeHtmlEntities(fieldId)}" value="${InputSecurity.encodeHtmlEntities(currentVal || '')}" placeholder="${InputSecurity.encodeHtmlEntities(field.placeholder || 'type--uuid')}" spellcheck="false">
                         ${hint}
                     </div>`;
 
@@ -7602,14 +7557,14 @@
                     const jsonVal = currentVal ? JSON.stringify(currentVal, null, 2) : '';
                     return `<div class="stix-field-group">
                         <label>${esc(field.label)} <span style="color:var(--text-secondary);font-weight:normal;">(JSON)</span>${reqMark}</label>
-                        <textarea id="${esc(fieldId)}" rows="3" placeholder="${esc(field.description || '')}">${esc(jsonVal)}</textarea>
+                        <textarea id="${InputSecurity.encodeHtmlEntities(fieldId)}" rows="3" placeholder="${InputSecurity.encodeHtmlEntities(field.description || '')}">${esc(jsonVal)}</textarea>
                         ${hint}
                     </div>`;
 
                 default:
                     return `<div class="stix-field-group">
                         <label>${esc(field.label)}${reqMark}</label>
-                        <input type="text" id="${esc(fieldId)}" value="${esc(currentVal || '')}" spellcheck="false">
+                        <input type="text" id="${InputSecurity.encodeHtmlEntities(fieldId)}" value="${InputSecurity.encodeHtmlEntities(currentVal || '')}" spellcheck="false">
                         ${hint}
                     </div>`;
             }
@@ -7710,7 +7665,7 @@
                     const isSafeUrl = isSafeHttpUrl(url);
                     return isSafeUrl ? `
                     <div class="detail-list-item">
-                        <a href="${escAttr(url)}" target="_blank" rel="noopener noreferrer" style="color: var(--text-secondary); text-decoration: none;">
+                        <a href="${InputSecurity.encodeHtmlEntities(url)}" target="_blank" rel="noopener noreferrer" style="color: var(--text-secondary); text-decoration: none;">
                             ${esc(r.name)} →
                         </a>
                     </div>
@@ -7956,11 +7911,11 @@
                 })
                 : [];
 
-            const links = (metadata.hyperlinks || []).filter(l => l?.url && /^https?:\/\//i.test(l.url));
+            const links = (metadata.hyperlinks || []).filter(l => l?.url && InputSecurity.validators.url(l.url).valid);
             const linksHtml = links.length
                 ? links.map(l => `
                     <div class="detail-list-item">
-                        <a href="${escAttr(l.url)}" target="_blank" rel="noopener noreferrer" style="color: var(--text-secondary); text-decoration: none;">
+                        <a href="${InputSecurity.encodeHtmlEntities(l.url)}" target="_blank" rel="noopener noreferrer" style="color: var(--text-secondary); text-decoration: none;">
                             ${esc(l.label || l.url)} →
                         </a>
                     </div>
@@ -9547,12 +9502,9 @@
         function sanitizeImportedString(str, maxLength = KILLCHAIN_IMPORT_LIMITS.maxStringLength) {
             if (str === null || str === undefined) return '';
             if (typeof str !== 'string') return '';
-            // Normalize, remove dangerous chars, limit length
+            // Preserve printable evidence; rendering contexts perform output encoding.
             return String(str)
                 .replace(/[\x00-\x1F\x7F]/g, '')  // Control chars
-                .replace(/[\[\]\{\};"'`]/g, '')  // Blocked chars including double quotes
-                .replace(/--+/g, '')  // SQL comments
-                .replace(/</g, '&lt;').replace(/>/g, '&gt;')  // Encode angle brackets
                 .trim()
                 .slice(0, maxLength);
         }
@@ -9678,12 +9630,13 @@
                 metadata.hyperlinks = sourceMeta.hyperlinks
                     .slice(0, KILLCHAIN_IMPORT_LIMITS.maxHyperlinks)
                     .filter(h => h && typeof h === 'object')
-                    .map(h => ({
-                        label: sanitizeImportedString(h.label || '', 200),
-                        url: (typeof h.url === 'string' && /^https?:\/\//.test(h.url)) 
-                            ? sanitizeImportedString(h.url, 2000) 
-                            : ''
-                    }))
+                    .map(h => {
+                        const url = typeof h.url === 'string' ? sanitizeImportedString(h.url, 2000) : '';
+                        return {
+                            label: sanitizeImportedString(h.label || '', 200),
+                            url: InputSecurity.validators.url(url).valid ? url : ''
+                        };
+                    })
                     .filter(h => h.url);  // Keep only valid URLs
             }
 
@@ -9911,8 +9864,7 @@
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {
-                    const rawData = parseJsonSafe(e.target.result);
-                    const data = stripAngleBracketsFromJson(rawData);
+                    const data = parseJsonSafe(e.target.result);
 
                     // Validate structure before processing
                     const validation = validateKillChainImport(data);
