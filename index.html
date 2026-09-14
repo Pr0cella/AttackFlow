@@ -7072,7 +7072,7 @@
                     if (CONFIG.imports?.clearStixOnBundleImport) renderAll();
                     showToast(msg);
                 } catch (err) {
-                    showToast('STIX import failed: ' + InputSecurity.escapeHtml(err.message));
+                    showToast('STIX import failed: ' + err.message);
                 }
             };
             reader.readAsText(file);
@@ -9070,7 +9070,7 @@
                     exportData.stixBundle = buildSTIXBundle();
                 } catch (err) {
                     const message = err && typeof err.message === 'string' ? err.message : 'Unknown export error';
-                    showToast('JSON export failed: ' + InputSecurity.escapeHtml(message));
+                    showToast('JSON export failed: ' + message);
                     return;
                 }
             }
@@ -9343,7 +9343,7 @@
                 bundle = buildSTIXBundle();
             } catch (err) {
                 const message = err && typeof err.message === 'string' ? err.message : 'Unknown export error';
-                showToast('STIX export failed: ' + InputSecurity.escapeHtml(message));
+                showToast('STIX export failed: ' + message);
                 return;
             }
             const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json' });
@@ -9927,7 +9927,7 @@
                     renderAll();
                     showToast('Imported kill chain');
                 } catch (err) {
-                    showToast('Import failed: ' + InputSecurity.escapeHtml(err.message));
+                    showToast('Import failed: ' + err.message);
                 }
             };
 
