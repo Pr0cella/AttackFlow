@@ -1,10 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
-    <!-- AttackFlow - An editor for creating enriched Cyber Kill Chain assessments
-        Project Page: https://github.com/Pr0cella/AttackFlow
-    -->
 <head>
     <meta charset="UTF-8">
+    <!--
+         █████╗ ████████╗████████╗ █████╗  ██████╗██╗  ██╗███████╗██╗      ██████╗ ██╗    ██╗
+        ██╔══██╗╚══██╔══╝╚══██╔══╝██╔══██╗██╔════╝██║ ██╔╝██╔════╝██║     ██╔═══██╗██║    ██║
+        ███████║   ██║      ██║   ███████║██║     █████╔╝ █████╗  ██║     ██║   ██║██║ █╗ ██║
+        ██╔══██║   ██║      ██║   ██╔══██║██║     ██╔═██╗ ██╔══╝  ██║     ██║   ██║██║███╗██║
+        ██║  ██║   ██║      ██║   ██║  ██║╚██████╗██║  ██╗██║     ███████╗╚██████╔╝╚███╔███╔╝
+        ╚═╝  ╚═╝   ╚═╝      ╚═╝   ╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝     ╚══════╝ ╚═════╝  ╚══╝╚══╝
+
+        AttackFlow - An editor for creating enriched Cyber Kill Chain assessments
+        Author:                     Pr0cella (https://github.com/Pr0cella)
+        Project Page:               https://github.com/Pr0cella/AttackFlow
+        Vulnerability Disclosure:   https://github.com/Pr0cella/AttackFlow/security/advisories
+        License:                    Apache License 2.0 (https://www.apache.org/licenses/LICENSE-2.0)
+        All rights reserved. Use at your own risk. No warranty is provided.
+    -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/x-icon" href="./favicon.ico">
     <meta http-equiv="Content-Security-Policy" content="
@@ -10567,8 +10579,42 @@
         }
 
         // ============================================================
+        // CONSOLE STARTUP BANNER
+        // ============================================================
+        const STARTUP_BANNER_LINES = [
+            ' █████╗ ████████╗████████╗ █████╗  ██████╗██╗  ██╗███████╗██╗      ██████╗ ██╗    ██╗',
+            '██╔══██╗╚══██╔══╝╚══██╔══╝██╔══██╗██╔════╝██║ ██╔╝██╔════╝██║     ██╔═══██╗██║    ██║',
+            '███████║   ██║      ██║   ███████║██║     █████╔╝ █████╗  ██║     ██║   ██║██║ █╗ ██║',
+            '██╔══██║   ██║      ██║   ██╔══██║██║     ██╔═██╗ ██╔══╝  ██║     ██║   ██║██║███╗██║',
+            '██║  ██║   ██║      ██║   ██║  ██║╚██████╗██║  ██╗██║     ███████╗╚██████╔╝╚███╔███╔╝',
+            '╚═╝  ╚═╝   ╚═╝      ╚═╝   ╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝     ╚══════╝ ╚═════╝  ╚══╝╚══╝'
+        ];
+        const STARTUP_BANNER_SPLIT = 50; // Column where "ATTACK" ends and "FLOW" begins
+
+        function logStartupBanner() {
+            if (typeof CONFIG !== 'undefined' && CONFIG.console?.showStartupBanner === false) return;
+            const attackColor = (typeof CONFIG !== 'undefined' && CONFIG.frameworks?.attack) || '#3b82f6';
+            const flowColor = '#ffffff';
+            const version = (typeof CONFIG !== 'undefined' && CONFIG.version) || APP_VERSION;
+            const font = 'font-family: monospace; line-height: 1.1;';
+            const art = STARTUP_BANNER_LINES.map(line =>
+                `%c${line.slice(0, STARTUP_BANNER_SPLIT)}%c${line.slice(STARTUP_BANNER_SPLIT)}`
+            ).join('\n');
+            const styles = STARTUP_BANNER_LINES.flatMap(() => [
+                `${font} color: ${attackColor};`,
+                `${font} color: ${flowColor};`
+            ]);
+            console.log(
+                `${art}\n\n%cAttackFlow v${version} - An editor for creating enriched Cyber Kill Chain assessments\nhttps://github.com/Pr0cella/AttackFlow`,
+                ...styles,
+                'font-family: monospace; color: inherit;'
+            );
+        }
+
+        // ============================================================
         // INITIALIZATION
         // ============================================================
+        logStartupBanner();
         initThemeControls();
         logLocalIframeIPCSplash('index');
         updateLoadingContextInfo();

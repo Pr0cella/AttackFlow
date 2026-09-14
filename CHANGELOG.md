@@ -6,6 +6,7 @@
 ### Added
 - **CVSS v4 Support**: Support for CVSS v4 vector strings in phase item metadata
 - **Automated Test Suite**: Automated test suite is now included in the repository under `tests/`: Playwright browser tests for app loading, import validation, and security hardening, plus an import validation runner that checks every fixture against the live app
+- **Startup Banner**: The main editor prints an AttackFlow ASCII banner with the version to the browser console on startup. Disable it with `CONFIG.console.showStartupBanner = false` in `config.js`
 
 ### Fixed
 - **Framework Record ID Validation**: Fixed an issue where IDs in internal framework data would not be validated correctly. ATT&CK, CAPEC, and CWE records now require matching dictionary keys before caching or sharing, and list/search controls handle IDs safely

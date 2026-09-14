@@ -194,6 +194,11 @@ const CONFIG = {
         clearStixOnKillChainImport: true   // Auto-clear STIX library before importing a kill chain
     },
 
+    // Browser console output
+    console: {
+        showStartupBanner: true // Print the AttackFlow ASCII banner to the browser console on startup
+    },
+
     // Debugging controls
     debugging: {
         traceLocalIframeIPCLogs: false, // Enable full local iframe IPC trace logs in console

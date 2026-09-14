@@ -98,6 +98,7 @@ Major additions reflected in v2.9.0 runtime:
 - `sources.attack.version: '18.1'`
 - `imports.clearStixOnBundleImport`, `imports.clearStixOnKillChainImport`
 - `navigation.confirmOnLeave`, `navigation.showStixBuilder`
+- `console.showStartupBanner` — print the AttackFlow ASCII banner to the browser console when the main editor starts (default `true`)
 - `visualizer.enabled`
 - `ConfigIframeIPC.enableLocalIframeIPC`
 - `debugging.traceLocalIframeIPCLogs`
@@ -395,25 +396,26 @@ Modals + app shell:
 
 - usage/changelog: `showUsageGuide`, `closeUsageGuide`, `showChangelog`, `closeChangelog`
 - dropdown helpers: `toggleDropdown`, `closeDropdowns`
-- `showToast`, `renderAll`, `enableLeaveSiteConfirmation`
+- `showToast`, `renderAll`, `enableLeaveSiteConfirmation`, `logStartupBanner`
 
 Initialization order:
 
-1. `initThemeControls()`
-2. `logLocalIframeIPCSplash('index')`
-3. `updateLoadingContextInfo()`
-4. storage listener for theme sync
-5. leave-site confirmation (config-gated)
-6. `initEmbeddedMessageBridge()`
-7. `applyNavigationConfig()`
-8. `initAssignments()`
-9. `initCompactMode()`
-10. resize listener for compact layout
-11. `applyInputGuards()`
-12. `initGlobalSearch()`
-13. `populateStixTypeDropdown()`
-14. `loadVersion()`
-15. `loadData()`
+1. `logStartupBanner()` (config-gated by `CONFIG.console.showStartupBanner`)
+2. `initThemeControls()`
+3. `logLocalIframeIPCSplash('index')`
+4. `updateLoadingContextInfo()`
+5. storage listener for theme sync
+6. leave-site confirmation (config-gated)
+7. `initEmbeddedMessageBridge()`
+8. `applyNavigationConfig()`
+9. `initAssignments()`
+10. `initCompactMode()`
+11. resize listener for compact layout
+12. `applyInputGuards()`
+13. `initGlobalSearch()`
+14. `populateStixTypeDropdown()`
+15. `loadVersion()`
+16. `loadData()`
 
 ---
 
