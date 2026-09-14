@@ -10597,7 +10597,7 @@
             const flowColor = '#ffffff';
             const version = (typeof CONFIG !== 'undefined' && CONFIG.version) || APP_VERSION;
             const font = 'font-family: monospace; line-height: 1.1;';
-            const art = STARTUP_BANNER_LINES.map(line =>
+            const art = "\n" + STARTUP_BANNER_LINES.map(line =>
                 `%c${line.slice(0, STARTUP_BANNER_SPLIT)}%c${line.slice(STARTUP_BANNER_SPLIT)}`
             ).join('\n');
             const styles = STARTUP_BANNER_LINES.flatMap(() => [
