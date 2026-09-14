@@ -4,7 +4,7 @@
 ## [2.9.3] - 2026-09-13
 
 ### Added
-- Support for CVSS v4 vector strings phase item metadata
+- Support for CVSS v4 vector strings in phase item metadata
 - Automated test suite is now included in the repository under `tests/`: Playwright browser tests for app loading, import validation, and security hardening, plus an import validation runner that checks every fixture against the live app
 
 ### Fixed
