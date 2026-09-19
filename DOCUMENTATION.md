@@ -178,6 +178,8 @@ Major additions reflected in v2.9.0 runtime:
 - Group/assignment utilities:
   - `ensurePhaseLayout`, `extractAssignmentInstance`, `moveGroupBetweenPhases`, `findAssignment`, `updateAssignmentMetadata`
 
+`removeGroup()` uses `TYPE_KEYS` to return grouped assignments to their corresponding phase arrays, including `customItems` for STIX. It preserves assignment objects, metadata, instance IDs, the custom library, and existing append order. After confirmation, it validates the item list, own supported type keys, destination arrays, and layout before moving anything. A missing item list is treated as an empty group. This prevents future assignment loss during JSON export/import but does not repair previously corrupted documents.
+
 ### 6.3 STATE + PHASE MODEL + CORE HELPERS
 
 `state` now includes:
