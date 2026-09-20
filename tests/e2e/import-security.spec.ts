@@ -190,7 +190,6 @@ test.describe('Import hardening', () => {
   });
 
   test('relationship view only renders assigned technique links for assigned CAPECs', async ({ page }) => {
-    test.fail(true, 'Known gap AF-RC-006: relationship view includes unassigned library techniques');
     await openApp(page);
 
     const mapping = await page.evaluate(() => {
@@ -229,7 +228,12 @@ test.describe('Import hardening', () => {
     await expect(row).toBeVisible();
 
     const renderedTechniqueIds = await row.locator('.relationship-cell.attack .id.attack').allTextContents();
+
+    // Prerequisite: the ASSIGNED technique renders. That part works today, so losing it
+    // is a real regression and must not be credited to the known gap below.
     expect(renderedTechniqueIds).toContain(mapping!.assignedTechnique);
+
+    test.fail(true, 'Known gap AF-RC-006: relationship view includes unassigned library techniques');
     expect(renderedTechniqueIds).not.toContain(mapping!.unassignedTechnique);
   });
 

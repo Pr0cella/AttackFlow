@@ -183,22 +183,41 @@ test.describe('RT-17 rejection is atomic and diagnostic', () => {
 });
 
 test.describe('RT-17 import validation gap', () => {
-  test.fail(true, 'Known gap AF-RT-005: an array assignments field passes validation and wipes the document');
-  test('refuses an array-valued assignments field instead of clearing every phase', async ({ page }) => {
-    await openApp(page);
-    await importNative(page, bytes(nativeFull()), 'rt-17-gap-baseline.json');
-    const before = await readState(page);
+  // AF-RT-005 has two separable contracts: the file must be REPORTED as refused, and the
+  // loaded document must be left intact. A single test would hide the second behind the
+  // first, and the second is the one that costs an analyst their work.
+  for (const contract of ['reports the refusal', 'leaves the loaded document intact'] as const) {
+    test(`an array-valued assignments field ${contract}`, async ({ page }) => {
+      await openApp(page);
+      await importNative(page, bytes(nativeFull()), 'rt-17-gap-baseline.json');
 
-    await page.locator('#toast').evaluate(el => { el.textContent = ''; });
-    await page.locator('#import-killchain-input').setInputFiles({
-      name: 'array-assignments.json', mimeType: 'application/json', buffer: bytes({ assignments: [] }),
+      // Prerequisite: a populated document really is loaded, so "unchanged" means
+      // something. A failure here is setup breakage, not the known gap.
+      const before = await readState(page);
+      expect(Object.keys(before.customLibrary).length).toBeGreaterThan(0);
+
+      await page.locator('#toast').evaluate(el => { el.textContent = ''; });
+      await page.locator('#import-killchain-input').setInputFiles({
+        name: 'array-assignments.json', mimeType: 'application/json', buffer: bytes({ assignments: [] }),
+      });
+
+      // Completion signal. setInputFiles returns as soon as the file is handed over, but
+      // importKillChain() reads it through an async FileReader. Asserting state before
+      // that resolves compares against a document that has not been touched YET, which
+      // makes the wipe look like correct behavior. The import path sets a toast on every
+      // outcome, so a non-empty toast is the point at which the result is decided.
+      await expect(page.locator('#toast')).not.toBeEmpty();
+
+      test.fail(true, 'Known gap AF-RT-005: an array assignments field passes validation and wipes the document');
+      if (contract === 'reports the refusal') {
+        await expect(page.locator('#toast')).toContainText('Import failed');
+      } else {
+        // Assignments AND the custom library must both survive; the probed defect clears
+        // both under the default clearStixOnKillChainImport setting.
+        expect(await readState(page)).toEqual(before);
+      }
     });
-
-    // Desired: a wrong-shaped assignments field is a rejection, reported as one, and the
-    // analyst's loaded document is left exactly as it was.
-    await expect(page.locator('#toast')).toContainText('Import failed');
-    expect(await readState(page)).toEqual(before);
-  });
+  }
 });
 
 test.describe('RT-17 export failure paths', () => {
@@ -243,19 +262,26 @@ test.describe('RT-17 export failure paths', () => {
 });
 
 test.describe('RT-17 export filename gap', () => {
-  test.fail(true, 'Known gap AF-RT-006: a title that slugs to empty yields a dotfile name, not the fallback');
-  test('a title made only of stripped characters falls back to a safe filename', async ({ page }) => {
-    await openApp(page);
-    // The fallback is chosen by `state.title ? slug : 'attack-chain-export'`, which tests
-    // the RAW title, not the slug. A non-empty title whose every character is stripped
-    // produces an empty slug and the download name '.json' -- a dotfile, which is hidden
-    // on POSIX systems and which browsers rename inconsistently.
-    for (const title of ['***', '///...///', 'Ελληνικά', '日本語']) {
+  // One case per title: a loop would stop at the first title and leave the rest unproven,
+  // and the Latin and non-Latin cases fail for the same reason but matter differently.
+  // The fallback is chosen by `state.title ? slug : 'attack-chain-export'`, which tests
+  // the RAW title, not the slug. A non-empty title whose every character is stripped
+  // produces an empty slug and the download name '.json' -- a dotfile, hidden on POSIX
+  // systems and renamed inconsistently by browsers.
+  for (const title of ['***', '///...///', 'Ελληνικά', '日本語']) {
+    test(`a title of only stripped characters (${title}) falls back to a safe filename`, async ({ page }) => {
+      await openApp(page);
       await importNative(page, bytes({ assignments: { 'IN:reconnaissance': { techniques: [] } }, title }), 'name.json');
+
+      // Prerequisite: the title really did survive import, so the slug is what is at
+      // fault rather than the title being dropped earlier.
+      expect((await readState(page)).title).toBe(title);
+
       const exported = await exportNative(page);
-      expect(exported.name, `title ${JSON.stringify(title)}`).toBe('attack-chain-export.json');
-    }
-  });
+      test.fail(true, 'Known gap AF-RT-006: a title that slugs to empty yields a dotfile name, not the fallback');
+      expect(exported.name).toBe('attack-chain-export.json');
+    });
+  }
 });
 
 test.describe('RT-17 repeated operations', () => {

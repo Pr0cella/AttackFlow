@@ -9,7 +9,6 @@ async function openBuilder(page: Page) {
 
 test.describe('STIX Builder hardening', () => {
   test('preserves valid indicator pattern syntax during import sanitization', async ({ page }) => {
-    test.fail(true, 'Known gap AF-RC-003: Composer import sanitization strips STIX pattern brackets and quotes');
     await openBuilder(page);
 
     const indicator = await page.evaluate(() => {
@@ -26,11 +25,16 @@ test.describe('STIX Builder hardening', () => {
       });
     });
 
+    // Prerequisite: the sanitizer ran and returned an object at all. Only the pattern
+    // projection below is the known gap, so a null result here is unexpected.
+    expect(indicator, 'sanitizeImportedObject returned nothing').toBeTruthy();
+    expect(indicator.type).toBe('indicator');
+
+    test.fail(true, 'Known gap AF-RC-003: Composer import sanitization strips STIX pattern brackets and quotes');
     expect(indicator.pattern).toBe("[ipv4-addr:value = '192.0.2.1']");
   });
 
   test('rejects bundle imports with invalid objects without replacing the current bundle', async ({ page }) => {
-    test.fail(true, 'Known gap AF-RC-003: Composer import silently skips invalid objects and replaces state');
     await openBuilder(page);
 
     await page.evaluate(() => (window as any).addObject('identity'));
@@ -61,13 +65,22 @@ test.describe('STIX Builder hardening', () => {
       }), 'utf8'),
     });
 
+    test.fail(true, 'Known gap AF-RC-003: Composer import silently skips invalid objects and replaces state');
     await expect(page.locator('#toast')).toHaveClass(/visible/);
     await expect(page.locator('#toast')).toContainText('Invalid STIX object');
     expect((await bundlePreview.textContent()) || '').toBe(beforePreview);
   });
 
-  test('rejects visualizer edge counts over budget before rendering', async ({ page }) => {
-    test.fail(true, 'Known gap AF-RC-004: no enforceVisualizerBudgets() graph budget exists yet');
+  // AF-RC-004 REMAINS AN OPEN FINDING. Its coverage, however, is BLOCKED, not proven:
+  // the case below calls enforceVisualizerBudgets(), which does not exist, so it threw a
+  // ReferenceError and that exception was being credited as a reproduced graph-budget
+  // failure. A missing function is not a real-path rendering-boundary result.
+  //
+  // Repairing it needs an approved budget contract and a test that drives the actual
+  // render entry point with bounded data and an intercepted renderer. Inventing a
+  // threshold here would fabricate a product requirement, so the case stays disabled and
+  // the finding stays open and explicitly unverified.
+  test.fixme('rejects visualizer edge counts over budget before rendering', async ({ page }) => {
     await openBuilder(page);
 
     const message = await page.evaluate(() => {
@@ -90,7 +103,6 @@ test.describe('STIX Builder hardening', () => {
   });
 
   test('encodes numeric editor values before rendering attributes', async ({ page }) => {
-    test.fail(true, 'Known gap AF-RC-007: Composer number inputs interpolate values into attributes unencoded');
     await openBuilder(page);
 
     const confidenceField = await page.evaluate(() => {
@@ -101,6 +113,11 @@ test.describe('STIX Builder hardening', () => {
       return document.querySelector('[data-field="confidence"]')?.outerHTML || '';
     });
 
+    // Prerequisite: the numeric field rendered at all. An empty string here means the
+    // editor or selector changed, which is a real failure rather than the known gap.
+    expect(confidenceField, 'confidence field did not render').not.toBe('');
+
+    test.fail(true, 'Known gap AF-RC-007: Composer number inputs interpolate values into attributes unencoded');
     expect(confidenceField).toContain('1&quot; autofocus onfocus=&quot;alert(1)');
     expect(confidenceField).not.toContain('" autofocus');
   });

@@ -216,51 +216,67 @@ test.describe('RT-02/RT-03 complete native document', () => {
   });
 });
 
+// Expected-failure convention, applied across this suite:
+//   - the marker sits INSIDE the test, immediately before the behavior that is known to
+//     be broken, so setup, upload, export and prerequisite assertions above it still
+//     count as unexpected failures rather than earning known-gap credit;
+//   - independent contracts get independent tests, so the first failure cannot hide a
+//     second one.
+
 test.describe('RT-02 native persistence gaps', () => {
-  test.fail(true, 'Known gap AF-RT-003: filters and selection are exported but never restored');
-  test('restores exported filters and selection', async ({ page, browser }) => {
-    await openApp(page);
-    await importNative(page, bytes(nativeFull()), 'rt-af-rt-003.json');
-    await page.evaluate(() => {
-      const app = eval('state');
-      app.filters = { attack: 'enterprise', capec: 'all', cwe: 'all', custom: 'all' };
-      app.selection = { type: 'attack', id: 'T1595' };
-    });
+  // AF-RT-003 covers two separable contracts. They are asserted apart so that restoring
+  // one without the other is visible rather than masked by the first failure.
+  for (const field of ['filters', 'selection'] as const) {
+    test(`restores exported ${field}`, async ({ page, browser }) => {
+      const expected = {
+        filters: { attack: 'enterprise', capec: 'all', cwe: 'all', custom: 'all' },
+        selection: { type: 'attack', id: 'T1595' },
+      }[field];
 
-    const exported = await exportNative(page);
-    expect(exported.json.filters).toEqual({ attack: 'enterprise', capec: 'all', cwe: 'all', custom: 'all' });
-    expect(exported.json.selection).toEqual({ type: 'attack', id: 'T1595' });
+      await openApp(page);
+      await importNative(page, bytes(nativeFull()), `rt-af-rt-003-${field}.json`);
+      await page.evaluate(({ key, value }) => { (eval('state') as any)[key] = value; },
+        { key: field, value: expected });
 
-    await withFreshContext(browser, async freshPage => {
-      await importNative(freshPage, exported.buffer, exported.name);
-      const restored = await readState(freshPage);
-      // Desired behavior: a value the exporter writes is a value the importer restores.
-      expect(restored.filters).toEqual(exported.json.filters);
-      expect(restored.selection).toEqual(exported.json.selection);
+      // Prerequisite: the exporter really does write the field. If this breaks, the
+      // finding has changed shape and the failure must NOT be credited to AF-RT-003.
+      const exported = await exportNative(page);
+      expect(exported.json[field]).toEqual(expected);
+
+      await withFreshContext(browser, async freshPage => {
+        await importNative(freshPage, exported.buffer, exported.name);
+        const restored = await readState(freshPage);
+
+        test.fail(true, `Known gap AF-RT-003: ${field} is exported but never restored`);
+        // Desired behavior: a value the exporter writes is a value the importer restores.
+        expect(restored[field]).toEqual(expected);
+      });
     });
-  });
+  }
 });
 
 test.describe('RT-02 view restoration', () => {
-  test.fail(true, "Known gap AF-RT-001: import allowlists 'relations' but the app and export use 'relationship'");
   test('restores the relationship view through a native round trip', async ({ page, browser }) => {
     await openApp(page);
     await importNative(page, bytes(nativeFull()), 'rt-af-rt-001.json');
     await page.evaluate(() => (window as any).setView('relationship'));
-    expect((await readState(page)).view).toBe('relationship');
 
+    // Prerequisites: the app holds the view and the exporter writes it. Both work today,
+    // so a failure here is a real regression, not the known import-allowlist gap.
+    expect((await readState(page)).view).toBe('relationship');
     const exported = await exportNative(page);
     expect(exported.json.view).toBe('relationship');
 
     await withFreshContext(browser, async freshPage => {
       await importNative(freshPage, exported.buffer, exported.name);
+
+      test.fail(true, "Known gap AF-RT-001: import allowlists 'relations' but the app and export use 'relationship'");
       expect((await readState(freshPage)).view).toBe('relationship');
     });
   });
 });
 
 test.describe('RT-15 legacy metadata keys', () => {
-  test.fail(true, 'Known gap AF-RT-002: sanitizeAssignmentMetadata ignores the legacy cves key that getCveEntries accepts');
   test('imports metadata.cves the way the rest of the app reads it', async ({ page }) => {
     await openApp(page);
     const legacy = {
@@ -275,9 +291,14 @@ test.describe('RT-15 legacy metadata keys', () => {
     };
     await importNative(page, bytes(legacy), 'rt-af-rt-002.json');
 
-    const meta = (await readState(page)).assignments['IN:exploitation'].techniques[0].metadata;
+    // Prerequisite: the document imported at all and the assignment survived. Only the
+    // CVE projection below is the known gap.
+    const assignment = (await readState(page)).assignments['IN:exploitation'].techniques[0];
+    expect(assignment.id).toBe('T1190');
+
+    test.fail(true, 'Known gap AF-RT-002: sanitizeAssignmentMetadata ignores the legacy cves key that getCveEntries accepts');
     // getCveEntries() reads `cves`; the import sanitizer is the only reader that does not.
-    expect(meta.cveEntries).toEqual([{ id: 'CVE-2024-3400', score: 10, vector: VECTOR_31 }]);
+    expect(assignment.metadata.cveEntries).toEqual([{ id: 'CVE-2024-3400', score: 10, vector: VECTOR_31 }]);
   });
 });
 
