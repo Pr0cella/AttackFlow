@@ -31,6 +31,30 @@ async function expectRefused(page: Page, buffer: Buffer, name: string, before: u
   expect(await readState(page), `${name} must not alter session state`).toEqual(before);
 }
 
+/**
+ * Opens the app with imports.* flags overridden in a test-local config response.
+ * The override is registered after the catch-all request guard because Playwright gives
+ * the most recently added route precedence, and before navigation so config.js is caught.
+ */
+async function openAppWithImportFlags(page: Page, flags: Record<string, boolean>) {
+  await installRequestGuard(page.context());
+  const configUrl = new URL('/config.js', BASE_URL).href;
+  await page.context().route(configUrl, async route => {
+    const response = await route.fetch();
+    let body = await response.text();
+    for (const [key, value] of Object.entries(flags)) {
+      const pattern = new RegExp(`(${key}\\s*:\\s*)(true|false)`);
+      expect(pattern.test(body), `config.js must define ${key}`).toBe(true);
+      body = body.replace(pattern, `$1${value}`);
+    }
+    return route.fulfill({ status: 200, contentType: 'application/javascript', body });
+  });
+  await page.goto('/index.html');
+  await expect(page.locator('#loading')).toHaveClass(/hidden/, { timeout: 60_000 });
+  await page.evaluate(() => { (window as any).__rtExecuted = false; });
+  expectNoExternalRequests(page);
+}
+
 test.describe('RT-17 rejection is atomic and diagnostic', () => {
   test('malformed and hostile documents never replace a loaded session', async ({ page }) => {
     const errors: string[] = [];
@@ -46,6 +70,7 @@ test.describe('RT-17 rejection is atomic and diagnostic', () => {
       ['string root', raw('"not an object"')],
       ['number root', raw('42')],
       ['assignments missing', bytes({ title: 'x' })],
+      ['assignments null', bytes({ assignments: null })],
       ['phase key without a colon', bytes({ assignments: { reconnaissance: { techniques: [] } } })],
       ['phase data not an object', bytes({ assignments: { 'IN:reconnaissance': 'x' } })],
       ['techniques not an array', bytes({ assignments: { 'IN:reconnaissance': { techniques: {} } } })],
@@ -64,30 +89,19 @@ test.describe('RT-17 rejection is atomic and diagnostic', () => {
     await expectInertRender(page, errors);
   });
 
-  test('an array-valued assignments field destroys the loaded document', async ({ page }) => {
-    // This test asserts CURRENT behavior, so the damage is measured and cannot quietly get
-    // worse. The desired behavior -- refuse the file, keep the document -- is asserted
-    // separately in the gap block below. Holding both contracts in one test would mean
-    // holding two incompatible expectations at once.
+  test('valid empty and populated assignment records remain supported', async ({ page }) => {
     await openApp(page);
-    await importNative(page, bytes(nativeFull()), 'rt-17-wipe-baseline.json');
-    const before = await readState(page);
-    expect(Object.keys(before.customLibrary).length).toBeGreaterThan(0);
-
-    await importNative(page, bytes({ assignments: [] }), 'array-assignments.json');
-
-    // validateKillChainImport() tests `typeof assignments !== 'object'`, which an array
-    // passes, so the file is accepted, initAssignments() clears every phase and nothing
-    // is restored. The analyst sees a success toast for a total loss of assignments.
-    const after = await readState(page);
-    for (const phase of Object.values(after.assignments) as any[]) {
+    await importNative(page, bytes({ assignments: {} }), 'empty-assignments.json');
+    for (const phase of Object.values((await readState(page)).assignments) as any[]) {
       expect(phase.techniques).toEqual([]);
-      expect(phase.capecs).toEqual([]);
-      expect(phase.cwes).toEqual([]);
-      expect(phase.customItems).toEqual([]);
       expect(phase.groups).toEqual([]);
     }
-    expect(after.assignments).not.toEqual(before.assignments);
+
+    await importNative(page, bytes(nativeFull()), 'populated-assignments.json');
+    const populated = await readState(page);
+    expect(populated.assignments['IN:reconnaissance'].techniques).not.toEqual([]);
+    expect(populated.assignments['IN:reconnaissance'].groups).not.toEqual([]);
+    expect(Object.keys(populated.customLibrary).length).toBeGreaterThan(0);
   });
 
   test('over-budget imports are refused whole, at the boundary and above it', async ({ page }) => {
@@ -208,45 +222,40 @@ test.describe('RT-17 rejection is atomic and diagnostic', () => {
   });
 });
 
-test.describe('RT-17 import validation gap', () => {
-  // The import guard checks `typeof assignments !== 'object'`, and `typeof [] === 'object'`,
-  // so a JSON array passes. It then yields no phase entries to validate, the import is
-  // reported as successful, and every phase is replaced with an empty one.
-  //
-  // That is two separable contracts: the file must be REPORTED as refused, and the loaded
-  // document must be left INTACT. A single test would hide the second behind the first,
-  // and the second is the one that costs an analyst their work.
-  for (const contract of ['reports the refusal', 'leaves the loaded document intact'] as const) {
-    test(`an array-valued assignments field ${contract}`, async ({ page }) => {
-      await openApp(page);
-      await importNative(page, bytes(nativeFull()), 'rt-17-gap-baseline.json');
+test.describe('RT-17 rejects array-valued assignments atomically', () => {
+  // Keep the diagnostic and data-preservation contracts separate so a wrong toast cannot
+  // hide destructive mutation. Both clear-library settings must reject before they matter.
+  for (const clearOnKillChain of [true, false]) {
+    for (const contract of ['reports the refusal', 'leaves the loaded document intact'] as const) {
+      test(`clearStixOnKillChainImport=${clearOnKillChain} ${contract}`, async ({ page }) => {
+        await openAppWithImportFlags(page, { clearStixOnKillChainImport: clearOnKillChain });
+        expect(await page.evaluate(() => eval('CONFIG').imports.clearStixOnKillChainImport))
+          .toBe(clearOnKillChain);
+        await importNative(page, bytes(nativeFull()), 'rt-17-gap-baseline.json');
 
-      // Prerequisite: a populated document really is loaded, so "unchanged" means
-      // something. A failure here is setup breakage, not the known gap.
-      const before = await readState(page);
-      expect(Object.keys(before.customLibrary).length).toBeGreaterThan(0);
+        // The snapshot covers document fields, assignments, groups, layout, library and view.
+        const before = await readState(page);
+        expect(Object.keys(before.customLibrary).length).toBeGreaterThan(0);
+        const renderedBefore = await page.locator('#kill-chain [draggable="true"] .id').allTextContents();
+        expect(renderedBefore.length).toBeGreaterThan(0);
 
-      await page.locator('#toast').evaluate(el => { el.textContent = ''; });
-      await page.locator('#import-killchain-input').setInputFiles({
-        name: 'array-assignments.json', mimeType: 'application/json', buffer: bytes({ assignments: [] }),
+        await page.locator('#toast').evaluate(el => { el.textContent = ''; });
+        await page.locator('#import-killchain-input').setInputFiles({
+          name: 'array-assignments.json', mimeType: 'application/json', buffer: bytes({ assignments: [] }),
+        });
+
+        // FileReader is asynchronous; the toast means the import reached a terminal outcome.
+        await expect(page.locator('#toast')).not.toBeEmpty();
+
+        if (contract === 'reports the refusal') {
+          await expect(page.locator('#toast')).toContainText('Import failed');
+        } else {
+          expect(await readState(page)).toEqual(before);
+          expect(await page.locator('#kill-chain [draggable="true"] .id').allTextContents())
+            .toEqual(renderedBefore);
+        }
       });
-
-      // Completion signal. setInputFiles returns as soon as the file is handed over, but
-      // importKillChain() reads it through an async FileReader. Asserting state before
-      // that resolves compares against a document that has not been touched YET, which
-      // makes the wipe look like correct behavior. The import path sets a toast on every
-      // outcome, so a non-empty toast is the point at which the result is decided.
-      await expect(page.locator('#toast')).not.toBeEmpty();
-
-      test.fail(true, 'Known gap: an array-valued assignments field passes validation, reports success, and clears the document');
-      if (contract === 'reports the refusal') {
-        await expect(page.locator('#toast')).toContainText('Import failed');
-      } else {
-        // Assignments AND the custom library must both survive; the probed defect clears
-        // both under the default clearStixOnKillChainImport setting.
-        expect(await readState(page)).toEqual(before);
-      }
-    });
+    }
   }
 });
 
@@ -355,31 +364,6 @@ test.describe('RT-18 session and configuration isolation', () => {
       expect(phase.groups).toEqual([]);
     }
   });
-
-  /**
-   * Opens the app with imports.* flags overridden in a test-local config response.
-   * Production config.js is never modified. The override must be registered AFTER the
-   * catch-all external-request block, because Playwright matches the most recently
-   * added route first -- and before navigation, since config.js loads with the page.
-   */
-  async function openAppWithImportFlags(page: Page, flags: Record<string, boolean>) {
-    await installRequestGuard(page.context());
-    const configUrl = new URL('/config.js', BASE_URL).href;
-    await page.context().route(configUrl, async route => {
-      const response = await route.fetch();
-      let body = await response.text();
-      for (const [key, value] of Object.entries(flags)) {
-        const pattern = new RegExp(`(${key}\\s*:\\s*)(true|false)`);
-        expect(pattern.test(body), `config.js must define ${key}`).toBe(true);
-        body = body.replace(pattern, `$1${value}`);
-      }
-      return route.fulfill({ status: 200, contentType: 'application/javascript', body });
-    });
-    await page.goto('/index.html');
-    await expect(page.locator('#loading')).toHaveClass(/hidden/, { timeout: 60_000 });
-    await page.evaluate(() => { (window as any).__rtExecuted = false; });
-    expectNoExternalRequests(page);
-  }
 
   for (const clearOnKillChain of [true, false]) {
     test(`clearStixOnKillChainImport=${clearOnKillChain} treats the existing library consistently`, async ({ page }) => {

@@ -9472,12 +9472,12 @@
         };
 
         function validateKillChainImport(data) {
-            if (!data || typeof data !== 'object') {
+            if (!data || typeof data !== 'object' || Array.isArray(data)) {
                 return { valid: false, error: 'Invalid export format: expected object' };
             }
 
             const assignments = data.assignments;
-            if (!assignments || typeof assignments !== 'object') {
+            if (!assignments || typeof assignments !== 'object' || Array.isArray(assignments)) {
                 return { valid: false, error: 'Missing or invalid assignments object' };
             }
 
