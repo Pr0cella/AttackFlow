@@ -233,7 +233,10 @@ test.describe('Import hardening', () => {
     // is a real regression and must not be credited to the known gap below.
     expect(renderedTechniqueIds).toContain(mapping!.assignedTechnique);
 
-    test.fail(true, 'Known gap AF-RC-006: relationship view includes unassigned library techniques');
+    // The relationship view lists every technique the library links to an assigned CAPEC,
+    // not only the techniques the analyst actually assigned, so the row overstates the
+    // document's contents.
+    test.fail(true, 'Known gap: the relationship view renders library-linked techniques that were never assigned');
     expect(renderedTechniqueIds).not.toContain(mapping!.unassignedTechnique);
   });
 
@@ -369,7 +372,10 @@ test.describe('Import hardening', () => {
   });
 
   test('serializes guarded CSV cells with single RFC 4180 quoting and CRLF rows', async ({ page }) => {
-    test.fail(true, 'Known gap AF-RC-008: guarded cells are quoted twice and rows use LF');
+    // The formula guard returns a cell that is ALREADY quoted; the serializer then escapes
+    // its quotes and wraps it again, so a standards-compliant reader recovers literal quote
+    // characters. Rows are also joined with LF rather than the CRLF RFC 4180 specifies.
+    test.fail(true, 'Known gap: a guarded cell is quoted more than once and rows end with LF, not CRLF');
     await openApp(page);
 
     const csv = await exportFormulaCsv(page);

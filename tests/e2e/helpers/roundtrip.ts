@@ -11,10 +11,15 @@
 // isolated contexts, real download bytes, named state snapshots, and the one documented
 // native-import normalization. It deliberately contains no expected values: oracles are
 // hand-authored beside their fixtures so a serializer bug cannot rewrite its own expectation.
+//
+// One cross-file contract lives here: the egress guard records any nonlocal request attempt
+// to HARNESS_VIOLATION_LOG, and zz-harness-audit.spec.ts fails the run on its contents. See
+// the comment at that constant for why the check cannot live inside the offending test.
 
 import fs from 'node:fs';
+import path from 'node:path';
 import {
-  expect, type Browser, type BrowserContext, type Download, type Page,
+  expect, test, type Browser, type BrowserContext, type Download, type Page,
 } from '@playwright/test';
 
 export const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:4173';
@@ -29,6 +34,31 @@ if (!['http:', 'https:'].includes(baseUrl.protocol) || !loopbackHosts.has(baseUr
 const LOCAL_ORIGIN = baseUrl.origin;
 const requestAttempts = new WeakMap<BrowserContext, string[]>();
 const MAX_RECORDED_REQUEST_ATTEMPTS = 20;
+
+// Harness violations are reported OUT OF BAND, in a file read by zz-harness-audit.spec.ts.
+//
+// A `test.fail` marker makes Playwright treat any failure of that test as the expected
+// one. Measured, not assumed: that absorption covers an error thrown from the test body,
+// AND an error thrown from an afterAll hook in the same file -- a probe that attempted
+// egress inside a marked body and threw from both places still reported "1 passed" with
+// exit code 0. So an egress violation inside a known-gap test cannot be surfaced from
+// anywhere in that test's own lifecycle.
+//
+// The file is the escape hatch: a spec with no marker of its own reads it at the end of
+// the run and fails on its contents, so a harness violation can never be credited to a
+// runtime defect marker.
+export const HARNESS_VIOLATION_LOG =
+  path.resolve(__dirname, '../../../test-results/harness-violations.log');
+
+function recordHarnessViolation(message: string) {
+  try {
+    fs.mkdirSync(path.dirname(HARNESS_VIOLATION_LOG), { recursive: true });
+    fs.appendFileSync(HARNESS_VIOLATION_LOG, `${message}\n`, 'utf8');
+  } catch {
+    // Never mask the violation itself behind a logging failure; the in-test throw below
+    // still reports it whenever the test carries no marker.
+  }
+}
 
 /** Installs the suite's exact-origin egress guard once for a browser context. */
 export async function installRequestGuard(context: BrowserContext): Promise<string[]> {
@@ -226,7 +256,36 @@ export async function withFreshContext<T>(
   try {
     const page = await context.newPage();
     const blocked = await openApp(page);
-    const result = await body(page, blocked);
+    // Recorded before any assertion so it survives whatever happens to this test.
+    const recordEgress = () => {
+      const attempts = requestAttempts.get(page.context());
+      if (attempts && attempts.length > 0) {
+        recordHarnessViolation(
+          `${test.info().titlePath.slice(1).join(' > ')} attempted: ${attempts.join(', ')}`,
+        );
+      }
+    };
+    let result: T;
+    try {
+      result = await body(page, blocked);
+    } catch (bodyError) {
+      // The egress audit must also run when the body fails, including when it fails by
+      // design under a `test.fail` marker. Otherwise a harness violation is silently
+      // credited to a known runtime defect and never reported at all. Both diagnostics
+      // are preserved: the egress violation names itself and carries the original.
+      recordEgress();
+      try {
+        expectNoExternalRequests(page);
+      } catch (egressError) {
+        const original = bodyError instanceof Error
+          ? (bodyError.stack || bodyError.message) : String(bodyError);
+        throw new Error(
+          `${(egressError as Error).message}\n\nThe body also failed:\n${original}`,
+        );
+      }
+      throw bodyError;
+    }
+    recordEgress();
     expectNoExternalRequests(page);
     return result;
   } finally {
@@ -308,22 +367,56 @@ export function expectBundleEnvelope(bundle: any, label: string) {
  *              COMPLETE record minus id/created/modified, so a dropped description or a
  *              corrupted spec_version is caught. Multiplicity is checked before matching
  *              so a duplicated edge cannot disappear into a set.
+ *
+ * The comparison is STRICT about the transient group `editing` flag by default: any group
+ * carrying that key fails unless the caller names its exact phase/group path, and the
+ * value `true` is never tolerated at any path. Only the group-lifecycle test declares a
+ * path, because only it performs a rename. Once the app stops writing the flag, that
+ * declaration is removed and this stays as an ordinary regression.
  */
-export function expectNativeExportsEquivalent(first: any, second: any, startedAt: number) {
+export type NativeCompareOptions = {
+  /** Exact `phaseKey/groupId` paths permitted to carry the transient `editing: false`. */
+  editingLeakPaths?: readonly string[];
+};
+
+export function expectNativeExportsEquivalent(
+  first: any, second: any, startedAt: number, options: NativeCompareOptions = {},
+) {
   expectNativeEnvelope(first, startedAt, 'first export');
   expectNativeEnvelope(second, startedAt, 'second export');
+
+  // `editing` is a transient rename flag: commitRenameGroup() sets it to false instead of
+  // deleting the key, and the exporter serializes the assignment tree verbatim, so a
+  // UI-only flag with no place in the document schema reaches the downloaded file. The
+  // importer drops it again, so it may appear in a
+  // first export and never in later ones. Each occurrence is ASSERTED here -- allowed
+  // path, and value exactly false -- before it is excluded, so an unexpected leak, a new
+  // leaking group, or a flag left at `true` fails instead of being normalized away.
+  const allowedEditingPaths = new Set(options.editingLeakPaths || []);
+  const auditEditing = (doc: any, label: string) => {
+    for (const [phaseKey, phase] of Object.entries(doc.assignments || {}) as [string, any][]) {
+      for (const group of phase?.groups || []) {
+        if (!Object.prototype.hasOwnProperty.call(group, 'editing')) continue;
+        const path = `${phaseKey}/${group.groupId}`;
+        expect(allowedEditingPaths.has(path),
+          `${label}: undeclared transient 'editing' flag at ${path}`).toBe(true);
+        expect(group.editing,
+          `${label}: 'editing' must never be true at ${path}`).toBe(false);
+      }
+    }
+  };
+  auditEditing(first, 'first export');
+  auditEditing(second, 'second export');
 
   const strip = (doc: any) => {
     const copy = JSON.parse(JSON.stringify(doc));
     delete copy.exportedAt;   // validated above
     delete copy.stixBundle;   // compared below
-    // `editing` is a transient rename flag that commitRenameGroup() leaves behind and
-    // exportJSON() serializes (AF-RT-004). The importer drops it, so it can appear in a
-    // first export and never in later ones. Convergence is judged without it; the leak
-    // itself is asserted directly in RT-04 so it stays visible. RP-06 removes both this
-    // stripping and that case together.
-    for (const phase of Object.values(copy.assignments || {}) as any[]) {
-      for (const group of phase?.groups || []) delete group.editing;
+    // Only the paths asserted immediately above are excluded, never `editing` at large.
+    for (const [phaseKey, phase] of Object.entries(copy.assignments || {}) as [string, any][]) {
+      for (const group of phase?.groups || []) {
+        if (allowedEditingPaths.has(`${phaseKey}/${group.groupId}`)) delete group.editing;
+      }
     }
     return copy;
   };

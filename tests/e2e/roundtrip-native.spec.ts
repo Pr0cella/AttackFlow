@@ -237,8 +237,11 @@ test.describe('RT-02/RT-03 complete native document', () => {
 //     second one.
 
 test.describe('RT-02 native persistence gaps', () => {
-  // AF-RT-003 covers two separable contracts. They are asserted apart so that restoring
-  // one without the other is visible rather than masked by the first failure.
+  // The exporter writes `filters` and `selection` into every document, and no import path
+  // ever reads them back, so both are written and silently discarded.
+  //
+  // They are two separable contracts, asserted apart, so that restoring one without the
+  // other is visible rather than masked by whichever fails first.
   for (const field of ['filters', 'selection'] as const) {
     test(`restores exported ${field}`, async ({ page, browser }) => {
       const expected = {
@@ -247,12 +250,12 @@ test.describe('RT-02 native persistence gaps', () => {
       }[field];
 
       await openApp(page);
-      await importNative(page, bytes(nativeFull()), `rt-af-rt-003-${field}.json`);
+      await importNative(page, bytes(nativeFull()), `rt-persistence-${field}.json`);
       await page.evaluate(({ key, value }) => { (eval('state') as any)[key] = value; },
         { key: field, value: expected });
 
-      // Prerequisite: the exporter really does write the field. If this breaks, the
-      // finding has changed shape and the failure must NOT be credited to AF-RT-003.
+      // Prerequisite: the exporter really does write the field. If this breaks, the gap has
+      // changed shape and the failure must NOT be credited to the known restore gap.
       const exported = await exportNative(page);
       expect(exported.json[field]).toEqual(expected);
 
@@ -260,7 +263,7 @@ test.describe('RT-02 native persistence gaps', () => {
         await importNative(freshPage, exported.buffer, exported.name);
         const restored = await readState(freshPage);
 
-        test.fail(true, `Known gap AF-RT-003: ${field} is exported but never restored`);
+        test.fail(true, `Known gap: ${field} is written into the export and never read back on import`);
         // Desired behavior: a value the exporter writes is a value the importer restores.
         expect(restored[field]).toEqual(expected);
       });
@@ -283,7 +286,10 @@ test.describe('RT-02 view restoration', () => {
     await withFreshContext(browser, async freshPage => {
       await importNative(freshPage, exported.buffer, exported.name);
 
-      test.fail(true, "Known gap AF-RT-001: import allowlists 'relations' but the app and export use 'relationship'");
+      // The import allowlist for the view field is ['killchain', 'relations'], but the app
+      // and the exporter both use 'relationship', so the value never matches and the view
+      // silently falls back to the kill chain.
+      test.fail(true, "Known gap: the view allowlist says 'relations' while the app and export write 'relationship'");
       expect((await readState(freshPage)).view).toBe('relationship');
     });
   });
@@ -309,7 +315,10 @@ test.describe('RT-15 legacy metadata keys', () => {
     const assignment = (await readState(page)).assignments['IN:exploitation'].techniques[0];
     expect(assignment.id).toBe('T1190');
 
-    test.fail(true, 'Known gap AF-RT-002: sanitizeAssignmentMetadata ignores the legacy cves key that getCveEntries accepts');
+    // getCveEntries(), which every reader in the app goes through, accepts a `cves` array.
+    // The import sanitizer handles cveEntries, cveIds and the legacy cveId/cve pair but not
+    // `cves`, so it is the one reader that drops it -- silently, at the trust boundary.
+    test.fail(true, 'Known gap: the import sanitizer ignores the legacy cves key that every other reader accepts');
     // getCveEntries() reads `cves`; the import sanitizer is the only reader that does not.
     expect(assignment.metadata.cveEntries).toEqual([{ id: 'CVE-2024-3400', score: 10, vector: VECTOR_31 }]);
   });
@@ -361,7 +370,9 @@ test.describe('RT-15 shipped example documents', () => {
           }
         }
       }
-      // The whole shipped library survives; entry-level field fidelity is RP-02/RP-03.
+      // Scope: this asserts that the whole shipped library SURVIVES. Field-level fidelity
+      // inside each entry is not claimed here -- two known gaps, a dropped legacy CVE and a
+      // truncated custom name, would have to be fixed before it could be.
       expect(Object.keys(imported.customLibrary).sort())
         .toEqual(Object.keys(sourceDoc.customLibrary || {}).sort());
 
@@ -436,6 +447,9 @@ test.describe('RT-04 group lifecycle', () => {
 
     const recon = `[data-phase="${FULL_PHASES.recon}"]`;
     const exploitation = `[data-phase="${FULL_PHASES.exploitation}"]`;
+    // The one group this test renames, and so the ONLY group permitted to carry the
+    // transient `editing` flag. Captured here because the id is generated at runtime.
+    let renamedGroupId = '';
 
     await test.step('create a group through the real control and rename it', async () => {
       await page.locator(`${recon} .phase-group-btn`).first().click();
@@ -444,6 +458,7 @@ test.describe('RT-04 group lifecycle', () => {
         return groups[groups.length - 1].groupId;
       }, FULL_PHASES.recon);
       expect(created).toMatch(/^grp-[a-z0-9]+-[a-z0-9]{1,5}$/);
+      renamedGroupId = created;
 
       // createGroup() opens the rename input immediately; commit with Enter.
       const input = page.locator(`#group-rename-${created}`);
@@ -521,13 +536,14 @@ test.describe('RT-04 group lifecycle', () => {
     const first = await exportNative(page);
     await expectInertRender(page, errors);
 
-    await test.step('AF-RT-004: the transient rename flag leaks into the export but not back in', async () => {
+    await test.step('the transient rename flag leaks into the export but not back in', async () => {
       // commitRenameGroup() sets editing=false instead of deleting the key, and
       // exportJSON() serializes state.assignments verbatim, so a UI-only flag with no
       // place in the document schema reaches the downloaded file.
       const exportedGroups = first.json.assignments[FULL_PHASES.recon].groups;
-      const renamed = exportedGroups.find((g: any) => g.label === 'Renamed "group" <x> & --y');
+      const renamed = exportedGroups.find((g: any) => g.groupId === renamedGroupId);
       expect(renamed, 'the renamed group is in the export').toBeDefined();
+      expect(renamed.label).toBe('Renamed "group" <x> & --y');
       expect(Object.prototype.hasOwnProperty.call(renamed, 'editing')).toBe(true);
       expect(renamed.editing).toBe(false);
       // Groups that were never renamed in this session carry no such flag.
@@ -542,9 +558,20 @@ test.describe('RT-04 group lifecycle', () => {
 
         // The transient rename flag is dropped by the importer; nothing else changes,
         // so the document converges to a clean shape on the second cycle.
+        // The expectation drops the flag at the ONE asserted path, not wherever it is
+        // found: a leak at any other group must fail rather than be normalized away.
         const expected = JSON.parse(JSON.stringify(edited));
-        for (const phase of Object.values(expected.assignments) as any[]) {
-          for (const group of phase.groups) delete group.editing;
+        for (const [phaseKey, phase] of Object.entries(expected.assignments) as [string, any][]) {
+          for (const group of phase.groups) {
+            const leaks = Object.prototype.hasOwnProperty.call(group, 'editing');
+            if (phaseKey === FULL_PHASES.recon && group.groupId === renamedGroupId) {
+              expect(leaks, 'the renamed group carries the flag').toBe(true);
+              expect(group.editing).toBe(false);
+              delete group.editing;
+            } else {
+              expect(leaks, `unexpected 'editing' flag at ${phaseKey}/${group.groupId}`).toBe(false);
+            }
+          }
         }
         expect(restored.assignments).toEqual(expected.assignments);
         for (const phase of Object.values(restored.assignments) as any[]) {
@@ -557,7 +584,11 @@ test.describe('RT-04 group lifecycle', () => {
         // Convergence is measured on the untouched restored document, before the
         // usability probe below mutates it.
         const second = await exportNative(freshPage);
-        expectNativeExportsEquivalent(first.json, second.json, startedAt);
+        // The first export carries the transient flag at exactly one declared path; the
+        // second must not, and no other group may carry it in either artifact.
+        expectNativeExportsEquivalent(first.json, second.json, startedAt, {
+          editingLeakPaths: [`${FULL_PHASES.recon}/${renamedGroupId}`],
+        });
 
         // Restored controls still work: rename and collapse are both live.
         const group = freshPage.locator(`[data-phase="${FULL_PHASES.recon}"] .phase-group[data-group-id="${GROUPS.mixed}"]`);
