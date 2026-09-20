@@ -92,6 +92,19 @@ test('normalizes official vectors and rejects invalid or non-string values', asy
     return { vector: (window as any).normalizeCvssVector(value), called };
   });
   expect(coerced).toEqual({ vector: '', called: false });
+
+  const scoreCoercion = await page.evaluate(cveId => {
+    let called = false;
+    const score = { toString() { called = true; return '9.8'; } };
+    const entries = (window as any).sanitizeAssignmentMetadata({
+      metadata: { cves: [{ id: cveId, score }] },
+    }).cveEntries;
+    return { entries, called };
+  }, cveId);
+  expect(scoreCoercion).toEqual({
+    entries: [{ id: cveId, score: null, vector: '' }],
+    called: false,
+  });
 });
 
 test('requires every base metric and rejects repeated metrics', async ({ page }) => {
@@ -114,14 +127,15 @@ test('uses the same vector validation for current and legacy metadata paths', as
       const formats = [
         { cveEntries: [{ id: cveId, vector: value }] },
         { cveEntries: [{ id: cveId, cvssVector: value }] },
+        { cves: [{ id: cveId, vector: value }] },
+        { cves: [{ id: cveId, cvssVector: value }] },
         { cveId, cvssVector: value },
         { cveIds: [cveId], cvss: value },
       ];
       return {
         imported: formats.flatMap(metadata => [metadata, { metadata }])
           .map(assignment => app.sanitizeAssignmentMetadata(assignment).cveEntries),
-        displayed: [...formats, { cves: [{ id: cveId, vector: value }] }]
-          .map(metadata => app.getCveEntries(metadata)),
+        displayed: formats.map(metadata => app.getCveEntries(metadata)),
       };
     }, { value, cveId });
     for (const entries of [...result.imported, ...result.displayed]) {

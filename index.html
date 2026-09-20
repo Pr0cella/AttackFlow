@@ -9595,15 +9595,16 @@
                 metadata.confidence = Math.max(0, Math.min(100, Math.floor(sourceMeta.confidence)));
             }
 
-            // Sanitize CVE entries (handle cveEntries, cveIds, legacy cveId/cve + cvssVector)
+            // Sanitize CVE entries (handle cveEntries/cves, cveIds, legacy cveId/cve + cvssVector)
             const cveEntries = [];
-            if (Array.isArray(sourceMeta.cveEntries)) {
-                sourceMeta.cveEntries.forEach(entry => {
-                    if (!entry || typeof entry !== 'object') return;
+            const appendCveEntries = (entries) => {
+                if (!Array.isArray(entries)) return;
+                entries.forEach(entry => {
+                    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return;
                     const id = typeof entry.id === 'string' ? entry.id.trim().toUpperCase() : '';
                     if (!/^CVE-\d{4}-\d{4,}$/.test(id)) return;
                     let score = null;
-                    if (entry.score !== null && entry.score !== undefined && entry.score !== '') {
+                    if ((typeof entry.score === 'number' || typeof entry.score === 'string') && entry.score !== '') {
                         const scoreValue = parseFloat(entry.score);
                         if (Number.isFinite(scoreValue) && scoreValue >= 0 && scoreValue <= 10) {
                             score = Math.round(scoreValue * 10) / 10;
@@ -9613,7 +9614,9 @@
                     const vector = normalizeCvssVector(vectorRaw);
                     cveEntries.push({ id, score, vector });
                 });
-            }
+            };
+            appendCveEntries(sourceMeta.cveEntries);
+            appendCveEntries(sourceMeta.cves);
 
             const cveValues = [];
             if (Array.isArray(sourceMeta.cveIds)) {

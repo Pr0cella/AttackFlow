@@ -331,6 +331,7 @@ Update strategy:
 - `sanitizeImportedAssignment`
 - `sanitizeImportedCustomAssignment`
 - `sanitizeAssignmentMetadata`
+- `appendCveEntries` (local to `sanitizeAssignmentMetadata`)
 - `sanitizeImportedData`
 - `importKillChain`
 - `exportCSV`
