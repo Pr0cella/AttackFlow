@@ -441,3 +441,98 @@ test('punctuation-rich STIX values survive import, editor modification, download
     await freshContext.close();
   }
 });
+
+// ---------------------------------------------------------------------------
+// RT-06 supplements for the round-trip suite.
+//
+// Added here rather than in a new spec because both depend on this file's all-type
+// coverage: one pins the projected/unsupported split for every configured descriptor so a
+// new field type cannot be added without a contract decision, and the other reaches the
+// STIX editor through a real card click, since the lifecycle above calls openStixEditor()
+// directly and so never exercises the card entry point.
+//
+// Additive only: the all-type lifecycle above is unchanged.
+// ---------------------------------------------------------------------------
+
+test('every configured descriptor is classified as projected or explicitly unsupported', async ({ page }) => {
+  await openApp(page);
+  const fieldTypes = await readFieldTypes(page);
+
+  // Hand-authored from buildSTIXBundle(): the shapes the export projection handles.
+  const PROJECTED = new Set([
+    'string', 'text', 'enum', 'open-vocab', 'timestamp', 'identifier',
+    'boolean', 'integer', 'list', 'list:open-vocab',
+  ]);
+  // Hand-authored: structured shapes the main editor stores but export never emits.
+  const UNSUPPORTED = new Set(['kill-chain-phases', 'external-references']);
+
+  const unsupported: string[] = [];
+  let projectedCount = 0;
+  for (const [type, fields] of Object.entries(fieldTypes)) {
+    for (const [key, fieldType] of Object.entries(fields)) {
+      if (PROJECTED.has(fieldType)) { projectedCount += 1; continue; }
+      // A descriptor that is neither projected nor a known structured shape means a new
+      // field type was added without a manifest decision. Fail rather than ignore it.
+      expect(UNSUPPORTED.has(fieldType), `unclassified descriptor ${type}.${key}: ${fieldType}`).toBe(true);
+      unsupported.push(`${type}.${key}`);
+    }
+  }
+
+  // Pinned counts so an added type or field forces a contract review.
+  expect(Object.keys(fieldTypes)).toHaveLength(19);
+  expect(projectedCount).toBe(122);
+  expect(unsupported.sort()).toEqual([
+    'attack-pattern.external_references', 'attack-pattern.kill_chain_phases',
+    'indicator.kill_chain_phases', 'infrastructure.kill_chain_phases',
+    'malware.kill_chain_phases', 'tool.kill_chain_phases', 'vulnerability.external_references',
+  ]);
+});
+
+test('a real card click opens the STIX editor with the restored values', async ({ page }) => {
+  await openApp(page);
+
+  // Assign a custom object to a phase so a real card exists to click.
+  const id = 'malware--abababab-abab-4bab-8bab-abababababab';
+  await page.locator('#import-killchain-input').setInputFiles({
+    name: 'rt-06-card.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify({
+      assignments: {
+        'IN:reconnaissance': {
+          techniques: [], capecs: [], cwes: [],
+          customItems: [{ id, instanceId: 'itm-card-1', type: 'custom', metadata: {} }],
+          groups: [], layout: [],
+        },
+      },
+      customLibrary: {
+        [id]: {
+          id, stixType: 'malware', name: 'Card "malware" <x>',
+          description: 'Opened by clicking the card',
+          labels: ['card-label'], is_family: false,
+        },
+      },
+    }), 'utf8'),
+  });
+  await expect(page.locator('#toast')).toHaveText('Imported kill chain');
+
+  // The existing lifecycle calls openStixEditor() directly; this drives the card button.
+  const card = page.locator(`[draggable="true"]:has(.tag-action-btn.edit[onclick*="'itm-card-1'"])`);
+  await expect(card).toHaveCount(1);
+  await card.hover();
+  await card.locator('.tag-action-btn.edit').click();
+
+  await expect(page.locator('#edit-stix-modal')).toHaveClass(/visible/);
+  await expect(page.locator('#stix-edit-name')).toHaveValue('Card "malware" <x>');
+  await expect(page.locator('#stix-edit-description')).toHaveValue('Opened by clicking the card');
+  await expect(page.locator('#stix-edit-labels')).toHaveValue('card-label');
+  await expect(page.locator('#stix-edit-is_family')).not.toBeChecked();
+
+  // Saving from a card-opened editor commits to the same library entry.
+  await page.locator('#stix-edit-name').fill('Edited from the card');
+  await page.locator('.btn-stix-save').click();
+  await expect(page.locator('#toast')).toHaveText('STIX item updated');
+  expect(await page.evaluate(k => eval('state').library.custom[k].name, id)).toBe('Edited from the card');
+
+  await expect(page.locator('[data-rt-injected]')).toHaveCount(0);
+  expect(await page.evaluate(() => (window as any).__rtExecuted)).toBe(false);
+});
