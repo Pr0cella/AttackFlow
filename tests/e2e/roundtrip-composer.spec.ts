@@ -12,10 +12,14 @@
 
 import { expect, test, type Page } from '@playwright/test';
 import {
-  BASE_URL, exportStix, importNative, importStix, openApp, readState, withFreshContext,
+  exportStix, expectNoDownload, expectNoExternalRequests, importNative, importStix,
+  installRequestGuard, openApp, readState, withFreshContext,
 } from './helpers/roundtrip';
 
 const bytes = (value: unknown) => Buffer.from(JSON.stringify(value), 'utf8');
+
+test.use({ serviceWorkers: 'block' });
+test.afterEach(async ({ page }) => expectNoExternalRequests(page));
 
 const A = 'malware--11111111-1111-4111-8111-111111111111';
 const B = 'identity--22222222-2222-4222-8222-222222222222';
@@ -32,20 +36,14 @@ const sdo = (id: string, name: string, extra: Record<string, unknown> = {}) => (
 });
 
 async function openComposer(page: Page) {
-  const blocked: string[] = [];
-  const localOrigin = new URL(BASE_URL).origin;
-  await page.route('**/*', route => {
-    const url = route.request().url();
-    if (new URL(url).origin === localOrigin) return route.continue();
-    blocked.push(url);
-    return route.abort();
-  });
+  const blocked = await installRequestGuard(page.context());
   await page.goto('/stix-builder.html');
   await expect(page.locator('#add-object')).toBeVisible({ timeout: 60_000 });
   return blocked;
 }
 
 async function importIntoComposer(page: Page, buffer: Buffer, name = 'composer.json') {
+  await page.locator('#toast').evaluate(element => { element.textContent = ''; });
   await page.locator('#bundle-file').setInputFiles({ name, mimeType: 'application/json', buffer });
 }
 
@@ -169,9 +167,7 @@ test.describe('RT-10 Composer import decisions', () => {
         expect(dialog.message()).toContain('validation issues');
         return dialog.dismiss();
       });
-      const pending = page.waitForEvent('download', { timeout: 1500 }).then(() => 'download', () => 'none');
-      await page.locator('#export-bundle').click();
-      expect(await pending).toBe('none');
+      await expectNoDownload(page, () => page.locator('#export-bundle').click());
     });
 
     await test.step('accepting the confirm exports the bundle as-is', async () => {

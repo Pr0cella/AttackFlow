@@ -10,13 +10,16 @@
 
 import { expect, test, type Page } from '@playwright/test';
 import {
-  BASE_URL, exportNative, expectInertRender, expectNoDownload, importNative, importStix,
-  openApp, readState,
+  BASE_URL, exportNative, expectInertRender, expectNoDownload, expectNoExternalRequests,
+  importNative, importStix, installRequestGuard, openApp, readState,
 } from './helpers/roundtrip';
 import { IDS, nativeFull } from '../fixtures/roundtrip/native';
 
 const bytes = (value: unknown) => Buffer.from(JSON.stringify(value), 'utf8');
 const raw = (text: string) => Buffer.from(text, 'utf8');
+
+test.use({ serviceWorkers: 'block' });
+test.afterEach(async ({ page }) => expectNoExternalRequests(page));
 
 /** Imports bytes expecting refusal, and asserts the session survived untouched. */
 async function expectRefused(page: Page, buffer: Buffer, name: string, before: unknown) {
@@ -297,15 +300,9 @@ test.describe('RT-18 session and configuration isolation', () => {
    * added route first -- and before navigation, since config.js loads with the page.
    */
   async function openAppWithImportFlags(page: Page, flags: Record<string, boolean>) {
-    const localOrigin = new URL(BASE_URL).origin;
-    const blocked: string[] = [];
-    await page.route('**/*', route => {
-      const url = route.request().url();
-      if (new URL(url).origin === localOrigin) return route.continue();
-      blocked.push(url);
-      return route.abort();
-    });
-    await page.route('**/config.js', async route => {
+    await installRequestGuard(page.context());
+    const configUrl = new URL('/config.js', BASE_URL).href;
+    await page.context().route(configUrl, async route => {
       const response = await route.fetch();
       let body = await response.text();
       for (const [key, value] of Object.entries(flags)) {
@@ -318,7 +315,7 @@ test.describe('RT-18 session and configuration isolation', () => {
     await page.goto('/index.html');
     await expect(page.locator('#loading')).toHaveClass(/hidden/, { timeout: 60_000 });
     await page.evaluate(() => { (window as any).__rtExecuted = false; });
-    expect(blocked, 'no external request may be attempted').toEqual([]);
+    expectNoExternalRequests(page);
   }
 
   for (const clearOnKillChain of [true, false]) {

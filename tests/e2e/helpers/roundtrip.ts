@@ -13,9 +13,58 @@
 // hand-authored beside their fixtures so a serializer bug cannot rewrite its own expectation.
 
 import fs from 'node:fs';
-import { expect, type Browser, type Download, type Page } from '@playwright/test';
+import {
+  expect, type Browser, type BrowserContext, type Download, type Page,
+} from '@playwright/test';
 
 export const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:4173';
+
+const baseUrl = new URL(BASE_URL);
+const loopbackHosts = new Set(['127.0.0.1', 'localhost', '[::1]']);
+if (!['http:', 'https:'].includes(baseUrl.protocol) || !loopbackHosts.has(baseUrl.hostname) ||
+    baseUrl.username || baseUrl.password) {
+  throw new Error(`PLAYWRIGHT_BASE_URL must be an uncredentialed loopback HTTP(S) URL: ${BASE_URL}`);
+}
+
+const LOCAL_ORIGIN = baseUrl.origin;
+const requestAttempts = new WeakMap<BrowserContext, string[]>();
+const MAX_RECORDED_REQUEST_ATTEMPTS = 20;
+
+/** Installs the suite's exact-origin egress guard once for a browser context. */
+export async function installRequestGuard(context: BrowserContext): Promise<string[]> {
+  const existing = requestAttempts.get(context);
+  if (existing) return existing;
+
+  const attempts: string[] = [];
+  requestAttempts.set(context, attempts);
+  const recordAttempt = (url: string) => {
+    if (attempts.length < MAX_RECORDED_REQUEST_ATTEMPTS) attempts.push(url.slice(0, 2048));
+    else if (attempts.length === MAX_RECORDED_REQUEST_ATTEMPTS) {
+      attempts.push('[additional nonlocal request attempts omitted]');
+    }
+  };
+  await context.route('**/*', route => {
+    const url = route.request().url();
+    let origin: string;
+    try {
+      origin = new URL(url).origin;
+    } catch {
+      recordAttempt(url);
+      return route.abort('blockedbyclient');
+    }
+    if (origin === LOCAL_ORIGIN) return route.continue();
+    recordAttempt(url);
+    return route.abort('blockedbyclient');
+  });
+  return attempts;
+}
+
+/** Fails a flow if any request outside the one approved loopback origin was attempted. */
+export function expectNoExternalRequests(page: Page) {
+  const attempts = requestAttempts.get(page.context());
+  expect(attempts, 'request guard must be installed before navigation').toBeDefined();
+  expect(attempts, 'no nonlocal request may be attempted').toEqual([]);
+}
 
 // Hand-authored from index.html KILL_CHAIN. Specs assert the running app matches this
 // roster, so a silently added or removed phase fails instead of being absorbed.
@@ -61,14 +110,7 @@ export type NativeState = {
  * rather than only that nothing succeeded.
  */
 export async function openApp(page: Page): Promise<string[]> {
-  const blocked: string[] = [];
-  const localOrigin = new URL(BASE_URL).origin;
-  await page.route('**/*', route => {
-    const url = route.request().url();
-    if (new URL(url).origin === localOrigin) return route.continue();
-    blocked.push(url);
-    return route.abort();
-  });
+  const blocked = await installRequestGuard(page.context());
   await page.goto('/index.html');
   await expect(page.locator('#loading')).toHaveClass(/hidden/, { timeout: 60_000 });
   await page.evaluate(() => { (window as any).__rtExecuted = false; });
@@ -131,23 +173,35 @@ async function capture(page: Page, trigger: () => Promise<unknown>): Promise<Cap
   return { name: download.suggestedFilename(), buffer, text: buffer.toString('utf8') };
 }
 
+async function clickExportControl(page: Page, name: 'JSON' | 'CSV' | 'STIX Bundle') {
+  const dropdown = page.locator('#export-dropdown');
+  await dropdown.locator(':scope > button.btn').click();
+  await dropdown.getByRole('button', { name, exact: true }).click();
+}
+
 export async function exportNative(page: Page) {
-  const captured = await capture(page, () => page.evaluate(() => (window as any).exportJSON()));
+  const captured = await capture(page, () => clickExportControl(page, 'JSON'));
   return { ...captured, json: JSON.parse(captured.text) };
 }
 
 export async function exportStix(page: Page) {
-  const captured = await capture(page, () => page.evaluate(() => (window as any).exportSTIXBundle()));
+  const captured = await capture(page, () => clickExportControl(page, 'STIX Bundle'));
   return { ...captured, json: JSON.parse(captured.text) };
 }
 
 export async function exportCsv(page: Page) {
-  return capture(page, () => page.evaluate(() => (window as any).exportCSV()));
+  return capture(page, () => clickExportControl(page, 'CSV'));
 }
 
 /** Asserts an export control produced no download at all within the given window. */
 export async function expectNoDownload(page: Page, trigger: () => Promise<unknown>, ms = 1500) {
-  const pending = page.waitForEvent('download', { timeout: ms }).then(() => 'download', () => 'none');
+  const pending = page.waitForEvent('download', { timeout: ms }).then(
+    () => 'download' as const,
+    error => {
+      if (error instanceof Error && error.name === 'TimeoutError') return 'none' as const;
+      throw error;
+    },
+  );
   await trigger();
   expect(await pending, 'export unexpectedly produced a download').toBe('none');
 }
@@ -160,11 +214,15 @@ export async function withFreshContext<T>(
   browser: Browser,
   body: (page: Page, blocked: string[]) => Promise<T>,
 ): Promise<T> {
-  const context = await browser.newContext({ baseURL: BASE_URL, acceptDownloads: true });
+  const context = await browser.newContext({
+    baseURL: BASE_URL, acceptDownloads: true, serviceWorkers: 'block',
+  });
   try {
     const page = await context.newPage();
     const blocked = await openApp(page);
-    return await body(page, blocked);
+    const result = await body(page, blocked);
+    expectNoExternalRequests(page);
+    return result;
   } finally {
     await context.close();
   }

@@ -10,8 +10,8 @@ import path from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
 import {
   ALL_PHASES, ASSIGNMENT_KEYS, NATIVE_EXPORT_KEYS, exportNative, expectInertRender,
-  expectIsoTimestampWithin, expectNativeExportsEquivalent, importNative, openApp,
-  readState, withFreshContext,
+  expectIsoTimestampWithin, expectNativeExportsEquivalent, expectNoExternalRequests,
+  importNative, openApp, readState, withFreshContext,
 } from './helpers/roundtrip';
 import {
   ALL_OBSERVABLE_TYPES, DESCRIPTION_STORED, EVIDENCE_LINES, EVIDENCE_STORED, FULL_PHASES,
@@ -21,6 +21,9 @@ import {
 
 const REPO_ROOT = path.resolve(__dirname, '../..');
 const bytes = (value: unknown) => Buffer.from(JSON.stringify(value), 'utf8');
+
+test.use({ serviceWorkers: 'block' });
+test.afterEach(async ({ page }) => expectNoExternalRequests(page));
 
 /** Strips generated instance ids after validating their syntax and uniqueness. */
 function stripInstanceIds(phase: any) {

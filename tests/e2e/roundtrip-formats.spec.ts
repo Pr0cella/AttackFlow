@@ -9,12 +9,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { expect, test } from '@playwright/test';
 import {
-  ALL_PHASES, exportCsv, exportNative, expectNativeExportsEquivalent, importNative,
-  importNavigatorLayer, openApp, readState, withFreshContext,
+  ALL_PHASES, exportCsv, exportNative, expectNativeExportsEquivalent, expectNoExternalRequests,
+  importNative, importNavigatorLayer, openApp, readState, withFreshContext,
 } from './helpers/roundtrip';
 
 const REPO_ROOT = path.resolve(__dirname, '../..');
 const bytes = (value: unknown) => Buffer.from(JSON.stringify(value), 'utf8');
+
+test.use({ serviceWorkers: 'block' });
+test.afterEach(async ({ page }) => expectNoExternalRequests(page));
 
 /**
  * Independent RFC 4180 reader.

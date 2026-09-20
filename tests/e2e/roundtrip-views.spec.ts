@@ -6,10 +6,15 @@
 // restored evidence appears as exact TEXT and never as markup.
 
 import { expect, test } from '@playwright/test';
-import { expectInertRender, importNative, openApp, readState } from './helpers/roundtrip';
+import {
+  expectInertRender, expectNoExternalRequests, importNative, openApp, readState,
+} from './helpers/roundtrip';
 import { EVIDENCE_STORED, FULL_PHASES, GROUPS, IDS, TITLE, nativeFull } from '../fixtures/roundtrip/native';
 
 const bytes = (value: unknown) => Buffer.from(JSON.stringify(value), 'utf8');
+
+test.use({ serviceWorkers: 'block' });
+test.afterEach(async ({ page }) => expectNoExternalRequests(page));
 
 test.describe('RT-16 restored view integration', () => {
   test('restored data renders as inert text in both views and in both editors', async ({ page }) => {

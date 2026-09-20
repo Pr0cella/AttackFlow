@@ -1,5 +1,11 @@
 import fs from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
+import {
+  expectNoExternalRequests, installRequestGuard,
+} from './helpers/roundtrip';
+
+test.use({ serviceWorkers: 'block' });
+test.afterEach(async ({ page }) => expectNoExternalRequests(page));
 
 // Combined EF-01 + EF-02 lifecycle:
 // STIX bundle import -> STIX editor modification -> STIX download -> re-import in a fresh browser context.
@@ -238,10 +244,7 @@ function sourceBundle() {
 }
 
 async function openApp(page: Page) {
-  await page.route('**/*', route => {
-    const url = new URL(route.request().url());
-    return url.hostname === '127.0.0.1' ? route.continue() : route.abort();
-  });
+  await installRequestGuard(page.context());
   await page.goto('/index.html');
   await expect(page.locator('#loading')).toHaveClass(/hidden/, { timeout: 60_000 });
   await page.evaluate(() => {
@@ -250,6 +253,7 @@ async function openApp(page: Page) {
 }
 
 async function importBundleFile(page: Page, name: string, buffer: Buffer) {
+  await page.locator('#toast').evaluate(element => { element.textContent = ''; });
   await page.locator('input[onchange="importStixBundle(event)"]').setInputFiles({
     name,
     mimeType: 'application/json',
@@ -260,9 +264,13 @@ async function importBundleFile(page: Page, name: string, buffer: Buffer) {
 }
 
 async function downloadStixBundle(page: Page) {
+  const dropdown = page.locator('#export-dropdown');
   const [download] = await Promise.all([
     page.waitForEvent('download'),
-    page.evaluate(() => (window as any).exportSTIXBundle()),
+    (async () => {
+      await dropdown.locator(':scope > button.btn').click();
+      await dropdown.getByRole('button', { name: 'STIX Bundle', exact: true }).click();
+    })(),
   ]);
   const downloadPath = await download.path();
   expect(downloadPath).not.toBeNull();
@@ -404,7 +412,9 @@ test('punctuation-rich STIX values survive import, editor modification, download
   }
 
   // 4. Re-import the downloaded bytes in a fresh browser context with empty state.
-  const freshContext = await browser.newContext({ baseURL: new URL(page.url()).origin, acceptDownloads: true });
+  const freshContext = await browser.newContext({
+    baseURL: new URL(page.url()).origin, acceptDownloads: true, serviceWorkers: 'block',
+  });
   try {
     const freshPage = await freshContext.newPage();
     await openApp(freshPage);
@@ -437,6 +447,7 @@ test('punctuation-rich STIX values survive import, editor modification, download
     expect(sortedObjects(second.bundle)).toEqual(exportedObjects);
     await expect(freshPage.locator('[data-rt-injected]')).toHaveCount(0);
     expect(await freshPage.evaluate(() => (window as any).__rtExecuted)).toBe(false);
+    expectNoExternalRequests(freshPage);
   } finally {
     await freshContext.close();
   }

@@ -9,12 +9,15 @@
 
 import { expect, test } from '@playwright/test';
 import {
-  exportNative, exportStix, expectIsoTimestampWithin, importNative, importStix,
-  openApp, readState, withFreshContext,
+  exportNative, exportStix, expectIsoTimestampWithin, expectNoDownload,
+  expectNoExternalRequests, importNative, importStix, openApp, readState, withFreshContext,
 } from './helpers/roundtrip';
 import { IDS, nativeFull } from '../fixtures/roundtrip/native';
 
 const bytes = (value: unknown) => Buffer.from(JSON.stringify(value), 'utf8');
+
+test.use({ serviceWorkers: 'block' });
+test.afterEach(async ({ page }) => expectNoExternalRequests(page));
 
 const byType = (bundle: any, type: string) => bundle.objects.filter((o: any) => o.type === type);
 const edgeKey = (o: any) => `${o.relationship_type}|${o.source_ref}|${o.target_ref}`;
@@ -69,10 +72,11 @@ test.describe('RT-07 embedded and standalone STIX parity', () => {
     await openApp(page);
     await importNative(page, bytes({ assignments: { 'IN:reconnaissance': { techniques: [] } } }), 'rt-07-empty.json');
 
-    // exportSTIXBundle() returns before creating a download when there is nothing to emit.
-    const pending = page.waitForEvent('download', { timeout: 1500 }).then(() => 'download', () => 'none');
-    await page.evaluate(() => (window as any).exportSTIXBundle());
-    expect(await pending).toBe('none');
+    await expectNoDownload(page, async () => {
+      const dropdown = page.locator('#export-dropdown');
+      await dropdown.locator(':scope > button.btn').click();
+      await dropdown.getByRole('button', { name: 'STIX Bundle', exact: true }).click();
+    });
     await expect(page.locator('#toast')).toHaveText('No STIX objects to export');
   });
 });
