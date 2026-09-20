@@ -4760,9 +4760,22 @@
             const group = phaseData.groups[groupIdx];
             if (!window.confirm('Delete this group and move its items back to the phase?')) return;
 
-            const items = group.items || [];
+            const items = hasOwn(group, 'items') ? group.items : [];
+            if (!Array.isArray(items) || !Array.isArray(phaseData.layout)) {
+                showToast('Cannot delete group: invalid item or layout data.');
+                return;
+            }
+            // validate destination before moving any assignment
+            for (const item of items) {
+                if (!item || typeof item !== 'object' || Array.isArray(item)
+                    || !hasOwn(item, 'type') || typeof item.type !== 'string'
+                    || !hasOwn(TYPE_KEYS, item.type) || !Array.isArray(phaseData[TYPE_KEYS[item.type]])) {
+                    showToast('Cannot delete group: invalid item or layout data.');
+                    return;
+                }
+            }
             items.forEach(item => {
-                const key = item.type === 'attack' ? 'techniques' : item.type === 'capec' ? 'capecs' : 'cwes';
+                const key = TYPE_KEYS[item.type];
                 phaseData[key].push(item);
                 phaseData.layout.push({ kind: 'item', type: item.type, instanceId: getAssignmentInstanceId(item) });
             });
