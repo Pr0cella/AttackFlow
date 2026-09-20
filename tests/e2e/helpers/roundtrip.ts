@@ -261,15 +261,67 @@ export function dropUngroupedTypes<T>(value: T): T {
  * checked before matching so a duplicate edge cannot disappear into a set comparison, and
  * every regenerated id and timestamp is still validated for syntax.
  */
+/** A real UUID shape, not "36 hex-or-hyphen characters in any arrangement". */
+export const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
+
+/** Validates the parts of a native export that must hold before anything is excluded. */
+function expectNativeEnvelope(doc: any, startedAt: number, label: string) {
+  expect(typeof doc.version, `${label} version`).toBe('string');
+  expect(doc.version.length, `${label} version`).toBeGreaterThan(0);
+  expect(doc.schema, `${label} schema`).toBe('killchain-export-lite');
+  // Validated, then excluded from equality. Never excluded without validating.
+  expectIsoTimestampWithin(doc.exportedAt, startedAt);
+  expect(Object.keys(doc).sort(), `${label} own-key surface`)
+    .toEqual([...(doc.stixBundle ? [...NATIVE_EXPORT_KEYS, 'stixBundle'] : NATIVE_EXPORT_KEYS)].sort());
+}
+
+/** Validates an embedded or standalone bundle envelope and its id uniqueness. */
+export function expectBundleEnvelope(bundle: any, label: string) {
+  expect(bundle.type, `${label} type`).toBe('bundle');
+  expect(bundle.spec_version, `${label} spec_version`).toBe('2.1');
+  expect(bundle.id, `${label} id`).toMatch(new RegExp(`^bundle--${UUID}$`));
+  expect(Array.isArray(bundle.objects), `${label} objects`).toBe(true);
+  const ids = bundle.objects.map((o: any) => o.id);
+  expect(new Set(ids).size, `${label} duplicate object ids`).toBe(ids.length);
+  for (const object of bundle.objects) {
+    expect(object.spec_version, `${label} ${object.id} spec_version`).toBe('2.1');
+  }
+  // Every reference resolves inside the same bundle.
+  const present = new Set(ids);
+  for (const edge of bundle.objects.filter((o: any) => o.type === 'relationship')) {
+    expect(present.has(edge.source_ref), `${label} dangling source_ref ${edge.source_ref}`).toBe(true);
+    expect(present.has(edge.target_ref), `${label} dangling target_ref ${edge.target_ref}`).toBe(true);
+  }
+}
+
+/**
+ * Compares two native exports of the same unchanged document.
+ *
+ * Volatile values are VALIDATED in both artifacts before being excluded, never excluded
+ * on trust. Objects fall into three provenance classes with different rules:
+ *
+ *   preserved  an SDO from the custom library, carrying analyst-supplied timestamps.
+ *              Compared whole, timestamps included.
+ *   derived    regenerated from framework data (attack-pattern, course-of-action). Its id
+ *              is deterministic; only created/modified may move.
+ *   edge       a relationship, regenerated with a fresh id every export. Compared as a
+ *              COMPLETE record minus id/created/modified, so a dropped description or a
+ *              corrupted spec_version is caught. Multiplicity is checked before matching
+ *              so a duplicated edge cannot disappear into a set.
+ */
 export function expectNativeExportsEquivalent(first: any, second: any, startedAt: number) {
+  expectNativeEnvelope(first, startedAt, 'first export');
+  expectNativeEnvelope(second, startedAt, 'second export');
+
   const strip = (doc: any) => {
     const copy = JSON.parse(JSON.stringify(doc));
-    delete copy.exportedAt;
-    delete copy.stixBundle;
+    delete copy.exportedAt;   // validated above
+    delete copy.stixBundle;   // compared below
     // `editing` is a transient rename flag that commitRenameGroup() leaves behind and
     // exportJSON() serializes (AF-RT-004). The importer drops it, so it can appear in a
     // first export and never in later ones. Convergence is judged without it; the leak
-    // itself is asserted directly in RT-04 so it stays visible.
+    // itself is asserted directly in RT-04 so it stays visible. RP-06 removes both this
+    // stripping and that case together.
     for (const phase of Object.values(copy.assignments || {}) as any[]) {
       for (const group of phase?.groups || []) delete group.editing;
     }
@@ -280,14 +332,10 @@ export function expectNativeExportsEquivalent(first: any, second: any, startedAt
   if (!first.stixBundle && !second.stixBundle) return;
   expect(Boolean(second.stixBundle), 'embedded bundle presence must match').toBe(Boolean(first.stixBundle));
 
-  // Three provenance classes, each with its own comparison rule:
-  //  - preserved: an SDO from the custom library, carrying analyst-supplied timestamps
-  //  - derived:   an object regenerated from framework data (attack-pattern, mitigation).
-  //               Its id is deterministic but created/modified are stamped at export time.
-  //  - edge:      a relationship, regenerated with a fresh random id every export.
+  expectBundleEnvelope(first.stixBundle, 'first embedded bundle');
+  expectBundleEnvelope(second.stixBundle, 'second embedded bundle');
+
   const split = (bundle: any, doc: any) => {
-    expect(bundle.type).toBe('bundle');
-    expect(bundle.id).toMatch(/^bundle--[0-9a-f-]{36}$/);
     const libraryIds = new Set(Object.keys(doc.customLibrary || {}));
     return {
       preserved: bundle.objects.filter((o: any) => libraryIds.has(o.id)),
@@ -309,33 +357,42 @@ export function expectNativeExportsEquivalent(first: any, second: any, startedAt
   // Analyst-owned SDOs must match exactly, supplied timestamps included.
   expect(byId(b.preserved)).toEqual(byId(a.preserved));
 
-  // Derived objects: identical ids and content, only the export stamp may move.
+  // Derived objects: identical ids and content, only the export stamp may move. Both
+  // artifacts are validated, not just the second.
+  expect(b.derived.length, 'derived object count must not change').toBe(a.derived.length);
   expect(withoutStamps(b.derived)).toEqual(withoutStamps(a.derived));
-  for (const object of b.derived) {
-    expectIsoTimestampWithin(object.created, startedAt);
-    expectIsoTimestampWithin(object.modified, startedAt);
+  for (const [label, objects] of [['first', a.derived], ['second', b.derived]] as const) {
+    for (const object of objects) {
+      expectIsoTimestampWithin(object.created, startedAt);
+      expectIsoTimestampWithin(object.modified, startedAt);
+    }
   }
 
-  // Regenerated edges: equal multiset of semantic keys, and equal count.
-  const key = (o: any) => [o.type, o.relationship_type, o.source_ref, o.target_ref].join('|');
+  // Edges: multiset of COMPLETE records, excluding only genuinely regenerated fields.
+  const record = (o: any) => {
+    const copy = { ...o };
+    delete copy.id;
+    delete copy.created;
+    delete copy.modified;
+    return stableStringify(copy);
+  };
   const tally = (objects: any[]) => {
     const counts = new Map<string, number>();
-    for (const o of objects) counts.set(key(o), (counts.get(key(o)) || 0) + 1);
-    return counts;
+    for (const o of objects) counts.set(record(o), (counts.get(record(o)) || 0) + 1);
+    return [...counts.entries()].sort();
   };
   expect(b.edges.length, 'relationship count must not grow between exports').toBe(a.edges.length);
-  expect([...tally(b.edges).entries()].sort()).toEqual([...tally(a.edges).entries()].sort());
+  expect(tally(b.edges), 'relationship records must match, descriptions included').toEqual(tally(a.edges));
 
-  // No dangling reference: every endpoint resolves to an object in the same bundle.
-  const presentIds = new Set(second.stixBundle.objects.map((o: any) => o.id));
-  for (const edge of b.edges) {
-    expect(edge.id).toMatch(/^relationship--[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
-    expectIsoTimestampWithin(edge.created, startedAt);
-    expectIsoTimestampWithin(edge.modified, startedAt);
-    expect(presentIds.has(edge.source_ref), `dangling source_ref ${edge.source_ref}`).toBe(true);
-    expect(presentIds.has(edge.target_ref), `dangling target_ref ${edge.target_ref}`).toBe(true);
+  for (const [label, objects] of [['first', a.edges], ['second', b.edges]] as const) {
+    for (const edge of objects) {
+      expect(edge.id, `${label} edge id`).toMatch(new RegExp(`^relationship--${UUID}$`));
+      expectIsoTimestampWithin(edge.created, startedAt);
+      expectIsoTimestampWithin(edge.modified, startedAt);
+    }
+    expect(new Set(objects.map((o: any) => o.id)).size, `${label} edge ids must be unique`)
+      .toBe(objects.length);
   }
-  expect(new Set(b.edges.map((o: any) => o.id)).size, 'edge ids must be unique').toBe(b.edges.length);
 }
 
 /** Stable object-key ordering for diagnostics only; array order is never touched. */

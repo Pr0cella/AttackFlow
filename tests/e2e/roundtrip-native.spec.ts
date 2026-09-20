@@ -39,6 +39,19 @@ function stripInstanceIds(phase: any) {
   };
   for (const key of ASSIGNMENT_KEYS) visit(copy[key]);
   for (const group of copy.groups || []) visit(group.items);
+
+  // Layout entries reference the generated ids that were just stripped, so they cannot be
+  // compared against a hand-authored expectation. Rather than delete them and claim a
+  // comprehensive preservation check, assert that every entry still resolves to something
+  // present, then drop the ids. This case is a METADATA test, not a layout-order test.
+  for (const entry of copy.layout || []) {
+    if (entry.kind === 'group') {
+      expect((copy.groups || []).some((g: any) => g.groupId === entry.groupId),
+        `layout group ${entry.groupId} must exist`).toBe(true);
+    } else {
+      expect(seen.has(entry.instanceId), `layout item ${entry.instanceId} must exist`).toBe(true);
+    }
+  }
   delete copy.layout;
   return copy;
 }
@@ -311,6 +324,47 @@ test.describe('RT-15 shipped example documents', () => {
       await importNative(page, source, name);
 
       const imported = await readState(page);
+
+      // FIRST-IMPORT ORACLE, read from the shipped file itself rather than from the
+      // already-imported state. Comparing cycle two to cycle one proves convergence but
+      // is blind to a loss that happens on the FIRST import, which is how this suite
+      // previously let `stix-demo.json` drop its legacy CVE unnoticed.
+      const sourceDoc = JSON.parse(source.toString('utf8'));
+      for (const [phaseKey, sourcePhase] of Object.entries(sourceDoc.assignments) as [string, any][]) {
+        const restored = imported.assignments[phaseKey];
+        expect(restored, `phase ${phaseKey} must exist after import`).toBeDefined();
+        for (const key of ASSIGNMENT_KEYS) {
+          const expectedIds = (sourcePhase[key] || []).map((a: any) => a.id ?? a);
+          expect(restored[key].map((a: any) => a.id), `${phaseKey}.${key} ids and order`)
+            .toEqual(expectedIds);
+        }
+        const sourceGroups = sourcePhase.groups || [];
+        expect(restored.groups.length, `${phaseKey} group count`).toBe(sourceGroups.length);
+        for (const [index, sourceGroup] of sourceGroups.entries()) {
+          expect(restored.groups[index].label, `${phaseKey} group ${index} label`)
+            .toBe(sourceGroup.label);
+          expect(restored.groups[index].items.map((i: any) => i.id), `${phaseKey} group ${index} items`)
+            .toEqual((sourceGroup.items || []).map((i: any) => i.id));
+        }
+        // Evidence the runtime preserves verbatim today: score and comments.
+        for (const key of ASSIGNMENT_KEYS) {
+          for (const [index, sourceItem] of (sourcePhase[key] || []).entries()) {
+            const sourceMeta = sourceItem.metadata || {};
+            if (typeof sourceMeta.score === 'string') {
+              expect(restored[key][index].metadata.score, `${phaseKey}.${key}[${index}] score`)
+                .toBe(sourceMeta.score);
+            }
+            if (typeof sourceMeta.comments === 'string') {
+              expect(restored[key][index].metadata.comments, `${phaseKey}.${key}[${index}] comments`)
+                .toBe(sourceMeta.comments.replace(/[\u0000-\u001F\u007F]/g, '').trim().slice(0, 2000));
+            }
+          }
+        }
+      }
+      // The whole shipped library survives; entry-level field fidelity is RP-02/RP-03.
+      expect(Object.keys(imported.customLibrary).sort())
+        .toEqual(Object.keys(sourceDoc.customLibrary || {}).sort());
+
       // Every assignment carries a full metadata object and a unique instance id.
       const instanceIds = new Set<string>();
       for (const [phaseKey, phase] of Object.entries(imported.assignments)) {
