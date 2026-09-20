@@ -10,8 +10,8 @@
 
 import { expect, test, type Page } from '@playwright/test';
 import {
-  BASE_URL, exportNative, expectInertRender, expectNoDownload, expectNoExternalRequests,
-  importNative, importStix, installRequestGuard, openApp, readState,
+  BASE_URL, clickExportControl, exportNative, expectInertRender, expectNoDownload,
+  expectNoExternalRequests, importNative, importStix, installRequestGuard, openApp, readState,
 } from './helpers/roundtrip';
 import { IDS, nativeFull } from '../fixtures/roundtrip/native';
 
@@ -206,15 +206,18 @@ test.describe('RT-17 export failure paths', () => {
     await openApp(page);
     await importNative(page, bytes(nativeFull()), 'rt-17-export.json');
 
-    // A boolean-typed supported property holding a string is an export-time error.
+    // Direct state injection, deliberately: a boolean-typed supported property holding a
+    // string is an export-time error that no UI path can produce. Only the STATE is
+    // injected. Both exports are still triggered through their real menu controls, so an
+    // unwired control fails this test exactly as it fails a successful-export lifecycle.
     await page.evaluate(id => { eval('state').library.custom[id].is_family = 'not-a-boolean'; }, IDS.malware);
     const before = await readState(page);
 
-    await expectNoDownload(page, () => page.evaluate(() => (window as any).exportJSON()));
+    await expectNoDownload(page, () => clickExportControl(page, 'JSON'));
     await expect(page.locator('#toast')).toContainText('JSON export failed');
     expect(await readState(page)).toEqual(before);
 
-    await expectNoDownload(page, () => page.evaluate(() => (window as any).exportSTIXBundle()));
+    await expectNoDownload(page, () => clickExportControl(page, 'STIX Bundle'));
     await expect(page.locator('#toast')).toContainText('STIX export failed');
     expect(await readState(page)).toEqual(before);
 

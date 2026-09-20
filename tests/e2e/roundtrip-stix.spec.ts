@@ -9,7 +9,7 @@
 
 import { expect, test } from '@playwright/test';
 import {
-  exportNative, exportStix, expectIsoTimestampWithin, expectNoDownload,
+  clickExportControl, exportNative, exportStix, expectIsoTimestampWithin, expectNoDownload,
   expectNoExternalRequests, importNative, importStix, openApp, readState, withFreshContext,
 } from './helpers/roundtrip';
 import { IDS, nativeFull } from '../fixtures/roundtrip/native';
@@ -72,11 +72,8 @@ test.describe('RT-07 embedded and standalone STIX parity', () => {
     await openApp(page);
     await importNative(page, bytes({ assignments: { 'IN:reconnaissance': { techniques: [] } } }), 'rt-07-empty.json');
 
-    await expectNoDownload(page, async () => {
-      const dropdown = page.locator('#export-dropdown');
-      await dropdown.locator(':scope > button.btn').click();
-      await dropdown.getByRole('button', { name: 'STIX Bundle', exact: true }).click();
-    });
+    // Same control path as a successful export, so an unwired menu item fails here too.
+    await expectNoDownload(page, () => clickExportControl(page, 'STIX Bundle'));
     await expect(page.locator('#toast')).toHaveText('No STIX objects to export');
   });
 });

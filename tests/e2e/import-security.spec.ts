@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { expect, test, type Page } from '@playwright/test';
+import { exportCsv } from './helpers/roundtrip';
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:4173';
 
@@ -40,11 +41,8 @@ async function exportFormulaCsv(page: Page) {
     },
   });
 
-  const downloadPromise = page.waitForEvent('download');
-  await page.evaluate(() => (window as any).exportCSV());
-  const filePath = await (await downloadPromise).path();
-  expect(filePath).toBeTruthy();
-  return fs.readFileSync(filePath!, 'utf8');
+  // Reuses the shared export helper so the CSV comes from the real menu control.
+  return (await exportCsv(page)).text;
 }
 
 test.describe('Import hardening', () => {

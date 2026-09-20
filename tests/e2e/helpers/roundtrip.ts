@@ -173,7 +173,13 @@ async function capture(page: Page, trigger: () => Promise<unknown>): Promise<Cap
   return { name: download.suggestedFilename(), buffer, text: buffer.toString('utf8') };
 }
 
-async function clickExportControl(page: Page, name: 'JSON' | 'CSV' | 'STIX Bundle') {
+/**
+ * Drives the real export menu: open the dropdown, click the named item.
+ *
+ * Exported so that cases which expect NO download share the same entry point as the
+ * capturing helpers below. If an export control is ever unwired, every caller fails.
+ */
+export async function clickExportControl(page: Page, name: 'JSON' | 'CSV' | 'STIX Bundle') {
   const dropdown = page.locator('#export-dropdown');
   await dropdown.locator(':scope > button.btn').click();
   await dropdown.getByRole('button', { name, exact: true }).click();
