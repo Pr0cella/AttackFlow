@@ -65,8 +65,10 @@ test.describe('RT-17 rejection is atomic and diagnostic', () => {
   });
 
   test('an array-valued assignments field destroys the loaded document', async ({ page }) => {
-    // This test asserts CURRENT behavior so the severity is recorded and cannot regress
-    // unnoticed. The desired behavior is asserted separately below as AF-RT-005.
+    // This test asserts CURRENT behavior, so the damage is measured and cannot quietly get
+    // worse. The desired behavior -- refuse the file, keep the document -- is asserted
+    // separately in the gap block below. Holding both contracts in one test would mean
+    // holding two incompatible expectations at once.
     await openApp(page);
     await importNative(page, bytes(nativeFull()), 'rt-17-wipe-baseline.json');
     const before = await readState(page);
@@ -207,9 +209,13 @@ test.describe('RT-17 rejection is atomic and diagnostic', () => {
 });
 
 test.describe('RT-17 import validation gap', () => {
-  // AF-RT-005 has two separable contracts: the file must be REPORTED as refused, and the
-  // loaded document must be left intact. A single test would hide the second behind the
-  // first, and the second is the one that costs an analyst their work.
+  // The import guard checks `typeof assignments !== 'object'`, and `typeof [] === 'object'`,
+  // so a JSON array passes. It then yields no phase entries to validate, the import is
+  // reported as successful, and every phase is replaced with an empty one.
+  //
+  // That is two separable contracts: the file must be REPORTED as refused, and the loaded
+  // document must be left INTACT. A single test would hide the second behind the first,
+  // and the second is the one that costs an analyst their work.
   for (const contract of ['reports the refusal', 'leaves the loaded document intact'] as const) {
     test(`an array-valued assignments field ${contract}`, async ({ page }) => {
       await openApp(page);
@@ -232,7 +238,7 @@ test.describe('RT-17 import validation gap', () => {
       // outcome, so a non-empty toast is the point at which the result is decided.
       await expect(page.locator('#toast')).not.toBeEmpty();
 
-      test.fail(true, 'Known gap AF-RT-005: an array assignments field passes validation and wipes the document');
+      test.fail(true, 'Known gap: an array-valued assignments field passes validation, reports success, and clears the document');
       if (contract === 'reports the refusal') {
         await expect(page.locator('#toast')).toContainText('Import failed');
       } else {
@@ -302,7 +308,11 @@ test.describe('RT-17 export filename gap', () => {
       expect((await readState(page)).title).toBe(title);
 
       const exported = await exportNative(page);
-      test.fail(true, 'Known gap AF-RT-006: a title that slugs to empty yields a dotfile name, not the fallback');
+      // The exporter slugs the title, then appends '.json'. The fallback name is chosen
+      // only when the title is EMPTY, not when slugging empties it, so a title made
+      // entirely of stripped characters produces a bare '.json' -- which the browser in
+      // turn saves as 'json.json'.
+      test.fail(true, 'Known gap: the export filename falls back only on an empty title, not on a title that slugs to nothing');
       expect(exported.name).toBe('attack-chain-export.json');
     });
   }

@@ -116,9 +116,9 @@ test.describe('RT-12 CSV report projection', () => {
     });
 
     await test.step('separators and quotes inside evidence decode to exact cell values', async () => {
-      // Exact equality, not substring containment. A substring check passes even when the
-      // exporter wraps the evidence in extra literal quote characters, which is the very
-      // defect AF-RC-008 describes.
+      // Exact equality, not substring containment. A substring check still passes when the
+      // exporter has wrapped the evidence in extra literal quote characters, which is
+      // exactly the quoting defect the two cases below hold open.
       const ordinary = dataRows.find(r => r[1] === 'T1595')!;
       expect(ordinary[6]).toBe('First instance comment');
 
@@ -148,8 +148,23 @@ test.describe('RT-12 CSV row-ending gap', () => {
     // one was written, so this can never be delegated to the decoding oracle.
     expect(csv.buffer.length, 'export produced no bytes').toBeGreaterThan(0);
 
-    test.fail(true, 'Known gap AF-RC-008: rows are joined with LF, not CRLF');
-    expect(csv.text).toContain('\r\n');
+    // EVERY record delimiter, not one occurrence anywhere in the file. `toContain('\r\n')`
+    // was satisfied by a single CRLF among otherwise LF-terminated rows, so a partial fix
+    // would have flipped this to passing while most records were still wrong.
+    //
+    // The decoded record count comes from the independent reader; this fixture has no
+    // embedded newline in any cell, so delimiters are records - 1, or records when the
+    // file ends with one.
+    const records = parseCsvStrict(csv.buffer).length;
+    const lineFeeds = (csv.text.match(/\n/g) || []).length;
+    const pairs = (csv.text.match(/\r\n/g) || []).length;
+
+    // Rows are joined with LF. RFC 4180 specifies CRLF, and `\r` is also missing from the
+    // exporter's needs-quoting test, so a cell containing one is written unquoted.
+    test.fail(true, 'Known gap: records are terminated with LF instead of the CRLF RFC 4180 requires');
+    expect(lineFeeds, 'every LF must be the tail of a CRLF pair').toBe(pairs);
+    expect(pairs === records - 1 || pairs === records,
+      `CRLF delimiters (${pairs}) must terminate all ${records} records`).toBe(true);
   });
 });
 
@@ -165,7 +180,10 @@ test.describe('RT-12 CSV guarded-cell gap', () => {
     const row = rows.find(r => r[1] === 'T1041');
     expect(row, 'the guarded technique row must exist').toBeDefined();
 
-    test.fail(true, 'Known gap AF-RC-008: the guard pre-quotes, then the cell is quoted again');
+    // The formula guard returns an already-quoted string; the serializer then doubles the
+    // quotes it contains and wraps the result again, so the reader recovers a cell with
+    // literal quote characters around the analyst's text.
+    test.fail(true, 'Known gap: the formula guard pre-quotes the cell and the serializer quotes it again');
     // Desired: the guard adds one leading tab inside a single layer of quoting, so a
     // standard reader recovers exactly tab + the original text, with no stray quotes.
     expect(row![6]).toBe('\t=SUM(A1:A2), "quoted", semi;colon');

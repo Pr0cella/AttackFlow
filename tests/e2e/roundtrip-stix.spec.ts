@@ -7,15 +7,43 @@
 // relationship, sighting and marking-definition objects, so equal object counts across a
 // STIX round trip are never asserted as a universal rule.
 
+import fs from 'node:fs';
+import path from 'node:path';
 import { expect, test } from '@playwright/test';
 import {
-  clickExportControl, exportNative, exportStix, expectBundleEnvelope,
+  UUID, clickExportControl, exportNative, exportStix, expectBundleEnvelope,
   expectIsoTimestampWithin, expectNoDownload, expectNoExternalRequests, importNative,
   importStix, openApp, readState, withFreshContext,
 } from './helpers/roundtrip';
 import { IDS, nativeFull } from '../fixtures/roundtrip/native';
 
 const bytes = (value: unknown) => Buffer.from(JSON.stringify(value), 'utf8');
+
+const REPO_ROOT = path.resolve(__dirname, '../..');
+
+// ABSOLUTE oracle for DERIVED objects.
+//
+// Every other check on the generated graph is relational: it compares one export against
+// another export of the same builder. A field the projection drops is dropped identically
+// in both, so it cancels out and no amount of comparing can see it -- mutation testing
+// confirmed that removing the attack-pattern description left the whole suite green.
+//
+// The fix is a source of truth OUTSIDE the builder: the pinned framework resource the app
+// itself loads. Expectations are read from that file, never from the bundle under test, so
+// a projection that silently stops copying a field now disagrees with its own input.
+const ATTACK_TECHNIQUES = JSON.parse(
+  fs.readFileSync(path.join(REPO_ROOT, 'resources/attack-techniques.json'), 'utf8'),
+);
+
+function pinnedTechnique(techniqueId: string) {
+  const record = ATTACK_TECHNIQUES[techniqueId];
+  expect(record, `pinned resource must describe ${techniqueId}`).toBeDefined();
+  expect(typeof record.name, `${techniqueId} name`).toBe('string');
+  // A silently emptied resource would make every expectation below vacuous.
+  expect(record.description.length, `${techniqueId} description must be non-empty`)
+    .toBeGreaterThan(0);
+  return record;
+}
 
 test.use({ serviceWorkers: 'block' });
 test.afterEach(async ({ page }) => expectNoExternalRequests(page));
@@ -161,6 +189,20 @@ test.describe('RT-08 generated STIX graph', () => {
         expect(phase.kill_chain_name).toBe('unified-kill-chain');
       }
       expectIsoTimestampWithin(pattern.created, startedAt);
+      expectIsoTimestampWithin(pattern.modified, startedAt);
+
+      // COMPLETE key set plus exact values against the pinned resource. Without this, a
+      // dropped `description` is invisible to every relational check in the suite.
+      const technique = pinnedTechnique('T1059.001');
+      expect(Object.keys(pattern).sort(), 'derived attack-pattern key set').toEqual([
+        'created', 'description', 'external_references', 'id', 'kill_chain_phases',
+        'modified', 'name', 'spec_version', 'type',
+      ]);
+      expect(pattern.id).toMatch(new RegExp(`^attack-pattern--${UUID}$`));
+      expect(pattern.spec_version).toBe('2.1');
+      expect(pattern.name, 'name copied from the framework resource').toBe(technique.name);
+      expect(pattern.description, 'description copied from the framework resource')
+        .toBe(technique.description);
     });
 
     await test.step('mitigations are derived once each and linked by mitigates edges', async () => {
@@ -192,10 +234,29 @@ test.describe('RT-08 generated STIX graph', () => {
         expect(edge.spec_version).toBe('2.1');
       }
 
+      // Same absolute treatment for the other derived SDO class: complete key set and
+      // exact name/description read from the pinned resource, not from the export.
+      const pinnedMitigations = new Map<string, any>(
+        pinnedTechnique('T1059.001').mitigations.map((m: any) => [m.id, m]),
+      );
       for (const mitigation of mitigations) {
+        const mitreId = mitigation.external_references[0].external_id;
         expect(mitigation.external_references[0].source_name).toBe('mitre-attack');
         expect(mitigation.external_references[0].url)
-          .toBe(`https://attack.mitre.org/mitigations/${mitigation.external_references[0].external_id}`);
+          .toBe(`https://attack.mitre.org/mitigations/${mitreId}`);
+
+        const pinned = pinnedMitigations.get(mitreId);
+        expect(pinned, `pinned resource must describe ${mitreId}`).toBeDefined();
+        expect(Object.keys(mitigation).sort(), `derived ${mitreId} key set`).toEqual([
+          'created', 'description', 'external_references', 'id', 'modified', 'name',
+          'spec_version', 'type',
+        ]);
+        expect(mitigation.id).toMatch(new RegExp(`^course-of-action--${UUID}$`));
+        expect(mitigation.spec_version).toBe('2.1');
+        expect(mitigation.name, `${mitreId} name`).toBe(pinned.name);
+        expect(mitigation.description, `${mitreId} description`).toBe(pinned.description);
+        expectIsoTimestampWithin(mitigation.created, startedAt);
+        expectIsoTimestampWithin(mitigation.modified, startedAt);
       }
     });
 

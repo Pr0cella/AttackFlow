@@ -7,8 +7,9 @@
 // What is covered is the Composer lifecycle, every import decision branch, and the
 // declared cross-page intersection with its losses stated explicitly.
 //
-// Composer sanitization defects are already covered as known gaps AF-RC-003 and AF-RC-007
-// in stix-builder-security.spec.ts and are not re-asserted here.
+// The Composer's own sanitization defects -- imported strings losing the bracket and quote
+// characters a STIX pattern needs, and numeric editor values reaching HTML attributes
+// unencoded -- are held open in stix-builder-security.spec.ts and are not re-asserted here.
 
 import { expect, test, type Page } from '@playwright/test';
 import {
@@ -35,6 +36,33 @@ const sdo = (id: string, name: string, extra: Record<string, unknown> = {}) => (
   name, ...extra,
 });
 
+/**
+ * The exact objects the RT-09 lifecycle must carry, hand-authored from the fixture plus
+ * the one edit the test performs. Asserted on every artifact in the flow so a field lost
+ * or overwritten between stages fails where an id/count check cannot see it.
+ */
+const LIFECYCLE_OBJECTS = [
+  {
+    type: 'malware', spec_version: '2.1', id: A,
+    created: '2026-01-01T00:00:00.000Z', modified: '2026-01-02T00:00:00.000Z',
+    name: 'Edited lifecycle malware', is_family: false, description: 'Initial description',
+  },
+  {
+    type: 'identity', spec_version: '2.1', id: B,
+    created: '2026-01-01T00:00:00.000Z', modified: '2026-01-02T00:00:00.000Z',
+    name: 'Lifecycle identity', identity_class: 'organization',
+  },
+];
+
+function expectLifecycleBundle(json: any, label: string) {
+  expect(json.type, `${label} envelope type`).toBe('bundle');
+  expect(json.spec_version, `${label} spec version`).toBe('2.1');
+  expect(json.id, `${label} bundle id`).toMatch(/^bundle--[0-9a-f-]{36}$/);
+  const byId = (objects: any[]) => [...objects].sort((x, y) => x.id.localeCompare(y.id));
+  expect(byId(json.objects), `${label} objects`)
+    .toEqual(byId(LIFECYCLE_OBJECTS));
+}
+
 async function openComposer(page: Page) {
   const blocked = await installRequestGuard(page.context());
   await page.goto('/stix-builder.html');
@@ -47,11 +75,26 @@ async function openComposer(page: Page) {
  *
  * `decisions` answers the confirm sequence in order: importBundle() asks "Replace?" and,
  * if that is declined, "Merge?". Each dialog is awaited explicitly rather than slept
- * through, and the returned promise resolves only once every expected dialog has been
- * answered, so a caller cannot inspect state while a decision is still pending.
+ * through, and the returned promise resolves only once the operation has COMPLETED, not
+ * merely once the declared decisions were answered.
+ *
+ * Why that distinction matters: `setInputFiles` returns before FileReader.onload runs. A
+ * helper that resolved as soon as its declared decisions were answered removed its dialog
+ * listener immediately when no decisions were declared, so a prompt that should never have
+ * appeared was auto-dismissed by Playwright, unseen, and `expect(asked).toEqual([])`
+ * passed vacuously. The listener now stays installed until the operation finishes, and any
+ * undeclared prompt is reported.
+ *
+ * Completion signal, never a sleep: importBundle() calls showToast() on every path except
+ * one -- declining both Replace and Merge hits `return` with no trace. That single case
+ * declares `completesWithToast: false`, where answering the last declared decision IS
+ * completion because only `return` follows it.
  */
+type ComposerImportOptions = { completesWithToast?: boolean };
+
 async function importIntoComposer(
   page: Page, buffer: Buffer, name = 'composer.json', decisions: ('accept' | 'dismiss')[] = [],
+  options: ComposerImportOptions = {},
 ) {
   await page.locator('#toast').evaluate(element => { element.textContent = ''; });
 
@@ -61,10 +104,14 @@ async function importIntoComposer(
     const promise = new Promise<void>(r => { resolve = r; });
     return { promise, resolve };
   });
+  const undeclared: string[] = [];
   const handler = async (dialog: any) => {
     const index = seen.length;
     seen.push(dialog.message());
     const decision = decisions[index];
+    if (decision === undefined) undeclared.push(dialog.message());
+    // An undeclared prompt is dismissed rather than left pending, so the run reports it
+    // instead of hanging on a modal nobody answers.
     if (decision === 'accept') await dialog.accept();
     else await dialog.dismiss();
     answered[index]?.resolve();
@@ -72,11 +119,22 @@ async function importIntoComposer(
   page.on('dialog', handler);
   try {
     await page.locator('#bundle-file').setInputFiles({ name, mimeType: 'application/json', buffer });
-    // Every expected decision must actually have been asked and answered.
+    // Every declared decision must actually have been asked and answered.
     await Promise.all(answered.map(a => a.promise));
+    if (options.completesWithToast ?? true) {
+      try {
+        await expect(page.locator('#toast')).not.toBeEmpty();
+      } catch (error) {
+        // An undeclared prompt can suppress the toast entirely (the both-declined path).
+        // Report that cause below rather than a misleading toast timeout.
+        if (undeclared.length === 0) throw error;
+      }
+    }
   } finally {
     page.off('dialog', handler);
   }
+  expect(undeclared, 'the Composer asked a confirm this test did not declare').toEqual([]);
+  expect(seen, 'every declared decision must have been asked').toHaveLength(decisions.length);
   return seen;
 }
 
@@ -114,8 +172,11 @@ test.describe('RT-10 Composer import decisions', () => {
 
     await test.step('declining replace then declining merge leaves the bundle untouched', async () => {
       const before = await composerState(page);
+      // The only path that sets no toast: `if (!confirm('Merge ...')) return;`. Answering
+      // the second decline IS completion here, since only `return` follows it.
       const asked = await importIntoComposer(page,
-        bytes(bundle([sdo(B, 'Second identity')])), 'declined.json', ['dismiss', 'dismiss']);
+        bytes(bundle([sdo(B, 'Second identity')])), 'declined.json', ['dismiss', 'dismiss'],
+        { completesWithToast: false });
 
       // Both questions were actually asked, in order, and both were answered before the
       // state below is read. The previous version slept 300ms and hoped.
@@ -166,7 +227,9 @@ test.describe('RT-10 Composer import decisions', () => {
     await expect(page.locator('#toast')).toHaveText('Bundle imported');
     const before = await composerState(page);
 
-    page.on('dialog', dialog => dialog.accept());
+    // No dialog listener here on purpose: a malformed bundle throws before importBundle()
+    // reaches any confirm(), and the helper now FAILS on an undeclared prompt, which
+    // proves that rather than quietly accepting one.
     for (const [label, payload] of [
       ['not a bundle', { type: 'not-bundle', objects: [] }],
       ['objects missing', { type: 'bundle' }],
@@ -178,7 +241,6 @@ test.describe('RT-10 Composer import decisions', () => {
       await expect(page.locator('#toast'), label).toContainText('Import failed');
       expect(await composerState(page), label).toEqual(before);
     }
-    page.removeAllListeners('dialog');
   });
 
   test('an empty bundle replaces the current one with nothing', async ({ page }) => {
@@ -186,10 +248,13 @@ test.describe('RT-10 Composer import decisions', () => {
     await importIntoComposer(page, bytes(bundle([sdo(A, 'Baseline')])), 'baseline.json');
     await expect(page.locator('#toast')).toHaveText('Bundle imported');
 
-    page.on('dialog', dialog => dialog.accept());
-    await importIntoComposer(page, bytes(bundle([])), 'empty.json');
+    // The decision is DECLARED through the helper rather than answered by a second
+    // listener. Two handlers race for the same dialog -- one of them then fails with
+    // "already handled" -- and neither test can say which prompts were actually asked.
+    const asked = await importIntoComposer(page, bytes(bundle([])), 'empty.json', ['accept']);
+    expect(asked, 'replacing a non-empty bundle asks exactly once').toHaveLength(1);
+    expect(asked[0]).toContain('Replace');
     await expect(page.locator('#toast')).toHaveText('Bundle imported');
-    page.removeAllListeners('dialog');
 
     const state = await composerState(page);
     expect(state.objects).toEqual([]);
@@ -224,11 +289,12 @@ test.describe('RT-09 Composer lifecycle (representative, not the full field matr
   test('create, edit, download, reimport in a fresh Composer and download again', async ({ page, browser }) => {
     await openComposer(page);
 
-    // PLAIN EVIDENCE ONLY. The Composer strips [ ] { } ; " ' ` on import today, which is
-    // what the failing AF-RC-003 case proves, so punctuation-rich evidence cannot survive
-    // this flow yet. Marking the whole lifecycle as an expected failure would demonstrate
-    // no lifecycle at all, so RP-10 owns adding punctuation to this same flow once its
-    // fix lands. What is proven here is that the stages are wired end to end.
+    // PLAIN EVIDENCE ONLY, deliberately. The Composer strips [ ] { } ; " ' ` from every
+    // imported string today -- the separate sanitization case in
+    // stix-builder-security.spec.ts holds that open -- so punctuation-rich evidence cannot
+    // survive this flow yet. Marking the whole lifecycle as an expected failure would
+    // demonstrate no lifecycle at all, so this proves the stages are wired end to end and
+    // punctuation is added to this same flow once the sanitizer is fixed.
     await importIntoComposer(page, bytes(bundle([
       sdo(A, 'Lifecycle malware', { is_family: false, description: 'Initial description' }),
       sdo(B, 'Lifecycle identity', { identity_class: 'organization' }),
@@ -265,9 +331,12 @@ test.describe('RT-09 Composer lifecycle (representative, not the full field matr
       expect(restored.objects.find((o: any) => o.id === B).identity_class).toBe('organization');
 
       const second = await exportFromComposer(freshPage);
-      expect(second.json.objects).toHaveLength(first.json.objects.length);
-      expect(second.json.objects.map((o: any) => o.id).sort())
-        .toEqual(first.json.objects.map((o: any) => o.id).sort());
+      // BOTH downloads are compared against the hand-authored record, not against each
+      // other and not by identity alone. Counting objects and ids in the final artifact
+      // let an exporter that replaced every name and description still pass, because
+      // neither the count nor the ids changed.
+      expectLifecycleBundle(first.json, 'first download');
+      expectLifecycleBundle(second.json, 'final download');
     });
   });
 });
@@ -307,33 +376,63 @@ test.describe('RT-11 cross-page file workflows', () => {
       const state = await composerState(composerPage);
       const importedIds = state.objects.map((o: any) => o.id).sort();
 
-      // HAND-AUTHORED kept/lost lists for this exact fixture. The previous assertions
-      // (`lost.every(id => sourceIds.includes(id))` and a <= count) were satisfied by ANY
-      // amount of loss, including losing everything, because every lost id trivially came
-      // from the source.
+      // The population is HAND-AUTHORED from the fixture, not copied from the export.
+      // `EXPECTED_KEPT = [...sourceIds]` made the transfer its own oracle: it proved the
+      // two sides agreed, which they would even if both were wrong, and it said nothing
+      // about what should have been there. Counts are pinned on BOTH sides instead.
       //
-      // MEASURED, not assumed: this direction loses NOTHING for this fixture. The
-      // Composer's STIX_OBJECT_DEFS includes the SRO types, so `relationship` objects the
-      // main editor generated are accepted rather than dropped. An earlier version of
-      // this test, and the audit, described them as lost; that was speculation and it was
-      // wrong. Any future omission must be added here with a reason.
-      const EXPECTED_KEPT = [...sourceIds].sort();
-      expect(importedIds, 'kept objects').toEqual(EXPECTED_KEPT);
-      expect(sourceIds.filter((id: string) => !importedIds.includes(id)), 'lost objects')
-        .toEqual([]);
+      // Derived from the fixture: one technique projects to one attack-pattern and its
+      // five reviewed mitigations, each with a mitigates edge; the two custom SDOs share
+      // a phase, producing exactly one co-location edge. Nothing else may cross.
+      const EXPECTED_POPULATION: Record<string, number> = {
+        'malware': 1, 'identity': 1, 'attack-pattern': 1, 'course-of-action': 5,
+        'relationship': 6,
+      };
+      const countByType = (objects: any[]) => objects.reduce((counts: any, o: any) => {
+        counts[o.type] = (counts[o.type] || 0) + 1;
+        return counts;
+      }, {});
+      expect(countByType(exported.json.objects), 'exported population').toEqual(EXPECTED_POPULATION);
+      expect(countByType(state.objects), 'population after the hop').toEqual(EXPECTED_POPULATION);
+      expect(importedIds, 'no object may be lost or duplicated by the hop')
+        .toEqual([...sourceIds].sort());
+      expect(new Set(importedIds).size).toBe(importedIds.length);
 
-      // The relationships are not merely present; their endpoints survive too.
+      // COMPLETE edge records across the hop, not merely resolvable endpoints. Endpoint
+      // resolution alone accepted a Composer that rewrote every target_ref to equal its
+      // source_ref: the edges still pointed at objects that existed.
       const importedEdges = state.objects.filter((o: any) => o.type === 'relationship');
-      expect(importedEdges).toHaveLength(sourceRelationships.length);
+      const edgeRecord = (o: any) => JSON.stringify(o, Object.keys(o).sort());
+      const tally = (edges: any[]) => edges.map(edgeRecord).sort();
+      expect(tally(importedEdges), 'relationship records must survive the hop unchanged')
+        .toEqual(tally(sourceRelationships));
+
+      // Hand-authored topology for this fixture, independent of both artifacts.
+      const patternId = state.objects.find((o: any) => o.type === 'attack-pattern').id;
+      const mitigates = importedEdges.filter((e: any) => e.relationship_type === 'mitigates');
+      expect(mitigates, 'one mitigates edge per derived mitigation').toHaveLength(5);
+      for (const edge of mitigates) expect(edge.target_ref).toBe(patternId);
+
+      const coLocation = importedEdges.filter((e: any) => e.relationship_type !== 'mitigates');
+      expect(coLocation, 'exactly one co-location edge').toHaveLength(1);
+      expect(coLocation[0].source_ref).toBe(A);
+      expect(coLocation[0].target_ref).toBe(B);
+      expect(coLocation[0].description).toBe('Co-located in phase IN:reconnaissance');
+      // CURRENT BEHAVIOR, pinned not endorsed: every co-location edge is `related-to`
+      // whatever the endpoint types, because addRelationship() reads the FLAT
+      // STIX_RELATIONSHIP_MAP two levels deep (`[sourceType]?.[targetType]`), which
+      // indexes into a string and is always undefined, so the configured defaults --
+      // malware `uses`, indicator `indicates` -- can never apply. Already recorded as
+      // confirmed current behavior in the coverage audit; whether the map should be
+      // nested or the lookup flattened is an open product decision, so this asserts
+      // today's output rather than marking a guessed contract as an expected failure.
+      expect(coLocation[0].relationship_type).toBe('related-to');
+
       const presentIds = new Set(importedIds);
       for (const edge of importedEdges) {
         expect(presentIds.has(edge.source_ref), `dangling source_ref ${edge.source_ref}`).toBe(true);
         expect(presentIds.has(edge.target_ref), `dangling target_ref ${edge.target_ref}`).toBe(true);
       }
-
-      // Multiplicity, not just membership: no object was duplicated by the transfer.
-      expect(new Set(importedIds).size).toBe(importedIds.length);
-      expect(state.objects).toHaveLength(EXPECTED_KEPT.length);
 
       // Exact supported-field expectations in this direction.
       const malware = state.objects.find((o: any) => o.id === A);
@@ -367,7 +466,11 @@ test.describe('RT-11 cross-page file workflows', () => {
       await expect(mainPage.locator('#toast')).toHaveText('Imported 2 STIX objects');
 
       const restored = await readState(mainPage);
-      // DECLARED INTERSECTION: supported SDOs become library entries.
+      // DECLARED INTERSECTION: supported SDOs become library entries, and EXACTLY those.
+      // Naming the complete key set matters as much as naming what is kept: without it an
+      // importer that invented an extra library entry would pass unnoticed.
+      expect(Object.keys(restored.customLibrary).sort(), 'exact restored library population')
+        .toEqual([A, B].sort());
       expect(restored.customLibrary[A]).toBeDefined();
       expect(restored.customLibrary[A].name).toBe('Composer malware');
       expect(restored.customLibrary[B].identity_class).toBe('organization');
