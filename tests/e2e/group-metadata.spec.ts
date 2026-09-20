@@ -1,5 +1,5 @@
-import fs from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
+import { exportNative } from './helpers/roundtrip';
 
 const phaseKey = 'IN:reconnaissance';
 const otherPhase = 'IN:resource-development';
@@ -137,9 +137,8 @@ test('mixed group deletion preserves metadata through a full JSON round trip', a
   await expect(page.locator('[data-group-injected]')).toHaveCount(0);
   expect(await page.evaluate(() => (window as any).groupInjected)).toBeUndefined();
 
-  const [download] = await Promise.all([page.waitForEvent('download'), page.evaluate(() => (window as any).exportJSON())]);
-  const bytes = fs.readFileSync((await download.path())!);
-  const exported = JSON.parse(bytes.toString('utf8'));
+  // Reuses the shared export helper, which clicks the real export control.
+  const { buffer: bytes, json: exported } = await exportNative(page);
   expect(exported.assignments).toEqual(after.assignments);
   expect(exported.customLibrary).toEqual(after.customLibrary);
   const context = await browser.newContext({ baseURL });

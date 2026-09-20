@@ -1,6 +1,5 @@
-import fs from 'node:fs';
-
 import { expect, test, type Page } from '@playwright/test';
+import { exportNative } from './helpers/roundtrip';
 
 const indicatorId = 'indicator--11111111-1111-4111-8111-111111111111';
 const groupingId = 'grouping--22222222-2222-4222-8222-222222222222';
@@ -35,13 +34,9 @@ async function importStixBundle(page: Page, payload: unknown) {
 }
 
 async function readJsonDownload(page: Page) {
-  const [download] = await Promise.all([
-    page.waitForEvent('download'),
-    page.evaluate(() => (window as any).exportJSON()),
-  ]);
-  const downloadPath = await download.path();
-  expect(downloadPath).not.toBeNull();
-  return JSON.parse(fs.readFileSync(downloadPath!, 'utf8'));
+  // Reuses the shared export helper, which drives the real menu control rather than
+  // calling exportJSON() directly, so an unwired control fails this suite too.
+  return (await exportNative(page)).json;
 }
 
 test.beforeEach(async ({ page }) => {

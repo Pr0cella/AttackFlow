@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { expect, test, type Page } from '@playwright/test';
+import { exportCsv } from './helpers/roundtrip';
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:4173';
 
@@ -40,11 +41,8 @@ async function exportFormulaCsv(page: Page) {
     },
   });
 
-  const downloadPromise = page.waitForEvent('download');
-  await page.evaluate(() => (window as any).exportCSV());
-  const filePath = await (await downloadPromise).path();
-  expect(filePath).toBeTruthy();
-  return fs.readFileSync(filePath!, 'utf8');
+  // Reuses the shared export helper so the CSV comes from the real menu control.
+  return (await exportCsv(page)).text;
 }
 
 test.describe('Import hardening', () => {
@@ -192,7 +190,6 @@ test.describe('Import hardening', () => {
   });
 
   test('relationship view only renders assigned technique links for assigned CAPECs', async ({ page }) => {
-    test.fail(true, 'Known gap AF-RC-006: relationship view includes unassigned library techniques');
     await openApp(page);
 
     const mapping = await page.evaluate(() => {
@@ -231,7 +228,15 @@ test.describe('Import hardening', () => {
     await expect(row).toBeVisible();
 
     const renderedTechniqueIds = await row.locator('.relationship-cell.attack .id.attack').allTextContents();
+
+    // Prerequisite: the ASSIGNED technique renders. That part works today, so losing it
+    // is a real regression and must not be credited to the known gap below.
     expect(renderedTechniqueIds).toContain(mapping!.assignedTechnique);
+
+    // The relationship view lists every technique the library links to an assigned CAPEC,
+    // not only the techniques the analyst actually assigned, so the row overstates the
+    // document's contents.
+    test.fail(true, 'Known gap: the relationship view renders library-linked techniques that were never assigned');
     expect(renderedTechniqueIds).not.toContain(mapping!.unassignedTechnique);
   });
 
@@ -367,7 +372,10 @@ test.describe('Import hardening', () => {
   });
 
   test('serializes guarded CSV cells with single RFC 4180 quoting and CRLF rows', async ({ page }) => {
-    test.fail(true, 'Known gap AF-RC-008: guarded cells are quoted twice and rows use LF');
+    // The formula guard returns a cell that is ALREADY quoted; the serializer then escapes
+    // its quotes and wraps it again, so a standards-compliant reader recovers literal quote
+    // characters. Rows are also joined with LF rather than the CRLF RFC 4180 specifies.
+    test.fail(true, 'Known gap: a guarded cell is quoted more than once and rows end with LF, not CRLF');
     await openApp(page);
 
     const csv = await exportFormulaCsv(page);

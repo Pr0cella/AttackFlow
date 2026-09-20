@@ -9,7 +9,6 @@ async function openBuilder(page: Page) {
 
 test.describe('STIX Builder hardening', () => {
   test('preserves valid indicator pattern syntax during import sanitization', async ({ page }) => {
-    test.fail(true, 'Known gap AF-RC-003: Composer import sanitization strips STIX pattern brackets and quotes');
     await openBuilder(page);
 
     const indicator = await page.evaluate(() => {
@@ -26,11 +25,19 @@ test.describe('STIX Builder hardening', () => {
       });
     });
 
+    // Prerequisite: the sanitizer ran and returned an object at all. Only the pattern
+    // projection below is the known gap, so a null result here is unexpected.
+    expect(indicator, 'sanitizeImportedObject returned nothing').toBeTruthy();
+    expect(indicator.type).toBe('indicator');
+
+    // The Composer's import sanitizer removes [ ] { } ; " ' ` from every string it
+    // accepts. A STIX pattern is built almost entirely from those characters, so a valid
+    // indicator arrives as unparseable text rather than being rejected or preserved.
+    test.fail(true, 'Known gap: import sanitization removes the bracket and quote characters a STIX pattern is made of');
     expect(indicator.pattern).toBe("[ipv4-addr:value = '192.0.2.1']");
   });
 
   test('rejects bundle imports with invalid objects without replacing the current bundle', async ({ page }) => {
-    test.fail(true, 'Known gap AF-RC-003: Composer import silently skips invalid objects and replaces state');
     await openBuilder(page);
 
     await page.evaluate(() => (window as any).addObject('identity'));
@@ -61,13 +68,28 @@ test.describe('STIX Builder hardening', () => {
       }), 'utf8'),
     });
 
+    // The import replaces the current bundle BEFORE validating the incoming objects, then
+    // drops each unusable one with no message. A partly invalid file therefore lands as a
+    // silent partial import, and the bundle it overwrote is already gone.
+    test.fail(true, 'Known gap: a partly invalid bundle replaces the current one and its bad objects are dropped without a diagnostic');
     await expect(page.locator('#toast')).toHaveClass(/visible/);
     await expect(page.locator('#toast')).toContainText('Invalid STIX object');
     expect((await bundlePreview.textContent()) || '').toBe(beforePreview);
   });
 
-  test('rejects visualizer edge counts over budget before rendering', async ({ page }) => {
-    test.fail(true, 'Known gap AF-RC-004: no enforceVisualizerBudgets() graph budget exists yet');
+  // THE VISUALIZER EDGE-BUDGET GAP IS OPEN, AND ITS COVERAGE IS BLOCKED, NOT PROVEN.
+  //
+  // The case below calls enforceVisualizerBudgets(), which does not exist in
+  // stix-builder.html. It therefore threw a ReferenceError, and because the case carried a
+  // "known gap" marker that exception was being counted as a reproduced graph-budget
+  // failure. A missing function is not a rendering-boundary result: it demonstrates
+  // neither the defect nor a fix.
+  //
+  // Repairing it needs an agreed budget threshold plus a test that drives the real render
+  // entry point with bounded data and an intercepted renderer. Inventing a threshold here
+  // would invent a product requirement, so the case stays disabled and reports as skipped
+  // rather than as a satisfied gap.
+  test.fixme('rejects visualizer edge counts over budget before rendering', async ({ page }) => {
     await openBuilder(page);
 
     const message = await page.evaluate(() => {
@@ -90,7 +112,6 @@ test.describe('STIX Builder hardening', () => {
   });
 
   test('encodes numeric editor values before rendering attributes', async ({ page }) => {
-    test.fail(true, 'Known gap AF-RC-007: Composer number inputs interpolate values into attributes unencoded');
     await openBuilder(page);
 
     const confidenceField = await page.evaluate(() => {
@@ -101,6 +122,14 @@ test.describe('STIX Builder hardening', () => {
       return document.querySelector('[data-field="confidence"]')?.outerHTML || '';
     });
 
+    // Prerequisite: the numeric field rendered at all. An empty string here means the
+    // editor or selector changed, which is a real failure rather than the known gap.
+    expect(confidenceField, 'confidence field did not render').not.toBe('');
+
+    // The numeric editor field interpolates its stored value straight into a value="..."
+    // attribute with no encoding, so a value carrying a quote closes the attribute and the
+    // rest is parsed as markup.
+    test.fail(true, 'Known gap: the numeric editor field writes its value into an HTML attribute unencoded');
     expect(confidenceField).toContain('1&quot; autofocus onfocus=&quot;alert(1)');
     expect(confidenceField).not.toContain('" autofocus');
   });
