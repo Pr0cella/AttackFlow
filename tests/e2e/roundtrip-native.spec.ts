@@ -15,8 +15,9 @@ import {
 } from './helpers/roundtrip';
 import {
   ALL_OBSERVABLE_TYPES, DESCRIPTION_STORED, EVIDENCE_LINES, EVIDENCE_STORED, FULL_PHASES,
-  GROUPS, IDS, TITLE, URL_BRACKETS_REJECTED, VECTOR_31, expectedFullAssignments,
-  expectedFullLibrary, expectedLegacyRecon, nativeFull, nativeLegacy, nativeMinimal,
+  GROUPS, IDS, NAME_LIMIT_ID, TITLE, URL_BRACKETS_REJECTED, VECTOR_31, expectedFullAssignments,
+  expectedFullLibrary, expectedLegacyRecon, nameOfLength, nativeFull, nativeLegacy,
+  nativeMinimal, nativeWithCustomEntry,
 } from '../fixtures/roundtrip/native';
 
 const REPO_ROOT = path.resolve(__dirname, '../..');
@@ -370,11 +371,18 @@ test.describe('RT-15 shipped example documents', () => {
           }
         }
       }
-      // Scope: this asserts that the whole shipped library SURVIVES. Field-level fidelity
-      // inside each entry is not claimed here -- two known gaps, a dropped legacy CVE and a
-      // truncated custom name, would have to be fixed before it could be.
-      expect(Object.keys(imported.customLibrary).sort())
-        .toEqual(Object.keys(sourceDoc.customLibrary || {}).sort());
+      // Scope: this asserts that the whole shipped library SURVIVES, and that each entry
+      // keeps its NAME. Other field-level fidelity inside an entry is still not claimed.
+      // The name is asserted because the shipped stix-demo.json carries names of 53 and 54
+      // characters, so an importer bounded by the 50-character label limit loses analyst
+      // data from a file this project ships -- silently, and on the FIRST import.
+      const sourceLibrary = (sourceDoc.customLibrary || {}) as Record<string, any>;
+      expect(Object.keys(imported.customLibrary).sort()).toEqual(Object.keys(sourceLibrary).sort());
+      for (const [id, sourceEntry] of Object.entries(sourceLibrary)) {
+        if (typeof sourceEntry.name !== 'string') continue;
+        expect(imported.customLibrary[id].name, `${id} name`)
+          .toBe(sourceEntry.name.replace(/[\u0000-\u001F\u007F]/g, '').trim().slice(0, 200));
+      }
 
       // Every assignment carries a full metadata object and a unique instance id.
       const instanceIds = new Set<string>();
@@ -748,6 +756,202 @@ test.describe('RT-05 editing lifecycle', () => {
         const second = await exportNative(freshPage);
         expectNativeExportsEquivalent(first.json, second.json, startedAt);
       });
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// RT-05 custom object name limits
+//
+// A custom object's name is written under a 200-code-unit limit everywhere the app
+// writes one: the create modal's maxlength attribute, createCustomItem(),
+// saveStixEditor(), the editor field builder, and the STIX bundle importer's own
+// maxNameLength. The native importer is the single path that bounds the same field by
+// the LABEL limit instead, which is a different field's policy, so a name an analyst
+// was allowed to type is silently shortened when their own export is loaded back.
+//
+// The label and description limits are asserted alongside it, because the cheap way to
+// make the name cases pass is to raise every string limit at once, and that would be a
+// different, much larger change.
+// ---------------------------------------------------------------------------
+
+const customNameText = (page: Page) =>
+  page.locator('.entity-item.custom .entity-name').first().evaluate(el => el.textContent);
+
+test.describe('RT-05 custom object name limits', () => {
+  test('a 123-code-unit name created in the modal survives export and fresh reimport', async ({ page, browser }) => {
+    const NAME = nameOfLength(123);
+    const errors: string[] = [];
+    page.on('pageerror', error => errors.push(error.message));
+    await openApp(page);
+
+    let createdId = '';
+    await test.step('the create modal accepts and stores the whole name', async () => {
+      await page.locator('.sidebar-tab.custom').click();
+      await page.locator('button[onclick="openCreateCustomModal()"]').click();
+      await expect(page.locator('#create-custom-modal')).toHaveClass(/visible/);
+      await page.locator('#custom-stix-type').selectOption('threat-actor');
+      // The input's own maxlength is 200, so a 123-unit name is enterable by design.
+      await page.locator('#custom-name').fill(NAME);
+      expect(await page.locator('#custom-name').inputValue()).toBe(NAME);
+      await page.locator('button[onclick="createCustomItem()"]').click();
+      await expect(page.locator('#create-custom-modal')).not.toHaveClass(/visible/);
+
+      const library = (await readState(page)).customLibrary;
+      const entries = Object.values(library) as any[];
+      expect(entries, 'exactly one created object').toHaveLength(1);
+      expect(entries[0].name).toBe(NAME);
+      createdId = entries[0].id;
+      // The sidebar renders the stored name in full; shortening is CSS, not data.
+      expect(await customNameText(page)).toBe(NAME);
+    });
+
+    const first = await exportNative(page);
+
+    await test.step('the download carries the name in both the document and the bundle', async () => {
+      expect(first.json.customLibrary[createdId].name).toBe(NAME);
+      const sdo = first.json.stixBundle.objects.find((o: any) => o.id === createdId);
+      expect(sdo, 'the created object is projected into the embedded bundle').toBeDefined();
+      expect(sdo.name).toBe(NAME);
+    });
+
+    await withFreshContext(browser, async freshPage => {
+      const freshErrors: string[] = [];
+      freshPage.on('pageerror', error => freshErrors.push(error.message));
+      await importNative(freshPage, first.buffer, first.name);
+
+      // The reimported name must be the name that was exported. Before the fix the
+      // importer cut it to the 50-unit label limit here.
+      const restored = await readState(freshPage);
+      expect(restored.customLibrary[createdId].name).toBe(NAME);
+
+      await freshPage.locator('.sidebar-tab.custom').click();
+      expect(await customNameText(freshPage)).toBe(NAME);
+
+      const second = await exportNative(freshPage);
+      expect(second.json.customLibrary[createdId].name).toBe(NAME);
+      await expectInertRender(freshPage, freshErrors);
+    });
+
+    await expectInertRender(page, errors);
+  });
+
+  // One case per length so the first failure cannot hide the others. Scope: these probe
+  // the IMPORT trust boundary, which is where the loss is; the full create/export/reimport
+  // cycle is covered once above rather than five more times.
+  for (const length of [49, 50, 51, 199, 200]) {
+    test(`an imported ${length}-code-unit name is preserved exactly`, async ({ page }) => {
+      const NAME = nameOfLength(length);
+      await openApp(page);
+      await importNative(page, bytes(nativeWithCustomEntry({ name: NAME })), `rt-05-name-${length}.json`);
+
+      const entry = (await readState(page)).customLibrary[NAME_LIMIT_ID];
+      expect(entry, 'the library entry survives import').toBeDefined();
+      expect(entry.name).toBe(NAME);
+      expect(entry.name.length).toBe(length);
+    });
+  }
+
+  test('an imported name above the 200-code-unit policy is truncated to 200', async ({ page }) => {
+    const NAME = nameOfLength(260);
+    await openApp(page);
+    await importNative(page, bytes(nativeWithCustomEntry({ name: NAME })), 'rt-05-name-over.json');
+
+    const entry = (await readState(page)).customLibrary[NAME_LIMIT_ID];
+    // The policy is unchanged by this fix: the native importer now applies the SAME
+    // 200-unit name limit the rest of the app already applied, not a larger one.
+    expect(entry.name).toBe(NAME.slice(0, 200));
+    expect(entry.name.length).toBe(200);
+  });
+
+  test('a punctuation-rich name survives the round trip and renders inert', async ({ page, browser }) => {
+    // Printable evidence is preserved as data; the render sink encodes it. Both are
+    // asserted, never traded against each other.
+    const NAME = 'RT03 "quoted" & <tag>; [b] {c} \\back -- Ελληνικά 日本語 Straße '
+      + '</div><img data-rt-injected src=x onerror="window.__rtExecuted=true">';
+    expect(NAME.length, 'stays inside the 200-unit policy').toBeLessThanOrEqual(200);
+
+    const errors: string[] = [];
+    page.on('pageerror', error => errors.push(error.message));
+    await openApp(page);
+    await importNative(page, bytes(nativeWithCustomEntry({ name: NAME })), 'rt-05-name-punctuation.json');
+
+    expect((await readState(page)).customLibrary[NAME_LIMIT_ID].name).toBe(NAME);
+    await page.locator('.sidebar-tab.custom').click();
+    expect(await customNameText(page)).toBe(NAME);
+    await expectInertRender(page, errors);
+
+    const first = await exportNative(page);
+    expect(first.json.customLibrary[NAME_LIMIT_ID].name).toBe(NAME);
+
+    await withFreshContext(browser, async freshPage => {
+      const freshErrors: string[] = [];
+      freshPage.on('pageerror', error => freshErrors.push(error.message));
+      await importNative(freshPage, first.buffer, first.name);
+      expect((await readState(freshPage)).customLibrary[NAME_LIMIT_ID].name).toBe(NAME);
+      await freshPage.locator('.sidebar-tab.custom').click();
+      expect(await customNameText(freshPage)).toBe(NAME);
+      await expectInertRender(freshPage, freshErrors);
+    });
+  });
+
+  test('the label and description limits are unchanged by the name limit', async ({ page }) => {
+    const label50 = nameOfLength(50);
+    const label51 = nameOfLength(51);
+    const description = 'd'.repeat(2100);
+    await openApp(page);
+    await importNative(page, bytes(nativeWithCustomEntry({
+      name: nameOfLength(120), labels: [label50, label51], description,
+    })), 'rt-05-sibling-limits.json');
+
+    const entry = (await readState(page)).customLibrary[NAME_LIMIT_ID];
+    // Labels keep their own 50-unit limit: a broad "raise every string limit" change
+    // would let the 51st unit through here.
+    expect(entry.labels).toEqual([label50, label51.slice(0, 50)]);
+    expect(entry.description).toBe(description.slice(0, 2000));
+    expect(entry.name).toBe(nameOfLength(120));
+  });
+});
+
+test.describe('RT-05 custom type name limit', () => {
+  // A SEPARATE field, kept here so a broad "raise every limit" change is visible.
+  //
+  // MEASURED, because reading one line of the importer gives the wrong answer: the
+  // library loop writes `customTypeName` through the 50-unit label limit, and then the
+  // spec-field loop below it writes the SAME key again from the raw input at 2000, because
+  // STIX_OBJECTS['x-custom'] declares customTypeName as an optional field and the loop
+  // excludes only name, description and labels. The second write wins, so a 70-unit type
+  // name survives and the label cap on that key is dead for x-custom objects.
+  //
+  // `name` is in that exclusion set, so nothing overwrites it -- which is exactly why the
+  // name limit is the one that is felt.
+  test('a 70-code-unit custom type name survives a native round trip', async ({ page, browser }) => {
+    const TYPE_NAME = nameOfLength(70);
+    await openApp(page);
+    await page.locator('.sidebar-tab.custom').click();
+    await page.locator('button[onclick="openCreateCustomModal()"]').click();
+    await expect(page.locator('#create-custom-modal')).toHaveClass(/visible/);
+    await page.locator('#custom-stix-type').selectOption('x-custom');
+    await expect(page.locator('#custom-typename')).toBeVisible();
+    await page.locator('#custom-typename').fill(TYPE_NAME);
+    await page.locator('#custom-name').fill('RT Custom Type Probe');
+    await page.locator('button[onclick="createCustomItem()"]').click();
+    await expect(page.locator('#create-custom-modal')).not.toHaveClass(/visible/);
+
+    const created = Object.values((await readState(page)).customLibrary)[0] as any;
+    expect(created.customTypeName, 'the 80-unit creation limit keeps all 70').toBe(TYPE_NAME);
+
+    const first = await exportNative(page);
+    expect(first.json.customLibrary[created.id].customTypeName).toBe(TYPE_NAME);
+
+    await withFreshContext(browser, async freshPage => {
+      await importNative(freshPage, first.buffer, first.name);
+      const restored = (await readState(freshPage)).customLibrary[created.id];
+      // Observed behavior: the spec-field write restores the whole 70 units. This is the
+      // field the name fix does NOT touch, so it must read the same before and after it.
+      expect(restored.customTypeName).toBe(TYPE_NAME);
+      // The name on the same object is bounded by the name policy, not the label one.
+      expect(restored.name).toBe('RT Custom Type Probe');
     });
   });
 });

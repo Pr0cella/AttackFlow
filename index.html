@@ -9822,7 +9822,7 @@
                     const entry = {
                         id: id,
                         stixType: stixType,
-                        name: sanitizeImportedString(item.name || '', CONFIG.display?.maxLabelLength || 50),
+                        name: sanitizeImportedString(item.name || '', CONFIG.display?.maxNameLength || 200),
                         description: sanitizeImportedString(item.description || '', CONFIG.display?.maxCustomDescLength || 2000),
                         labels: Array.isArray(item.labels)
                             ? item.labels
