@@ -297,31 +297,75 @@ test.describe('RT-02 view restoration', () => {
 });
 
 test.describe('RT-15 legacy metadata keys', () => {
-  test('imports metadata.cves the way the rest of the app reads it', async ({ page }) => {
+  test('normalizes cves arrays for nested, flat, grouped and mixed metadata', async ({ page }) => {
     await openApp(page);
+    const changedScopeVector = VECTOR_31.replace('/S:U/', '/S:C/');
     const legacy = {
       assignments: {
         'IN:exploitation': {
-          techniques: [{
-            id: 'T1190', instanceId: 'itm-rt-cves',
-            metadata: { cves: [{ id: 'CVE-2024-3400', score: '10.0', vector: VECTOR_31 }] },
+          techniques: [
+            {
+              id: 'T1190', instanceId: 'itm-rt-cves-nested',
+              metadata: {
+                cves: [
+                  { id: ' cve-2024-3400 ', score: '10.0', vector: VECTOR_31 },
+                  { id: 'not-a-cve', score: 9, vector: VECTOR_31 },
+                  null,
+                ],
+              },
+            },
+            {
+              id: 'T1595', instanceId: 'itm-rt-cves-flat',
+              cves: [{ id: 'CVE-2024-3401', score: 4, cvssVector: changedScopeVector }],
+            },
+            {
+              id: 'T1041', instanceId: 'itm-rt-cves-current',
+              metadata: {
+                cveEntries: [{ id: 'CVE-2024-3402', score: 8.75, vector: VECTOR_31 }],
+              },
+            },
+            {
+              id: 'T1566', instanceId: 'itm-rt-cves-mixed',
+              metadata: {
+                cveEntries: [{ id: 'CVE-2024-3403', score: 9.8, vector: VECTOR_31 }],
+                cves: [
+                  { id: 'CVE-2024-3403', score: 7.1, vector: changedScopeVector },
+                  { id: 'CVE-2024-3404', score: 11, vector: 'invalid' },
+                  { id: 'CVE-2024-3404', score: 11, vector: 'invalid' },
+                ],
+              },
+            },
+            { id: 'T1021', instanceId: 'itm-rt-cves-empty', metadata: { cves: [] } },
+          ],
+          groups: [{
+            groupId: 'grp-rt-cves', label: 'Legacy CVE group', collapsed: false,
+            items: [{
+              id: 'T1059', type: 'attack', instanceId: 'itm-rt-cves-grouped',
+              metadata: { cves: [{ id: 'CVE-2024-3405', score: '6.4', vector: VECTOR_31 }] },
+            }],
           }],
         },
       },
     };
     await importNative(page, bytes(legacy), 'rt-af-rt-002.json');
 
-    // Prerequisite: the document imported at all and the assignment survived. Only the
-    // CVE projection below is the known gap.
-    const assignment = (await readState(page)).assignments['IN:exploitation'].techniques[0];
-    expect(assignment.id).toBe('T1190');
-
-    // getCveEntries(), which every reader in the app goes through, accepts a `cves` array.
-    // The import sanitizer handles cveEntries, cveIds and the legacy cveId/cve pair but not
-    // `cves`, so it is the one reader that drops it -- silently, at the trust boundary.
-    test.fail(true, 'Known gap: the import sanitizer ignores the legacy cves key that every other reader accepts');
-    // getCveEntries() reads `cves`; the import sanitizer is the only reader that does not.
-    expect(assignment.metadata.cveEntries).toEqual([{ id: 'CVE-2024-3400', score: 10, vector: VECTOR_31 }]);
+    const phase = (await readState(page)).assignments['IN:exploitation'];
+    const byInstance = Object.fromEntries(phase.techniques.map((item: any) => [item.instanceId, item]));
+    expect(byInstance['itm-rt-cves-nested'].metadata.cveEntries)
+      .toEqual([{ id: 'CVE-2024-3400', score: 10, vector: VECTOR_31 }]);
+    expect(byInstance['itm-rt-cves-flat'].metadata.cveEntries)
+      .toEqual([{ id: 'CVE-2024-3401', score: 4, vector: changedScopeVector }]);
+    expect(byInstance['itm-rt-cves-current'].metadata.cveEntries)
+      .toEqual([{ id: 'CVE-2024-3402', score: 8.8, vector: VECTOR_31 }]);
+    expect(byInstance['itm-rt-cves-mixed'].metadata.cveEntries).toEqual([
+      { id: 'CVE-2024-3403', score: 9.8, vector: VECTOR_31 },
+      { id: 'CVE-2024-3403', score: 7.1, vector: changedScopeVector },
+      { id: 'CVE-2024-3404', score: null, vector: '' },
+      { id: 'CVE-2024-3404', score: null, vector: '' },
+    ]);
+    expect(byInstance['itm-rt-cves-empty'].metadata.cveEntries).toEqual([]);
+    expect(phase.groups[0].items[0].metadata.cveEntries)
+      .toEqual([{ id: 'CVE-2024-3405', score: 6.4, vector: VECTOR_31 }]);
   });
 });
 
@@ -334,6 +378,16 @@ test.describe('RT-15 shipped example documents', () => {
       await importNative(page, source, name);
 
       const imported = await readState(page);
+
+      const expectedDemoCve = [{
+        id: 'CVE-2024-3400', score: 10,
+        vector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H',
+      }];
+      if (name === 'stix-demo.json') {
+        const restored = imported.assignments['IN:exploitation'].techniques
+          .find((item: any) => item.id === 'T1190');
+        expect(restored.metadata.cveEntries).toEqual(expectedDemoCve);
+      }
 
       // FIRST-IMPORT ORACLE, read from the shipped file itself rather than from the
       // already-imported state. Comparing cycle two to cycle one proves convergence but
@@ -416,9 +470,20 @@ test.describe('RT-15 shipped example documents', () => {
       }
 
       const first = await exportNative(page);
+      if (name === 'stix-demo.json') {
+        const downloaded = first.json.assignments['IN:exploitation'].techniques
+          .find((item: any) => item.id === 'T1190');
+        expect(downloaded.metadata.cveEntries).toEqual(expectedDemoCve);
+      }
       await withFreshContext(browser, async freshPage => {
         await importNative(freshPage, first.buffer, first.name);
-        expect(await readState(freshPage)).toEqual(imported);
+        const reimported = await readState(freshPage);
+        expect(reimported).toEqual(imported);
+        if (name === 'stix-demo.json') {
+          const restored = reimported.assignments['IN:exploitation'].techniques
+            .find((item: any) => item.id === 'T1190');
+          expect(restored.metadata.cveEntries).toEqual(expectedDemoCve);
+        }
         const second = await exportNative(freshPage);
         expectNativeExportsEquivalent(first.json, second.json, startedAt);
       });
