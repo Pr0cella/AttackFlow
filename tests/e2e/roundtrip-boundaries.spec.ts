@@ -121,30 +121,50 @@ test.describe('RT-17 rejection is atomic and diagnostic', () => {
     page.on('pageerror', error => errors.push(error.message));
     await openApp(page);
 
-    const poison = JSON.stringify({
-      assignments: {
-        '__proto__': { techniques: [] },
-        'IN:reconnaissance': {
-          techniques: [{
-            id: 'T1595', instanceId: 'itm-p-1',
-            metadata: {
-              comments: 'poison probe',
-              hyperlinks: [
-                { label: 'js', url: 'javascript:window.__rtExecuted=true' },
-                { label: 'data', url: 'data:text/html,<script>window.__rtExecuted=true</script>' },
-                { label: 'vb', url: 'vbscript:msgbox(1)' },
-                { label: 'file', url: 'file:///etc/passwd' },
-                { label: 'protocol relative', url: '//evil.test/x' },
-                { label: 'ok', url: 'https://example.test/ok' },
-              ],
-            },
+    // Built as RAW JSON TEXT, deliberately. An object literal `{ '__proto__': {...} }`
+    // sets the prototype instead of creating an own property, so JSON.stringify emits
+    // nothing and the hostile key never reaches the parser at all. The previous version of
+    // this fixture did exactly that, and its `.replace(/"__proto__"/g, '"__proto__"')` was
+    // a no-op that made the omission look intentional.
+    const hyperlinks = JSON.stringify([
+      { label: 'js', url: 'javascript:window.__rtExecuted=true' },
+      { label: 'data', url: 'data:text/html,<script>window.__rtExecuted=true</script>' },
+      { label: 'vb', url: 'vbscript:msgbox(1)' },
+      { label: 'file', url: 'file:///etc/passwd' },
+      { label: 'protocol relative', url: '//evil.test/x' },
+      { label: 'ok', url: 'https://example.test/ok' },
+    ]);
+    const poison = `{
+      "assignments": {
+        "__proto__": { "techniques": [], "polluted": true },
+        "constructor": { "techniques": [] },
+        "IN:reconnaissance": {
+          "techniques": [{
+            "id": "T1595",
+            "instanceId": "itm-p-1",
+            "__proto__": { "polluted": true },
+            "metadata": { "comments": "poison probe", "__proto__": { "polluted": true },
+                          "hyperlinks": ${hyperlinks} }
           }],
-          groups: [{ groupId: '__proto__', label: 'x', items: [] }],
-          layout: [],
-        },
+          "groups": [{ "groupId": "__proto__", "label": "x", "items": [] }],
+          "layout": []
+        }
       },
-      customLibrary: { '__proto__': { name: 'x' }, 'constructor': { name: 'y' } },
-    }).replace(/"__proto__"/g, '"__proto__"');
+      "customLibrary": { "__proto__": { "name": "x" }, "constructor": { "name": "y" } }
+    }`;
+
+    // The fixture is only meaningful if the dangerous keys survive serialization as OWN
+    // properties at every depth it claims to probe. Assert that before uploading, so a
+    // fixture that quietly stopped being hostile fails loudly instead of passing.
+    const parsedFixture = JSON.parse(poison);
+    const own = (object: any, key: string) => Object.prototype.hasOwnProperty.call(object, key);
+    expect(own(parsedFixture.assignments, '__proto__'), 'top-level __proto__ key').toBe(true);
+    expect(own(parsedFixture.assignments, 'constructor'), 'top-level constructor key').toBe(true);
+    expect(own(parsedFixture.assignments['IN:reconnaissance'].techniques[0], '__proto__'),
+      'nested __proto__ on an assignment').toBe(true);
+    expect(own(parsedFixture.assignments['IN:reconnaissance'].techniques[0].metadata, '__proto__'),
+      'nested __proto__ on metadata').toBe(true);
+    expect(own(parsedFixture.customLibrary, '__proto__'), 'library __proto__ key').toBe(true);
 
     await importNative(page, raw(poison), 'rt-17-poison.json');
 
@@ -155,13 +175,17 @@ test.describe('RT-17 rejection is atomic and diagnostic', () => {
 
     // Dangerous keys never become phases, groups or library entries.
     expect(Object.keys(state.assignments)).not.toContain('__proto__');
+    expect(Object.keys(state.assignments)).not.toContain('constructor');
     expect(Object.keys(state.customLibrary)).toEqual([]);
     const hostileGroup = state.assignments['IN:reconnaissance'].groups[0];
     expect(hostileGroup.groupId).not.toBe('__proto__');
     expect(hostileGroup.groupId).toMatch(/^grp-[a-z0-9]+-[a-z0-9]{1,5}$/);
 
-    await expectInertRender(page, errors);
+    // No prototype anywhere in the page realm gained the injected marker.
+    expect(await page.evaluate(() => ({} as any).polluted), 'Object.prototype').toBeUndefined();
+    expect(await page.evaluate(() => ([] as any).polluted), 'Array.prototype').toBeUndefined();
     expect(await page.evaluate(() => (Object.prototype as any).techniques)).toBeUndefined();
+    await expectInertRender(page, errors);
   });
 
   test('a STIX bundle that is refused leaves the existing library intact', async ({ page }) => {

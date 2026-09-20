@@ -10,49 +10,15 @@ import path from 'node:path';
 import { expect, test } from '@playwright/test';
 import {
   ALL_PHASES, exportCsv, exportNative, expectNativeExportsEquivalent, expectNoExternalRequests,
-  importNative, importNavigatorLayer, openApp, readState, withFreshContext,
+  importNative, importNavigatorLayer, installRequestGuard, openApp, readState, withFreshContext,
 } from './helpers/roundtrip';
+import { parseCsvStrict, readCsv } from './helpers/csv-reader';
 
 const REPO_ROOT = path.resolve(__dirname, '../..');
 const bytes = (value: unknown) => Buffer.from(JSON.stringify(value), 'utf8');
 
 test.use({ serviceWorkers: 'block' });
 test.afterEach(async ({ page }) => expectNoExternalRequests(page));
-
-/**
- * Independent RFC 4180 reader.
- *
- * This implements the STANDARD, not the app's serializer, so it is a true oracle: none
- * of exportCSV()'s quoting logic is reproduced here. It accepts CRLF or LF row
- * separators so that the row-ending policy can be asserted separately from parsing.
- */
-function parseCsv(text: string): string[][] {
-  const rows: string[][] = [];
-  let row: string[] = [];
-  let field = '';
-  let quoted = false;
-  let i = 0;
-  const endField = () => { row.push(field); field = ''; };
-  const endRow = () => { endField(); rows.push(row); row = []; };
-
-  while (i < text.length) {
-    const ch = text[i];
-    if (quoted) {
-      if (ch === '"') {
-        if (text[i + 1] === '"') { field += '"'; i += 2; continue; }
-        quoted = false; i += 1; continue;
-      }
-      field += ch; i += 1; continue;
-    }
-    if (ch === '"' && field === '') { quoted = true; i += 1; continue; }
-    if (ch === ',') { endField(); i += 1; continue; }
-    if (ch === '\r' && text[i + 1] === '\n') { endRow(); i += 2; continue; }
-    if (ch === '\n' || ch === '\r') { endRow(); i += 1; continue; }
-    field += ch; i += 1;
-  }
-  if (field !== '' || row.length > 0) endRow();
-  return rows;
-}
 
 const CSV_HEADER_PREFIX = ['Type', 'ID', 'Name', 'Score', 'Confidence', 'CVE(s)', 'Comments'];
 
@@ -95,7 +61,7 @@ test.describe('RT-12 CSV report projection', () => {
     const csv = await exportCsv(page);
     expect(csv.name).toBe('CSV-Report-Title.csv');
 
-    const rows = parseCsv(csv.text);
+    const rows = parseCsvStrict(csv.buffer);
     const [titleRow, headerRow, ...dataRows] = rows;
 
     await test.step('title and header rows have their documented shapes', async () => {
@@ -148,33 +114,80 @@ test.describe('RT-12 CSV report projection', () => {
       }
     });
 
-    await test.step('separators and quotes inside evidence survive a standard reader', async () => {
-      const row = dataRows.find(r => r[1] === 'T1041')!;
-      // The comma, the embedded quotes and the semicolon all round-trip through parsing.
-      expect(row[6]).toContain('"quoted"');
-      expect(row[6]).toContain('semi;colon');
-      expect(row[6]).toContain('A1:A2');
+    await test.step('separators and quotes inside evidence decode to exact cell values', async () => {
+      // Exact equality, not substring containment. A substring check passes even when the
+      // exporter wraps the evidence in extra literal quote characters, which is the very
+      // defect AF-RC-008 describes.
+      const ordinary = dataRows.find(r => r[1] === 'T1595')!;
+      expect(ordinary[6]).toBe('First instance comment');
+
+      const capec = dataRows.find(r => r[1] === 'CAPEC-169')!;
+      expect(capec[3]).toBe('low');
+      expect(capec[6]).toBe('');
+
+      // Row multiplicity: one row per entity id, no duplicates.
+      const ids = dataRows.filter(r => r[0] !== 'Mitigation').map(r => r[1]);
+      expect(new Set(ids).size, 'entity rows must not duplicate').toBe(ids.length);
     });
   });
 
 });
 
-// Separate describe: test.fail() applies to every test in its block, so a known gap
-// must never share a block with tests that are expected to pass.
-test.describe('RT-12 CSV serialization gap', () => {
-  test.fail(true, 'Known gap AF-RC-008: guarded cells are quoted twice and rows use LF');
-  test('guards formula-leading cells with single RFC 4180 quoting and CRLF rows', async ({ page }) => {
+// Separate describes: test.fail() applies to every test in its block, so a known gap must
+// never share a block with tests that are expected to pass. Row endings and cell quoting
+// are also separate CONTRACTS, split so that fixing one does not mask the other.
+
+test.describe('RT-12 CSV row-ending gap', () => {
+  test('ends records with CRLF as RFC 4180 requires', async ({ page }) => {
+    await openApp(page);
+    await importNative(page, bytes(csvFixture()), 'rt-12-crlf.json');
+    const csv = await exportCsv(page);
+
+    // Asserted on the RAW BYTES. A reader that accepts both endings cannot tell you which
+    // one was written, so this can never be delegated to the decoding oracle.
+    expect(csv.buffer.length, 'export produced no bytes').toBeGreaterThan(0);
+
+    test.fail(true, 'Known gap AF-RC-008: rows are joined with LF, not CRLF');
+    expect(csv.text).toContain('\r\n');
+  });
+});
+
+test.describe('RT-12 CSV guarded-cell gap', () => {
+  test('guards a formula-leading cell with exactly one layer of quoting', async ({ page }) => {
     await openApp(page);
     await importNative(page, bytes(csvFixture()), 'rt-12-guard.json');
     const csv = await exportCsv(page);
 
-    // Desired: rows end with CRLF as RFC 4180 requires.
-    expect(csv.text).toContain('\r\n');
+    // Prerequisite: the bytes decode at all, and the guarded row is present. If this
+    // breaks, the failure is NOT the known quoting defect.
+    const rows = parseCsvStrict(csv.buffer);
+    const row = rows.find(r => r[1] === 'T1041');
+    expect(row, 'the guarded technique row must exist').toBeDefined();
 
+    test.fail(true, 'Known gap AF-RC-008: the guard pre-quotes, then the cell is quoted again');
     // Desired: the guard adds one leading tab inside a single layer of quoting, so a
-    // standard reader recovers exactly tab + original text.
-    const row = parseCsv(csv.text).find(r => r[1] === 'T1041')!;
-    expect(row[6]).toBe('\t=SUM(A1:A2), "quoted", semi;colon');
+    // standard reader recovers exactly tab + the original text, with no stray quotes.
+    expect(row![6]).toBe('\t=SUM(A1:A2), "quoted", semi;colon');
+  });
+});
+
+test.describe('RT-12 CSV reader oracle', () => {
+  // Narrow validation of the REPLACEMENT oracle itself, not a new parser feature. The
+  // previous hand-written reader accepted the first two and lost the third.
+  test('the Python reader rejects malformed quoting and keeps an empty quoted field', async ({ page }) => {
+    // This case needs no browser, but the file-level afterEach asserts the egress guard,
+    // and that assertion is meant to fail for an unguarded page. Install it rather than
+    // weaken the check: a test that never navigates should still declare its intent.
+    await installRequestGuard(page.context());
+
+    for (const malformed of ['"x"y', 'a,"unterminated']) {
+      const result = readCsv(Buffer.from(malformed, 'utf8'));
+      expect(result.ok, `strict reader must reject ${JSON.stringify(malformed)}`).toBe(false);
+    }
+    expect(parseCsvStrict(Buffer.from('""', 'utf8'))).toEqual([['']]);
+    expect(parseCsvStrict(Buffer.from('a,"",b', 'utf8'))).toEqual([['a', '', 'b']]);
+    expect(parseCsvStrict(Buffer.from('"a""b"', 'utf8'))).toEqual([['a"b']]);
+    expect(parseCsvStrict(Buffer.from('a,b\r\nc,d\r\n', 'utf8'))).toEqual([['a', 'b'], ['c', 'd']]);
   });
 });
 
