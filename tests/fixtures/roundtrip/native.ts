@@ -385,6 +385,53 @@ export function nativeMinimal() {
 }
 
 // ---------------------------------------------------------------------------
+// RT-05 custom library string limits
+//
+// CONTRACT (verified in index.html): a custom object's `name` is bounded by
+// CONFIG.display.maxNameLength (200) everywhere it is written -- the create modal's
+// own maxlength attribute, createCustomItem(), saveStixEditor() and the STIX bundle
+// importer's STIX_BUNDLE_IMPORT_LIMITS.maxNameLength. Labels are a different field with
+// their own 50-character limit (maxLabelLength) and descriptions a 2000-character one.
+//
+// Lengths below are UTF-16 CODE UNITS, because that is what String.prototype.slice
+// counts. They are deliberately not described as "characters": a name of astral
+// characters would reach the limit in half as many of them. The strings here are BMP
+// only, so the two coincide for these cases and nothing rests on the difference.
+// ---------------------------------------------------------------------------
+
+export const NAME_LIMIT_ID = 'threat-actor--55555555-5555-4555-8555-555555555555';
+
+/**
+ * A name of exactly `length` UTF-16 code units that ends in a distinctive marker, so a
+ * truncation that removes the tail is visible in the value itself and not only in a
+ * length comparison.
+ */
+export function nameOfLength(length: number): string {
+  const body = `RT03-${length}-${'abcdefghij'.repeat(Math.ceil(length / 10))}`;
+  return `${body.slice(0, length - 1)}#`;
+}
+
+/** A minimal native document whose only content is one custom library entry. */
+export function nativeWithCustomEntry(entry: Record<string, unknown>) {
+  return {
+    schema: 'killchain-export-lite',
+    assignments: { 'IN:reconnaissance': { techniques: [] } },
+    customLibrary: {
+      [NAME_LIMIT_ID]: {
+        id: NAME_LIMIT_ID,
+        stixType: 'threat-actor',
+        name: 'RT Name Limit Probe',
+        description: '',
+        labels: [],
+        created: '2026-01-01T00:00:00.000Z',
+        modified: '2026-01-02T00:00:00.000Z',
+        ...entry,
+      },
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
 // RT-15 legacy inputs
 // ---------------------------------------------------------------------------
 

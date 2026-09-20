@@ -9,6 +9,7 @@
 - **Startup Banner**: The main editor prints an AttackFlow ASCII banner with the version to the browser console on startup. Disable it with `CONFIG.console.showStartupBanner = false` in `config.js`
 
 ### Fixed
+- **Custom Object Name Preservation**: Native kill-chain imports keep custom STIX object names up to the same 200-character limit the create and edit modals allow, instead of shortening them to the 50-character label limit. Label, description and other field limits are unchanged
 - **Support Legacy CVE Metadata**: Native kill-chain imports preserve legacy `metadata.cves` entries, including CVE scores and validated CVSS vectors, and normalize them into the current metadata format
 - **Reject invalid array assignments**: Native JSON imports now reject array-valued document roots and `assignments` containers before replacing assignments, groups, layout, title, view, or custom STIX library data
 - **Group Assignment Preservation**: Deleting a group now keeps STIX assignments in the correct phase array with their metadata and instance IDs intact, including through JSON export/import. Invalid item or layout data stops deletion before any assignments are moved
