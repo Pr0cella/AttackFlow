@@ -10,7 +10,8 @@ import path from 'node:path';
 import { expect, test } from '@playwright/test';
 import {
   ALL_PHASES, exportCsv, exportNative, expectNativeExportsEquivalent, expectNoExternalRequests,
-  importNative, importNavigatorLayer, installRequestGuard, openApp, readState, withFreshContext,
+  dispatchDragAndDrop, importNative, importNavigatorLayer, installRequestGuard, openApp,
+  readState, withFreshContext,
 } from './helpers/roundtrip';
 import { parseCsvStrict, readCsv } from './helpers/csv-reader';
 
@@ -241,29 +242,42 @@ test.describe('RT-13 technique-ID text import', () => {
     });
 
     await test.step('assignments created from imported IDs survive a native round trip', async () => {
-      // Assign the imported techniques the way the app does, then round trip them.
-      await importNative(page, bytes({
-        assignments: {
-          'IN:reconnaissance': {
-            techniques: [
-              { id: 'T1595', instanceId: 'itm-r-1', metadata: { score: 'high' } },
-              { id: 'T9999', instanceId: 'itm-r-2', metadata: { score: 'low' } },
-            ],
-          },
-        },
-      }), 'rt-13-assigned.json');
+      // Assign through the REAL sidebar drag source. A second native import would call
+      // initAssignments(), which restores the full base technique library and so destroys
+      // the replaced library this route exists to produce. Dispatched handler coverage,
+      // not physical gesture coverage.
+      // Re-import so this step does not depend on what the tab-contract step above left
+      // behind. The library replacement is the precondition being exercised here.
+      await page.evaluate(() => (window as any).openCsvImportModal());
+      await page.locator('#csv-import-textarea').fill('T1595, T1059.001, T9999');
+      await page.locator('button[onclick="submitCsvImport()"]').click();
+      await expect(page.locator('#csv-import-modal')).not.toHaveClass(/visible/);
 
-      const imported = await readState(page);
-      const recon = imported.assignments['IN:reconnaissance'].techniques;
-      expect(recon.map((a: any) => a.id)).toEqual(['T1595', 'T9999']);
-      // An ID with no framework entry gets a synthesized fallback rather than vanishing.
-      expect(imported.techniqueIds).toContain('T9999');
+      const libraryBefore = (await readState(page)).techniqueIds.sort();
+      expect(libraryBefore).toEqual(['T1059.001', 'T1595', 'T9999']);
+
+      for (const [id, phase] of [['T1595', 'IN:reconnaissance'], ['T9999', 'IN:exploitation']] as const) {
+        await dispatchDragAndDrop(page,
+          `.entity-item.attack[data-entity-id="${id}"]`, `[data-phase="${phase}"]`);
+      }
+
+      const assigned = await readState(page);
+      // The imported library is NOT reset by assigning from it.
+      expect(assigned.techniqueIds.sort()).toEqual(libraryBefore);
+      expect(assigned.assignments['IN:reconnaissance'].techniques.map((a: any) => a.id)).toEqual(['T1595']);
+      expect(assigned.assignments['IN:exploitation'].techniques.map((a: any) => a.id)).toEqual(['T9999']);
+      // A real assignment gets a generated instance id and default metadata.
+      const instance = assigned.assignments['IN:reconnaissance'].techniques[0];
+      expect(instance.instanceId).toMatch(/^itm-[a-z0-9]+-\d+$/);
+      expect(instance.metadata.score).toBe('unclassified');
 
       const first = await exportNative(page);
       await withFreshContext(browser, async freshPage => {
         await importNative(freshPage, first.buffer, first.name);
         const restored = await readState(freshPage);
-        expect(restored.assignments).toEqual(imported.assignments);
+        expect(restored.assignments['IN:reconnaissance'].techniques.map((a: any) => a.id)).toEqual(['T1595']);
+        expect(restored.assignments['IN:exploitation'].techniques.map((a: any) => a.id)).toEqual(['T9999']);
+        expect(restored.assignments).toEqual(assigned.assignments);
         const second = await exportNative(freshPage);
         expectNativeExportsEquivalent(first.json, second.json, startedAt);
       });
@@ -320,23 +334,29 @@ test.describe('RT-14 Navigator import', () => {
       { techniqueID: 'T1595' }, { techniqueID: 'T1059.001' },
     ])), 'rt-14-source.json');
 
-    await importNative(page, bytes({
-      assignments: {
-        'IN:reconnaissance': {
-          techniques: [{ id: 'T1595', instanceId: 'itm-n-1', metadata: { score: 'medium', comments: 'From navigator' } }],
-        },
-        'THROUGH:execution': {
-          techniques: [{ id: 'T1059.001', instanceId: 'itm-n-2', metadata: { score: 'critical' } }],
-        },
-      },
-    }), 'rt-14-assigned.json');
+    // The layer really did replace the library before anything is assigned from it.
+    const libraryAfterImport = (await readState(page)).techniqueIds.sort();
+    expect(libraryAfterImport).toEqual(['T1059.001', 'T1595']);
 
-    const imported = await readState(page);
+    // Assign from that library through the real control, without resetting it.
+    await dispatchDragAndDrop(page,
+      '.entity-item.attack[data-entity-id="T1595"]', '[data-phase="IN:reconnaissance"]');
+    await dispatchDragAndDrop(page,
+      '.entity-item.attack[data-entity-id="T1059.001"]', '[data-phase="THROUGH:execution"]');
+
+    const assigned = await readState(page);
+    expect(assigned.techniqueIds.sort(), 'assigning must not reset the imported library')
+      .toEqual(libraryAfterImport);
+    expect(assigned.assignments['IN:reconnaissance'].techniques.map((a: any) => a.id)).toEqual(['T1595']);
+    expect(assigned.assignments['THROUGH:execution'].techniques.map((a: any) => a.id)).toEqual(['T1059.001']);
+
     const first = await exportNative(page);
     await withFreshContext(browser, async freshPage => {
       await importNative(freshPage, first.buffer, first.name);
       const restored = await readState(freshPage);
-      expect(restored.assignments).toEqual(imported.assignments);
+      expect(restored.assignments['IN:reconnaissance'].techniques.map((a: any) => a.id)).toEqual(['T1595']);
+      expect(restored.assignments['THROUGH:execution'].techniques.map((a: any) => a.id)).toEqual(['T1059.001']);
+      expect(restored.assignments).toEqual(assigned.assignments);
       const second = await exportNative(freshPage);
       expectNativeExportsEquivalent(first.json, second.json, startedAt);
     });

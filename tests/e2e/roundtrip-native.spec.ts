@@ -9,7 +9,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
 import {
-  ALL_PHASES, ASSIGNMENT_KEYS, NATIVE_EXPORT_KEYS, exportNative, expectInertRender,
+  ALL_PHASES, ASSIGNMENT_KEYS, NATIVE_EXPORT_KEYS, dispatchDragAndDrop, exportNative, expectInertRender,
   expectIsoTimestampWithin, expectNativeExportsEquivalent, expectNoExternalRequests,
   importNative, openApp, readState, withFreshContext,
 } from './helpers/roundtrip';
@@ -423,22 +423,6 @@ test.describe('RT-15 shipped example documents', () => {
 // round trip that follows it, rather than duplicating those assertions.
 // ---------------------------------------------------------------------------
 
-/**
- * Dispatches the app's real dragstart and drop handlers.
- * This is deterministic dispatched drag/drop, NOT physical gesture coverage: a real
- * pointer drag is recorded as a manual check in the fixture README.
- */
-async function dispatchDrag(page: Page, cardSelector: string, targetSelector: string) {
-  await page.evaluate(({ cardSelector, targetSelector }) => {
-    const card = document.querySelector(cardSelector);
-    const target = document.querySelector(targetSelector);
-    if (!card || !target) throw new Error(`drag endpoints missing: ${cardSelector} -> ${targetSelector}`);
-    const transfer = new DataTransfer();
-    card.dispatchEvent(new DragEvent('dragstart', { bubbles: true, cancelable: true, dataTransfer: transfer }));
-    target.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: transfer }));
-  }, { cardSelector, targetSelector });
-}
-
 const cardFor = (instanceId: string) => `[draggable="true"]:has(.tag-action-btn.edit[onclick*="'${instanceId}'"])`;
 
 test.describe('RT-04 group lifecycle', () => {
@@ -498,7 +482,7 @@ test.describe('RT-04 group lifecycle', () => {
       await page.locator(`${recon} .phase-group[data-group-id="${GROUPS.mixed}"] .phase-group-header`).click();
 
       // itm-rt-006 (CWE-79) leaves the mixed group for the exploitation phase.
-      await dispatchDrag(page, cardFor('itm-rt-006'), exploitation);
+      await dispatchDragAndDrop(page, cardFor('itm-rt-006'), exploitation);
       const afterItemMove = await readState(page);
       expect(afterItemMove.assignments[FULL_PHASES.recon].groups[0].items.map((i: any) => i.instanceId))
         .toEqual(['itm-rt-004', 'itm-rt-005']);
@@ -509,7 +493,7 @@ test.describe('RT-04 group lifecycle', () => {
       expect(moved[0].metadata.confidence).toBe(50);
 
       // The whole repeat group moves from lateral movement to exploitation.
-      await dispatchDrag(page,
+      await dispatchDragAndDrop(page,
         `[data-phase="${FULL_PHASES.lateral}"] .phase-group[data-group-id="${GROUPS.dup}"] .phase-group-header`,
         exploitation);
       const afterGroupMove = await readState(page);

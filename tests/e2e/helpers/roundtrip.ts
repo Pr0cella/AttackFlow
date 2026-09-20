@@ -415,6 +415,28 @@ export function expectIsoTimestampWithin(value: unknown, startedAt: number, skew
   expect(parsed).toBeLessThanOrEqual(Date.now() + skewMs);
 }
 
+/**
+ * Dispatches the application's REAL dragstart and drop handlers.
+ *
+ * This is deterministic coverage of those handlers, NOT physical pointer-gesture
+ * coverage; a real pointer drag is recorded as an unautomated manual check. It exists
+ * because assignment has no non-drag entry point: seeding assignments with a second
+ * native import instead would call initAssignments(), which restores the full base
+ * technique library and therefore destroys the very filtered library under test.
+ */
+export async function dispatchDragAndDrop(page: Page, sourceSelector: string, targetSelector: string) {
+  await page.evaluate(({ sourceSelector, targetSelector }) => {
+    const source = document.querySelector(sourceSelector);
+    const target = document.querySelector(targetSelector);
+    if (!source) throw new Error(`drag source missing: ${sourceSelector}`);
+    if (!target) throw new Error(`drop target missing: ${targetSelector}`);
+    const transfer = new DataTransfer();
+    source.dispatchEvent(new DragEvent('dragstart', { bubbles: true, cancelable: true, dataTransfer: transfer }));
+    target.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: transfer }));
+    source.dispatchEvent(new DragEvent('dragend', { bubbles: true, cancelable: true, dataTransfer: transfer }));
+  }, { sourceSelector, targetSelector });
+}
+
 /** Asserts no injected node, no executed canary, and no unexpected page error. */
 export async function expectInertRender(page: Page, errors: string[] = []) {
   await expect(page.locator('[data-rt-injected]')).toHaveCount(0);
