@@ -10,8 +10,8 @@
 
 import { expect, test, type Page } from '@playwright/test';
 import {
-  BASE_URL, exportNative, expectInertRender, expectNoDownload, expectNoExternalRequests,
-  importNative, importStix, installRequestGuard, openApp, readState,
+  BASE_URL, clickExportControl, exportNative, expectInertRender, expectNoDownload,
+  expectNoExternalRequests, importNative, importStix, installRequestGuard, openApp, readState,
 } from './helpers/roundtrip';
 import { IDS, nativeFull } from '../fixtures/roundtrip/native';
 
@@ -121,30 +121,50 @@ test.describe('RT-17 rejection is atomic and diagnostic', () => {
     page.on('pageerror', error => errors.push(error.message));
     await openApp(page);
 
-    const poison = JSON.stringify({
-      assignments: {
-        '__proto__': { techniques: [] },
-        'IN:reconnaissance': {
-          techniques: [{
-            id: 'T1595', instanceId: 'itm-p-1',
-            metadata: {
-              comments: 'poison probe',
-              hyperlinks: [
-                { label: 'js', url: 'javascript:window.__rtExecuted=true' },
-                { label: 'data', url: 'data:text/html,<script>window.__rtExecuted=true</script>' },
-                { label: 'vb', url: 'vbscript:msgbox(1)' },
-                { label: 'file', url: 'file:///etc/passwd' },
-                { label: 'protocol relative', url: '//evil.test/x' },
-                { label: 'ok', url: 'https://example.test/ok' },
-              ],
-            },
+    // Built as RAW JSON TEXT, deliberately. An object literal `{ '__proto__': {...} }`
+    // sets the prototype instead of creating an own property, so JSON.stringify emits
+    // nothing and the hostile key never reaches the parser at all. The previous version of
+    // this fixture did exactly that, and its `.replace(/"__proto__"/g, '"__proto__"')` was
+    // a no-op that made the omission look intentional.
+    const hyperlinks = JSON.stringify([
+      { label: 'js', url: 'javascript:window.__rtExecuted=true' },
+      { label: 'data', url: 'data:text/html,<script>window.__rtExecuted=true</script>' },
+      { label: 'vb', url: 'vbscript:msgbox(1)' },
+      { label: 'file', url: 'file:///etc/passwd' },
+      { label: 'protocol relative', url: '//evil.test/x' },
+      { label: 'ok', url: 'https://example.test/ok' },
+    ]);
+    const poison = `{
+      "assignments": {
+        "__proto__": { "techniques": [], "polluted": true },
+        "constructor": { "techniques": [] },
+        "IN:reconnaissance": {
+          "techniques": [{
+            "id": "T1595",
+            "instanceId": "itm-p-1",
+            "__proto__": { "polluted": true },
+            "metadata": { "comments": "poison probe", "__proto__": { "polluted": true },
+                          "hyperlinks": ${hyperlinks} }
           }],
-          groups: [{ groupId: '__proto__', label: 'x', items: [] }],
-          layout: [],
-        },
+          "groups": [{ "groupId": "__proto__", "label": "x", "items": [] }],
+          "layout": []
+        }
       },
-      customLibrary: { '__proto__': { name: 'x' }, 'constructor': { name: 'y' } },
-    }).replace(/"__proto__"/g, '"__proto__"');
+      "customLibrary": { "__proto__": { "name": "x" }, "constructor": { "name": "y" } }
+    }`;
+
+    // The fixture is only meaningful if the dangerous keys survive serialization as OWN
+    // properties at every depth it claims to probe. Assert that before uploading, so a
+    // fixture that quietly stopped being hostile fails loudly instead of passing.
+    const parsedFixture = JSON.parse(poison);
+    const own = (object: any, key: string) => Object.prototype.hasOwnProperty.call(object, key);
+    expect(own(parsedFixture.assignments, '__proto__'), 'top-level __proto__ key').toBe(true);
+    expect(own(parsedFixture.assignments, 'constructor'), 'top-level constructor key').toBe(true);
+    expect(own(parsedFixture.assignments['IN:reconnaissance'].techniques[0], '__proto__'),
+      'nested __proto__ on an assignment').toBe(true);
+    expect(own(parsedFixture.assignments['IN:reconnaissance'].techniques[0].metadata, '__proto__'),
+      'nested __proto__ on metadata').toBe(true);
+    expect(own(parsedFixture.customLibrary, '__proto__'), 'library __proto__ key').toBe(true);
 
     await importNative(page, raw(poison), 'rt-17-poison.json');
 
@@ -155,13 +175,17 @@ test.describe('RT-17 rejection is atomic and diagnostic', () => {
 
     // Dangerous keys never become phases, groups or library entries.
     expect(Object.keys(state.assignments)).not.toContain('__proto__');
+    expect(Object.keys(state.assignments)).not.toContain('constructor');
     expect(Object.keys(state.customLibrary)).toEqual([]);
     const hostileGroup = state.assignments['IN:reconnaissance'].groups[0];
     expect(hostileGroup.groupId).not.toBe('__proto__');
     expect(hostileGroup.groupId).toMatch(/^grp-[a-z0-9]+-[a-z0-9]{1,5}$/);
 
-    await expectInertRender(page, errors);
+    // No prototype anywhere in the page realm gained the injected marker.
+    expect(await page.evaluate(() => ({} as any).polluted), 'Object.prototype').toBeUndefined();
+    expect(await page.evaluate(() => ([] as any).polluted), 'Array.prototype').toBeUndefined();
     expect(await page.evaluate(() => (Object.prototype as any).techniques)).toBeUndefined();
+    await expectInertRender(page, errors);
   });
 
   test('a STIX bundle that is refused leaves the existing library intact', async ({ page }) => {
@@ -183,22 +207,41 @@ test.describe('RT-17 rejection is atomic and diagnostic', () => {
 });
 
 test.describe('RT-17 import validation gap', () => {
-  test.fail(true, 'Known gap AF-RT-005: an array assignments field passes validation and wipes the document');
-  test('refuses an array-valued assignments field instead of clearing every phase', async ({ page }) => {
-    await openApp(page);
-    await importNative(page, bytes(nativeFull()), 'rt-17-gap-baseline.json');
-    const before = await readState(page);
+  // AF-RT-005 has two separable contracts: the file must be REPORTED as refused, and the
+  // loaded document must be left intact. A single test would hide the second behind the
+  // first, and the second is the one that costs an analyst their work.
+  for (const contract of ['reports the refusal', 'leaves the loaded document intact'] as const) {
+    test(`an array-valued assignments field ${contract}`, async ({ page }) => {
+      await openApp(page);
+      await importNative(page, bytes(nativeFull()), 'rt-17-gap-baseline.json');
 
-    await page.locator('#toast').evaluate(el => { el.textContent = ''; });
-    await page.locator('#import-killchain-input').setInputFiles({
-      name: 'array-assignments.json', mimeType: 'application/json', buffer: bytes({ assignments: [] }),
+      // Prerequisite: a populated document really is loaded, so "unchanged" means
+      // something. A failure here is setup breakage, not the known gap.
+      const before = await readState(page);
+      expect(Object.keys(before.customLibrary).length).toBeGreaterThan(0);
+
+      await page.locator('#toast').evaluate(el => { el.textContent = ''; });
+      await page.locator('#import-killchain-input').setInputFiles({
+        name: 'array-assignments.json', mimeType: 'application/json', buffer: bytes({ assignments: [] }),
+      });
+
+      // Completion signal. setInputFiles returns as soon as the file is handed over, but
+      // importKillChain() reads it through an async FileReader. Asserting state before
+      // that resolves compares against a document that has not been touched YET, which
+      // makes the wipe look like correct behavior. The import path sets a toast on every
+      // outcome, so a non-empty toast is the point at which the result is decided.
+      await expect(page.locator('#toast')).not.toBeEmpty();
+
+      test.fail(true, 'Known gap AF-RT-005: an array assignments field passes validation and wipes the document');
+      if (contract === 'reports the refusal') {
+        await expect(page.locator('#toast')).toContainText('Import failed');
+      } else {
+        // Assignments AND the custom library must both survive; the probed defect clears
+        // both under the default clearStixOnKillChainImport setting.
+        expect(await readState(page)).toEqual(before);
+      }
     });
-
-    // Desired: a wrong-shaped assignments field is a rejection, reported as one, and the
-    // analyst's loaded document is left exactly as it was.
-    await expect(page.locator('#toast')).toContainText('Import failed');
-    expect(await readState(page)).toEqual(before);
-  });
+  }
 });
 
 test.describe('RT-17 export failure paths', () => {
@@ -206,15 +249,18 @@ test.describe('RT-17 export failure paths', () => {
     await openApp(page);
     await importNative(page, bytes(nativeFull()), 'rt-17-export.json');
 
-    // A boolean-typed supported property holding a string is an export-time error.
+    // Direct state injection, deliberately: a boolean-typed supported property holding a
+    // string is an export-time error that no UI path can produce. Only the STATE is
+    // injected. Both exports are still triggered through their real menu controls, so an
+    // unwired control fails this test exactly as it fails a successful-export lifecycle.
     await page.evaluate(id => { eval('state').library.custom[id].is_family = 'not-a-boolean'; }, IDS.malware);
     const before = await readState(page);
 
-    await expectNoDownload(page, () => page.evaluate(() => (window as any).exportJSON()));
+    await expectNoDownload(page, () => clickExportControl(page, 'JSON'));
     await expect(page.locator('#toast')).toContainText('JSON export failed');
     expect(await readState(page)).toEqual(before);
 
-    await expectNoDownload(page, () => page.evaluate(() => (window as any).exportSTIXBundle()));
+    await expectNoDownload(page, () => clickExportControl(page, 'STIX Bundle'));
     await expect(page.locator('#toast')).toContainText('STIX export failed');
     expect(await readState(page)).toEqual(before);
 
@@ -240,19 +286,26 @@ test.describe('RT-17 export failure paths', () => {
 });
 
 test.describe('RT-17 export filename gap', () => {
-  test.fail(true, 'Known gap AF-RT-006: a title that slugs to empty yields a dotfile name, not the fallback');
-  test('a title made only of stripped characters falls back to a safe filename', async ({ page }) => {
-    await openApp(page);
-    // The fallback is chosen by `state.title ? slug : 'attack-chain-export'`, which tests
-    // the RAW title, not the slug. A non-empty title whose every character is stripped
-    // produces an empty slug and the download name '.json' -- a dotfile, which is hidden
-    // on POSIX systems and which browsers rename inconsistently.
-    for (const title of ['***', '///...///', 'Ελληνικά', '日本語']) {
+  // One case per title: a loop would stop at the first title and leave the rest unproven,
+  // and the Latin and non-Latin cases fail for the same reason but matter differently.
+  // The fallback is chosen by `state.title ? slug : 'attack-chain-export'`, which tests
+  // the RAW title, not the slug. A non-empty title whose every character is stripped
+  // produces an empty slug and the download name '.json' -- a dotfile, hidden on POSIX
+  // systems and renamed inconsistently by browsers.
+  for (const title of ['***', '///...///', 'Ελληνικά', '日本語']) {
+    test(`a title of only stripped characters (${title}) falls back to a safe filename`, async ({ page }) => {
+      await openApp(page);
       await importNative(page, bytes({ assignments: { 'IN:reconnaissance': { techniques: [] } }, title }), 'name.json');
+
+      // Prerequisite: the title really did survive import, so the slug is what is at
+      // fault rather than the title being dropped earlier.
+      expect((await readState(page)).title).toBe(title);
+
       const exported = await exportNative(page);
-      expect(exported.name, `title ${JSON.stringify(title)}`).toBe('attack-chain-export.json');
-    }
-  });
+      test.fail(true, 'Known gap AF-RT-006: a title that slugs to empty yields a dotfile name, not the fallback');
+      expect(exported.name).toBe('attack-chain-export.json');
+    });
+  }
 });
 
 test.describe('RT-17 repeated operations', () => {

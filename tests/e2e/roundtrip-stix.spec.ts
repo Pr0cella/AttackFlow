@@ -9,8 +9,9 @@
 
 import { expect, test } from '@playwright/test';
 import {
-  exportNative, exportStix, expectIsoTimestampWithin, expectNoDownload,
-  expectNoExternalRequests, importNative, importStix, openApp, readState, withFreshContext,
+  clickExportControl, exportNative, exportStix, expectBundleEnvelope,
+  expectIsoTimestampWithin, expectNoDownload, expectNoExternalRequests, importNative,
+  importStix, openApp, readState, withFreshContext,
 } from './helpers/roundtrip';
 import { IDS, nativeFull } from '../fixtures/roundtrip/native';
 
@@ -39,12 +40,24 @@ test.describe('RT-07 embedded and standalone STIX parity', () => {
 
     const embedded = native.json.stixBundle;
     expect(embedded, 'a non-empty custom library must embed a bundle').toBeDefined();
-    expect(embedded.type).toBe('bundle');
-    expect(embedded.spec_version).toBe('2.1');
+    expectBundleEnvelope(embedded, 'embedded bundle');
+    expectBundleEnvelope(standalone.json, 'standalone bundle');
 
-    // Same object population, ignoring only the values documented as volatile:
-    // the bundle id, the export stamp, and regenerated relationship ids.
-    const normalize = (bundle: any) => bundle.objects
+    const libraryIds = new Set(Object.keys(native.json.customLibrary));
+    const isDerived = (o: any) => !libraryIds.has(o.id);
+
+    // Analyst-owned SDOs are compared WHOLE, supplied timestamps included. Blanket
+    // timestamp stripping would hide a library object whose `created` was rewritten.
+    const preserved = (bundle: any) => bundle.objects
+      .filter((o: any) => libraryIds.has(o.id))
+      .sort((x: any, y: any) => x.id.localeCompare(y.id));
+    expect(preserved(standalone.json)).toEqual(preserved(embedded));
+    expect(preserved(embedded).length).toBe(libraryIds.size);
+
+    // Only regenerated objects lose their volatile fields, and only after both artifacts
+    // have been validated.
+    const normalizeDerived = (bundle: any) => bundle.objects
+      .filter(isDerived)
       .map((o: any) => {
         const copy = { ...o };
         delete copy.created;
@@ -53,14 +66,16 @@ test.describe('RT-07 embedded and standalone STIX parity', () => {
         return copy;
       })
       .sort((x: any, y: any) => JSON.stringify(x).localeCompare(JSON.stringify(y)));
+    expect(normalizeDerived(standalone.json)).toEqual(normalizeDerived(embedded));
 
-    expect(normalize(standalone.json)).toEqual(normalize(embedded));
+    expect(standalone.json.objects.length).toBe(embedded.objects.length);
     expect(standalone.json.id).not.toBe(embedded.id);
-    for (const object of standalone.json.objects) {
-      // Library SDOs keep their supplied timestamps; derived objects are stamped now.
-      if (Object.prototype.hasOwnProperty.call(native.json.customLibrary, object.id)) continue;
-      expectIsoTimestampWithin(object.created, startedAt);
-      expectIsoTimestampWithin(object.modified, startedAt);
+    for (const [label, bundle] of [['embedded', embedded], ['standalone', standalone.json]] as const) {
+      for (const object of bundle.objects.filter(isDerived)) {
+        expectIsoTimestampWithin(object.created, startedAt);
+        expectIsoTimestampWithin(object.modified, startedAt);
+      }
+      expect(bundle.objects.filter(isDerived).length, `${label} derived count`).toBeGreaterThan(0);
     }
 
     // An unassigned library object still reaches both bundles.
@@ -72,11 +87,8 @@ test.describe('RT-07 embedded and standalone STIX parity', () => {
     await openApp(page);
     await importNative(page, bytes({ assignments: { 'IN:reconnaissance': { techniques: [] } } }), 'rt-07-empty.json');
 
-    await expectNoDownload(page, async () => {
-      const dropdown = page.locator('#export-dropdown');
-      await dropdown.locator(':scope > button.btn').click();
-      await dropdown.getByRole('button', { name: 'STIX Bundle', exact: true }).click();
-    });
+    // Same control path as a successful export, so an unwired menu item fails here too.
+    await expectNoDownload(page, () => clickExportControl(page, 'STIX Bundle'));
     await expect(page.locator('#toast')).toHaveText('No STIX objects to export');
   });
 });
@@ -153,16 +165,32 @@ test.describe('RT-08 generated STIX graph', () => {
 
     await test.step('mitigations are derived once each and linked by mitigates edges', async () => {
       const mitigations = byType(bundle, 'course-of-action');
-      expect(mitigations.length, 'the pinned library must supply mitigations').toBeGreaterThan(0);
+
+      // Reviewed expectation, read from the pinned resources/attack-techniques.json, not
+      // from the export under test. Using the exported count as its own oracle would
+      // accept silently losing a mitigation. A framework update can change this list.
+      const EXPECTED_MITIGATIONS = ['M1026', 'M1038', 'M1042', 'M1045', 'M1049'];
+      const externalIds = mitigations
+        .map((m: any) => m.external_references[0].external_id).sort();
+      expect(externalIds, 'derived mitigations for T1059.001').toEqual(EXPECTED_MITIGATIONS);
+
       const mitigationIds = mitigations.map((m: any) => m.id);
       expect(new Set(mitigationIds).size).toBe(mitigationIds.length);
 
       const patternId = byType(bundle, 'attack-pattern')[0].id;
       const mitigates = byType(bundle, 'relationship').filter((r: any) => r.relationship_type === 'mitigates');
-      // Exactly one edge per derived mitigation, all pointing at the one attack pattern.
-      expect(mitigates).toHaveLength(mitigations.length);
+      // Exactly one edge per REVIEWED mitigation, all pointing at the one attack pattern.
+      expect(mitigates).toHaveLength(EXPECTED_MITIGATIONS.length);
       expect(new Set(mitigates.map((r: any) => r.source_ref))).toEqual(new Set(mitigationIds));
-      for (const edge of mitigates) expect(edge.target_ref).toBe(patternId);
+      for (const edge of mitigates) {
+        expect(edge.target_ref).toBe(patternId);
+        // Complete record, so a dropped or corrupted field on a derived edge is caught.
+        expect(Object.keys(edge).sort()).toEqual([
+          'created', 'id', 'modified', 'relationship_type', 'source_ref', 'spec_version',
+          'target_ref', 'type',
+        ]);
+        expect(edge.spec_version).toBe('2.1');
+      }
 
       for (const mitigation of mitigations) {
         expect(mitigation.external_references[0].source_name).toBe('mitre-attack');
@@ -184,6 +212,29 @@ test.describe('RT-08 generated STIX graph', () => {
         `related-to|${C}|${D}`,
       ].sort());
       expect(coLocation).toHaveLength(2);
+
+      // COMPLETE hand-authored records for the generated edges, not just their endpoints.
+      // Endpoint-only comparison is blind to a dropped description or a corrupted
+      // spec_version, and the export/re-export comparator cannot see those either because
+      // a symmetric loss appears in both artifacts. This is the independent oracle.
+      const withoutVolatile = (edge: any) => {
+        const copy = { ...edge };
+        delete copy.id;
+        delete copy.created;
+        delete copy.modified;
+        return copy;
+      };
+      expect(coLocation.map(withoutVolatile).sort((x: any, y: any) =>
+        x.source_ref.localeCompare(y.source_ref))).toEqual([
+        {
+          type: 'relationship', spec_version: '2.1', relationship_type: 'related-to',
+          source_ref: A, target_ref: B, description: 'Co-located in phase IN:reconnaissance',
+        },
+        {
+          type: 'relationship', spec_version: '2.1', relationship_type: 'related-to',
+          source_ref: C, target_ref: D, description: 'Co-located in phase IN:exploitation',
+        },
+      ]);
 
       const ab = coLocation.find((r: any) => r.source_ref === A);
       expect(ab.description).toBe('Co-located in phase IN:reconnaissance');

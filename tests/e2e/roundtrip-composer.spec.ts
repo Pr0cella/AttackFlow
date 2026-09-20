@@ -42,9 +42,48 @@ async function openComposer(page: Page) {
   return blocked;
 }
 
-async function importIntoComposer(page: Page, buffer: Buffer, name = 'composer.json') {
+/**
+ * Uploads a bundle and waits for the import to actually finish.
+ *
+ * `decisions` answers the confirm sequence in order: importBundle() asks "Replace?" and,
+ * if that is declined, "Merge?". Each dialog is awaited explicitly rather than slept
+ * through, and the returned promise resolves only once every expected dialog has been
+ * answered, so a caller cannot inspect state while a decision is still pending.
+ */
+async function importIntoComposer(
+  page: Page, buffer: Buffer, name = 'composer.json', decisions: ('accept' | 'dismiss')[] = [],
+) {
   await page.locator('#toast').evaluate(element => { element.textContent = ''; });
-  await page.locator('#bundle-file').setInputFiles({ name, mimeType: 'application/json', buffer });
+
+  const seen: string[] = [];
+  const answered = decisions.map(() => {
+    let resolve!: () => void;
+    const promise = new Promise<void>(r => { resolve = r; });
+    return { promise, resolve };
+  });
+  const handler = async (dialog: any) => {
+    const index = seen.length;
+    seen.push(dialog.message());
+    const decision = decisions[index];
+    if (decision === 'accept') await dialog.accept();
+    else await dialog.dismiss();
+    answered[index]?.resolve();
+  };
+  page.on('dialog', handler);
+  try {
+    await page.locator('#bundle-file').setInputFiles({ name, mimeType: 'application/json', buffer });
+    // Every expected decision must actually have been asked and answered.
+    await Promise.all(answered.map(a => a.promise));
+  } finally {
+    page.off('dialog', handler);
+  }
+  return seen;
+}
+
+/** Completion signal: importBundle() sets a toast on every outcome, success or failure. */
+async function settleComposerImport(page: Page) {
+  await expect(page.locator('#toast')).not.toBeEmpty();
+  return (await page.locator('#toast').textContent()) || '';
 }
 
 const composerState = (page: Page) => page.evaluate(() =>
@@ -66,56 +105,58 @@ test.describe('RT-10 Composer import decisions', () => {
     await openComposer(page);
 
     await test.step('the first import into an empty bundle asks nothing', async () => {
-      // No confirm is shown while the bundle is empty.
-      await importIntoComposer(page, bytes(bundle([sdo(A, 'First malware')])), 'first.json');
-      await expect(page.locator('#toast')).toHaveText('Bundle imported');
-      const state = await composerState(page);
-      expect(state.objects.map((o: any) => o.id)).toEqual([A]);
+      // No confirm is shown while the bundle is empty, so no decisions are supplied.
+      const asked = await importIntoComposer(page, bytes(bundle([sdo(A, 'First malware')])), 'first.json');
+      expect(asked, 'an empty bundle must not prompt').toEqual([]);
+      expect(await settleComposerImport(page)).toBe('Bundle imported');
+      expect((await composerState(page)).objects.map((o: any) => o.id)).toEqual([A]);
     });
 
     await test.step('declining replace then declining merge leaves the bundle untouched', async () => {
       const before = await composerState(page);
-      // Two confirms: "Replace?" then "Merge?". Dismiss both.
-      page.on('dialog', dialog => dialog.dismiss());
-      await importIntoComposer(page, bytes(bundle([sdo(B, 'Second identity')])), 'declined.json');
-      await page.waitForTimeout(300);
+      const asked = await importIntoComposer(page,
+        bytes(bundle([sdo(B, 'Second identity')])), 'declined.json', ['dismiss', 'dismiss']);
+
+      // Both questions were actually asked, in order, and both were answered before the
+      // state below is read. The previous version slept 300ms and hoped.
+      expect(asked).toHaveLength(2);
+      expect(asked[0]).toContain('Replace');
+      expect(asked[1]).toContain('Merge');
       expect(await composerState(page)).toEqual(before);
-      page.removeAllListeners('dialog');
     });
 
     await test.step('declining replace then accepting merge adds without removing', async () => {
-      let seen = 0;
-      page.on('dialog', dialog => { seen += 1; return seen === 1 ? dialog.dismiss() : dialog.accept(); });
-      await importIntoComposer(page, bytes(bundle([sdo(B, 'Second identity')])), 'merge.json');
-      await expect(page.locator('#toast')).toHaveText('Bundle imported');
-      page.removeAllListeners('dialog');
+      const asked = await importIntoComposer(page,
+        bytes(bundle([sdo(B, 'Second identity')])), 'merge.json', ['dismiss', 'accept']);
+      expect(asked).toHaveLength(2);
+      expect(await settleComposerImport(page)).toBe('Bundle imported');
 
       const state = await composerState(page);
       expect(state.objects.map((o: any) => o.id).sort()).toEqual([A, B].sort());
-      expect(seen).toBe(2);
+      expect(state.objects).toHaveLength(2);
     });
 
     await test.step('a duplicate id is skipped during merge rather than overwriting', async () => {
-      let seen = 0;
-      page.on('dialog', dialog => { seen += 1; return seen === 1 ? dialog.dismiss() : dialog.accept(); });
       // Same id as A, different content: the incoming object must not win.
-      await importIntoComposer(page, bytes(bundle([sdo(A, 'CONFLICTING malware')])), 'dupe.json');
-      await expect(page.locator('#toast')).toHaveText('Bundle imported');
-      page.removeAllListeners('dialog');
+      await importIntoComposer(page,
+        bytes(bundle([sdo(A, 'CONFLICTING malware')])), 'dupe.json', ['dismiss', 'accept']);
+      expect(await settleComposerImport(page)).toBe('Bundle imported');
 
+      // Asserted AFTER completion, and on both content and count, so an unchanged object
+      // that merely predates the FileReader cannot satisfy this.
       const state = await composerState(page);
+      expect(state.objects).toHaveLength(2);
       expect(state.objects.filter((o: any) => o.id === A)).toHaveLength(1);
       expect(state.objects.find((o: any) => o.id === A).name).toBe('First malware');
     });
 
     await test.step('accepting replace discards the current bundle entirely', async () => {
-      page.on('dialog', dialog => dialog.accept());
-      await importIntoComposer(page, bytes(bundle([sdo(C, 'Replacement tool')])), 'replace.json');
-      await expect(page.locator('#toast')).toHaveText('Bundle imported');
-      page.removeAllListeners('dialog');
-
-      const state = await composerState(page);
-      expect(state.objects.map((o: any) => o.id)).toEqual([C]);
+      const asked = await importIntoComposer(page,
+        bytes(bundle([sdo(C, 'Replacement tool')])), 'replace.json', ['accept']);
+      expect(asked, 'accepting replace must not also ask about merge').toHaveLength(1);
+      expect(asked[0]).toContain('Replace');
+      expect(await settleComposerImport(page)).toBe('Bundle imported');
+      expect((await composerState(page)).objects.map((o: any) => o.id)).toEqual([C]);
     });
   });
 
@@ -179,6 +220,58 @@ test.describe('RT-10 Composer import decisions', () => {
   });
 });
 
+test.describe('RT-09 Composer lifecycle (representative, not the full field matrix)', () => {
+  test('create, edit, download, reimport in a fresh Composer and download again', async ({ page, browser }) => {
+    await openComposer(page);
+
+    // PLAIN EVIDENCE ONLY. The Composer strips [ ] { } ; " ' ` on import today, which is
+    // what the failing AF-RC-003 case proves, so punctuation-rich evidence cannot survive
+    // this flow yet. Marking the whole lifecycle as an expected failure would demonstrate
+    // no lifecycle at all, so RP-10 owns adding punctuation to this same flow once its
+    // fix lands. What is proven here is that the stages are wired end to end.
+    await importIntoComposer(page, bytes(bundle([
+      sdo(A, 'Lifecycle malware', { is_family: false, description: 'Initial description' }),
+      sdo(B, 'Lifecycle identity', { identity_class: 'organization' }),
+    ])), 'lifecycle-source.json');
+    expect(await settleComposerImport(page)).toBe('Bundle imported');
+
+    // Ordinary edit through the real editor field, not a state poke.
+    await page.evaluate(id => {
+      (eval('state') as any).ui.activeObjectId = id;
+      (window as any).renderEditor();
+    }, A);
+    const nameField = page.locator('[data-field="name"]');
+    await expect(nameField).toBeVisible();
+    await nameField.fill('Edited lifecycle malware');
+    await nameField.blur();
+
+    const edited = await composerState(page);
+    expect(edited.objects.find((o: any) => o.id === A).name).toBe('Edited lifecycle malware');
+
+    const first = await exportFromComposer(page);
+    expect(first.json.objects).toHaveLength(2);
+
+    await withFreshContext(browser, async freshPage => {
+      await openComposer(freshPage);
+      expect((await composerState(freshPage)).objects, 'fresh Composer starts empty').toEqual([]);
+
+      await importIntoComposer(freshPage, first.buffer, first.name);
+      expect(await settleComposerImport(freshPage)).toBe('Bundle imported');
+
+      const restored = await composerState(freshPage);
+      expect(restored.objects.map((o: any) => o.id).sort()).toEqual([A, B].sort());
+      expect(restored.objects.find((o: any) => o.id === A).name).toBe('Edited lifecycle malware');
+      expect(restored.objects.find((o: any) => o.id === A).description).toBe('Initial description');
+      expect(restored.objects.find((o: any) => o.id === B).identity_class).toBe('organization');
+
+      const second = await exportFromComposer(freshPage);
+      expect(second.json.objects).toHaveLength(first.json.objects.length);
+      expect(second.json.objects.map((o: any) => o.id).sort())
+        .toEqual(first.json.objects.map((o: any) => o.id).sort());
+    });
+  });
+});
+
 test.describe('RT-11 cross-page file workflows', () => {
   test('a main-editor STIX download imports into the Composer with a stated intersection', async ({ page, browser }) => {
     // Build a real bundle in the main editor, including derived graph objects.
@@ -212,23 +305,43 @@ test.describe('RT-11 cross-page file workflows', () => {
       await expect(composerPage.locator('#toast')).toHaveText('Bundle imported');
 
       const state = await composerState(composerPage);
-      const importedIds = state.objects.map((o: any) => o.id);
+      const importedIds = state.objects.map((o: any) => o.id).sort();
 
-      // DECLARED INTERSECTION: the Composer accepts objects whose type it defines. Every
-      // object it kept must be one the main editor emitted, with the same id.
-      for (const id of importedIds) expect(sourceIds).toContain(id);
+      // HAND-AUTHORED kept/lost lists for this exact fixture. The previous assertions
+      // (`lost.every(id => sourceIds.includes(id))` and a <= count) were satisfied by ANY
+      // amount of loss, including losing everything, because every lost id trivially came
+      // from the source.
+      //
+      // MEASURED, not assumed: this direction loses NOTHING for this fixture. The
+      // Composer's STIX_OBJECT_DEFS includes the SRO types, so `relationship` objects the
+      // main editor generated are accepted rather than dropped. An earlier version of
+      // this test, and the audit, described them as lost; that was speculation and it was
+      // wrong. Any future omission must be added here with a reason.
+      const EXPECTED_KEPT = [...sourceIds].sort();
+      expect(importedIds, 'kept objects').toEqual(EXPECTED_KEPT);
+      expect(sourceIds.filter((id: string) => !importedIds.includes(id)), 'lost objects')
+        .toEqual([]);
 
-      // The core SDOs survive the hop.
-      expect(importedIds).toContain(A);
-      expect(importedIds).toContain(B);
-      expect(state.objects.find((o: any) => o.id === A).name).toBe('Cross malware');
+      // The relationships are not merely present; their endpoints survive too.
+      const importedEdges = state.objects.filter((o: any) => o.type === 'relationship');
+      expect(importedEdges).toHaveLength(sourceRelationships.length);
+      const presentIds = new Set(importedIds);
+      for (const edge of importedEdges) {
+        expect(presentIds.has(edge.source_ref), `dangling source_ref ${edge.source_ref}`).toBe(true);
+        expect(presentIds.has(edge.target_ref), `dangling target_ref ${edge.target_ref}`).toBe(true);
+      }
 
-      // EXPLICIT LOSSES, not a full-graph transfer:
-      const lost = sourceIds.filter((id: string) => !importedIds.includes(id));
-      // Whatever is lost, it is never silently more than the source contained.
-      expect(lost.every((id: string) => sourceIds.includes(id))).toBe(true);
-      // Record the loss shape rather than asserting an equal object count.
-      expect(importedIds.length).toBeLessThanOrEqual(sourceIds.length);
+      // Multiplicity, not just membership: no object was duplicated by the transfer.
+      expect(new Set(importedIds).size).toBe(importedIds.length);
+      expect(state.objects).toHaveLength(EXPECTED_KEPT.length);
+
+      // Exact supported-field expectations in this direction.
+      const malware = state.objects.find((o: any) => o.id === A);
+      expect(malware.name).toBe('Cross malware');
+      expect(malware.type).toBe('malware');
+      const identity = state.objects.find((o: any) => o.id === B);
+      expect(identity.name).toBe('Cross identity');
+      expect(identity.identity_class).toBe('organization');
     });
   });
 

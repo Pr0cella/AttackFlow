@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { expect, test, type Page } from '@playwright/test';
+import { exportCsv } from './helpers/roundtrip';
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:4173';
 
@@ -40,11 +41,8 @@ async function exportFormulaCsv(page: Page) {
     },
   });
 
-  const downloadPromise = page.waitForEvent('download');
-  await page.evaluate(() => (window as any).exportCSV());
-  const filePath = await (await downloadPromise).path();
-  expect(filePath).toBeTruthy();
-  return fs.readFileSync(filePath!, 'utf8');
+  // Reuses the shared export helper so the CSV comes from the real menu control.
+  return (await exportCsv(page)).text;
 }
 
 test.describe('Import hardening', () => {
@@ -192,7 +190,6 @@ test.describe('Import hardening', () => {
   });
 
   test('relationship view only renders assigned technique links for assigned CAPECs', async ({ page }) => {
-    test.fail(true, 'Known gap AF-RC-006: relationship view includes unassigned library techniques');
     await openApp(page);
 
     const mapping = await page.evaluate(() => {
@@ -231,7 +228,12 @@ test.describe('Import hardening', () => {
     await expect(row).toBeVisible();
 
     const renderedTechniqueIds = await row.locator('.relationship-cell.attack .id.attack').allTextContents();
+
+    // Prerequisite: the ASSIGNED technique renders. That part works today, so losing it
+    // is a real regression and must not be credited to the known gap below.
     expect(renderedTechniqueIds).toContain(mapping!.assignedTechnique);
+
+    test.fail(true, 'Known gap AF-RC-006: relationship view includes unassigned library techniques');
     expect(renderedTechniqueIds).not.toContain(mapping!.unassignedTechnique);
   });
 

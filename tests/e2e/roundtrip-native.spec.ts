@@ -9,7 +9,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
 import {
-  ALL_PHASES, ASSIGNMENT_KEYS, NATIVE_EXPORT_KEYS, exportNative, expectInertRender,
+  ALL_PHASES, ASSIGNMENT_KEYS, NATIVE_EXPORT_KEYS, dispatchDragAndDrop, exportNative, expectInertRender,
   expectIsoTimestampWithin, expectNativeExportsEquivalent, expectNoExternalRequests,
   importNative, openApp, readState, withFreshContext,
 } from './helpers/roundtrip';
@@ -39,6 +39,19 @@ function stripInstanceIds(phase: any) {
   };
   for (const key of ASSIGNMENT_KEYS) visit(copy[key]);
   for (const group of copy.groups || []) visit(group.items);
+
+  // Layout entries reference the generated ids that were just stripped, so they cannot be
+  // compared against a hand-authored expectation. Rather than delete them and claim a
+  // comprehensive preservation check, assert that every entry still resolves to something
+  // present, then drop the ids. This case is a METADATA test, not a layout-order test.
+  for (const entry of copy.layout || []) {
+    if (entry.kind === 'group') {
+      expect((copy.groups || []).some((g: any) => g.groupId === entry.groupId),
+        `layout group ${entry.groupId} must exist`).toBe(true);
+    } else {
+      expect(seen.has(entry.instanceId), `layout item ${entry.instanceId} must exist`).toBe(true);
+    }
+  }
   delete copy.layout;
   return copy;
 }
@@ -216,51 +229,67 @@ test.describe('RT-02/RT-03 complete native document', () => {
   });
 });
 
+// Expected-failure convention, applied across this suite:
+//   - the marker sits INSIDE the test, immediately before the behavior that is known to
+//     be broken, so setup, upload, export and prerequisite assertions above it still
+//     count as unexpected failures rather than earning known-gap credit;
+//   - independent contracts get independent tests, so the first failure cannot hide a
+//     second one.
+
 test.describe('RT-02 native persistence gaps', () => {
-  test.fail(true, 'Known gap AF-RT-003: filters and selection are exported but never restored');
-  test('restores exported filters and selection', async ({ page, browser }) => {
-    await openApp(page);
-    await importNative(page, bytes(nativeFull()), 'rt-af-rt-003.json');
-    await page.evaluate(() => {
-      const app = eval('state');
-      app.filters = { attack: 'enterprise', capec: 'all', cwe: 'all', custom: 'all' };
-      app.selection = { type: 'attack', id: 'T1595' };
-    });
+  // AF-RT-003 covers two separable contracts. They are asserted apart so that restoring
+  // one without the other is visible rather than masked by the first failure.
+  for (const field of ['filters', 'selection'] as const) {
+    test(`restores exported ${field}`, async ({ page, browser }) => {
+      const expected = {
+        filters: { attack: 'enterprise', capec: 'all', cwe: 'all', custom: 'all' },
+        selection: { type: 'attack', id: 'T1595' },
+      }[field];
 
-    const exported = await exportNative(page);
-    expect(exported.json.filters).toEqual({ attack: 'enterprise', capec: 'all', cwe: 'all', custom: 'all' });
-    expect(exported.json.selection).toEqual({ type: 'attack', id: 'T1595' });
+      await openApp(page);
+      await importNative(page, bytes(nativeFull()), `rt-af-rt-003-${field}.json`);
+      await page.evaluate(({ key, value }) => { (eval('state') as any)[key] = value; },
+        { key: field, value: expected });
 
-    await withFreshContext(browser, async freshPage => {
-      await importNative(freshPage, exported.buffer, exported.name);
-      const restored = await readState(freshPage);
-      // Desired behavior: a value the exporter writes is a value the importer restores.
-      expect(restored.filters).toEqual(exported.json.filters);
-      expect(restored.selection).toEqual(exported.json.selection);
+      // Prerequisite: the exporter really does write the field. If this breaks, the
+      // finding has changed shape and the failure must NOT be credited to AF-RT-003.
+      const exported = await exportNative(page);
+      expect(exported.json[field]).toEqual(expected);
+
+      await withFreshContext(browser, async freshPage => {
+        await importNative(freshPage, exported.buffer, exported.name);
+        const restored = await readState(freshPage);
+
+        test.fail(true, `Known gap AF-RT-003: ${field} is exported but never restored`);
+        // Desired behavior: a value the exporter writes is a value the importer restores.
+        expect(restored[field]).toEqual(expected);
+      });
     });
-  });
+  }
 });
 
 test.describe('RT-02 view restoration', () => {
-  test.fail(true, "Known gap AF-RT-001: import allowlists 'relations' but the app and export use 'relationship'");
   test('restores the relationship view through a native round trip', async ({ page, browser }) => {
     await openApp(page);
     await importNative(page, bytes(nativeFull()), 'rt-af-rt-001.json');
     await page.evaluate(() => (window as any).setView('relationship'));
-    expect((await readState(page)).view).toBe('relationship');
 
+    // Prerequisites: the app holds the view and the exporter writes it. Both work today,
+    // so a failure here is a real regression, not the known import-allowlist gap.
+    expect((await readState(page)).view).toBe('relationship');
     const exported = await exportNative(page);
     expect(exported.json.view).toBe('relationship');
 
     await withFreshContext(browser, async freshPage => {
       await importNative(freshPage, exported.buffer, exported.name);
+
+      test.fail(true, "Known gap AF-RT-001: import allowlists 'relations' but the app and export use 'relationship'");
       expect((await readState(freshPage)).view).toBe('relationship');
     });
   });
 });
 
 test.describe('RT-15 legacy metadata keys', () => {
-  test.fail(true, 'Known gap AF-RT-002: sanitizeAssignmentMetadata ignores the legacy cves key that getCveEntries accepts');
   test('imports metadata.cves the way the rest of the app reads it', async ({ page }) => {
     await openApp(page);
     const legacy = {
@@ -275,9 +304,14 @@ test.describe('RT-15 legacy metadata keys', () => {
     };
     await importNative(page, bytes(legacy), 'rt-af-rt-002.json');
 
-    const meta = (await readState(page)).assignments['IN:exploitation'].techniques[0].metadata;
+    // Prerequisite: the document imported at all and the assignment survived. Only the
+    // CVE projection below is the known gap.
+    const assignment = (await readState(page)).assignments['IN:exploitation'].techniques[0];
+    expect(assignment.id).toBe('T1190');
+
+    test.fail(true, 'Known gap AF-RT-002: sanitizeAssignmentMetadata ignores the legacy cves key that getCveEntries accepts');
     // getCveEntries() reads `cves`; the import sanitizer is the only reader that does not.
-    expect(meta.cveEntries).toEqual([{ id: 'CVE-2024-3400', score: 10, vector: VECTOR_31 }]);
+    expect(assignment.metadata.cveEntries).toEqual([{ id: 'CVE-2024-3400', score: 10, vector: VECTOR_31 }]);
   });
 });
 
@@ -290,6 +324,47 @@ test.describe('RT-15 shipped example documents', () => {
       await importNative(page, source, name);
 
       const imported = await readState(page);
+
+      // FIRST-IMPORT ORACLE, read from the shipped file itself rather than from the
+      // already-imported state. Comparing cycle two to cycle one proves convergence but
+      // is blind to a loss that happens on the FIRST import, which is how this suite
+      // previously let `stix-demo.json` drop its legacy CVE unnoticed.
+      const sourceDoc = JSON.parse(source.toString('utf8'));
+      for (const [phaseKey, sourcePhase] of Object.entries(sourceDoc.assignments) as [string, any][]) {
+        const restored = imported.assignments[phaseKey];
+        expect(restored, `phase ${phaseKey} must exist after import`).toBeDefined();
+        for (const key of ASSIGNMENT_KEYS) {
+          const expectedIds = (sourcePhase[key] || []).map((a: any) => a.id ?? a);
+          expect(restored[key].map((a: any) => a.id), `${phaseKey}.${key} ids and order`)
+            .toEqual(expectedIds);
+        }
+        const sourceGroups = sourcePhase.groups || [];
+        expect(restored.groups.length, `${phaseKey} group count`).toBe(sourceGroups.length);
+        for (const [index, sourceGroup] of sourceGroups.entries()) {
+          expect(restored.groups[index].label, `${phaseKey} group ${index} label`)
+            .toBe(sourceGroup.label);
+          expect(restored.groups[index].items.map((i: any) => i.id), `${phaseKey} group ${index} items`)
+            .toEqual((sourceGroup.items || []).map((i: any) => i.id));
+        }
+        // Evidence the runtime preserves verbatim today: score and comments.
+        for (const key of ASSIGNMENT_KEYS) {
+          for (const [index, sourceItem] of (sourcePhase[key] || []).entries()) {
+            const sourceMeta = sourceItem.metadata || {};
+            if (typeof sourceMeta.score === 'string') {
+              expect(restored[key][index].metadata.score, `${phaseKey}.${key}[${index}] score`)
+                .toBe(sourceMeta.score);
+            }
+            if (typeof sourceMeta.comments === 'string') {
+              expect(restored[key][index].metadata.comments, `${phaseKey}.${key}[${index}] comments`)
+                .toBe(sourceMeta.comments.replace(/[\u0000-\u001F\u007F]/g, '').trim().slice(0, 2000));
+            }
+          }
+        }
+      }
+      // The whole shipped library survives; entry-level field fidelity is RP-02/RP-03.
+      expect(Object.keys(imported.customLibrary).sort())
+        .toEqual(Object.keys(sourceDoc.customLibrary || {}).sort());
+
       // Every assignment carries a full metadata object and a unique instance id.
       const instanceIds = new Set<string>();
       for (const [phaseKey, phase] of Object.entries(imported.assignments)) {
@@ -347,22 +422,6 @@ test.describe('RT-15 shipped example documents', () => {
 // group-metadata.spec.ts; this suite covers the rest of the lifecycle and the native
 // round trip that follows it, rather than duplicating those assertions.
 // ---------------------------------------------------------------------------
-
-/**
- * Dispatches the app's real dragstart and drop handlers.
- * This is deterministic dispatched drag/drop, NOT physical gesture coverage: a real
- * pointer drag is recorded as a manual check in the fixture README.
- */
-async function dispatchDrag(page: Page, cardSelector: string, targetSelector: string) {
-  await page.evaluate(({ cardSelector, targetSelector }) => {
-    const card = document.querySelector(cardSelector);
-    const target = document.querySelector(targetSelector);
-    if (!card || !target) throw new Error(`drag endpoints missing: ${cardSelector} -> ${targetSelector}`);
-    const transfer = new DataTransfer();
-    card.dispatchEvent(new DragEvent('dragstart', { bubbles: true, cancelable: true, dataTransfer: transfer }));
-    target.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: transfer }));
-  }, { cardSelector, targetSelector });
-}
 
 const cardFor = (instanceId: string) => `[draggable="true"]:has(.tag-action-btn.edit[onclick*="'${instanceId}'"])`;
 
@@ -423,7 +482,7 @@ test.describe('RT-04 group lifecycle', () => {
       await page.locator(`${recon} .phase-group[data-group-id="${GROUPS.mixed}"] .phase-group-header`).click();
 
       // itm-rt-006 (CWE-79) leaves the mixed group for the exploitation phase.
-      await dispatchDrag(page, cardFor('itm-rt-006'), exploitation);
+      await dispatchDragAndDrop(page, cardFor('itm-rt-006'), exploitation);
       const afterItemMove = await readState(page);
       expect(afterItemMove.assignments[FULL_PHASES.recon].groups[0].items.map((i: any) => i.instanceId))
         .toEqual(['itm-rt-004', 'itm-rt-005']);
@@ -434,7 +493,7 @@ test.describe('RT-04 group lifecycle', () => {
       expect(moved[0].metadata.confidence).toBe(50);
 
       // The whole repeat group moves from lateral movement to exploitation.
-      await dispatchDrag(page,
+      await dispatchDragAndDrop(page,
         `[data-phase="${FULL_PHASES.lateral}"] .phase-group[data-group-id="${GROUPS.dup}"] .phase-group-header`,
         exploitation);
       const afterGroupMove = await readState(page);
