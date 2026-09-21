@@ -319,6 +319,7 @@ Update strategy:
 
 ### Import / Export / Serialization / Validation
 
+- `exportFileName`
 - `exportJSON`
 - `buildSTIXBundle`
 - `addRelationship`

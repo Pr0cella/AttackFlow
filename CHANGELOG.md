@@ -9,6 +9,7 @@
 - **Startup Banner**: The main editor prints an AttackFlow ASCII banner with the version to the browser console on startup. Disable it with `CONFIG.console.showStartupBanner = false` in `config.js`
 
 ### Changed
+- **Export Filenames**: Downloads are now named from a fixed prefix and a UTC timestamp instead of being derived from the document title
 - **Export Contents**: JSON export no longer writes the sidebar filter state or the current entity selection. Documents that still contain the two keys import normally and the values are ignored
 
 ### Fixed

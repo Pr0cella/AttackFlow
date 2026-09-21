@@ -9,7 +9,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
 import {
-  ALL_PHASES, ASSIGNMENT_KEYS, NATIVE_EXPORT_KEYS, dispatchDragAndDrop, exportNative, expectInertRender,
+  ALL_PHASES, ASSIGNMENT_KEYS, EXPORT_NAME, NATIVE_EXPORT_KEYS, dispatchDragAndDrop, exportNative, expectInertRender,
   expectIsoTimestampWithin, expectNativeExportsEquivalent, expectNoExternalRequests,
   importNative, openApp, readState, withFreshContext,
 } from './helpers/roundtrip';
@@ -84,7 +84,7 @@ test.describe('RT-01 minimal native document', () => {
     expect(imported.hideEmpty).toBe(false);
 
     const first = await exportNative(page);
-    expect(first.name).toBe('attack-chain-export.json');
+    expect(first.name).toMatch(EXPORT_NAME.json);
     // An empty custom library must not produce an embedded bundle.
     expect(Object.keys(first.json).sort()).toEqual([...NATIVE_EXPORT_KEYS].sort());
     expect(first.json).not.toHaveProperty('stixBundle');
@@ -186,9 +186,10 @@ test.describe('RT-02/RT-03 complete native document', () => {
     const first = await exportNative(page);
 
     await test.step('first download reflects state and does not mutate it', async () => {
-      // Slug contract: runs of characters outside [A-Za-z0-9_-] collapse to one hyphen,
-      // literal hyphens in the title are kept, and trailing hyphens are trimmed.
-      expect(first.name).toBe('RT-02-Full-Native-doc-title---chain.json');
+      // Naming contract: generated from a fixed prefix and a UTC stamp. This fixture
+      // carries a punctuation-rich title, so it also shows the title reaching the
+      // document while reaching nothing in the filename.
+      expect(first.name).toMatch(EXPORT_NAME.json);
       expect(Object.keys(first.json).sort()).toEqual([...NATIVE_EXPORT_KEYS, 'stixBundle'].sort());
       expect(first.json.assignments).toEqual(expectedAssignments);
       expect(first.json.customLibrary).toEqual(expectedLibrary);

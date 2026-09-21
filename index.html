@@ -9071,11 +9071,19 @@
             showToast('Cleared all assignments');
         }
 
+        // Download names are generated, never derived from document content: a fixed
+        // prefix per export kind plus a UTC timestamp.
+        function exportFileName(prefix, extension, when = new Date()) {
+            const stamp = when.toISOString().replace(/[-:]/g, '').replace('T', '-').slice(0, 15);
+            return `${prefix}-${stamp}${extension}`;
+        }
+
         function exportJSON() {
+            const exportedAt = new Date();
             const exportData = {
                 version: APP_VERSION,
                 schema: 'killchain-export-lite',
-                exportedAt: new Date().toISOString(),
+                exportedAt: exportedAt.toISOString(),
                 title: state.title || '',
                 description: state.description || '',
                 view: state.view,
@@ -9102,8 +9110,7 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            const slug = state.title ? state.title.replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/-+$/,'').substring(0, 60) : 'attack-chain-export';
-            a.download = slug + '.json';
+            a.download = exportFileName('attackflow-export', '.json', exportedAt);
             a.click();
             URL.revokeObjectURL(url);
             showToast('Exported JSON');
@@ -9373,8 +9380,7 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            const slug = state.title ? state.title.replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/-+$/,'').substring(0, 60) : 'stix-bundle';
-            a.download = slug + '-stix-bundle.json';
+            a.download = exportFileName('stix-bundle', '.json');
             a.click();
             URL.revokeObjectURL(url);
             showToast('Exported STIX 2.1 Bundle');
@@ -10166,8 +10172,7 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            const csvSlug = state.title ? state.title.replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/-+$/,'').substring(0, 60) : 'attack-chain-export';
-            a.download = csvSlug + '.csv';
+            a.download = exportFileName('attackflow-export', '.csv');
             a.click();
             URL.revokeObjectURL(url);
             showToast('Exported CSV');

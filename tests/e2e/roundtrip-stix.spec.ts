@@ -11,7 +11,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { expect, test } from '@playwright/test';
 import {
-  UUID, clickExportControl, exportNative, exportStix, expectBundleEnvelope,
+  EXPORT_NAME, UUID, clickExportControl, exportNative, exportStix, expectBundleEnvelope,
   expectIsoTimestampWithin, expectNoDownload, expectNoExternalRequests, importNative,
   importStix, openApp, readState, withFreshContext,
 } from './helpers/roundtrip';
@@ -64,7 +64,8 @@ test.describe('RT-07 embedded and standalone STIX parity', () => {
 
     const native = await exportNative(page);
     const standalone = await exportStix(page);
-    expect(standalone.name).toBe('RT-02-Full-Native-doc-title---chain-stix-bundle.json');
+    // Generated name: the bundle prefix appears once, with no title-derived slug.
+    expect(standalone.name).toMatch(EXPORT_NAME.stix);
 
     const embedded = native.json.stixBundle;
     expect(embedded, 'a non-empty custom library must embed a bundle').toBeDefined();

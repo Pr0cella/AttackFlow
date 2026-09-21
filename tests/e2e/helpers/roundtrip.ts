@@ -120,6 +120,17 @@ export const NATIVE_EXPORT_KEYS = [
   'layers', 'hideEmpty', 'assignments', 'customLibrary',
 ] as const;
 
+/**
+ * Download names are GENERATED, never derived from document content: a fixed prefix per
+ * export kind plus a UTC `YYYYMMDD-HHMMSS` stamp. Hand-authored from index.html
+ * `exportFileName()`, and shared so every spec asserts one naming contract.
+ */
+export const EXPORT_NAME = {
+  json: /^attackflow-export-\d{8}-\d{6}\.json$/,
+  csv: /^attackflow-export-\d{8}-\d{6}\.csv$/,
+  stix: /^stix-bundle-\d{8}-\d{6}\.json$/,
+} as const;
+
 export type PhaseData = {
   techniques: any[]; capecs: any[]; cwes: any[]; customItems: any[];
   groups: any[]; layout: any[];

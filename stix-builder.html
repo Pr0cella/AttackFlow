@@ -2688,7 +2688,10 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'stix-bundle.json';
+            // Same generated-name convention as the main editor's exports: a fixed prefix
+            // plus a UTC timestamp, never anything derived from bundle content.
+            const stamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '-').slice(0, 15);
+            a.download = `stix-bundle-${stamp}.json`;
             a.click();
             URL.revokeObjectURL(url);
         }
