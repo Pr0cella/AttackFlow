@@ -10,8 +10,9 @@
 
 import { expect, test, type Page } from '@playwright/test';
 import {
-  BASE_URL, clickExportControl, exportNative, expectInertRender, expectNoDownload,
-  expectNoExternalRequests, importNative, importStix, installRequestGuard, openApp, readState,
+  BASE_URL, EXPORT_NAME, clickExportControl, exportCsv, exportNative, exportStix, expectInertRender,
+  expectNoDownload, expectNoExternalRequests, importNative, importStix, installRequestGuard,
+  openApp, readState,
 } from './helpers/roundtrip';
 import { IDS, nativeFull } from '../fixtures/roundtrip/native';
 
@@ -285,44 +286,98 @@ test.describe('RT-17 export failure paths', () => {
     expect(exported.json.customLibrary[IDS.malware].is_family).toBe(false);
   });
 
-  test('an absent or whitespace title uses the documented fallback name', async ({ page }) => {
-    await openApp(page);
-    for (const [title, expected] of [
-      ['', 'attack-chain-export.json'],
-      ['   ', 'attack-chain-export.json'],   // trimmed to empty at import, so falsy
-      ['ok name', 'ok-name.json'],
-      ['Report: "Q1" / 2026', 'Report-Q1-2026.json'],
-    ] as [string, string][]) {
-      await importNative(page, bytes({ assignments: { 'IN:reconnaissance': { techniques: [] } }, title }), 'name.json');
-      const exported = await exportNative(page);
-      expect(exported.name, `title ${JSON.stringify(title)}`).toBe(expected);
-    }
-  });
 });
 
-test.describe('RT-17 export filename gap', () => {
-  // One case per title: a loop would stop at the first title and leave the rest unproven,
-  // and the Latin and non-Latin cases fail for the same reason but matter differently.
-  // The fallback is chosen by `state.title ? slug : 'attack-chain-export'`, which tests
-  // the RAW title, not the slug. A non-empty title whose every character is stripped
-  // produces an empty slug and the download name '.json' -- a dotfile, hidden on POSIX
-  // systems and renamed inconsistently by browsers.
-  for (const title of ['***', '///...///', 'Ελληνικά', '日本語']) {
-    test(`a title of only stripped characters (${title}) falls back to a safe filename`, async ({ page }) => {
+// Download names are GENERATED, not derived from the document: a fixed prefix per export
+// kind plus a UTC timestamp. The document title reaches the file's CONTENT and nothing
+// else, so the titles below -- which once produced the dotfile '.json', a leading-hyphen
+// STIX name, or a 60-character slug -- all produce the same well-formed name as any other
+// document, and no character a user types can steer a filename.
+/** Reads the generated stamp back as an instant, so it can be bounded by the run window. */
+function stampInstant(name: string): number {
+  const parts = /(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})(\d{2})/.exec(name);
+  expect(parts, `no timestamp in ${name}`).not.toBeNull();
+  const [, y, mo, d, h, mi, s] = parts!;
+  return Date.UTC(+y, +mo - 1, +d, +h, +mi, +s);
+}
+
+/** A generated name must match its shape AND carry a timestamp from this run. */
+function expectGeneratedName(name: string, pattern: RegExp, startedAt: number) {
+  expect(name).toMatch(pattern);
+  const instant = stampInstant(name);
+  expect(instant, `${name} predates the run`).toBeGreaterThanOrEqual(startedAt - 60_000);
+  expect(instant, `${name} postdates the run`).toBeLessThanOrEqual(Date.now() + 60_000);
+}
+
+test.describe('RT-17 generated export filenames', () => {
+  test('the JSON export name is a generated prefix, a UTC stamp, and agrees with exportedAt', async ({ page }) => {
+    const startedAt = Date.now();
+    await openApp(page);
+    await importNative(page, bytes(nativeFull()), 'rt-17-name-json.json');
+
+    const exported = await exportNative(page);
+    expectGeneratedName(exported.name, EXPORT_NAME.json, startedAt);
+
+    // The name and the document's own exportedAt are built from ONE instant, so a
+    // filename can never disagree with the artifact it names.
+    const fromPayload = new Date(exported.json.exportedAt).toISOString()
+      .replace(/[-:]/g, '').replace('T', '-').slice(0, 15);
+    expect(exported.name).toBe(`attackflow-export-${fromPayload}.json`);
+  });
+
+  test('the CSV export name is a generated prefix and a UTC stamp', async ({ page }) => {
+    const startedAt = Date.now();
+    await openApp(page);
+    await importNative(page, bytes(nativeFull()), 'rt-17-name-csv.json');
+
+    const exported = await exportCsv(page);
+    expectGeneratedName(exported.name, EXPORT_NAME.csv, startedAt);
+  });
+
+  test('the STIX export name is a generated prefix and a UTC stamp', async ({ page }) => {
+    const startedAt = Date.now();
+    await openApp(page);
+    // The fixture carries a custom library, so the bundle export is actually available.
+    await importNative(page, bytes(nativeFull()), 'rt-17-name-stix.json');
+
+    const exported = await exportStix(page);
+    expectGeneratedName(exported.name, EXPORT_NAME.stix, startedAt);
+    // The old assembly appended '-stix-bundle.json' to a slug, which produced
+    // 'stix-bundle-stix-bundle.json' for an empty title. The prefix appears exactly once.
+    expect(exported.name.match(/stix-bundle/g)).toHaveLength(1);
+  });
+
+  // One case per title: a loop would stop at the first failure and leave the rest
+  // unproven, and these titles fail differently if the generator ever regresses.
+  const TITLES: [string, string][] = [
+    ['empty', ''],
+    ['whitespace', '   '],
+    ['ordinary text', 'ok name'],
+    ['punctuation', 'Report: "Q1" / 2026'],
+    ['only stripped characters', '***'],
+    ['only separators', '///...///'],
+    ['Greek', 'Ελληνικά'],
+    ['Japanese', '日本語'],
+    ['path traversal', '../../etc/passwd'],
+    // 200 is the import limit; a longer title is REJECTED at the boundary, not truncated,
+    // so the maximum accepted title is the real long-title case for filenames.
+    ['maximum length', 'x'.repeat(200)],
+  ];
+  for (const [label, title] of TITLES) {
+    test(`${label}: the title reaches the document but never the download name`, async ({ page }) => {
+      const startedAt = Date.now();
       await openApp(page);
       await importNative(page, bytes({ assignments: { 'IN:reconnaissance': { techniques: [] } }, title }), 'name.json');
 
-      // Prerequisite: the title really did survive import, so the slug is what is at
-      // fault rather than the title being dropped earlier.
-      expect((await readState(page)).title).toBe(title);
-
+      const stored = (await readState(page)).title;
       const exported = await exportNative(page);
-      // The exporter slugs the title, then appends '.json'. The fallback name is chosen
-      // only when the title is EMPTY, not when slugging empties it, so a title made
-      // entirely of stripped characters produces a bare '.json' -- which the browser in
-      // turn saves as 'json.json'.
-      test.fail(true, 'Known gap: the export filename falls back only on an empty title, not on a title that slugs to nothing');
-      expect(exported.name).toBe('attack-chain-export.json');
+
+      // The name carries no trace of the title, whatever the title was.
+      expectGeneratedName(exported.name, EXPORT_NAME.json, startedAt);
+      // ...and the title is still in the document, so naming changed, content did not.
+      // Read against stored state rather than the raw input, because the import boundary
+      // trims and length-caps titles independently of anything this patch touches.
+      expect(exported.json.title).toBe(stored);
     });
   }
 });

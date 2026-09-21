@@ -13,8 +13,8 @@
 
 import { expect, test, type Page } from '@playwright/test';
 import {
-  exportStix, expectNoDownload, expectNoExternalRequests, importNative, importStix,
-  installRequestGuard, openApp, readState, withFreshContext,
+  EXPORT_NAME, exportStix, expectNoDownload, expectNoExternalRequests, importNative,
+  importStix, installRequestGuard, openApp, readState, withFreshContext,
 } from './helpers/roundtrip';
 
 const bytes = (value: unknown) => Buffer.from(JSON.stringify(value), 'utf8');
@@ -279,7 +279,7 @@ test.describe('RT-10 Composer import decisions', () => {
     await test.step('accepting the confirm exports the bundle as-is', async () => {
       page.once('dialog', dialog => dialog.accept());
       const exported = await exportFromComposer(page);
-      expect(exported.name).toBe('stix-bundle.json');
+      expect(exported.name).toMatch(EXPORT_NAME.stix);
       expect(exported.json.objects).toHaveLength(1);
     });
   });

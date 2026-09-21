@@ -9,7 +9,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { expect, test } from '@playwright/test';
 import {
-  ALL_PHASES, exportCsv, exportNative, expectNativeExportsEquivalent, expectNoExternalRequests,
+  ALL_PHASES, EXPORT_NAME, exportCsv, exportNative, expectNativeExportsEquivalent, expectNoExternalRequests,
   dispatchDragAndDrop, importNative, importNavigatorLayer, installRequestGuard, openApp,
   readState, withFreshContext,
 } from './helpers/roundtrip';
@@ -60,7 +60,8 @@ test.describe('RT-12 CSV report projection', () => {
     await importNative(page, bytes(csvFixture()), 'rt-12-csv.json');
 
     const csv = await exportCsv(page);
-    expect(csv.name).toBe('CSV-Report-Title.csv');
+    // The download name is generated, so the document's title has no bearing on it.
+    expect(csv.name).toMatch(EXPORT_NAME.csv);
 
     const rows = parseCsvStrict(csv.buffer);
     const [titleRow, headerRow, ...dataRows] = rows;
