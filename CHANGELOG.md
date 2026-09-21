@@ -8,6 +8,9 @@
 - **Automated Test Suite**: Automated test suite is now included in the repository under `tests/`: Playwright browser tests for app loading, import validation, and security hardening, plus an import validation runner that checks every fixture against the live app
 - **Startup Banner**: The main editor prints an AttackFlow ASCII banner with the version to the browser console on startup. Disable it with `CONFIG.console.showStartupBanner = false` in `config.js`
 
+### Changed
+- **Export Contents**: JSON export no longer writes the sidebar filter state or the current entity selection. Documents that still contain the two keys import normally and the values are ignored
+
 ### Fixed
 - **Custom Object Name Preservation**: Native kill-chain imports keep custom STIX object names up to the same 200-character limit the create and edit modals allow, instead of shortening them to the 50-character label limit. Label, description and other field limits are unchanged
 - **Support Legacy CVE Metadata**: Native kill-chain imports preserve legacy `metadata.cves` entries, including CVE scores and validated CVSS vectors, and normalize them into the current metadata format

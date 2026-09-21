@@ -506,11 +506,9 @@ Initialization order:
   description: '',
   view: 'killchain'|'relationship'|'explorer'|'stix-builder',
   activeTab: 'attack'|'capec'|'cwe'|'custom',
-  filters: { attack, capec, cwe, custom },
   layers: { attack, capec, cwe, custom },
   hideEmpty: boolean,
   assignments: { [phaseKey]: PhaseData },
-  selection: { type, id },
   customLibrary: { [stixId]: StixLibraryEntry },
   stixBundle?: StixBundle
 }
