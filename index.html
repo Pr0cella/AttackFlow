@@ -10146,27 +10146,28 @@
                 rows.push(row);
             }
             
-            // Convert to CSV string
-            // Prefix cells containing formula characters with a tab character and wraps the cell content in double quotes
+            // Convert to CSV string.
+            // A cell whose first character could be read as the start of a spreadsheet
+            // formula is protected with a leading tab. The guard adds that tab and nothing
+            // else: quoting happens exactly once, in the serializer below.
+            const FORMULA_LEAD = /^[=+\-@\t\r]/;
             const sanitizeForCsv = (value) => {
                 const str = String(value);
-                // prefix with tab and wrap in quotes
-                if (/^[=+\-@\t\r]/.test(str)) {
-                    return '"' + "\t" + str + '"';
-                }
-                return str;
+                return FORMULA_LEAD.test(str) ? '\t' + str : str;
             };
             
             const csvContent = rows.map(row => 
                 row.map(cell => {
-                    // Sanitize for formula injection, then escape quotes
-                    const sanitized = sanitizeForCsv(cell);
+                    const raw = String(cell);
+                    const sanitized = sanitizeForCsv(raw);
                     const escaped = sanitized.replace(/"/g, '""');
-                    return escaped.includes(',') || escaped.includes('"') || escaped.includes('\n') 
-                        ? `"${escaped}"` 
-                        : escaped;
+                    // A protected cell is always wrapped: the quotes are what carry its
+                    // leading tab through a spreadsheet importer intact. Every other cell is
+                    // wrapped only where RFC 4180 requires it.
+                    const needsQuotes = sanitized !== raw || /[",\r\n]/.test(raw);
+                    return needsQuotes ? `"${escaped}"` : escaped;
                 }).join(',')
-            ).join('\n');
+            ).join('\r\n');
             
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);

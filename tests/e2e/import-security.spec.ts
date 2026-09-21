@@ -372,10 +372,9 @@ test.describe('Import hardening', () => {
   });
 
   test('serializes guarded CSV cells with single RFC 4180 quoting and CRLF rows', async ({ page }) => {
-    // The formula guard returns a cell that is ALREADY quoted; the serializer then escapes
-    // its quotes and wraps it again, so a standards-compliant reader recovers literal quote
-    // characters. Rows are also joined with LF rather than the CRLF RFC 4180 specifies.
-    test.fail(true, 'Known gap: a guarded cell is quoted more than once and rows end with LF, not CRLF');
+    // The guard contributes a leading tab and the serializer wraps the result exactly once.
+    // A guarded cell is always wrapped, because the quotes are what carry the tab through a
+    // spreadsheet importer intact. Rows are joined with CRLF, as RFC 4180 specifies.
     await openApp(page);
 
     const csv = await exportFormulaCsv(page);
