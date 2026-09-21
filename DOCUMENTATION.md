@@ -367,7 +367,10 @@ Export:
   - generated `relationship` SROs (`mitigates` + co-location relations)
 - `addRelationship(...)`
 - `exportSTIXBundle()`
-- `exportCSV()` with formula-injection hardening (`sanitizeForCsv` prefix guard)
+- `exportCSV()` with formula-injection hardening (`sanitizeForCsv` prefix guard). Cells
+  whose first character is `=`, `+`, `-`, `@`, tab or CR get one leading tab and are always
+  wrapped in quotes; other cells are quoted only where RFC 4180 requires. Quoting is
+  applied exactly once and records are terminated with CRLF. No UTF-8 BOM is written.
 
 Custom SDO export is descriptor-allowlisted. It preserves exact stored strings, booleans, finite integers, and cloned string lists; absent values are omitted. A populated supported property with an incompatible shape aborts either download entry point with a property-specific diagnostic. Structured descriptor types such as `kill-chain-phases` and `external-references`, optional common STIX properties, arbitrary internal fields, and `customTypeName` are not projected. Missing required properties are not synthesized, and successful projection is not a general STIX conformance check.
 
@@ -528,7 +531,9 @@ Defense-in-depth implementation in v2.9.0:
 6. **IPC allowlisting + nonce checks + channel-only messaging + throttling**.
 7. **Shared payload immutability** via deep clone + deep freeze before iframe handoff.
 8. **URL protocol allowlist** (`http`/`https`) for rendered external links.
-9. **CSV formula injection prevention** by prefixing risky leading characters.
+9. **CSV formula injection prevention** by prefixing risky leading characters, serialized
+   with a single layer of RFC 4180 quoting so the guard survives a standards-compliant
+   reader intact.
 
 ---
 

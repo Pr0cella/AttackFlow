@@ -54,6 +54,21 @@ function csvFixture() {
   };
 }
 
+/** One technique row per entry, so a cell value can be asserted by its technique id. */
+function leadFixture(comments: Record<string, string>) {
+  return {
+    title: 'CSV guard leads',
+    assignments: {
+      'IN:reconnaissance': {
+        techniques: Object.entries(comments).map(([id, text], index) => ({
+          id, instanceId: `itm-g-${index + 1}`, metadata: { score: 'high', comments: text },
+        })),
+        capecs: [], cwes: [], customItems: [], groups: [], layout: [],
+      },
+    },
+  };
+}
+
 test.describe('RT-12 CSV report projection', () => {
   test('serializes real bytes an RFC 4180 reader can parse, with documented projections', async ({ page }) => {
     await openApp(page);
@@ -135,11 +150,11 @@ test.describe('RT-12 CSV report projection', () => {
 
 });
 
-// Separate describes: test.fail() applies to every test in its block, so a known gap must
-// never share a block with tests that are expected to pass. Row endings and cell quoting
-// are also separate CONTRACTS, split so that fixing one does not mask the other.
+// Record endings and cell quoting are separate CONTRACTS, kept in separate blocks so that
+// a partial fix cannot satisfy both. They were split apart while both were open defects;
+// RP-08 fixed them together and the split stays as regression structure.
 
-test.describe('RT-12 CSV row-ending gap', () => {
+test.describe('RT-12 CSV record endings', () => {
   test('ends records with CRLF as RFC 4180 requires', async ({ page }) => {
     await openApp(page);
     await importNative(page, bytes(csvFixture()), 'rt-12-crlf.json');
@@ -160,34 +175,94 @@ test.describe('RT-12 CSV row-ending gap', () => {
     const lineFeeds = (csv.text.match(/\n/g) || []).length;
     const pairs = (csv.text.match(/\r\n/g) || []).length;
 
-    // Rows are joined with LF. RFC 4180 specifies CRLF, and `\r` is also missing from the
-    // exporter's needs-quoting test, so a cell containing one is written unquoted.
-    test.fail(true, 'Known gap: records are terminated with LF instead of the CRLF RFC 4180 requires');
     expect(lineFeeds, 'every LF must be the tail of a CRLF pair').toBe(pairs);
     expect(pairs === records - 1 || pairs === records,
       `CRLF delimiters (${pairs}) must terminate all ${records} records`).toBe(true);
   });
 });
 
-test.describe('RT-12 CSV guarded-cell gap', () => {
+test.describe('RT-12 CSV guarded cells', () => {
   test('guards a formula-leading cell with exactly one layer of quoting', async ({ page }) => {
     await openApp(page);
     await importNative(page, bytes(csvFixture()), 'rt-12-guard.json');
     const csv = await exportCsv(page);
 
     // Prerequisite: the bytes decode at all, and the guarded row is present. If this
-    // breaks, the failure is NOT the known quoting defect.
+    // breaks, the failure is not about quoting.
     const rows = parseCsvStrict(csv.buffer);
     const row = rows.find(r => r[1] === 'T1041');
     expect(row, 'the guarded technique row must exist').toBeDefined();
 
-    // The formula guard returns an already-quoted string; the serializer then doubles the
-    // quotes it contains and wraps the result again, so the reader recovers a cell with
-    // literal quote characters around the analyst's text.
-    test.fail(true, 'Known gap: the formula guard pre-quotes the cell and the serializer quotes it again');
-    // Desired: the guard adds one leading tab inside a single layer of quoting, so a
-    // standard reader recovers exactly tab + the original text, with no stray quotes.
+    // The guard contributes one leading tab and the serializer quotes the result exactly
+    // once, so a reader recovers tab + the original text with no stray quote characters.
     expect(row![6]).toBe('\t=SUM(A1:A2), "quoted", semi;colon');
+
+    // Byte-level companion to the decoded assertion above. The previous serializer wrapped
+    // an already-quoted guard twice more and wrote `"""<tab>=...`.
+    expect(csv.text, 'a guarded cell must not be wrapped more than once').not.toContain('"""\t');
+  });
+
+  test('guards every formula lead an analyst can author and leaves other text unchanged', async ({ page }) => {
+    // `=`, `+`, `-` and `@` are the leads a document can actually carry: every import and
+    // UI write path strips control characters, so the guard's tab and CR leads are not
+    // reachable from here and are probed separately below.
+    const cells: Record<string, string> = {
+      T1595: '=cmd|\' /C calc\'!A0',
+      T1041: '+1+1',
+      T1078: '-1+1',
+      T1105: '@SUM(A1)',
+      T1190: 'ordinary text',
+      T1566: 'comma, separated',
+      T1499: 'has "quotes"',
+    };
+
+    await openApp(page);
+    await importNative(page, bytes(leadFixture(cells)), 'rt-12-leads.json');
+    const rows = parseCsvStrict((await exportCsv(page)).buffer);
+    const byId = new Map(rows.map(r => [r[1], r]));
+
+    for (const [id, text] of Object.entries(cells)) {
+      const guarded = /^[=+\-@]/.test(text);
+      // Exact value: a guarded cell gains one tab and nothing else; every other cell is
+      // returned character for character, separators and quotes included.
+      expect(byId.get(id)?.[6], `${id} comment cell`).toBe(guarded ? `\t${text}` : text);
+    }
+  });
+
+  test('quotes control-character cells that only direct state manipulation can produce', async ({ page }) => {
+    // Tab and CR are in the guard's lead set and `\r` must force quoting, or a stray CR
+    // would terminate a record early. No supported route can put either in a cell, because
+    // both the importer and the UI commit path strip control characters, so this writes
+    // state directly - the only way to execute that branch at all. It is a boundary probe
+    // for defence in depth, not a claim that a document can reach this state.
+    await openApp(page);
+    await importNative(page, bytes(leadFixture({ T1595: 'placeholder' })), 'rt-12-control.json');
+
+    await page.evaluate(() => {
+      // `state` is a module-level const, not a window property; the suite reaches it the
+      // same way `readState` does.
+      const app = eval('state');
+      const phase = app.assignments['IN:reconnaissance'];
+      phase.techniques[0].metadata.comments = '\tleading tab';
+      phase.techniques.push(
+        { id: 'T1041', instanceId: 'itm-g-91', metadata: { score: 'high', comments: '\rleading cr' } },
+        { id: 'T1078', instanceId: 'itm-g-92', metadata: { score: 'high', comments: 'embedded\rcr' } },
+      );
+    });
+
+    const csv = await exportCsv(page);
+    const rows = parseCsvStrict(csv.buffer);
+    const byId = new Map(rows.map(r => [r[1], r]));
+
+    expect(byId.get('T1595')?.[6]).toBe('\t\tleading tab');
+    expect(byId.get('T1041')?.[6]).toBe('\t\rleading cr');
+    // Not a formula lead, so no tab is added - but the CR still forces quoting.
+    expect(byId.get('T1078')?.[6]).toBe('embedded\rcr');
+
+    // A CR that escaped quoting would split its record, leaving rows narrower than the
+    // header. Width is the assertion that catches it.
+    const [, headerRow, ...dataRows] = rows;
+    for (const row of dataRows) expect(row).toHaveLength(headerRow.length);
   });
 });
 
