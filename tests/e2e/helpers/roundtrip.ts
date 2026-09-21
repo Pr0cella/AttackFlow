@@ -368,40 +368,25 @@ export function expectBundleEnvelope(bundle: any, label: string) {
  *              corrupted spec_version is caught. Multiplicity is checked before matching
  *              so a duplicated edge cannot disappear into a set.
  *
- * The comparison is STRICT about the transient group `editing` flag by default: any group
- * carrying that key fails unless the caller names its exact phase/group path, and the
- * value `true` is never tolerated at any path. Only the group-lifecycle test declares a
- * path, because only it performs a rename. Once the app stops writing the flag, that
- * declaration is removed and this stays as an ordinary regression.
+ * The transient group `editing` flag may never appear in an export at all: the rename
+ * lifecycle removes the key when a rename commits or cancels, so there is no allowed path
+ * and no normalization for it.
  */
-export type NativeCompareOptions = {
-  /** Exact `phaseKey/groupId` paths permitted to carry the transient `editing: false`. */
-  editingLeakPaths?: readonly string[];
-};
-
 export function expectNativeExportsEquivalent(
-  first: any, second: any, startedAt: number, options: NativeCompareOptions = {},
+  first: any, second: any, startedAt: number,
 ) {
   expectNativeEnvelope(first, startedAt, 'first export');
   expectNativeEnvelope(second, startedAt, 'second export');
 
-  // `editing` is a transient rename flag: commitRenameGroup() sets it to false instead of
-  // deleting the key, and the exporter serializes the assignment tree verbatim, so a
-  // UI-only flag with no place in the document schema reaches the downloaded file. The
-  // importer drops it again, so it may appear in a
-  // first export and never in later ones. Each occurrence is ASSERTED here -- allowed
-  // path, and value exactly false -- before it is excluded, so an unexpected leak, a new
-  // leaking group, or a flag left at `true` fails instead of being normalized away.
-  const allowedEditingPaths = new Set(options.editingLeakPaths || []);
+  // `editing` is a UI-only rename flag with no place in the document schema. The rename
+  // lifecycle deletes the key on commit and on cancel, and the exporter serializes the
+  // assignment tree verbatim, so a group carrying it in a downloaded document is a
+  // regression -- at any path, with any value -- rather than something to normalize.
   const auditEditing = (doc: any, label: string) => {
     for (const [phaseKey, phase] of Object.entries(doc.assignments || {}) as [string, any][]) {
       for (const group of phase?.groups || []) {
-        if (!Object.prototype.hasOwnProperty.call(group, 'editing')) continue;
-        const path = `${phaseKey}/${group.groupId}`;
-        expect(allowedEditingPaths.has(path),
-          `${label}: undeclared transient 'editing' flag at ${path}`).toBe(true);
-        expect(group.editing,
-          `${label}: 'editing' must never be true at ${path}`).toBe(false);
+        expect(Object.prototype.hasOwnProperty.call(group, 'editing'),
+          `${label}: transient 'editing' flag at ${phaseKey}/${group.groupId}`).toBe(false);
       }
     }
   };
@@ -412,12 +397,6 @@ export function expectNativeExportsEquivalent(
     const copy = JSON.parse(JSON.stringify(doc));
     delete copy.exportedAt;   // validated above
     delete copy.stixBundle;   // compared below
-    // Only the paths asserted immediately above are excluded, never `editing` at large.
-    for (const [phaseKey, phase] of Object.entries(copy.assignments || {}) as [string, any][]) {
-      for (const group of phase?.groups || []) {
-        if (allowedEditingPaths.has(`${phaseKey}/${group.groupId}`)) delete group.editing;
-      }
-    }
     return copy;
   };
   expect(strip(second)).toEqual(strip(first));
