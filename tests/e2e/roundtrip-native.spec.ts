@@ -590,8 +590,8 @@ test.describe('RT-04 group lifecycle', () => {
 
     const recon = `[data-phase="${FULL_PHASES.recon}"]`;
     const exploitation = `[data-phase="${FULL_PHASES.exploitation}"]`;
-    // The one group this test renames, and so the ONLY group permitted to carry the
-    // transient `editing` flag. Captured here because the id is generated at runtime.
+    // The one group this test renames. Captured here because the id is generated at
+    // runtime, and checked below to prove a completed rename leaves no trace in state.
     let renamedGroupId = '';
 
     await test.step('create a group through the real control and rename it', async () => {
@@ -614,8 +614,9 @@ test.describe('RT-04 group lifecycle', () => {
         return eval('state').assignments[key].groups.find((g: any) => g.groupId === id);
       }, { key: FULL_PHASES.recon, id: created });
       expect(group.label).toBe('Renamed "group" <x> & --y');
-      // Rename leaves a transient UI flag in state; it must not reach the restored document.
-      expect(group.editing).toBe(false);
+      // A committed rename removes the transient UI flag rather than parking it at false,
+      // so it cannot reach a document. Absence is what the renderer reads as "not editing".
+      expect(Object.prototype.hasOwnProperty.call(group, 'editing')).toBe(false);
       await expect(page.locator(`${recon} .phase-group[data-group-id="${created}"] .phase-group-title`))
         .toHaveText('Renamed "group" <x> & --y');
     });
@@ -679,19 +680,21 @@ test.describe('RT-04 group lifecycle', () => {
     const first = await exportNative(page);
     await expectInertRender(page, errors);
 
-    await test.step('the transient rename flag leaks into the export but not back in', async () => {
-      // commitRenameGroup() sets editing=false instead of deleting the key, and
-      // exportJSON() serializes state.assignments verbatim, so a UI-only flag with no
-      // place in the document schema reaches the downloaded file.
+    await test.step('no transient rename flag reaches the export', async () => {
+      // The renamed group is in the export with its new label and nothing else added:
+      // the rename lifecycle deletes its UI flag, so the document schema stays clean.
       const exportedGroups = first.json.assignments[FULL_PHASES.recon].groups;
       const renamed = exportedGroups.find((g: any) => g.groupId === renamedGroupId);
       expect(renamed, 'the renamed group is in the export').toBeDefined();
       expect(renamed.label).toBe('Renamed "group" <x> & --y');
-      expect(Object.prototype.hasOwnProperty.call(renamed, 'editing')).toBe(true);
-      expect(renamed.editing).toBe(false);
-      // Groups that were never renamed in this session carry no such flag.
-      const untouched = exportedGroups.find((g: any) => g.groupId === GROUPS.empty);
-      expect(Object.prototype.hasOwnProperty.call(untouched, 'editing')).toBe(false);
+      expect(Object.prototype.hasOwnProperty.call(renamed, 'editing')).toBe(false);
+      // Neither does any other group, renamed this session or not.
+      for (const phase of Object.values(first.json.assignments) as any[]) {
+        for (const group of phase.groups || []) {
+          expect(Object.prototype.hasOwnProperty.call(group, 'editing'),
+            `exported group ${group.groupId} carries the transient flag`).toBe(false);
+        }
+      }
     });
 
     await test.step('the edited document restores with usable group controls', async () => {
@@ -699,21 +702,14 @@ test.describe('RT-04 group lifecycle', () => {
         await importNative(freshPage, first.buffer, first.name);
         const restored = await readState(freshPage);
 
-        // The transient rename flag is dropped by the importer; nothing else changes,
-        // so the document converges to a clean shape on the second cycle.
-        // The expectation drops the flag at the ONE asserted path, not wherever it is
-        // found: a leak at any other group must fail rather than be normalized away.
+        // Nothing about the edited state needs normalizing any more: the rename lifecycle
+        // leaves no transient flag behind, so the round trip is compared as-is and a flag
+        // appearing at ANY group -- in the source state or the restored document -- fails.
         const expected = JSON.parse(JSON.stringify(edited));
         for (const [phaseKey, phase] of Object.entries(expected.assignments) as [string, any][]) {
           for (const group of phase.groups) {
-            const leaks = Object.prototype.hasOwnProperty.call(group, 'editing');
-            if (phaseKey === FULL_PHASES.recon && group.groupId === renamedGroupId) {
-              expect(leaks, 'the renamed group carries the flag').toBe(true);
-              expect(group.editing).toBe(false);
-              delete group.editing;
-            } else {
-              expect(leaks, `unexpected 'editing' flag at ${phaseKey}/${group.groupId}`).toBe(false);
-            }
+            expect(Object.prototype.hasOwnProperty.call(group, 'editing'),
+              `edited state keeps an 'editing' flag at ${phaseKey}/${group.groupId}`).toBe(false);
           }
         }
         expect(restored.assignments).toEqual(expected.assignments);
@@ -727,11 +723,9 @@ test.describe('RT-04 group lifecycle', () => {
         // Convergence is measured on the untouched restored document, before the
         // usability probe below mutates it.
         const second = await exportNative(freshPage);
-        // The first export carries the transient flag at exactly one declared path; the
-        // second must not, and no other group may carry it in either artifact.
-        expectNativeExportsEquivalent(first.json, second.json, startedAt, {
-          editingLeakPaths: [`${FULL_PHASES.recon}/${renamedGroupId}`],
-        });
+        // Neither artifact may carry the transient flag, so the comparator runs with no
+        // declared exception at all.
+        expectNativeExportsEquivalent(first.json, second.json, startedAt);
 
         // Restored controls still work: rename and collapse are both live.
         const group = freshPage.locator(`[data-phase="${FULL_PHASES.recon}"] .phase-group[data-group-id="${GROUPS.mixed}"]`);
@@ -741,6 +735,12 @@ test.describe('RT-04 group lifecycle', () => {
         await freshPage.locator(`#group-rename-${GROUPS.mixed}`).press('Escape');
         // Escape cancels the rename and re-renders; wait for the input to go before clicking.
         await expect(freshPage.locator(`#group-rename-${GROUPS.mixed}`)).toHaveCount(0);
+        // A cancelled rename removes the flag too, so the label is untouched and the
+        // group is left exactly as clean as a group that was never renamed.
+        const cancelled = await freshPage.evaluate(({ key, id }) =>
+          eval('state').assignments[key].groups.find((g: any) => g.groupId === id),
+          { key: FULL_PHASES.recon, id: GROUPS.mixed });
+        expect(Object.prototype.hasOwnProperty.call(cancelled, 'editing')).toBe(false);
 
         const collapsedIn = (target: typeof freshPage) => target.evaluate(({ key, id }) =>
           eval('state').assignments[key].groups.find((g: any) => g.groupId === id).collapsed,
@@ -750,6 +750,79 @@ test.describe('RT-04 group lifecycle', () => {
         expect(await collapsedIn(freshPage), 'restored collapse control still toggles').toBe(!before);
       });
     });
+  });
+});
+
+test.describe('RT-04 export during an active rename', () => {
+  // While a rename is open the group really does carry `editing: true`, so the question
+  // is whether that state can reach a downloaded file. It cannot through the real UI:
+  // exportJSON() is reachable only from the export control, and clicking it blurs the
+  // rename input, which commits the rename and removes the flag before the document is
+  // serialized. No export-time filtering is needed, and this case is what says so.
+  test('commits the rename and writes no transient flag', async ({ page }) => {
+    await openApp(page);
+    await importNative(page, bytes(nativeFull()), 'rt-04-active-rename.json');
+
+    // createGroup() opens the rename input immediately, so this leaves a live flag.
+    await page.locator(`[data-phase="${FULL_PHASES.recon}"] .phase-group-btn`).first().click();
+    const created = await page.evaluate(key => {
+      const groups = eval('state').assignments[key].groups;
+      return groups[groups.length - 1].groupId;
+    }, FULL_PHASES.recon);
+    const input = page.locator(`#group-rename-${created}`);
+    await expect(input).toBeVisible();
+    await input.fill('Renamed mid-export');
+
+    // Prerequisite: the flag is genuinely true at this moment, so the export below is
+    // exercising the reachable hostile case rather than an already-clean state.
+    const during = await page.evaluate(({ key, id }) =>
+      eval('state').assignments[key].groups.find((g: any) => g.groupId === id).editing,
+      { key: FULL_PHASES.recon, id: created });
+    expect(during).toBe(true);
+
+    const exported = await exportNative(page);
+
+    // The click committed the rename on its way to the exporter: the typed label is in
+    // the file, the flag is in neither the file nor the live state, and the input is gone.
+    const group = exported.json.assignments[FULL_PHASES.recon].groups
+      .find((g: any) => g.groupId === created);
+    expect(group, 'the new group is in the export').toBeDefined();
+    expect(group.label).toBe('Renamed mid-export');
+    expect(Object.prototype.hasOwnProperty.call(group, 'editing')).toBe(false);
+    for (const phase of Object.values(exported.json.assignments) as any[]) {
+      for (const g of phase.groups || []) {
+        expect(Object.prototype.hasOwnProperty.call(g, 'editing'),
+          `exported group ${g.groupId} carries the transient flag`).toBe(false);
+      }
+    }
+    await expect(input).toHaveCount(0);
+
+    const after = await page.evaluate(({ key, id }) =>
+      eval('state').assignments[key].groups.find((g: any) => g.groupId === id),
+      { key: FULL_PHASES.recon, id: created });
+    expect(after.label).toBe('Renamed mid-export');
+    expect(Object.prototype.hasOwnProperty.call(after, 'editing')).toBe(false);
+  });
+
+  test('an imported file cannot force a group into rename mode', async ({ page }) => {
+    // The flag is UI state, so a file claiming it is untrusted input. The importer
+    // rebuilds each group from known fields only, so the key never reaches state and a
+    // document cannot leave a group stuck rendering an editable input instead of a title.
+    const document = nativeFull() as any;
+    document.assignments[FULL_PHASES.recon].groups[0].editing = true;
+
+    await openApp(page);
+    await importNative(page, bytes(document), 'rt-04-imported-editing.json');
+
+    const groupId = document.assignments[FULL_PHASES.recon].groups[0].groupId;
+    const restored = await page.evaluate(({ key, id }) =>
+      eval('state').assignments[key].groups.find((g: any) => g.groupId === id),
+      { key: FULL_PHASES.recon, id: groupId });
+    expect(Object.prototype.hasOwnProperty.call(restored, 'editing')).toBe(false);
+
+    const group = page.locator(`[data-phase="${FULL_PHASES.recon}"] .phase-group[data-group-id="${groupId}"]`);
+    await expect(group.locator('.phase-group-title')).toHaveCount(1);
+    await expect(page.locator(`#group-rename-${groupId}`)).toHaveCount(0);
   });
 });
 

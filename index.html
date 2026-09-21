@@ -4743,7 +4743,7 @@
             if (!phaseData) return;
             const group = (phaseData.groups || []).find(g => g.groupId === groupId);
             if (!group) return;
-            group.editing = false;
+            delete group.editing;
             if (!cancel) {
                 const sanitized = sanitizeForStorage(value || '', 80).trim();
                 group.label = sanitized || 'New Group';

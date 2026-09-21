@@ -20,6 +20,7 @@
 - **CVSS Tooltip Injection**: Fixed an issue where malicious text appended to a CVSS vector could inject HTML attributes into a vulnerability tooltip
 - **Group ID Injection**: Fixed an issue where malicious group IDs in imported files could run JavaScript when users interacted with such a group. Invalid or duplicate IDs are now replaced, and group controls handle IDs safely
 - **Group Rename Cancel**: Fixed group renaming so pressing Escape cancels the edit without saving it
+- **Transient Rename State**: Finishing or cancelling a group rename now clears the internal rename flag instead of keeping it, so it no longer appears in exported JSON documents
 - **STIX Property Export**: STIX bundle export and the bundle embedded in JSON export now preserve stored properties correctly
 - **Export Value Validation**: Incompatible value shapes now stop the download and report the affected property instead of omitting them
 - **Input Preservation**: Main-editor typing and kill-chain/STIX imports now preserve punctuation, repeated hyphens and STIX pattern characters
