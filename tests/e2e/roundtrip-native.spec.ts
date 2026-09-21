@@ -236,39 +236,97 @@ test.describe('RT-02/RT-03 complete native document', () => {
 //   - independent contracts get independent tests, so the first failure cannot hide a
 //     second one.
 
-test.describe('RT-02 native persistence gaps', () => {
-  // The exporter writes `filters` and `selection` into every document, and no import path
-  // ever reads them back, so both are written and silently discarded.
-  //
-  // They are two separable contracts, asserted apart, so that restoring one without the
-  // other is visible rather than masked by whichever fails first.
-  for (const field of ['filters', 'selection'] as const) {
-    test(`restores exported ${field}`, async ({ page, browser }) => {
-      const expected = {
-        filters: { attack: 'enterprise', capec: 'all', cwe: 'all', custom: 'all' },
-        selection: { type: 'attack', id: 'T1595' },
-      }[field];
+// `filters` and `selection` are session-only UI state: which library entries the sidebar
+// is listing, and which entry the analyst currently has open. Neither belongs to the
+// document, so neither is written into an export. Earlier versions did write both keys and
+// no import path ever read them back; a document that still carries them imports normally
+// with the values ignored, so the new session keeps its own defaults.
+//
+// The two keys are separate contracts, asserted apart, so dropping one without the other
+// is visible rather than masked by whichever fails first.
+const DEFAULT_FILTERS = { attack: 'all', capec: 'all', cwe: 'all', custom: 'all' };
+const NO_SELECTION = { type: null, id: null };
 
-      await openApp(page);
-      await importNative(page, bytes(nativeFull()), `rt-persistence-${field}.json`);
-      await page.evaluate(({ key, value }) => { (eval('state') as any)[key] = value; },
-        { key: field, value: expected });
+test.describe('RT-02 session-only UI state', () => {
+  test('the export omits the sidebar filter state', async ({ page, browser }) => {
+    await openApp(page);
+    await importNative(page, bytes(nativeFull()), 'rt-session-filters.json');
 
-      // Prerequisite: the exporter really does write the field. If this breaks, the gap has
-      // changed shape and the failure must NOT be credited to the known restore gap.
-      const exported = await exportNative(page);
-      expect(exported.json[field]).toEqual(expected);
+    // The imported document restores its own active tab (this fixture carries 'capec'),
+    // so each filter is set on its own tab, reached through the real tab control.
+    await expect(page.locator('.sidebar-tab.capec')).toHaveClass(/active/);
+    await page.locator('#filter-capec .filter-btn[data-filter="meta"]').click();
+    await page.locator('.sidebar-tab.attack').click();
+    await page.locator('#filter-attack .filter-btn[data-filter="enterprise"]').click();
 
-      await withFreshContext(browser, async freshPage => {
-        await importNative(freshPage, exported.buffer, exported.name);
-        const restored = await readState(freshPage);
+    // Prerequisite: the controls really did change the live filter state, so a failure
+    // below is about the export, not about the clicks.
+    expect((await readState(page)).filters)
+      .toEqual({ attack: 'enterprise', capec: 'meta', cwe: 'all', custom: 'all' });
 
-        test.fail(true, `Known gap: ${field} is written into the export and never read back on import`);
-        // Desired behavior: a value the exporter writes is a value the importer restores.
-        expect(restored[field]).toEqual(expected);
-      });
+    const exported = await exportNative(page);
+    expect(Object.prototype.hasOwnProperty.call(exported.json, 'filters')).toBe(false);
+
+    await withFreshContext(browser, async freshPage => {
+      await importNative(freshPage, exported.buffer, exported.name);
+      const restored = await readState(freshPage);
+
+      // The new session starts at its own defaults and the document still arrives intact.
+      expect(restored.filters).toEqual(DEFAULT_FILTERS);
+      expect(restored.title).toBe(TITLE);
     });
-  }
+  });
+
+  test('the export omits the current entity selection', async ({ page, browser }) => {
+    await openApp(page);
+    await importNative(page, bytes(nativeFull()), 'rt-session-selection.json');
+
+    // Selected the way an analyst selects: open the tab, search the library, click the
+    // result. The tab click is needed because the document restores its own active tab.
+    await page.locator('.sidebar-tab.attack').click();
+    await page.fill('#search-attack', 'T1595');
+    const entity = page.locator('#list-attack .entity-item').first();
+    await expect(entity).toBeVisible();
+    const selectedId = await entity.getAttribute('data-entity-id');
+    await entity.click();
+
+    // Prerequisite: the click selected the entity and opened its detail panel.
+    expect((await readState(page)).selection).toEqual({ type: 'attack', id: selectedId });
+    await expect(page.locator('#detail-panel')).toHaveClass(/visible/);
+
+    const exported = await exportNative(page);
+    expect(Object.prototype.hasOwnProperty.call(exported.json, 'selection')).toBe(false);
+
+    await withFreshContext(browser, async freshPage => {
+      await importNative(freshPage, exported.buffer, exported.name);
+
+      // Nothing is selected in the new session, and no detail panel is forced open.
+      expect((await readState(freshPage)).selection).toEqual(NO_SELECTION);
+      await expect(freshPage.locator('#detail-panel')).not.toHaveClass(/visible/);
+    });
+  });
+
+  test('a document still carrying both keys imports with session defaults', async ({ page }) => {
+    // Older exports carry both keys, and a hostile file can put anything in them. Nothing
+    // reads them, so valid, malformed and poisoned values alike never reach live state.
+    // The poison key is injected at the wire level, because a `__proto__` key in an object
+    // literal would set a prototype instead of surviving into the JSON text.
+    const document = JSON.stringify({
+      ...nativeFull(),
+      filters: { attack: 'enterprise', capec: 'meta', cwe: 42, custom: ['all'] },
+      selection: { type: 'constructor', id: { toString: 'not-a-string' } },
+    }).replace('"filters":{', '"filters":{"__proto__":{"polluted":true},');
+    expect(document).toContain('"__proto__"');
+
+    await openApp(page);
+    await importNative(page, Buffer.from(document, 'utf8'), 'rt-session-legacy.json');
+
+    const restored = await readState(page);
+    expect(restored.filters).toEqual(DEFAULT_FILTERS);
+    expect(restored.selection).toEqual(NO_SELECTION);
+    expect(restored.title).toBe(TITLE);
+    expect(await page.evaluate(() => (Object.prototype as any).polluted)).toBeUndefined();
+  });
 });
 
 test.describe('RT-02 view restoration', () => {

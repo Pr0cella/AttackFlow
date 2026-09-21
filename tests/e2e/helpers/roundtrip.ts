@@ -117,7 +117,7 @@ export const ASSIGNMENT_KEYS = ['techniques', 'capecs', 'cwes', 'customItems'] a
 // custom library and is therefore not part of the unconditional key set.
 export const NATIVE_EXPORT_KEYS = [
   'version', 'schema', 'exportedAt', 'title', 'description', 'view', 'activeTab',
-  'filters', 'layers', 'hideEmpty', 'assignments', 'selection', 'customLibrary',
+  'layers', 'hideEmpty', 'assignments', 'customLibrary',
 ] as const;
 
 export type PhaseData = {

@@ -8,6 +8,9 @@
 - **Automated Test Suite**: Automated test suite is now included in the repository under `tests/`: Playwright browser tests for app loading, import validation, and security hardening, plus an import validation runner that checks every fixture against the live app
 - **Startup Banner**: The main editor prints an AttackFlow ASCII banner with the version to the browser console on startup. Disable it with `CONFIG.console.showStartupBanner = false` in `config.js`
 
+### Changed
+- **Export Contents**: JSON export no longer writes the sidebar filter state or the current entity selection. Documents that still contain the two keys import normally and the values are ignored
+
 ### Fixed
 - **Group Assignment Preservation**: Deleting a group now keeps STIX assignments in the correct phase array with their metadata and instance IDs intact, including through JSON export/import. Invalid item or layout data stops deletion before any assignments are moved
 - **Framework Record ID Validation**: Fixed an issue where IDs in internal framework data would not be validated correctly. ATT&CK, CAPEC, and CWE records now require matching dictionary keys before caching or sharing, and list/search controls handle IDs safely
