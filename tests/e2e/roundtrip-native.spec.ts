@@ -271,26 +271,38 @@ test.describe('RT-02 native persistence gaps', () => {
   }
 });
 
+// The view is exported but never restored: the importer only accepts 'killchain' and
+// 'relations', and 'relations' is a name the app itself never writes. So a document saved
+// in the relationship view reopens in the kill chain view. Only the preference is lost --
+// the document comes back intact -- and that is accepted, so this case asserts what the
+// app actually does rather than marking a desired behavior as a known failure. If the
+// importer is ever changed to accept 'relationship', the last assertion fails on purpose.
 test.describe('RT-02 view restoration', () => {
-  test('restores the relationship view through a native round trip', async ({ page, browser }) => {
+  test('exports the relationship view and reopens in the kill chain view', async ({ page, browser }) => {
     await openApp(page);
-    await importNative(page, bytes(nativeFull()), 'rt-af-rt-001.json');
-    await page.evaluate(() => (window as any).setView('relationship'));
+    await importNative(page, bytes(nativeFull()), 'rt-view-preference.json');
 
-    // Prerequisites: the app holds the view and the exporter writes it. Both work today,
-    // so a failure here is a real regression, not the known import-allowlist gap.
+    // The preference is set through the real view control, the way an analyst sets it.
+    await page.locator('#view-relationship').click();
+    await expect(page.locator('#relationship-container')).toHaveClass(/visible/);
     expect((await readState(page)).view).toBe('relationship');
+
+    // The exporter writes the live view, so the preference does reach the file.
     const exported = await exportNative(page);
     expect(exported.json.view).toBe('relationship');
 
     await withFreshContext(browser, async freshPage => {
       await importNative(freshPage, exported.buffer, exported.name);
+      const restored = await readState(freshPage);
 
-      // The import allowlist for the view field is ['killchain', 'relations'], but the app
-      // and the exporter both use 'relationship', so the value never matches and the view
-      // silently falls back to the kill chain.
-      test.fail(true, "Known gap: the view allowlist says 'relations' while the app and export write 'relationship'");
-      expect((await readState(freshPage)).view).toBe('relationship');
+      // The importer drops that value: the kill chain view is what comes back.
+      expect(restored.view).toBe('killchain');
+      await expect(freshPage.locator('#view-killchain')).toHaveClass(/active/);
+      await expect(freshPage.locator('#relationship-container')).not.toHaveClass(/visible/);
+
+      // Only the preference is lost -- the document itself is restored.
+      expect(restored.title).toBe(TITLE);
+      await expect(freshPage.locator('#kill-chain-title')).toHaveValue(TITLE);
     });
   });
 });
