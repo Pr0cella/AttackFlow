@@ -25,15 +25,11 @@ test.describe('STIX Builder hardening', () => {
       });
     });
 
-    // Prerequisite: the sanitizer ran and returned an object at all. Only the pattern
-    // projection below is the known gap, so a null result here is unexpected.
     expect(indicator, 'sanitizeImportedObject returned nothing').toBeTruthy();
     expect(indicator.type).toBe('indicator');
 
-    // The Composer's import sanitizer removes [ ] { } ; " ' ` from every string it
-    // accepts. A STIX pattern is built almost entirely from those characters, so a valid
-    // indicator arrives as unparseable text rather than being rejected or preserved.
-    test.fail(true, 'Known gap: import sanitization removes the bracket and quote characters a STIX pattern is made of');
+    // A STIX pattern is built almost entirely from brackets and quotes. Import keeps evidence
+    // text verbatim and leaves encoding to the output sinks.
     expect(indicator.pattern).toBe("[ipv4-addr:value = '192.0.2.1']");
   });
 
@@ -276,5 +272,333 @@ test.describe('STIX Builder hardening', () => {
 
     await latitude.fill('');
     expect(await page.evaluate(() => (window as any).getActiveObject().latitude)).toBeNull();
+  });
+});
+
+// EVIDENCE IS KEPT VERBATIM; STRUCTURAL VALUES ARE VALIDATED, NEVER REWRITTEN.
+//
+// Evidence text (names, descriptions, patterns, list items, reference fields, dictionary
+// values) keeps every printable character, and each output sink encodes for its own
+// context. Keys, identifiers, kill-chain values, selectors and timestamps follow a fixed
+// grammar: an invalid one rejects the whole imported file, is refused by the editor, and
+// is reported by validation. Typing guards are not relied on anywhere, so the editor cases
+// write values the way a user bypassing them would.
+test.describe('Composer evidence and structural values', () => {
+  const T0 = '2026-01-01T00:00:00.000Z';
+  const EVIDENCE = 'Quote "q" \'a\' [b] {c} ; <x> & `t` \\ back';
+  const PATTERN = "[file:size > 10 AND file:name = 'a--b.exe'] OR [domain-name:value = 'x.example']";
+  const HOSTILE = '"><img src="x" data-injected="1" onerror="window.__evidenceCanary = 1">';
+  const ENTITY = 'literal &lt;b&gt; &amp; &quot;';
+
+  const stixId = (type: string, hex: string) =>
+    `${type}--${hex.repeat(8)}-${hex.repeat(4)}-4${hex.repeat(3)}-8${hex.repeat(3)}-${hex.repeat(12)}`;
+  const sdo = (type: string, hex: string, extra: Record<string, unknown> = {}) => ({
+    type, spec_version: '2.1', id: stixId(type, hex), created: T0, modified: T0, ...extra,
+  });
+  const sco = (type: string, hex: string, extra: Record<string, unknown> = {}) => ({
+    type, spec_version: '2.1', id: stixId(type, hex), ...extra,
+  });
+  const TLP = stixId('marking-definition', 'f');
+
+  let uploads = 0;
+  async function uploadBundle(page: Page, objects: unknown[]) {
+    const dialogs: string[] = [];
+    const onDialog = (dialog: any) => { dialogs.push(dialog.message()); dialog.accept(); };
+    page.on('dialog', onDialog);
+    try {
+      await page.locator('#toast').evaluate((element) => { element.textContent = ''; });
+      await page.locator('#bundle-file').setInputFiles({
+        name: `upload-${++uploads}.json`,
+        mimeType: 'application/json',
+        buffer: Buffer.from(JSON.stringify({
+          type: 'bundle', id: stixId('bundle', 'e'), spec_version: '2.1', objects,
+        }), 'utf8'),
+      });
+      await expect(page.locator('#toast')).not.toBeEmpty();
+    } finally {
+      page.off('dialog', onDialog);
+    }
+    return { toast: (await page.locator('#toast').textContent()) || '', dialogs };
+  }
+
+  const bundleState = (page: Page) => page.evaluate(() => JSON.stringify((eval('state') as any).bundle));
+  const objectState = (page: Page, id: string) => page.evaluate(
+    (objectId) => JSON.parse(JSON.stringify((eval('state') as any).objectsById.get(objectId))), id,
+  );
+
+  test('imports punctuation-rich evidence verbatim and renders it only as text', async ({ page }) => {
+    await openBuilder(page);
+    await page.evaluate(() => { (window as any).__evidenceCanary = 0; });
+
+    const indicator = sdo('indicator', 'a', {
+      name: EVIDENCE, description: HOSTILE, pattern: PATTERN, pattern_type: 'stix', valid_from: T0,
+      labels: [EVIDENCE, ENTITY, HOSTILE],
+      external_references: [{
+        source_name: EVIDENCE, description: HOSTILE, external_id: ENTITY,
+        url: 'https://example.test/path?q=1&r=two',
+      }],
+    });
+    const process = sco('process', 'b', { environment_variables: { PATH: EVIDENCE, HOME: HOSTILE } });
+    const { toast } = await uploadBundle(page, [indicator, process]);
+    expect(toast).toBe('Bundle imported');
+
+    const stored = await objectState(page, indicator.id);
+    expect(stored.name).toBe(EVIDENCE);
+    expect(stored.description).toBe(HOSTILE);
+    expect(stored.pattern).toBe(PATTERN);
+    expect(stored.labels).toEqual([EVIDENCE, ENTITY, HOSTILE]);
+    expect(stored.external_references[0]).toMatchObject({
+      source_name: EVIDENCE, description: HOSTILE, external_id: ENTITY,
+      url: 'https://example.test/path?q=1&r=two',
+    });
+    expect((await objectState(page, process.id)).environment_variables).toEqual({ PATH: EVIDENCE, HOME: HOSTILE });
+
+    // The editor shows the stored text exactly: attributes are encoded once, not stripped,
+    // and literal entity text stays literal.
+    const shown = await page.evaluate(() => {
+      const panel = document.getElementById('editor-panel')!;
+      const read = (selector: string) => Array.from(panel.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(selector))
+        .map((element) => element.value);
+      return {
+        name: read('[data-field="name"]'),
+        pattern: read('[data-field="pattern"]'),
+        labels: read('input[data-list-field="labels"]'),
+        references: read('input[data-ref-field="external_references"]'),
+      };
+    });
+    expect(shown.name).toEqual([EVIDENCE]);
+    expect(shown.pattern).toEqual([PATTERN]);
+    expect(shown.labels).toEqual([EVIDENCE, ENTITY, HOSTILE]);
+    expect(shown.references).toEqual([EVIDENCE, HOSTILE, 'https://example.test/path?q=1&r=two', ENTITY]);
+
+    await page.locator('#type-tabs .tab', { hasText: /^SCO$/ }).click();
+    await page.locator('#object-list .object-item', { hasText: process.id }).click();
+    const dictionaryValues = await page.locator('#editor-panel [data-dict-role="value"]').evaluateAll(
+      (inputs) => inputs.map((input) => (input as HTMLInputElement).value),
+    );
+    expect(dictionaryValues.sort()).toEqual([EVIDENCE, HOSTILE].sort());
+
+    for (const input of await page.locator('#editor-panel input, #editor-panel textarea').all()) {
+      await input.focus();
+    }
+    await page.evaluate(async () => {
+      await Promise.all(Array.from(document.images).map((img) => (
+        img.complete ? null : new Promise((resolve) => {
+          img.addEventListener('load', resolve, { once: true });
+          img.addEventListener('error', resolve, { once: true });
+        })
+      )));
+    });
+    expect(await page.locator('[data-injected]').count(), 'imported markup became elements').toBe(0);
+    expect(await page.evaluate(() => (window as any).__evidenceCanary), 'an injected handler ran').toBe(0);
+  });
+
+  test('a keystroke in the editor commits the displayed evidence unchanged', async ({ page }) => {
+    await openBuilder(page);
+    const identity = sdo('identity', 'c', { name: EVIDENCE });
+    expect((await uploadBundle(page, [identity])).toast).toBe('Bundle imported');
+
+    const name = page.locator('#editor-panel [data-field="name"]');
+    await name.click();
+    await page.keyboard.press('End');
+    await page.keyboard.type('Z');
+    expect((await objectState(page, identity.id)).name).toBe(`${EVIDENCE}Z`);
+  });
+
+  test('typing and pasting punctuation into evidence fields stores it verbatim', async ({ page }) => {
+    await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+    await openBuilder(page);
+    await page.locator('#add-type').selectOption('indicator');
+    await page.locator('#add-object').click();
+
+    const typed = `[a:b = 'c']; {x} "y" <z> \\ \``;
+    await page.locator('#editor-panel [data-field="name"]').pressSequentially(typed);
+    await page.locator('#editor-panel [data-field="pattern"]').pressSequentially(PATTERN);
+
+    await page.evaluate((text) => navigator.clipboard.writeText(text), EVIDENCE);
+    await page.locator('#editor-panel [data-field="description"]').focus();
+    await page.keyboard.press('ControlOrMeta+V');
+
+    const stored = await page.evaluate(() => {
+      const object = (window as any).getActiveObject();
+      return { name: object.name, pattern: object.pattern, description: object.description };
+    });
+    expect(stored).toEqual({ name: typed, pattern: PATTERN, description: EVIDENCE });
+  });
+
+  // One case per structural value class. The first object in each file is valid, so a
+  // partial import would be visible as a changed bundle.
+  const INVALID_STRUCTURAL = [
+    { label: 'dictionary key', field: 'environment_variables', object: sco('process', '1', { environment_variables: { 'BAD[KEY]': 'x' } }) },
+    { label: 'hash key', field: 'hashes', object: sco('file', '2', { name: 'a.exe', hashes: { 'SHA 256': 'ab' } }) },
+    { label: 'extension key', field: 'extensions', object: sco('file', '3', { name: 'a.exe', extensions: { 'ntfs"ext': { k: 'v' } } }) },
+    { label: 'kill chain name', field: 'kill_chain_phases', object: sdo('malware', '4', { name: 'm', is_family: false, kill_chain_phases: [{ kill_chain_name: 'Mitre Attack', phase_name: 'execution' }] }) },
+    { label: 'kill chain phase', field: 'kill_chain_phases', object: sdo('malware', '5', { name: 'm', is_family: false, kill_chain_phases: [{ kill_chain_name: 'mitre-attack', phase_name: 'exec[ution]' }] }) },
+    { label: 'non-string kill chain value', field: 'kill_chain_phases', object: sdo('malware', '6', { name: 'm', is_family: false, kill_chain_phases: [{ kill_chain_name: 5, phase_name: 'execution' }] }) },
+    { label: 'granular marking selector', field: 'granular_markings', object: sdo('identity', '7', { name: 'i', granular_markings: [{ selectors: ['description]'], marking_ref: TLP }] }) },
+    { label: 'granular marking ref', field: 'granular_markings', object: sdo('identity', '8', { name: 'i', granular_markings: [{ selectors: ['description'], marking_ref: 'marking-definition--nope' }] }) },
+    { label: 'object ref', field: 'object_refs', object: sdo('report', '9', { name: 'r', published: T0, object_refs: ['identity--"bad"'] }) },
+    { label: 'identifier field', field: 'created_by_ref', object: sdo('identity', 'a', { name: 'i', created_by_ref: 'identity--x" onmouseover="1' }) },
+    { label: 'timestamp field', field: 'valid_from', object: sdo('indicator', 'b', { name: 'n', pattern: '[x:y = 1]', pattern_type: 'stix', valid_from: 'Jan 1 2026' }) },
+    { label: 'created timestamp', field: 'created', object: { ...sdo('identity', 'c', { name: 'i' }), created: '2026-01-01 00:00:00' } },
+    { label: 'impossible calendar date', field: 'modified', object: { ...sdo('identity', 'f', { name: 'i' }), modified: '2026-02-30T00:00:00Z' } },
+  ];
+
+  for (const { label, field, object } of INVALID_STRUCTURAL) {
+    test(`rejects the whole file for an invalid ${label}, leaving the current bundle untouched`, async ({ page }) => {
+      await openBuilder(page);
+      expect((await uploadBundle(page, [sdo('identity', 'd', { name: 'Existing' })])).toast).toBe('Bundle imported');
+      const before = await bundleState(page);
+
+      const { toast, dialogs } = await uploadBundle(page, [sdo('identity', 'e', { name: 'Valid first' }), object]);
+
+      expect(toast).toMatch(/^Import failed: object 2 /);
+      expect(toast).toContain(field);
+      expect(dialogs, 'a rejected file must not ask to replace anything').toEqual([]);
+      expect(await bundleState(page)).toBe(before);
+    });
+  }
+
+  test('keeps valid structural values exactly, including selectors with list indexes', async ({ page }) => {
+    await openBuilder(page);
+    const identity = sdo('identity', '1', {
+      name: 'Marked', created: '2026-01-01T00:00:00.123456Z', created_by_ref: stixId('identity', '2'),
+      external_references: [{ source_name: 'src', url: 'https://example.test/' }],
+      granular_markings: [{ selectors: ['description', 'external_references.[0].url'], marking_ref: TLP }],
+    });
+    const malware = sdo('malware', '3', {
+      name: 'm', is_family: false, kill_chain_phases: [{ kill_chain_name: 'mitre-attack', phase_name: 'initial-access' }],
+    });
+    const file = sco('file', '4', {
+      name: 'a.exe', hashes: { 'SHA-256': 'ab', x_custom_hash: 'cd' }, extensions: { 'ntfs-ext': { sid: 'S-1-5' } },
+    });
+    const process = sco('process', '5', { environment_variables: { Path_Var_1: 'C:\\x', 'X-Mailer': 'y' } });
+
+    expect((await uploadBundle(page, [identity, malware, file, process])).toast).toBe('Bundle imported');
+    const storedIdentity = await objectState(page, identity.id);
+    expect(storedIdentity.created).toBe('2026-01-01T00:00:00.123456Z');
+    expect(storedIdentity.created_by_ref).toBe(stixId('identity', '2'));
+    expect(storedIdentity.granular_markings).toEqual([{ selectors: ['description', 'external_references.[0].url'], marking_ref: TLP }]);
+    expect((await objectState(page, malware.id)).kill_chain_phases).toEqual([{ kill_chain_name: 'mitre-attack', phase_name: 'initial-access' }]);
+    const storedFile = await objectState(page, file.id);
+    expect(storedFile.hashes).toEqual({ 'SHA-256': 'ab', x_custom_hash: 'cd' });
+    expect(storedFile.extensions).toEqual({ 'ntfs-ext': { sid: 'S-1-5' } });
+    expect((await objectState(page, process.id)).environment_variables).toEqual({ Path_Var_1: 'C:\\x', 'X-Mailer': 'y' });
+  });
+
+  // The editor stores '' for structural fields that are not filled in yet: required refs and
+  // timestamps of a new object, an added kill-chain or ref row. Import must treat those as
+  // absent, as it always has, or the Composer could not reopen its own work in progress.
+  test('reimports its own bundle while structural fields are still unfilled', async ({ page }) => {
+    await openBuilder(page);
+    const add = async (type: string) => {
+      await page.locator('#add-type').selectOption(type);
+      await page.locator('#add-object').click();
+    };
+    await add('relationship');
+    await add('indicator');
+    await add('malware');
+    await page.locator('#editor-panel [data-action="add-kc"]').click();
+    await add('report');
+    await page.locator('#editor-panel [data-action="add-list"][data-list-field="object_refs"]').click();
+
+    const source = await page.evaluate(() => JSON.parse(JSON.stringify((eval('state') as any).bundle.objects)));
+    expect(source.find((o: any) => o.type === 'relationship').source_ref).toBe('');
+    expect(source.find((o: any) => o.type === 'malware').kill_chain_phases).toEqual([{ kill_chain_name: 'unified-kill-chain', phase_name: '' }]);
+    expect(source.find((o: any) => o.type === 'report').object_refs).toEqual(['']);
+
+    // Validation reports the unfilled required fields, so export asks before downloading.
+    page.once('dialog', (dialog) => dialog.accept());
+    const [download] = await Promise.all([page.waitForEvent('download'), page.locator('#export-bundle').click()]);
+    const fs = require('node:fs');
+    const exported = JSON.parse(fs.readFileSync((await download.path())!, 'utf8'));
+
+    await openBuilder(page);
+    const { toast } = await uploadBundle(page, exported.objects);
+    expect(toast).toBe('Bundle imported');
+    const byType = async (type: string) => objectState(page, source.find((o: any) => o.type === type).id);
+    expect(Object.prototype.hasOwnProperty.call(await byType('relationship'), 'source_ref')).toBe(false);
+    expect(Object.prototype.hasOwnProperty.call(await byType('indicator'), 'valid_from')).toBe(false);
+    expect((await byType('malware')).kill_chain_phases).toEqual([]);
+    expect((await byType('report')).object_refs).toEqual([]);
+  });
+
+  test('the editor refuses invalid structural values without relying on typing guards', async ({ page }) => {
+    await openBuilder(page);
+    // Writing .value and dispatching input is exactly what a user bypassing any keyboard
+    // guard can do, so the commit path itself must refuse the value.
+    const bypass = (selector: string, value: string) => page.locator(selector).first().evaluate((element, text) => {
+      (element as HTMLInputElement).value = text;
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+    }, value);
+    const invalid = (selector: string) => page.locator(selector).first().getAttribute('aria-invalid');
+
+    await page.locator('#add-type').selectOption('process');
+    await page.locator('#add-object').click();
+    await page.locator('#editor-panel [data-action="add-dict"][data-dict-field="environment_variables"]').click();
+    const keyInput = '#editor-panel [data-dict-field="environment_variables"][data-dict-role="key"]';
+    const readKeys = () => page.evaluate(() => Object.keys((window as any).getActiveObject().environment_variables || {}));
+    const generatedKeys = await readKeys();
+    expect(generatedKeys).toHaveLength(1);
+
+    for (const bad of ['BAD[KEY]', 'a"b', '__proto__', 'x'.repeat(251)]) {
+      await bypass(keyInput, bad);
+      expect(await readKeys(), `dictionary key ${bad.slice(0, 20)} was committed`).toEqual(generatedKeys);
+      expect(await invalid(keyInput)).toBe('true');
+    }
+    await bypass(keyInput, 'GOOD_KEY-1');
+    expect(await readKeys()).toEqual(['GOOD_KEY-1']);
+    expect(await invalid(keyInput)).toBeNull();
+
+    await page.locator('#add-type').selectOption('identity');
+    await page.locator('#add-object').click();
+    const readIdentity = () => page.evaluate(() => {
+      const object = (window as any).getActiveObject();
+      return { created_by_ref: object.created_by_ref ?? null, created: object.created };
+    });
+    const original = await readIdentity();
+
+    await bypass('#editor-panel [data-field="created_by_ref"]', 'identity--x" onmouseover="1');
+    await bypass('#editor-panel [data-field="created"]', 'Jan 1 2026');
+    expect(await readIdentity()).toEqual(original);
+    expect(await invalid('#editor-panel [data-field="created_by_ref"]')).toBe('true');
+    expect(await invalid('#editor-panel [data-field="created"]')).toBe('true');
+
+    const ref = stixId('identity', '6');
+    await bypass('#editor-panel [data-field="created_by_ref"]', ref);
+    expect((await readIdentity()).created_by_ref).toBe(ref);
+    expect(await invalid('#editor-panel [data-field="created_by_ref"]')).toBeNull();
+
+    // One selector per line; every line must be a valid selector or nothing is committed.
+    await page.locator('#editor-panel [data-action="add-gm"]').click();
+    const selectorBox = '#editor-panel [data-gm-key="selectors"]';
+    const readSelectors = () => page.evaluate(() => (window as any).getActiveObject().granular_markings[0].selectors);
+    await bypass(selectorBox, 'description\nexternal_references.[0].url');
+    expect(await readSelectors()).toEqual(['description', 'external_references.[0].url']);
+    await bypass(selectorBox, 'description\nbad]');
+    expect(await readSelectors()).toEqual(['description', 'external_references.[0].url']);
+    expect(await invalid(selectorBox)).toBe('true');
+  });
+
+  test('validation reports invalid structural values that reached state by another route', async ({ page }) => {
+    await openBuilder(page);
+    const issues = await page.evaluate(({ tlp }) => {
+      (window as any).addObject('identity');
+      const object = (window as any).getActiveObject();
+      object.name = 'Direct';
+      object.created = 'Jan 1 2026';
+      object.created_by_ref = 'nope';
+      object.granular_markings = [{ selectors: ['bad]'], marking_ref: tlp }];
+      object.external_references = [{ source_name: 's', hashes: { 'bad key': 'x' } }];
+      return (window as any).validateBundle() as string[];
+    }, { tlp: TLP });
+
+    const id = await page.evaluate(() => (window as any).getActiveObject().id);
+    expect(issues).toEqual(expect.arrayContaining([
+      `identity ${id} invalid created timestamp`,
+      `identity ${id} invalid created_by_ref`,
+      `identity ${id} invalid granular_markings selector`,
+      `identity ${id} invalid external_references key`,
+    ]));
   });
 });

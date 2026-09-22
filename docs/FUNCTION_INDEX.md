@@ -460,11 +460,11 @@ Update strategy:
 - `createSafeObject`
 - `hasOwn`
 - `parseJsonSafe`
-- `stripAngleBracketsFromJson`
-- `sanitizeUserInputText`
+- `copyJsonWithoutDangerousKeys`
 - `sanitizeImportedString`
-- `applyInputGuards`
-- `isTextInputElement`
+- `isValidStructuralValue`
+- `requireStructuralValue`
+- `requireStructuralValueOrEmpty`
 - `isSafeHttpUrl`
 
 ### Object Model / Editor / Renderers
@@ -517,6 +517,10 @@ Update strategy:
 - `sanitizeBundleForVisualizer`
 - `renderVisualizer`
 - `validateBundle`
+- `validateStructuralValues`
+- `getEditableFields`
+- `getStructuralFieldType`
+- `setInputValidity`
 - `hasValue`
 - `validateObjectFields`
 - `sanitizeValue`

@@ -362,6 +362,8 @@
 
         .field-input textarea { min-height: 70px; resize: vertical; }
 
+        .field-input [aria-invalid="true"] { border-color: var(--danger); }
+
         .inline-actions {
             display: flex;
             gap: 6px;
@@ -931,8 +933,6 @@
         const esc = (str) => InputSecurity.escapeHtml(str);
         const escAttr = (str) => InputSecurity.sanitizeAttr(str);
 
-        const BLOCKED_INPUT_CHARS = new Set(['<', '>', '[', ']', '{', '}', '"', "'", '`', ';']);
-
         function showToast(message) {
             const toast = document.getElementById('toast');
             toast.textContent = message;
@@ -1274,65 +1274,69 @@
             });
         }
 
-        function stripAngleBracketsFromJson(obj) {
-            if (Array.isArray(obj)) return obj.map(stripAngleBracketsFromJson);
+        function copyJsonWithoutDangerousKeys(obj) {
+            if (Array.isArray(obj)) return obj.map(copyJsonWithoutDangerousKeys);
             if (obj && typeof obj === 'object') {
                 const out = createSafeObject();
                 Object.entries(obj).forEach(([k, v]) => {
                     if (isDangerousObjectKey(k)) return;
-                    out[k] = stripAngleBracketsFromJson(v);
+                    out[k] = copyJsonWithoutDangerousKeys(v);
                 });
                 return out;
             }
-            if (typeof obj === 'string') return obj.replace(/</g, '&lt;').replace(/>/g, '&gt;');
             return obj;
         }
 
-        function sanitizeUserInputText(text) {
-            let value = InputSecurity.normalize(text, INPUT_LIMITS.maxStringLength);
-            value = value.replace(/[\[\]\{\};"'`]/g, '');
-            return value;
-        }
-
+        // Evidence text keeps every printable character; each output sink encodes for its own
+        // context. Only control characters, surrounding whitespace and excess length go.
         function sanitizeImportedString(str, maxLength = INPUT_LIMITS.maxStringLength) {
             if (str === null || str === undefined) return '';
             if (typeof str !== 'string') return '';
-            return String(str)
+            return str
                 .replace(/[\x00-\x1F\x7F]/g, '')
-                .replace(/[\[\]\{\};"'`]/g, '')
-                .replace(/</g, '&lt;').replace(/>/g, '&gt;')
                 .trim()
                 .slice(0, maxLength);
         }
 
-        function applyInputGuards() {
-            document.addEventListener('keydown', (e) => {
-                if (!isTextInputElement(e.target)) return;
-                if (BLOCKED_INPUT_CHARS.has(e.key)) e.preventDefault();
-            });
-            document.addEventListener('beforeinput', (e) => {
-                if (!isTextInputElement(e.target)) return;
-                if (!e.data) return;
-                for (const ch of e.data) {
-                    if (BLOCKED_INPUT_CHARS.has(ch)) {
-                        e.preventDefault();
-                        return;
-                    }
+        // Structural values (keys, identifiers, kill-chain values, marking selectors,
+        // timestamps) follow a fixed grammar. They are validated, never rewritten: an invalid
+        // one rejects an imported file, is refused by the editor and is reported by validation.
+        const STRUCTURAL_PATTERNS = {
+            key: /^[A-Za-z0-9_-]{1,250}$/,
+            'kill-chain': /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+            selector: /^[a-z0-9_]+(?:\.(?:\[\d+\]|[a-z0-9_]+))*$/,
+            timestamp: /^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?Z$/
+        };
+
+        function isValidStructuralValue(kind, value) {
+            if (typeof value !== 'string') return false;
+            switch (kind) {
+                case 'identifier':
+                    return ACTIVE_STIX_ID_PATTERN.test(value);
+                case 'key':
+                    return STRUCTURAL_PATTERNS.key.test(value) && !isDangerousObjectKey(value);
+                case 'timestamp': {
+                    if (!STRUCTURAL_PATTERNS.timestamp.test(value)) return false;
+                    // Date.parse rolls impossible dates forward (Feb 30 -> Mar 2), so the parsed
+                    // instant must reproduce the same calendar fields.
+                    const parsed = Date.parse(value);
+                    return !Number.isNaN(parsed) && new Date(parsed).toISOString().slice(0, 19) === value.slice(0, 19);
                 }
-            });
-            document.addEventListener('paste', (e) => {
-                if (!isTextInputElement(e.target)) return;
-                const text = (e.clipboardData || window.clipboardData)?.getData('text') || '';
-                const sanitized = sanitizeUserInputText(text);
-                if (sanitized !== text) {
-                    e.preventDefault();
-                    document.execCommand('insertText', false, sanitized);
-                }
-            });
+                default:
+                    return !!STRUCTURAL_PATTERNS[kind] && STRUCTURAL_PATTERNS[kind].test(value);
+            }
         }
 
-        function isTextInputElement(el) {
-            return el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
+        function requireStructuralValue(kind, value, where) {
+            if (!isValidStructuralValue(kind, value)) throw new Error(`${where} is invalid`);
+            return value;
+        }
+
+        // The editor stores '' for a structural field that is not filled in yet (new objects,
+        // added rows, cleared inputs), so import treats '' as absent exactly as it always
+        // has. Any other value must be valid.
+        function requireStructuralValueOrEmpty(kind, value, where) {
+            return value === '' ? '' : requireStructuralValue(kind, value, where);
         }
 
         function isSafeHttpUrl(url) {
@@ -1696,10 +1700,10 @@
                 case 'number':
                     return `<input type="number" data-field="${key}" data-type="${field.type}" value="${InputSecurity.encodeHtmlEntities(value ?? '')}" ${roAttr}>`;
                 case 'timestamp':
-                    return `<input type="text" data-field="${key}" data-type="timestamp" value="${escAttr(value || '')}" placeholder="2026-02-19T12:00:00Z" ${roAttr}>`;
+                    return `<input type="text" data-field="${key}" data-type="timestamp" value="${InputSecurity.encodeHtmlEntities(value || '')}" placeholder="2026-02-19T12:00:00Z" ${roAttr}>`;
                 case 'identifier':
                     return `<div class="inline-actions">
-                        <input type="text" data-field="${key}" data-type="identifier" value="${escAttr(value || '')}" ${roAttr}>
+                        <input type="text" data-field="${key}" data-type="identifier" value="${InputSecurity.encodeHtmlEntities(value || '')}" ${roAttr}>
                         <button class="mini-btn" data-action="regen-id">Regenerate</button>
                     </div>`;
                 case 'enum':
@@ -1728,7 +1732,7 @@
                 case 'marking-definition':
                     return renderMarkingDefinitionField(obj, key, value || {});
                 default:
-                    return `<input type="text" data-field="${key}" data-type="string" value="${escAttr(value || '')}" ${roAttr}>`;
+                    return `<input type="text" data-field="${key}" data-type="string" value="${InputSecurity.encodeHtmlEntities(value || '')}" ${roAttr}>`;
             }
         }
 
@@ -1737,7 +1741,7 @@
             return `
                 <select data-field="${key}" data-type="enum">
                     <option value="">Select...</option>
-                    ${options.map((opt) => `<option value="${escAttr(opt)}" ${opt === value ? 'selected' : ''}>${esc(opt)}</option>`).join('')}
+                    ${options.map((opt) => `<option value="${InputSecurity.encodeHtmlEntities(opt)}" ${opt === value ? 'selected' : ''}>${esc(opt)}</option>`).join('')}
                 </select>
             `;
         }
@@ -1746,9 +1750,9 @@
             const options = field.vocabulary ? resolveVocabulary(field.vocabulary) : [];
             const listId = `list-${key}`;
             return `
-                <input type="text" data-field="${key}" data-type="open-vocab" list="${listId}" value="${escAttr(value || '')}">
+                <input type="text" data-field="${key}" data-type="open-vocab" list="${listId}" value="${InputSecurity.encodeHtmlEntities(value || '')}">
                 <datalist id="${listId}">
-                    ${options.map((opt) => `<option value="${escAttr(opt)}"></option>`).join('')}
+                    ${options.map((opt) => `<option value="${InputSecurity.encodeHtmlEntities(opt)}"></option>`).join('')}
                 </datalist>
             `;
         }
@@ -1758,8 +1762,8 @@
             const options = field.vocabulary ? resolveVocabulary(field.vocabulary) : [];
             const items = (values || []).map((item, index) => {
                 const input = field.type === 'list:open-vocab'
-                    ? `<input type="text" data-list-field="${key}" data-index="${index}" list="${listId}" value="${escAttr(item || '')}">`
-                    : `<input type="text" data-list-field="${key}" data-index="${index}" value="${escAttr(item || '')}">`;
+                    ? `<input type="text" data-list-field="${key}" data-index="${index}" list="${listId}" value="${InputSecurity.encodeHtmlEntities(item || '')}">`
+                    : `<input type="text" data-list-field="${key}" data-index="${index}" value="${InputSecurity.encodeHtmlEntities(item || '')}">`;
                 return `
                     <div class="list-item">
                         ${input}
@@ -1773,7 +1777,7 @@
                     ${items || '<div class="empty">No items yet.</div>'}
                     <button class="mini-btn" data-action="add-list" data-list-field="${key}">Add Item</button>
                 </div>
-                ${options.length ? `<datalist id="${listId}">${options.map((opt) => `<option value="${escAttr(opt)}"></option>`).join('')}</datalist>` : ''}
+                ${options.length ? `<datalist id="${listId}">${options.map((opt) => `<option value="${InputSecurity.encodeHtmlEntities(opt)}"></option>`).join('')}</datalist>` : ''}
             `;
         }
 
@@ -1782,7 +1786,7 @@
             const listId = `refs-${key}-${Math.random().toString(36).slice(2, 7)}`;
             const items = (values || []).map((item, index) => `
                 <div class="list-item">
-                    <input type="text" data-list-field="${key}" data-index="${index}" list="${listId}" value="${escAttr(item || '')}">
+                    <input type="text" data-list-field="${key}" data-index="${index}" list="${listId}" value="${InputSecurity.encodeHtmlEntities(item || '')}">
                     <button class="mini-btn danger" data-action="remove-list" data-list-field="${key}" data-index="${index}">Remove</button>
                 </div>
             `).join('');
@@ -1792,7 +1796,7 @@
                     <button class="mini-btn" data-action="add-list" data-list-field="${key}">Add Ref</button>
                 </div>
                 <datalist id="${listId}">
-                    ${options.map((id) => `<option value="${escAttr(id)}"></option>`).join('')}
+                    ${options.map((id) => `<option value="${InputSecurity.encodeHtmlEntities(id)}"></option>`).join('')}
                 </datalist>
             `;
         }
@@ -1800,10 +1804,10 @@
         function renderKillChainField(key, values) {
             const items = (values || []).map((item, index) => {
                 const chainOptions = Object.keys(ACTIVE_STIX_KILL_CHAIN_PHASES).map((kc) =>
-                    `<option value="${escAttr(kc)}" ${kc === item.kill_chain_name ? 'selected' : ''}>${esc(kc)}</option>`
+                    `<option value="${InputSecurity.encodeHtmlEntities(kc)}" ${kc === item.kill_chain_name ? 'selected' : ''}>${esc(kc)}</option>`
                 ).join('');
                 const phaseOptions = (ACTIVE_STIX_KILL_CHAIN_PHASES[item.kill_chain_name] || []).map((p) =>
-                    `<option value="${escAttr(p)}" ${p === item.phase_name ? 'selected' : ''}>${esc(p)}</option>`
+                    `<option value="${InputSecurity.encodeHtmlEntities(p)}" ${p === item.phase_name ? 'selected' : ''}>${esc(p)}</option>`
                 ).join('');
                 return `
                     <div class="list-item">
@@ -1827,10 +1831,10 @@
             const items = (values || []).map((item, index) => `
                 <div class="list-item">
                     <div>
-                        <input type="text" data-ref-field="${key}" data-index="${index}" data-ref-key="source_name" placeholder="source_name" value="${escAttr(item.source_name || '')}">
-                        <input type="text" data-ref-field="${key}" data-index="${index}" data-ref-key="description" placeholder="description" value="${escAttr(item.description || '')}">
-                        <input type="text" data-ref-field="${key}" data-index="${index}" data-ref-key="url" placeholder="url" value="${escAttr(item.url || '')}">
-                        <input type="text" data-ref-field="${key}" data-index="${index}" data-ref-key="external_id" placeholder="external_id" value="${escAttr(item.external_id || '')}">
+                        <input type="text" data-ref-field="${key}" data-index="${index}" data-ref-key="source_name" placeholder="source_name" value="${InputSecurity.encodeHtmlEntities(item.source_name || '')}">
+                        <input type="text" data-ref-field="${key}" data-index="${index}" data-ref-key="description" placeholder="description" value="${InputSecurity.encodeHtmlEntities(item.description || '')}">
+                        <input type="text" data-ref-field="${key}" data-index="${index}" data-ref-key="url" placeholder="url" value="${InputSecurity.encodeHtmlEntities(item.url || '')}">
+                        <input type="text" data-ref-field="${key}" data-index="${index}" data-ref-key="external_id" placeholder="external_id" value="${InputSecurity.encodeHtmlEntities(item.external_id || '')}">
                         ${renderReferenceHashesField(key, index, item.hashes || {})}
                     </div>
                     <button class="mini-btn danger" data-action="remove-ref" data-ref-field="${key}" data-index="${index}">Remove</button>
@@ -1850,8 +1854,8 @@
             const items = entries.map(([k, v], idx) => `
                 <div class="list-item">
                     <div>
-                        <input type="text" data-refhash-field="${fieldKey}" data-ref-root="${refKey}" data-ref-index="${index}" data-index="${idx}" data-refhash-role="key" value="${escAttr(k || '')}" placeholder="hash type">
-                        <input type="text" data-refhash-field="${fieldKey}" data-ref-root="${refKey}" data-ref-index="${index}" data-index="${idx}" data-refhash-role="value" value="${escAttr(v || '')}" placeholder="hash value">
+                        <input type="text" data-refhash-field="${fieldKey}" data-ref-root="${refKey}" data-ref-index="${index}" data-index="${idx}" data-refhash-role="key" value="${InputSecurity.encodeHtmlEntities(k || '')}" placeholder="hash type">
+                        <input type="text" data-refhash-field="${fieldKey}" data-ref-root="${refKey}" data-ref-index="${index}" data-index="${idx}" data-refhash-role="value" value="${InputSecurity.encodeHtmlEntities(v || '')}" placeholder="hash value">
                     </div>
                     <button class="mini-btn danger" data-action="remove-refhash" data-refhash-field="${fieldKey}" data-ref-root="${refKey}" data-ref-index="${index}" data-index="${idx}">Remove</button>
                 </div>
@@ -1871,7 +1875,7 @@
                 <div class="list-item">
                     <div>
                         <textarea data-gm-field="${key}" data-index="${index}" data-gm-key="selectors" placeholder="one selector per line">${esc(item.selectors ? item.selectors.join('\n') : '')}</textarea>
-                        <input type="text" data-gm-field="${key}" data-index="${index}" data-gm-key="marking_ref" list="${listId}" value="${escAttr(item.marking_ref || '')}">
+                        <input type="text" data-gm-field="${key}" data-index="${index}" data-gm-key="marking_ref" list="${listId}" value="${InputSecurity.encodeHtmlEntities(item.marking_ref || '')}">
                     </div>
                     <button class="mini-btn danger" data-action="remove-gm" data-gm-field="${key}" data-index="${index}">Remove</button>
                 </div>
@@ -1882,7 +1886,7 @@
                     <button class="mini-btn" data-action="add-gm" data-gm-field="${key}">Add Granular Marking</button>
                 </div>
                 <datalist id="${listId}">
-                    ${options.map((id) => `<option value="${escAttr(id)}"></option>`).join('')}
+                    ${options.map((id) => `<option value="${InputSecurity.encodeHtmlEntities(id)}"></option>`).join('')}
                 </datalist>
             `;
         }
@@ -1892,8 +1896,8 @@
             const items = entries.map(([k, v], index) => `
                 <div class="list-item">
                     <div>
-                        <input type="text" data-${prefix}-field="${key}" data-index="${index}" data-${prefix}-role="key" ${meta.root ? `data-ext-root="${meta.root}" data-ext-index="${meta.extIndex}"` : ''} value="${escAttr(k || '')}" placeholder="key">
-                        <input type="text" data-${prefix}-field="${key}" data-index="${index}" data-${prefix}-role="value" ${meta.root ? `data-ext-root="${meta.root}" data-ext-index="${meta.extIndex}"` : ''} value="${escAttr(v || '')}" placeholder="value">
+                        <input type="text" data-${prefix}-field="${key}" data-index="${index}" data-${prefix}-role="key" ${meta.root ? `data-ext-root="${meta.root}" data-ext-index="${meta.extIndex}"` : ''} value="${InputSecurity.encodeHtmlEntities(k || '')}" placeholder="key">
+                        <input type="text" data-${prefix}-field="${key}" data-index="${index}" data-${prefix}-role="value" ${meta.root ? `data-ext-root="${meta.root}" data-ext-index="${meta.extIndex}"` : ''} value="${InputSecurity.encodeHtmlEntities(v || '')}" placeholder="value">
                     </div>
                     <button class="mini-btn danger" data-action="remove-${prefix}" data-${prefix}-field="${key}" data-index="${index}" ${meta.root ? `data-ext-root="${meta.root}" data-ext-index="${meta.extIndex}"` : ''}>Remove</button>
                 </div>
@@ -1911,8 +1915,8 @@
             const items = entries.map(([k, v], index) => `
                 <div class="list-item">
                     <div>
-                        <input type="text" data-${prefix}-field="${key}" data-index="${index}" data-${prefix}-role="key" value="${escAttr(k || '')}" placeholder="hash type">
-                        <input type="text" data-${prefix}-field="${key}" data-index="${index}" data-${prefix}-role="value" value="${escAttr(v || '')}" placeholder="hash value">
+                        <input type="text" data-${prefix}-field="${key}" data-index="${index}" data-${prefix}-role="key" value="${InputSecurity.encodeHtmlEntities(k || '')}" placeholder="hash type">
+                        <input type="text" data-${prefix}-field="${key}" data-index="${index}" data-${prefix}-role="value" value="${InputSecurity.encodeHtmlEntities(v || '')}" placeholder="hash value">
                     </div>
                     <button class="mini-btn danger" data-action="remove-${prefix}" data-${prefix}-field="${key}" data-index="${index}">Remove</button>
                 </div>
@@ -1931,7 +1935,7 @@
             const items = entries.map(([k, v], index) => `
                 <div class="list-item">
                     <div>
-                        <input type="text" data-ext-field="${key}" data-index="${index}" data-ext-role="key" value="${escAttr(k || '')}" placeholder="extension id">
+                        <input type="text" data-ext-field="${key}" data-index="${index}" data-ext-role="key" value="${InputSecurity.encodeHtmlEntities(k || '')}" placeholder="extension id">
                         ${renderDictionaryField(`${key}-ext-${index}`, v || {}, 'extdict', { root: key, extIndex: index })}
                     </div>
                     <button class="mini-btn danger" data-action="remove-ext" data-ext-field="${key}" data-index="${index}">Remove</button>
@@ -1952,7 +1956,7 @@
                 return `
                     <select data-marking-field="${key}" data-marking-type="tlp">
                         <option value="">Select...</option>
-                        ${options.map((opt) => `<option value="${escAttr(opt)}" ${value.tlp === opt ? 'selected' : ''}>${esc(opt)}</option>`).join('')}
+                        ${options.map((opt) => `<option value="${InputSecurity.encodeHtmlEntities(opt)}" ${value.tlp === opt ? 'selected' : ''}>${esc(opt)}</option>`).join('')}
                     </select>
                 `;
             }
@@ -2061,26 +2065,22 @@
             showToast('Bundle cleared');
         }
 
-        function sanitizeDictionary(raw, maxItems = INPUT_LIMITS.maxListItems) {
+        function sanitizeDictionary(raw, where, maxItems = INPUT_LIMITS.maxListItems) {
             const out = createSafeObject();
             if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
             Object.entries(raw).slice(0, maxItems).forEach(([k, v]) => {
-                const key = sanitizeImportedString(k, 200);
-                if (isDangerousObjectKey(key)) return;
-                const value = sanitizeImportedString(String(v ?? ''), INPUT_LIMITS.maxStringLength);
-                if (key) out[key] = value;
+                const key = requireStructuralValue('key', k, `${where} key`);
+                out[key] = sanitizeImportedString(String(v ?? ''), INPUT_LIMITS.maxStringLength);
             });
             return out;
         }
 
-        function sanitizeExtensions(raw, maxItems = INPUT_LIMITS.maxListItems) {
+        function sanitizeExtensions(raw, where, maxItems = INPUT_LIMITS.maxListItems) {
             const out = createSafeObject();
             if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
             Object.entries(raw).slice(0, maxItems).forEach(([k, v]) => {
-                const key = sanitizeImportedString(k, 200);
-                if (isDangerousObjectKey(key)) return;
-                if (!key) return;
-                out[key] = sanitizeDictionary(v || {});
+                const key = requireStructuralValue('key', k, `${where} key`);
+                out[key] = sanitizeDictionary(v || {}, `${where}.${key}`);
             });
             return out;
         }
@@ -2103,23 +2103,34 @@
                 }
                 case 'list':
                 case 'list:open-vocab':
-                case 'object-refs':
-                case 'object-marking-refs':
                     if (!Array.isArray(raw)) return [];
                     return raw.slice(0, INPUT_LIMITS.maxListItems)
                         .map((v) => sanitizeImportedString(String(v ?? ''), 500))
                         .filter(Boolean);
+                case 'object-refs':
+                case 'object-marking-refs':
+                    if (!Array.isArray(raw)) return [];
+                    return raw.slice(0, INPUT_LIMITS.maxListItems)
+                        .map((v, i) => requireStructuralValueOrEmpty('identifier', v, `${field.key}[${i}]`))
+                        .filter(Boolean);
                 case 'kill-chain-phases':
                     if (!Array.isArray(raw)) return [];
-                    return raw.slice(0, INPUT_LIMITS.maxListItems).map((v) => ({
-                        kill_chain_name: sanitizeImportedString(v?.kill_chain_name || ''),
-                        phase_name: sanitizeImportedString(v?.phase_name || '')
-                    })).filter((v) => v.kill_chain_name && v.phase_name);
+                    return raw.slice(0, INPUT_LIMITS.maxListItems).map((v, i) => {
+                        const kill_chain_name = requireStructuralValueOrEmpty('kill-chain', v?.kill_chain_name, `${field.key}[${i}].kill_chain_name`);
+                        const phase_name = requireStructuralValueOrEmpty('kill-chain', v?.phase_name, `${field.key}[${i}].phase_name`);
+                        return kill_chain_name && phase_name ? { kill_chain_name, phase_name } : null;
+                    }).filter(Boolean);
                 case 'granular-markings':
                     if (!Array.isArray(raw)) return [];
-                    return raw.slice(0, INPUT_LIMITS.maxListItems).map((v) => ({
-                        selectors: Array.isArray(v?.selectors) ? v.selectors.map((s) => sanitizeImportedString(s, 500)).filter(Boolean) : [],
-                        marking_ref: sanitizeImportedString(v?.marking_ref || '')
+                    return raw.slice(0, INPUT_LIMITS.maxListItems).map((v, i) => ({
+                        selectors: Array.isArray(v?.selectors)
+                            ? v.selectors
+                                .map((sel, j) => requireStructuralValueOrEmpty('selector', sel, `${field.key}[${i}].selectors[${j}]`))
+                                .filter(Boolean)
+                            : [],
+                        marking_ref: v?.marking_ref === undefined
+                            ? ''
+                            : requireStructuralValueOrEmpty('identifier', v.marking_ref, `${field.key}[${i}].marking_ref`)
                     }));
                 case 'external-references':
                     if (!Array.isArray(raw)) return [];
@@ -2128,17 +2139,20 @@
                         description: sanitizeImportedString(ref?.description || '', 1000),
                         url: sanitizeImportedString(ref?.url || '', 2000),
                         external_id: sanitizeImportedString(ref?.external_id || '', 200),
-                        hashes: sanitizeDictionary(ref?.hashes || {})
+                        hashes: sanitizeDictionary(ref?.hashes || {}, `${field.key}.hashes`)
                     })).filter((ref) => ref.source_name);
                 case 'dictionary':
                 case 'hashes':
-                    return sanitizeDictionary(raw || {});
+                    return sanitizeDictionary(raw || {}, field.key);
                 case 'extensions':
-                    return sanitizeExtensions(raw || {});
+                    return sanitizeExtensions(raw || {}, field.key);
                 case 'marking-definition':
                     return raw && typeof raw === 'object'
-                        ? sanitizeDictionary(raw || {}, INPUT_LIMITS.maxListItems)
+                        ? sanitizeDictionary(raw || {}, field.key, INPUT_LIMITS.maxListItems)
                         : {};
+                case 'identifier':
+                case 'timestamp':
+                    return requireStructuralValueOrEmpty(field.type, raw, field.key);
                 default:
                     return sanitizeImportedString(String(raw ?? ''), INPUT_LIMITS.maxStringLength);
             }
@@ -2158,8 +2172,8 @@
             };
 
             if (def.category !== 'sco') {
-                clean.created = typeof obj.created === 'string' ? sanitizeImportedString(obj.created, 100) : new Date().toISOString();
-                clean.modified = typeof obj.modified === 'string' ? sanitizeImportedString(obj.modified, 100) : new Date().toISOString();
+                clean.created = hasOwn(obj, 'created') ? requireStructuralValueOrEmpty('timestamp', obj.created, 'created') : new Date().toISOString();
+                clean.modified = hasOwn(obj, 'modified') ? requireStructuralValueOrEmpty('timestamp', obj.modified, 'modified') : new Date().toISOString();
             }
 
             const commonFields = def.category !== 'sco'
@@ -2186,7 +2200,12 @@
                 objects: []
             };
             for (const obj of bundle.objects) {
-                const sanitized = sanitizeImportedObject(obj);
+                let sanitized = null;
+                try {
+                    sanitized = sanitizeImportedObject(obj);
+                } catch (err) {
+                    return null;
+                }
                 if (!sanitized) return null;
                 clean.objects.push(sanitized);
             }
@@ -2264,12 +2283,99 @@
                 });
 
                 validateObjectFields(obj, def, issues);
+                validateStructuralValues(obj, def, issues);
             });
 
             state.validation.ok = issues.length === 0;
             state.validation.issues = issues;
             updateStatus(state.validation.ok, state.validation.ok ? 'Valid bundle' : `${issues.length} issue(s)`);
             return issues;
+        }
+
+        // Covers common properties as well as type fields, so a structural value is checked
+        // wherever it sits, whichever route put it into state.
+        function validateStructuralValues(obj, def, issues) {
+            const prefix = `${obj.type} ${obj.id}`;
+            const keysValid = (dict) => !dict || typeof dict !== 'object'
+                || Object.keys(dict).every((k) => isValidStructuralValue('key', k));
+            getEditableFields(obj).forEach((field) => {
+                if (field.key === 'id') return;
+                const value = obj[field.key];
+                if (value === undefined || value === null || value === '') return;
+                switch (field.type) {
+                    case 'identifier':
+                        if (!isValidStructuralValue('identifier', value)) issues.push(`${prefix} invalid ${field.key}`);
+                        break;
+                    case 'timestamp':
+                        if (!isValidStructuralValue('timestamp', value)) issues.push(`${prefix} invalid ${field.key} timestamp`);
+                        break;
+                    case 'object-refs':
+                    case 'object-marking-refs':
+                        if (!Array.isArray(value)) {
+                            issues.push(`${prefix} ${field.key} must be list`);
+                            break;
+                        }
+                        value.forEach((id) => {
+                            if (!isValidStructuralValue('identifier', id)) issues.push(`${prefix} ${field.key} has invalid ref`);
+                        });
+                        break;
+                    case 'kill-chain-phases':
+                        if (Array.isArray(value) && value.some((phase) =>
+                            (phase?.kill_chain_name && !isValidStructuralValue('kill-chain', phase.kill_chain_name))
+                            || (phase?.phase_name && !isValidStructuralValue('kill-chain', phase.phase_name)))) {
+                            issues.push(`${prefix} invalid ${field.key} kill chain value`);
+                        }
+                        break;
+                    case 'granular-markings':
+                        if (!Array.isArray(value)) break;
+                        value.forEach((marking) => {
+                            const selectors = Array.isArray(marking?.selectors) ? marking.selectors : [];
+                            if (selectors.some((sel) => !isValidStructuralValue('selector', sel))) {
+                                issues.push(`${prefix} invalid ${field.key} selector`);
+                            }
+                            if (marking?.marking_ref && !isValidStructuralValue('identifier', marking.marking_ref)) {
+                                issues.push(`${prefix} invalid ${field.key} marking_ref`);
+                            }
+                        });
+                        break;
+                    case 'external-references':
+                        if (Array.isArray(value) && value.some((ref) => !keysValid(ref?.hashes))) {
+                            issues.push(`${prefix} invalid ${field.key} key`);
+                        }
+                        break;
+                    case 'dictionary':
+                    case 'hashes':
+                    case 'marking-definition':
+                        if (!keysValid(value)) issues.push(`${prefix} invalid ${field.key} key`);
+                        break;
+                    case 'extensions':
+                        if (!keysValid(value) || Object.values(value).some((ext) => !keysValid(ext))) {
+                            issues.push(`${prefix} invalid ${field.key} key`);
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            });
+        }
+
+        function getEditableFields(obj) {
+            const def = resolveStixObjectDefinition(obj.type);
+            const common = def?.category !== 'sco'
+                ? [...(ACTIVE_STIX_COMMON_PROPERTIES.required || []), ...(ACTIVE_STIX_COMMON_PROPERTIES.optional || [])]
+                : [];
+            return [...common, ...(def?.required || []), ...(def?.optional || [])];
+        }
+
+        function getStructuralFieldType(obj, key) {
+            if (key === 'id') return 'identifier';
+            return getEditableFields(obj).find((field) => field.key === key)?.type || null;
+        }
+
+        function setInputValidity(input, valid) {
+            if (valid) input.removeAttribute('aria-invalid');
+            else input.setAttribute('aria-invalid', 'true');
+            return valid;
         }
 
         function hasValue(value, type) {
@@ -2286,12 +2392,6 @@
                 const value = obj[field.key];
                 if (value === undefined || value === null || value === '') return;
                 switch (field.type) {
-                    case 'identifier':
-                        if (!ACTIVE_STIX_ID_PATTERN.test(value)) issues.push(`${obj.type} ${obj.id} invalid ${field.key}`);
-                        break;
-                    case 'timestamp':
-                        if (Number.isNaN(Date.parse(value))) issues.push(`${obj.type} ${obj.id} invalid ${field.key} timestamp`);
-                        break;
                     case 'integer':
                         if (!Number.isInteger(value)) issues.push(`${obj.type} ${obj.id} ${field.key} must be integer`);
                         if (field.min !== undefined && value < field.min) issues.push(`${obj.type} ${obj.id} ${field.key} below min`);
@@ -2306,13 +2406,6 @@
                         break;
                     case 'open-vocab':
                         if (typeof value !== 'string' || !value.trim()) issues.push(`${obj.type} ${obj.id} ${field.key} required`);
-                        break;
-                    case 'object-refs':
-                    case 'object-marking-refs':
-                        if (!Array.isArray(value)) issues.push(`${obj.type} ${obj.id} ${field.key} must be list`);
-                        (value || []).forEach((id) => {
-                            if (!ACTIVE_STIX_ID_PATTERN.test(id)) issues.push(`${obj.type} ${obj.id} ${field.key} has invalid ref`);
-                        });
                         break;
                     case 'kill-chain-phases':
                         if (!Array.isArray(value)) issues.push(`${obj.type} ${obj.id} ${field.key} must be list`);
@@ -2368,6 +2461,11 @@
                 let value = target.value;
                 if (type === 'boolean') value = target.checked;
                 if (type === 'integer' || type === 'number') value = value === '' ? null : Number(value);
+                const structuralType = getStructuralFieldType(obj, key);
+                if (structuralType === 'identifier' || structuralType === 'timestamp') {
+                    const allowed = (value === '' && key !== 'id') || isValidStructuralValue(structuralType, value);
+                    if (!setInputValidity(target, allowed)) return;
+                }
                 obj[key] = sanitizeValue(value);
                 if (key === 'id' && oldId !== obj.id) {
                     state.objectsById.delete(oldId);
@@ -2385,6 +2483,11 @@
             if (target.dataset.listField) {
                 const key = target.dataset.listField;
                 const index = parseInt(target.dataset.index, 10);
+                const listType = getStructuralFieldType(obj, key);
+                if (listType === 'object-refs' || listType === 'object-marking-refs') {
+                    const allowed = target.value === '' || isValidStructuralValue('identifier', target.value);
+                    if (!setInputValidity(target, allowed)) return;
+                }
                 if (!Array.isArray(obj[key])) obj[key] = [];
                 obj[key][index] = sanitizeValue(target.value);
                 renderBundlePreview();
@@ -2406,6 +2509,7 @@
                 const key = target.dataset.kcField;
                 const index = parseInt(target.dataset.index, 10);
                 const kcKey = target.dataset.kcKey;
+                if (!setInputValidity(target, target.value === '' || isValidStructuralValue('kill-chain', target.value))) return;
                 if (!Array.isArray(obj[key])) obj[key] = [];
                 if (!obj[key][index]) obj[key][index] = { kill_chain_name: 'unified-kill-chain', phase_name: '' };
                 obj[key][index][kcKey] = sanitizeValue(target.value);
@@ -2418,15 +2522,17 @@
                 const key = target.dataset.gmField;
                 const index = parseInt(target.dataset.index, 10);
                 const gmKey = target.dataset.gmKey;
+                const selectors = target.value.split('\n').map((v) => v.trim()).filter(Boolean);
+                const allowed = gmKey === 'selectors'
+                    ? selectors.every((sel) => isValidStructuralValue('selector', sel))
+                    : target.value === '' || isValidStructuralValue('identifier', target.value);
+                if (!setInputValidity(target, allowed)) return;
                 if (!Array.isArray(obj[key])) obj[key] = [];
                 if (!obj[key][index]) obj[key][index] = { selectors: [], marking_ref: '' };
                 if (gmKey === 'selectors') {
-                    obj[key][index].selectors = sanitizeValue(target.value)
-                        .split('\n')
-                        .map((v) => v.trim())
-                        .filter(Boolean);
+                    obj[key][index].selectors = selectors;
                 } else {
-                    obj[key][index][gmKey] = sanitizeValue(target.value);
+                    obj[key][index][gmKey] = target.value;
                 }
                 renderBundlePreview();
                 return;
@@ -2434,14 +2540,18 @@
 
             if (target.dataset.dictField) {
                 const key = target.dataset.dictField;
-                obj[key] = collectDictionary(key, 'dict');
+                const collected = collectDictionary(key, 'dict');
+                if (!collected) return;
+                obj[key] = collected;
                 renderBundlePreview();
                 return;
             }
 
             if (target.dataset.hashField) {
                 const key = target.dataset.hashField;
-                obj[key] = collectDictionary(key, 'hash');
+                const collected = collectDictionary(key, 'hash');
+                if (!collected) return;
+                obj[key] = collected;
                 renderBundlePreview();
                 return;
             }
@@ -2450,16 +2560,20 @@
                 const fieldKey = target.dataset.refhashField;
                 const root = target.dataset.refRoot;
                 const index = parseInt(target.dataset.refIndex, 10);
+                const collected = collectDictionary(fieldKey, 'refhash');
+                if (!collected) return;
                 if (!Array.isArray(obj[root])) obj[root] = [];
                 if (!obj[root][index]) obj[root][index] = {};
-                obj[root][index].hashes = collectDictionary(fieldKey, 'refhash');
+                obj[root][index].hashes = collected;
                 renderBundlePreview();
                 return;
             }
 
             if (target.dataset.extRoot) {
                 const key = target.dataset.extRoot;
-                obj[key] = collectExtensions(key);
+                const collected = collectExtensions(key);
+                if (!collected) return;
+                obj[key] = collected;
                 renderBundlePreview();
                 return;
             }
@@ -2477,25 +2591,41 @@
         function collectDictionary(fieldKey, prefix) {
             const keyInputs = document.querySelectorAll(`[data-${prefix}-field="${fieldKey}"][data-${prefix}-role="key"]`);
             const valInputs = document.querySelectorAll(`[data-${prefix}-field="${fieldKey}"][data-${prefix}-role="value"]`);
+            // Returns null, and marks the offending key inputs, when any key is invalid, so the
+            // caller commits nothing rather than a partly rewritten dictionary.
             const dict = {};
+            let valid = true;
             keyInputs.forEach((input, index) => {
-                const key = sanitizeValue(input.value.trim());
-                const value = sanitizeValue(valInputs[index]?.value || '');
-                if (key) dict[key] = value;
+                const key = input.value;
+                if (!key.trim()) return;
+                if (!setInputValidity(input, isValidStructuralValue('key', key))) {
+                    valid = false;
+                    return;
+                }
+                dict[key] = sanitizeValue(valInputs[index]?.value || '');
             });
-            return dict;
+            return valid ? dict : null;
         }
 
         function collectExtensions(fieldKey) {
             const extKeys = document.querySelectorAll(`[data-ext-field="${fieldKey}"][data-ext-role="key"]`);
             const dict = {};
+            let valid = true;
             extKeys.forEach((input, index) => {
-                const key = sanitizeValue(input.value.trim());
-                if (!key) return;
-                const nestedKey = `${fieldKey}-ext-${index}`;
-                dict[key] = collectDictionary(nestedKey, 'extdict');
+                const key = input.value;
+                if (!key.trim()) return;
+                if (!setInputValidity(input, isValidStructuralValue('key', key))) {
+                    valid = false;
+                    return;
+                }
+                const nested = collectDictionary(`${fieldKey}-ext-${index}`, 'extdict');
+                if (!nested) {
+                    valid = false;
+                    return;
+                }
+                dict[key] = nested;
             });
-            return dict;
+            return valid ? dict : null;
         }
 
         function handleEditorClick(event) {
@@ -2706,10 +2836,20 @@
             reader.onload = (e) => {
                 try {
                     const rawData = parseJsonSafe(e.target.result);
-                    const raw = stripAngleBracketsFromJson(rawData);
+                    const raw = copyJsonWithoutDangerousKeys(rawData);
                     if (!raw || typeof raw !== 'object' || raw.type !== 'bundle') throw new Error('Invalid bundle');
                     if (!Array.isArray(raw.objects)) throw new Error('Bundle objects missing');
                     if (raw.objects.length > INPUT_LIMITS.maxObjects) throw new Error('Too many objects');
+
+                    // Every incoming object is sanitized before anything is asked or replaced, so an
+                    // invalid structural value rejects the whole file and the current bundle stays.
+                    const candidates = raw.objects.map((obj, index) => {
+                        try {
+                            return sanitizeImportedObject(obj);
+                        } catch (err) {
+                            throw new Error(`object ${index + 1} ${err.message}`);
+                        }
+                    });
 
                     let merge = false;
                     const hasObjects = state.bundle.objects.length > 0;
@@ -2726,8 +2866,7 @@
                         };
                         state.objectsById = new Map();
                     }
-                    raw.objects.forEach((obj) => {
-                        const clean = sanitizeImportedObject(obj);
+                    candidates.forEach((clean) => {
                         if (!clean) return;
                         if (state.objectsById.has(clean.id)) return;
                         state.bundle.objects.push(clean);
@@ -2821,7 +2960,6 @@
         } else {
             enableLeaveSiteConfirmation();
         }
-        applyInputGuards();
         if (!Object.keys(ACTIVE_STIX_OBJECT_DEFS).length) {
             updateStatus(false, 'STIX config failed to load');
             showToast('Error: STIX configuration unavailable');
