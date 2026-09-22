@@ -111,26 +111,170 @@ test.describe('STIX Builder hardening', () => {
     expect(message).toContain('Visualizer edge limit exceeded');
   });
 
+  // Numeric editor fields render their value into a value="..." attribute, so it must be
+  // entity-encoded. Import and editing already coerce these fields to numbers, so the
+  // hostile cases write text straight into the active object to test the sink itself.
+  const NUMERIC_FIELD_ATTRIBUTES = ['type', 'data-field', 'data-type', 'value'];
+
+  async function renderHostileNumericValue(page: Page, type: string, key: string, payload: string) {
+    return page.evaluate(({ objectType, fieldKey, value }) => {
+      (window as any).__numericSinkCanary = 0;
+      (window as any).addObject(objectType);
+      const object = (window as any).getActiveObject();
+      object[fieldKey] = value;
+      const before = JSON.stringify(object);
+      (window as any).renderEditor();
+      return before;
+    }, { objectType: type, fieldKey: key, value: payload });
+  }
+
+  async function inspectNumericField(page: Page, key: string) {
+    // Focus the field so an injected onfocus handler would fire, then let any injected
+    // image finish loading or failing before the canary is read.
+    await page.locator(`#editor-panel [data-field="${key}"]`).first().focus();
+    return page.evaluate(async (fieldKey) => {
+      const panel = document.getElementById('editor-panel')!;
+      await Promise.all(Array.from(panel.querySelectorAll('img')).map((img) => (
+        img.complete ? null : new Promise((resolve) => {
+          img.addEventListener('load', resolve, { once: true });
+          img.addEventListener('error', resolve, { once: true });
+        })
+      )));
+      const inputs = Array.from(panel.querySelectorAll<HTMLInputElement>(`[data-field="${fieldKey}"]`));
+      const input = inputs[0];
+      const container = input?.closest('.field-input');
+      return {
+        count: inputs.length,
+        type: input?.getAttribute('type') ?? null,
+        attributes: input ? input.getAttributeNames() : [],
+        valueAttribute: input?.getAttribute('value') ?? null,
+        containerChildren: container
+          ? Array.from(container.children).map((child) => `${child.tagName}${child.className ? '.' + child.className : ''}`)
+          : [],
+        injected: panel.querySelectorAll('[data-injected], [autofocus], [onfocus], [onerror], img').length,
+        canary: (window as any).__numericSinkCanary,
+        storedAfter: JSON.stringify((window as any).getActiveObject()),
+      };
+    }, key);
+  }
+
   test('encodes numeric editor values before rendering attributes', async ({ page }) => {
     await openBuilder(page);
 
-    const confidenceField = await page.evaluate(() => {
-      (window as any).addObject('identity');
-      const object = (window as any).getActiveObject();
-      object.confidence = '1" autofocus onfocus="alert(1)';
-      (window as any).renderEditor();
-      return document.querySelector('[data-field="confidence"]')?.outerHTML || '';
+    // The trailing comment carries literal entity text, a backslash, an apostrophe and a
+    // backtick: an encoder that skipped `&` would hand back a bare quote for the literal
+    // entity, and one that encoded twice would hand back the entity text.
+    const payload = '1" autofocus onfocus="window.__numericSinkCanary = 1 // &quot; &amp; \\ \' `';
+    const before = await renderHostileNumericValue(page, 'identity', 'confidence', payload);
+    const field = await inspectNumericField(page, 'confidence');
+
+    // Prerequisite: the integer field rendered at all. A zero count means the editor or
+    // selector changed, which is a real failure rather than a sink result.
+    expect(field.count, 'confidence field did not render').toBe(1);
+    expect(field.type).toBe('number');
+
+    expect(field.attributes, 'a quote in the value added attributes to the input').toEqual(NUMERIC_FIELD_ATTRIBUTES);
+    expect(field.injected, 'injected markup exists in the editor').toBe(0);
+    expect(field.valueAttribute, 'the value attribute is not the stored value verbatim').toBe(payload);
+    expect(field.canary, 'an injected handler ran').toBe(0);
+    expect(field.containerChildren).toEqual(['INPUT', 'DIV.hint']);
+    expect(field.storedAfter, 'rendering changed the stored object').toBe(before);
+  });
+
+  test('keeps a tag-closing numeric editor value inside its attribute', async ({ page }) => {
+    await openBuilder(page);
+
+    const payload = '"><img src="x" data-injected="1" onerror="window.__numericSinkCanary = 2">';
+    const before = await renderHostileNumericValue(page, 'location', 'latitude', payload);
+    const field = await inspectNumericField(page, 'latitude');
+
+    expect(field.count, 'latitude field did not render').toBe(1);
+    expect(field.type).toBe('number');
+
+    expect(field.injected, 'a closed tag let markup into the editor').toBe(0);
+    expect(field.containerChildren, 'the field holds nodes other than its input and hint').toEqual(['INPUT', 'DIV.hint']);
+    expect(field.attributes).toEqual(NUMERIC_FIELD_ATTRIBUTES);
+    expect(field.valueAttribute, 'the value attribute is not the stored value verbatim').toBe(payload);
+    expect(field.canary, 'an injected handler ran').toBe(0);
+    expect(field.storedAfter, 'rendering changed the stored object').toBe(before);
+  });
+
+  test('renders imported zero, negative, decimal and absent numeric values unchanged', async ({ page }) => {
+    await openBuilder(page);
+
+    const ids = {
+      zero: 'identity--77777777-7777-4777-8777-777777777777',
+      location: 'location--88888888-8888-4888-8888-888888888888',
+      absent: 'identity--99999999-9999-4999-8999-999999999999',
+    };
+    await page.locator('#bundle-file').setInputFiles({
+      name: 'numeric-values-bundle.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(JSON.stringify({
+        type: 'bundle',
+        id: 'bundle--66666666-6666-4666-8666-666666666666',
+        objects: [
+          {
+            type: 'identity', spec_version: '2.1', id: ids.zero,
+            created: '2026-01-01T00:00:00.000Z', modified: '2026-01-01T00:00:00.000Z',
+            name: 'Zero Confidence', confidence: 0,
+          },
+          {
+            type: 'location', spec_version: '2.1', id: ids.location,
+            created: '2026-01-01T00:00:00.000Z', modified: '2026-01-01T00:00:00.000Z',
+            name: 'Sydney', latitude: -33.8688, longitude: 151.2093, precision: 0,
+          },
+          {
+            type: 'identity', spec_version: '2.1', id: ids.absent,
+            created: '2026-01-01T00:00:00.000Z', modified: '2026-01-01T00:00:00.000Z',
+            name: 'No Confidence',
+          },
+        ],
+      }), 'utf8'),
     });
+    await expect(page.locator('#toast')).toContainText('Bundle imported');
 
-    // Prerequisite: the numeric field rendered at all. An empty string here means the
-    // editor or selector changed, which is a real failure rather than the known gap.
-    expect(confidenceField, 'confidence field did not render').not.toBe('');
+    const readField = (key: string) => page.locator(`#editor-panel [data-field="${key}"]`).evaluate(
+      (input: HTMLInputElement) => ({ attribute: input.getAttribute('value'), value: input.value }),
+    );
 
-    // The numeric editor field interpolates its stored value straight into a value="..."
-    // attribute with no encoding, so a value carrying a quote closes the attribute and the
-    // rest is parsed as markup.
-    test.fail(true, 'Known gap: the numeric editor field writes its value into an HTML attribute unencoded');
-    expect(confidenceField).toContain('1&quot; autofocus onfocus=&quot;alert(1)');
-    expect(confidenceField).not.toContain('" autofocus');
+    // Zero is falsy and is the value an encoder written as `value || ''` would lose.
+    await page.locator('#object-list .object-item', { hasText: ids.zero }).click();
+    expect(await readField('confidence')).toEqual({ attribute: '0', value: '0' });
+
+    await page.locator('#object-list .object-item', { hasText: ids.location }).click();
+    expect(await readField('latitude')).toEqual({ attribute: '-33.8688', value: '-33.8688' });
+    expect(await readField('longitude')).toEqual({ attribute: '151.2093', value: '151.2093' });
+    expect(await readField('precision')).toEqual({ attribute: '0', value: '0' });
+
+    await page.locator('#object-list .object-item', { hasText: ids.absent }).click();
+    expect(await readField('confidence')).toEqual({ attribute: '', value: '' });
+  });
+
+  test('edits numeric fields through the editor as numbers', async ({ page }) => {
+    await openBuilder(page);
+
+    await page.locator('#add-type').selectOption('location');
+    await page.locator('#add-object').click();
+    const latitude = page.locator('#editor-panel [data-field="latitude"]');
+    const confidence = page.locator('#editor-panel [data-field="confidence"]');
+    await expect(latitude).toBeVisible();
+
+    await latitude.fill('-12.5');
+    await confidence.fill('0');
+    const stored = await page.evaluate(() => {
+      const object = (window as any).getActiveObject();
+      return { id: object.id, latitude: object.latitude, confidence: object.confidence };
+    });
+    expect(stored.latitude).toBe(-12.5);
+    expect(stored.confidence).toBe(0);
+
+    // Re-render through the real list selection and read the values back out of the DOM.
+    await page.locator('#object-list .object-item', { hasText: stored.id }).click();
+    await expect(latitude).toHaveValue('-12.5');
+    await expect(confidence).toHaveValue('0');
+
+    await latitude.fill('');
+    expect(await page.evaluate(() => (window as any).getActiveObject().latitude)).toBeNull();
   });
 });

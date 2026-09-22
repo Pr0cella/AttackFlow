@@ -1694,7 +1694,7 @@
                     return `<input type="checkbox" data-field="${key}" data-type="boolean" ${value ? 'checked' : ''}>`;
                 case 'integer':
                 case 'number':
-                    return `<input type="number" data-field="${key}" data-type="${field.type}" value="${value ?? ''}" ${roAttr}>`;
+                    return `<input type="number" data-field="${key}" data-type="${field.type}" value="${InputSecurity.encodeHtmlEntities(value ?? '')}" ${roAttr}>`;
                 case 'timestamp':
                     return `<input type="text" data-field="${key}" data-type="timestamp" value="${escAttr(value || '')}" placeholder="2026-02-19T12:00:00Z" ${roAttr}>`;
                 case 'identifier':

@@ -22,6 +22,7 @@
 - **Group ID Injection**: Fixed an issue where malicious group IDs in imported files could run JavaScript when users interacted with such a group. Invalid or duplicate IDs are now replaced, and group controls handle IDs safely
 - **Group Rename Cancel**: Fixed group renaming so pressing Escape cancels the edit without saving it
 - **Transient Rename State**: Finishing or cancelling a group rename now clears the internal rename flag instead of keeping it, so it no longer appears in exported JSON documents
+- **Field Encoding**: Added defensive field encoding in STIX Composer fields
 - **CSV Serialization**: Fixed an issue where CSV cells protected against spreadsheet formula injection were quoted more than once. Protected cells now carry a single leading tab inside one layer of quoting, cells containing a carriage return are quoted, and records are terminated with CRLF
 - **STIX Property Export**: STIX bundle export and the bundle embedded in JSON export now preserve stored properties correctly
 - **Export Value Validation**: Incompatible value shapes now stop the download and report the affected property instead of omitting them
