@@ -226,7 +226,7 @@ Note: Designed strictly for local, non-webserver usage (requires `file://` as pr
 - **Session binding**: Per-iframe session nonce is required for channel messages.
 - **Validation**: IPC message types/keys are allowlisted; unknown keys/types are rejected.
 - **Shared payload safety**: `AF_SHARED_DATA` is schema-checked, cloned, and deep-frozen before use.
-- **Containment**: Embedded iframes are sandboxed (`allow-scripts allow-same-origin allow-modals`).
+- **Containment**: Embedded iframes are sandboxed (`allow-scripts allow-same-origin allow-modals`); the STIX Composer iframe also has `allow-downloads` so its bundle export works.
 - **Throttling**: Parent applies per-frame/per-request-type token-bucket rate limiting.
 - **Resilience**: Parent bootstrap uses bounded timeout/retry/backoff; children detect terminal bootstrap failure and recover without legacy transport.
 

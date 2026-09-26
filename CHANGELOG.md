@@ -42,6 +42,9 @@
 ### Changed
 - **CSV Formula Injection Mitigation**: Cells starting with formula characters are now prefixed with a tab character (\t) and wrapped in double quotes instead of just the single quote prefix that was used previously
 
+### Fixed
+- **STIX Composer Export**: Fixed browser blocking downloads from the composer's sandboxed iframe. It now has `allow-downloads`.
+
 ## [2.9.1] - 2026-02-28
 
 ### Added
