@@ -1383,18 +1383,6 @@
             return value === '' ? '' : requireStructuralValue(kind, value, where);
         }
 
-        function isSafeHttpUrl(url) {
-            if (typeof url !== 'string') return false;
-            const trimmed = url.trim();
-            if (!trimmed) return false;
-            try {
-                const parsed = new URL(trimmed);
-                return parsed.protocol === 'http:' || parsed.protocol === 'https:';
-            } catch (e) {
-                return false;
-            }
-        }
-
         const ACTIVE_STIX_VERSION = (typeof STIX_VERSION !== 'undefined' && typeof STIX_VERSION === 'string' && STIX_VERSION)
             ? STIX_VERSION
             : (typeof window !== 'undefined' && typeof window.STIX_VERSION === 'string' && window.STIX_VERSION)
@@ -2225,15 +2213,22 @@
                         if (!hasOwn(v, 'marking_ref') && !lang) throw new Error(`${where}.marking_ref is missing`);
                         return { selectors, marking_ref };
                     });
-                case 'external-references':
-                    if (!Array.isArray(raw)) return [];
-                    return raw.slice(0, INPUT_LIMITS.maxListItems).map((ref) => ({
-                        source_name: sanitizeImportedString(ref?.source_name || '', 200),
-                        description: sanitizeImportedString(ref?.description || '', 1000),
-                        url: sanitizeImportedString(ref?.url || '', 2000),
-                        external_id: sanitizeImportedString(ref?.external_id || '', 200),
-                        hashes: sanitizeDictionary(ref?.hashes || {}, `${field.key}.hashes`, INPUT_LIMITS.maxListItems, 'hash-key')
-                    })).filter((ref) => ref.source_name);
+                case 'external-references': {
+                    if (!Array.isArray(raw)) return null;
+                    // Only the properties a reference has are written (STIX 2.1 section 2.5.1). A
+                    // value that is not a string, empty hashes (section 2.3) and an empty list
+                    // (section 2.12) are left out.
+                    const refs = raw.slice(0, INPUT_LIMITS.maxListItems).map((ref) => {
+                        const clean = { source_name: sanitizeImportedString(ref?.source_name || '', 200) };
+                        [['description', 1000], ['url', 2000], ['external_id', 200]].forEach(([key, maxLength]) => {
+                            if (hasOwn(ref, key) && typeof ref[key] === 'string') clean[key] = sanitizeImportedString(ref[key], maxLength);
+                        });
+                        const hashes = sanitizeDictionary(ref?.hashes, `${field.key}.hashes`, INPUT_LIMITS.maxListItems, 'hash-key');
+                        if (Object.keys(hashes).length) clean.hashes = hashes;
+                        return clean;
+                    }).filter((ref) => ref.source_name);
+                    return refs.length ? refs : null;
+                }
                 case 'dictionary':
                     return sanitizeDictionary(raw || {}, field.key);
                 case 'hashes':
@@ -2384,7 +2379,7 @@
                     }
                 });
 
-                validateObjectFields(obj, def, issues);
+                validateObjectFields(obj, issues);
                 validateStructuralValues(obj, def, issues);
             });
 
@@ -2493,9 +2488,9 @@
             return value !== null && value !== undefined && String(value).trim() !== '';
         }
 
-        function validateObjectFields(obj, def, issues) {
-            const fields = [...(def?.required || []), ...(def?.optional || [])];
-            fields.forEach((field) => {
+        // Covers common properties (external_references, confidence) as well as type fields.
+        function validateObjectFields(obj, issues) {
+            getEditableFields(obj).forEach((field) => {
                 const value = obj[field.key];
                 if (value === undefined || value === null || value === '') return;
                 switch (field.type) {
@@ -2521,9 +2516,19 @@
                         });
                         break;
                     case 'external-references':
-                        (value || []).forEach((ref) => {
-                            if (!ref.source_name) issues.push(`${obj.type} ${obj.id} external_references missing source_name`);
-                            if (ref.url && !isSafeHttpUrl(ref.url)) issues.push(`${obj.type} ${obj.id} external_references invalid url`);
+                        // STIX 2.1 sections 2.5.1 and 2.5.2; a url is any URL reference, so its
+                        // scheme is not checked. An empty list is prohibited (section 2.12).
+                        if (!Array.isArray(value)) {
+                            issues.push(`${obj.type} ${obj.id} ${field.key} must be list`);
+                            break;
+                        }
+                        if (!value.length) issues.push(`${obj.type} ${obj.id} ${field.key} must not be an empty list`);
+                        value.forEach((ref) => {
+                            if (typeof ref?.source_name !== 'string') issues.push(`${obj.type} ${obj.id} external_references missing source_name`);
+                            else if (!ref.source_name.trim()) issues.push(`${obj.type} ${obj.id} external_references entry has an empty source_name`);
+                            if (!['description', 'url', 'external_id'].some((key) => typeof ref?.[key] === 'string')) {
+                                issues.push(`${obj.type} ${obj.id} external_references entry needs description, url or external_id`);
+                            }
                         });
                         break;
                     case 'marking-definition':
@@ -2609,7 +2614,11 @@
                 const refKey = target.dataset.refKey;
                 if (!Array.isArray(obj[key])) obj[key] = [];
                 if (!obj[key][index]) obj[key][index] = {};
-                obj[key][index][refKey] = sanitizeValue(target.value);
+                // A cleared optional property is removed rather than stored as ''. source_name is
+                // required (STIX 2.1 section 2.5.1), so a cleared one stays '' for validation to report.
+                const value = sanitizeValue(target.value);
+                if (value === '' && refKey !== 'source_name') delete obj[key][index][refKey];
+                else obj[key][index][refKey] = value;
                 renderBundlePreview();
                 return;
             }
@@ -2673,7 +2682,9 @@
                 if (!collected) return;
                 if (!Array.isArray(obj[root])) obj[root] = [];
                 if (!obj[root][index]) obj[root][index] = {};
-                obj[root][index].hashes = collected;
+                // Empty hashes are omitted, never stored (STIX 2.1 section 2.3).
+                if (Object.keys(collected).length) obj[root][index].hashes = collected;
+                else delete obj[root][index].hashes;
                 renderBundlePreview();
                 return;
             }
@@ -2778,11 +2789,14 @@
                 return;
             }
 
+            // Reference actions change what validation reports, so they refresh the preview, the status
+            // and the Visualize button as well as the editor.
             if (target.dataset.action === 'add-ref') {
                 const key = target.dataset.refField;
                 if (!Array.isArray(obj[key])) obj[key] = [];
                 obj[key].push({ source_name: '' });
                 renderEditor();
+                renderBundlePreview();
                 return;
             }
 
@@ -2790,7 +2804,10 @@
                 const key = target.dataset.refField;
                 const index = parseInt(target.dataset.index, 10);
                 obj[key].splice(index, 1);
+                // An empty list is omitted, never stored (STIX 2.1 section 2.12).
+                if (!obj[key].length) delete obj[key];
                 renderEditor();
+                renderBundlePreview();
                 return;
             }
 
@@ -2859,6 +2876,7 @@
                 obj[root][index].hashes = obj[root][index].hashes || createSafeObject();
                 obj[root][index].hashes['hash-' + Math.random().toString(36).slice(2, 7)] = '';
                 renderEditor();
+                renderBundlePreview();
                 return;
             }
 
@@ -2878,8 +2896,10 @@
                 if (!obj[root][index]) return;
                 const entries = Object.entries(obj[root][index].hashes || {});
                 entries.splice(parseInt(target.dataset.index, 10), 1);
-                obj[root][index].hashes = safeFromEntries(entries);
+                if (entries.length) obj[root][index].hashes = safeFromEntries(entries);
+                else delete obj[root][index].hashes;
                 renderEditor();
+                renderBundlePreview();
                 return;
             }
 

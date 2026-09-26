@@ -1016,7 +1016,7 @@ test.describe('Composer evidence and structural values', () => {
   test('hash keys need at least three characters, other dictionary keys do not', async ({ page }) => {
     await openBuilder(page);
     const file = sco('file', '8', { name: 'a.exe', hashes: { 'SHA-256': 'ab', MD5: 'cd', x_foo_hash: 'ef' } });
-    const identity = sdo('identity', '9', { name: 'i', identity_class: 'individual', external_references: [{ source_name: 's', hashes: { SHA3: 'aa' } }] });
+    const identity = sdo('identity', '9', { name: 'i', identity_class: 'individual', external_references: [{ source_name: 's', url: 'https://example.com/r', hashes: { SHA3: 'aa' } }] });
     const process = sco('process', 'a', { environment_variables: { ab: 'x', Z: 'y' } });
     expect((await uploadBundle(page, [file, identity, process])).toast).toBe('Bundle imported');
     expect((await objectState(page, file.id)).hashes).toEqual({ 'SHA-256': 'ab', MD5: 'cd', x_foo_hash: 'ef' });
@@ -1063,6 +1063,118 @@ test.describe('Composer evidence and structural values', () => {
     expect(await page.locator(refHashKey).getAttribute('aria-invalid')).toBe('true');
     await bypass(refHashKey, 'MD5');
     expect(Object.keys((await readActive('external_references'))[0].hashes)).toEqual(['MD5']);
+  });
+
+  // A reference keeps exactly the properties it was given (STIX 2.1 section 2.5.1 makes all but
+  // source_name optional); empty hashes are omitted, as section 2.3 requires, and so are values
+  // that are not strings.
+  test('external references keep only the properties present through import, export and reimport', async ({ page }) => {
+    await openBuilder(page);
+    const identity = sdo('identity', '1', {
+      name: 'i', identity_class: 'individual',
+      external_references: [
+        { source_name: 'url-only', url: 'https://example.com/r' },
+        { source_name: 'empty-description', description: '', external_id: 'X-1' },
+        { source_name: 'empty-hashes', external_id: 'X-2', hashes: {} },
+        { source_name: 'not-strings', external_id: 'X-3', description: 5, url: null },
+      ],
+    });
+    const expected = [
+      { source_name: 'url-only', url: 'https://example.com/r' },
+      { source_name: 'empty-description', description: '', external_id: 'X-1' },
+      { source_name: 'empty-hashes', external_id: 'X-2' },
+      { source_name: 'not-strings', external_id: 'X-3' },
+    ];
+    expect((await uploadBundle(page, [identity])).toast).toBe('Bundle imported');
+    expect((await objectState(page, identity.id)).external_references).toEqual(expected);
+    const { objects: exported, dialogs } = await exportObjects(page);
+    expect(dialogs).toEqual([]);
+    expect(exported.find((o) => o.id === identity.id).external_references).toEqual(expected);
+    await openBuilder(page);
+    expect((await uploadBundle(page, exported)).toast).toBe('Bundle imported');
+    expect((await objectState(page, identity.id)).external_references).toEqual(expected);
+  });
+
+  // Empty lists are prohibited in place of an omitted optional property (STIX 2.1 section 2.12).
+  test('an empty external_references list is omitted at import', async ({ page }) => {
+    await openBuilder(page);
+    const empty = sdo('identity', '2', { name: 'e', identity_class: 'individual', external_references: [] });
+    const allDropped = sdo('identity', '3', {
+      name: 'd', identity_class: 'individual', external_references: [{ source_name: '', url: 'https://example.com/x' }],
+    });
+    expect((await uploadBundle(page, [empty, allDropped])).toast).toBe('Bundle imported');
+    expect(Object.keys(await objectState(page, empty.id))).not.toContain('external_references');
+    expect(Object.keys(await objectState(page, allDropped.id))).not.toContain('external_references');
+  });
+
+  // Clearing an optional reference field removes it instead of storing '' or {}; source_name is
+  // required (section 2.5.1), so a cleared one stays '' for validation to report.
+  test('the editor removes cleared reference properties and keeps a cleared source_name', async ({ page }) => {
+    await openBuilder(page);
+    const identity = sdo('identity', '4', {
+      name: 'i', identity_class: 'individual',
+      external_references: [{ source_name: 's', description: 'd', url: 'https://example.com/r', external_id: 'X', hashes: { 'SHA-256': 'ab' } }],
+    });
+    expect((await uploadBundle(page, [identity])).toast).toBe('Bundle imported');
+    await page.locator('#object-list .object-item', { hasText: identity.id }).click();
+    const refs = async () => (await objectState(page, identity.id)).external_references;
+    const field = (key: string) => page.locator(`#editor-panel input[data-ref-field="external_references"][data-index="0"][data-ref-key="${key}"]`);
+
+    await field('url').fill('');
+    expect(await refs()).toEqual([{ source_name: 's', description: 'd', external_id: 'X', hashes: { 'SHA-256': 'ab' } }]);
+    await field('description').fill('');
+    await page.locator('#editor-panel [data-action="remove-refhash"][data-ref-index="0"]').click();
+    expect(await refs()).toEqual([{ source_name: 's', external_id: 'X' }]);
+
+    await page.locator('#editor-panel [data-action="add-refhash"][data-ref-index="0"]').click();
+    await page.locator('#editor-panel [data-refhash-role="key"]').fill('');
+    expect(await refs()).toEqual([{ source_name: 's', external_id: 'X' }]);
+
+    await field('source_name').fill('');
+    expect(await refs()).toEqual([{ source_name: '', external_id: 'X' }]);
+    expect(await page.evaluate(() => (window as any).validateBundle())).toEqual([
+      `identity ${identity.id} external_references entry has an empty source_name`,
+    ]);
+
+    // Removing the last reference also clears its issue, so the bundle can be visualized again.
+    await expect(page.locator('#visualize-bundle')).toBeDisabled();
+    await page.locator('#editor-panel [data-action="remove-ref"]').click();
+    expect(Object.keys(await objectState(page, identity.id))).not.toContain('external_references');
+    await expect(page.locator('#visualize-bundle')).toBeEnabled();
+  });
+
+  // Validation covers common properties as well: a reference needs description, url or
+  // external_id (section 2.5.2), and confidence is an integer from 0 to 100 (section 3.2). A url
+  // is any URL reference (section 2.5.1), so a non-HTTP scheme is not an issue.
+  test('validation checks external references and confidence', async ({ page }) => {
+    await openBuilder(page);
+    const validate = (patch: Record<string, unknown>) => page.evaluate((changes) => {
+      const object = (window as any).getActiveObject();
+      Object.assign(object, { name: 'n', identity_class: 'individual' }, changes);
+      Object.keys(changes).forEach((key) => { if (changes[key] === undefined) delete object[key]; });
+      return (window as any).validateBundle() as string[];
+    }, patch);
+    await page.evaluate(() => (window as any).addObject('identity'));
+    const id = await page.evaluate(() => (window as any).getActiveObject().id);
+
+    expect(await validate({
+      external_references: [{ source_name: 's' }, { source_name: '', url: 'https://example.com/a' }, { source_name: 'f', url: 'ftp://example.com/f' }],
+    })).toEqual([
+      `identity ${id} external_references entry needs description, url or external_id`,
+      `identity ${id} external_references entry has an empty source_name`,
+    ]);
+    expect(await validate({ external_references: [] })).toEqual([`identity ${id} external_references must not be an empty list`]);
+
+    const confidence: Array<[number, string[]]> = [
+      [500, [`identity ${id} confidence above max`]],
+      [1.5, [`identity ${id} confidence must be integer`]],
+      [-3, [`identity ${id} confidence below min`]],
+      [0, []],
+      [100, []],
+    ];
+    for (const [value, issues] of confidence) {
+      expect(await validate({ external_references: undefined, confidence: value }), `confidence ${value}`).toEqual(issues);
+    }
   });
 
   // STIX 2.1 section 2.9 requires an RFC 4122 UUID, whose hex digits are case insensitive on
