@@ -523,7 +523,18 @@ Initialization order:
 
 Defense-in-depth implementation in v2.9.3:
 
-1. **Input normalization** on all text-entry paths: control characters removed and lengths bounded, printable evidence preserved. In the STIX Composer, structural values (identifiers and refs, dictionary/hash/extension keys, kill-chain values, granular-marking selectors, timestamps) are validated against the STIX 2.1 rules for their type at import, at editor commit and in bundle validation: keys use letters, digits, `-` and `_` (keys of `hashes` properties and external-reference hashes at least 3 characters), selectors follow the section 7.2.3.1 syntax, kill-chain values are free text without control characters, and timestamps follow RFC 3339 in UTC, including a leap second as `23:59:60` on the last day of a month; an invalid or `null` value or list entry, or a kill-chain phase or granular marking entry that lacks a required property, rejects the whole imported file. No rule depends on keystroke blocking. Deliberate limits where the Composer is stricter than STIX 2.1, which allows any string for kill-chain values and any number of list entries: a kill-chain name or phase must not be blank, must not contain control characters and may have at most 5000 characters; a kill-chain phase whose name or phase is an empty string is dropped at import; and import keeps at most the first 100 entries of each list, dictionary, hashes property and extensions property.
+1. **Input normalization** on all text-entry paths: control characters removed and lengths bounded, printable evidence preserved. In the STIX Composer, structural values (identifiers and refs, dictionary/hash/extension keys, kill-chain values, granular-marking selectors, timestamps) are validated against the STIX 2.1 rules for their type at import, at editor commit and in bundle validation. No rule depends on keystroke blocking.
+   - **Keys** use letters, digits, `-` and `_`. Keys of `hashes` properties and external-reference hashes need at least 3 characters.
+   - **Selectors** follow the section 7.2.3.1 syntax.
+   - **Kill-chain values** are free text without control characters.
+   - **Timestamps** follow RFC 3339 in UTC, including a leap second as `23:59:60` on the last day of a month.
+   - **Identifiers** follow `type--UUID` with a lowercase type name. The UUID's hex digits may be written in either case (RFC 4122) and are stored in lowercase at import and editor commit; the import message gives the number of values lowercased.
+   - **Extension names** that are extension-definition ids are lowercased the same way, so they keep matching that definition's id. If two names in one `extensions` property differ only in case, both are kept as written and the import message says so. Other extension names are kept as written.
+   - **Rejection:** an invalid or `null` value or list entry, or a kill-chain phase or granular marking entry that lacks a required property, rejects the whole imported file.
+   - **Deliberate limits** where the Composer is stricter than STIX 2.1, which allows any string for kill-chain values and any number of list entries:
+     - a kill-chain name or phase must not be blank, must not contain control characters and may have at most 5000 characters;
+     - a kill-chain phase whose name or phase is an empty string is dropped at import;
+     - import keeps at most the first 100 entries of each list, dictionary, hashes property and extensions property.
 2. **Output encoding** before template insertion (`esc`, `escAttr`, entity encoding).
 3. **Safe JSON parsing**: the main editor uses a reviver to strip `__proto__` / `constructor` / `prototype`. The STIX Composer keeps these keys where STIX 2.1 allows them (dictionary keys, keys inside an extension) by copying every imported object into null-prototype objects, so they stay inert data; it refuses them as extension names.
 4. **Null-prototype object construction** for untrusted accumulator objects.

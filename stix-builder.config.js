@@ -2,7 +2,9 @@
 
 // STIX 2.1 Builder Config
 const STIX_VERSION = '2.1';
-const STIX_ID_PATTERN = /^[a-z][a-z0-9-]*--[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+// The type prefix is a lowercase type name (STIX 2.1 section 2.9); UUID hex digits are case
+// insensitive on input (RFC 4122 section 3).
+const STIX_ID_PATTERN = /^[a-z][a-z0-9-]*--[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
 const STIX_KILL_CHAIN_PHASES = {
     'unified-kill-chain': [
