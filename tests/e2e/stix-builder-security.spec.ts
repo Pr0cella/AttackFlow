@@ -275,14 +275,9 @@ test.describe('STIX Builder hardening', () => {
   });
 });
 
-// EVIDENCE IS KEPT VERBATIM; STRUCTURAL VALUES ARE VALIDATED, NEVER REWRITTEN.
-//
-// Evidence text (names, descriptions, patterns, list items, reference fields, dictionary
-// values) keeps every printable character, and each output sink encodes for its own
-// context. Keys, identifiers, kill-chain values, selectors and timestamps follow a fixed
-// grammar: an invalid one rejects the whole imported file, is refused by the editor, and
-// is reported by validation. Typing guards are not relied on anywhere, so the editor cases
-// write values the way a user bypassing them would.
+// Evidence text keeps every printable character and is encoded at each sink. Structural
+// values follow a fixed grammar: an invalid one rejects the imported file, is refused by
+// the editor and is reported by validation, without relying on typing guards.
 test.describe('Composer evidence and structural values', () => {
   const T0 = '2026-01-01T00:00:00.000Z';
   const EVIDENCE = 'Quote "q" \'a\' [b] {c} ; <x> & `t` \\ back';
@@ -442,6 +437,21 @@ test.describe('Composer evidence and structural values', () => {
     { label: 'timestamp field', field: 'valid_from', object: sdo('indicator', 'b', { name: 'n', pattern: '[x:y = 1]', pattern_type: 'stix', valid_from: 'Jan 1 2026' }) },
     { label: 'created timestamp', field: 'created', object: { ...sdo('identity', 'c', { name: 'i' }), created: '2026-01-01 00:00:00' } },
     { label: 'impossible calendar date', field: 'modified', object: { ...sdo('identity', 'f', { name: 'i' }), modified: '2026-02-30T00:00:00Z' } },
+    // null is not a JSON string or array, and a granular marking needs selectors plus
+    // exactly one of marking_ref or lang (STIX 2.1 section 7.2.3.1).
+    { label: 'null granular marking', field: 'granular_markings[0]', object: sdo('identity', '1', { name: 'i', granular_markings: [null] }) },
+    { label: 'granular marking without marking_ref or lang', field: 'granular_markings[0].marking_ref', object: sdo('identity', '2', { name: 'i', granular_markings: [{ selectors: ['description'] }] }) },
+    { label: 'granular marking with marking_ref and lang', field: 'granular_markings[0]', object: sdo('identity', '3', { name: 'i', granular_markings: [{ selectors: ['description'], marking_ref: TLP, lang: 'en' }] }) },
+    { label: 'granular marking without selectors', field: 'granular_markings[0].selectors', object: sdo('identity', '4', { name: 'i', granular_markings: [{ marking_ref: TLP }] }) },
+    { label: 'non-list granular marking selectors', field: 'granular_markings[0].selectors', object: sdo('identity', 'b', { name: 'i', granular_markings: [{ selectors: 'description', marking_ref: TLP }] }) },
+    { label: 'non-string granular marking lang', field: 'granular_markings[0].lang', object: sdo('identity', 'c', { name: 'i', granular_markings: [{ selectors: ['description'], lang: 5 }] }) },
+    { label: 'granular marking with empty lang and no marking_ref', field: 'granular_markings[0].marking_ref', object: sdo('identity', 'f', { name: 'i', granular_markings: [{ selectors: ['description'], lang: '' }] }) },
+    { label: 'null granular marking selector', field: 'granular_markings[0].selectors[0]', object: sdo('identity', '5', { name: 'i', granular_markings: [{ selectors: [null], marking_ref: TLP }] }) },
+    { label: 'null created timestamp', field: 'created', object: { ...sdo('identity', '6', { name: 'i' }), created: null } },
+    { label: 'null timestamp field', field: 'valid_from', object: sdo('indicator', '7', { name: 'n', pattern: '[x:y = 1]', pattern_type: 'stix', valid_from: null }) },
+    { label: 'null object ref', field: 'object_refs[0]', object: sdo('report', '8', { name: 'r', published: T0, object_refs: [null] }) },
+    { label: 'null kill chain phase', field: 'kill_chain_phases[0]', object: sdo('malware', '9', { name: 'm', is_family: false, kill_chain_phases: [null] }) },
+    { label: 'kill chain phase without phase_name', field: 'kill_chain_phases[0].phase_name', object: sdo('malware', 'a', { name: 'm', is_family: false, kill_chain_phases: [{ kill_chain_name: 'mitre-attack' }] }) },
   ];
 
   for (const { label, field, object } of INVALID_STRUCTURAL) {
@@ -458,6 +468,17 @@ test.describe('Composer evidence and structural values', () => {
       expect(await bundleState(page)).toBe(before);
     });
   }
+
+  // A language marking (selectors plus lang, no marking_ref) is spec-valid under STIX 2.1
+  // section 7.2.3.1, so it must not reject the file.
+  test('does not reject a file for a granular language marking', async ({ page }) => {
+    await openBuilder(page);
+    const identity = sdo('identity', 'b', { name: 'i', granular_markings: [{ selectors: ['description'], lang: 'en' }] });
+    const { toast, dialogs } = await uploadBundle(page, [identity]);
+    expect(toast).toBe('Bundle imported');
+    expect(dialogs).toEqual([]);
+    expect(await page.evaluate((id) => (eval('state') as any).objectsById.has(id), identity.id)).toBe(true);
+  });
 
   test('keeps valid structural values exactly, including selectors with list indexes', async ({ page }) => {
     await openBuilder(page);
@@ -501,11 +522,13 @@ test.describe('Composer evidence and structural values', () => {
     await page.locator('#editor-panel [data-action="add-kc"]').click();
     await add('report');
     await page.locator('#editor-panel [data-action="add-list"][data-list-field="object_refs"]').click();
+    await page.locator('#editor-panel [data-action="add-gm"]').click();
 
     const source = await page.evaluate(() => JSON.parse(JSON.stringify((eval('state') as any).bundle.objects)));
     expect(source.find((o: any) => o.type === 'relationship').source_ref).toBe('');
     expect(source.find((o: any) => o.type === 'malware').kill_chain_phases).toEqual([{ kill_chain_name: 'unified-kill-chain', phase_name: '' }]);
     expect(source.find((o: any) => o.type === 'report').object_refs).toEqual(['']);
+    expect(source.find((o: any) => o.type === 'report').granular_markings).toEqual([{ selectors: [], marking_ref: '' }]);
 
     // Validation reports the unfilled required fields, so export asks before downloading.
     page.once('dialog', (dialog) => dialog.accept());
@@ -521,6 +544,15 @@ test.describe('Composer evidence and structural values', () => {
     expect(Object.prototype.hasOwnProperty.call(await byType('indicator'), 'valid_from')).toBe(false);
     expect((await byType('malware')).kill_chain_phases).toEqual([]);
     expect((await byType('report')).object_refs).toEqual([]);
+
+    // The unfilled marking row stays so the analyst can finish it, and validation flags it.
+    const report = await byType('report');
+    expect(report.granular_markings).toEqual([{ selectors: [], marking_ref: '' }]);
+    const issues = await page.evaluate(() => (window as any).validateBundle() as string[]);
+    expect(issues).toEqual(expect.arrayContaining([
+      `report ${report.id} granular_markings entry missing selectors`,
+      `report ${report.id} granular_markings entry missing marking_ref`,
+    ]));
   });
 
   test('the editor refuses invalid structural values without relying on typing guards', async ({ page }) => {
@@ -588,7 +620,11 @@ test.describe('Composer evidence and structural values', () => {
       object.name = 'Direct';
       object.created = 'Jan 1 2026';
       object.created_by_ref = 'nope';
-      object.granular_markings = [{ selectors: ['bad]'], marking_ref: tlp }];
+      object.granular_markings = [
+        { selectors: ['bad]'], marking_ref: tlp },
+        { selectors: [], marking_ref: tlp },
+        { selectors: ['description'], marking_ref: '' },
+      ];
       object.external_references = [{ source_name: 's', hashes: { 'bad key': 'x' } }];
       return (window as any).validateBundle() as string[];
     }, { tlp: TLP });
@@ -598,6 +634,8 @@ test.describe('Composer evidence and structural values', () => {
       `identity ${id} invalid created timestamp`,
       `identity ${id} invalid created_by_ref`,
       `identity ${id} invalid granular_markings selector`,
+      `identity ${id} granular_markings entry missing selectors`,
+      `identity ${id} granular_markings entry missing marking_ref`,
       `identity ${id} invalid external_references key`,
     ]));
   });

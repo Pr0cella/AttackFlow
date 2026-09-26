@@ -11,6 +11,7 @@
 ### Changed
 - **Export Filenames**: Downloads are now named from a fixed prefix and a UTC timestamp instead of being derived from the document title
 - **Export Contents**: JSON export no longer writes the sidebar filter state or the current entity selection. Documents that still contain the two keys import normally and the values are ignored
+- **Composer Import Strictness**: STIX Composer import rejects the whole file, naming the object and field, for invalid or `null` structural values and for kill-chain phases or granular markings that are malformed or missing a required property. The current bundle is left unchanged. Validation now flags granular markings without selectors or a marking reference.
 
 ### Fixed
 - **Custom Object Name Preservation**: Native kill-chain imports keep custom STIX object names up to the same 200-character limit the create and edit modals allow, instead of shortening them to the 50-character label limit. Label, description and other field limits are unchanged
@@ -23,7 +24,7 @@
 - **Group Rename Cancel**: Fixed group renaming so pressing Escape cancels the edit without saving it
 - **Transient Rename State**: Finishing or cancelling a group rename now clears the internal rename flag instead of keeping it, so it no longer appears in exported JSON documents
 - **Field Encoding**: Added defensive field encoding in STIX Composer fields
-- **Composer Evidence Preservation**: The STIX Composer keeps STIX patterns and other evidence text verbatim through import, typing, pasting, editing and export
+- **Composer Evidence Preservation**: The STIX Composer keeps the printable characters of STIX patterns and other evidence text unchanged through import, typing, pasting, editing and export. Control characters, including line breaks and tabs, are removed and length is limited, and import also trims surrounding whitespace
 - **Composer Structural Validation**: Composer identifiers and references, dictionary/hash/extension keys, kill-chain values, granular-marking selectors and timestamps are validated against strict formats instead of being silently rewritten
 - **CSV Serialization**: Fixed an issue where CSV cells protected against spreadsheet formula injection were quoted more than once. Protected cells now carry a single leading tab inside one layer of quoting, cells containing a carriage return are quoted, and records are terminated with CRLF
 - **STIX Property Export**: STIX bundle export and the bundle embedded in JSON export now preserve stored properties correctly
