@@ -7,9 +7,9 @@
 // What is covered is the Composer lifecycle, every import decision branch, and the
 // declared cross-page intersection with its losses stated explicitly.
 //
-// The Composer's own sanitization defects -- imported strings losing the bracket and quote
-// characters a STIX pattern needs, and numeric editor values reaching HTML attributes
-// unencoded -- are held open in stix-builder-security.spec.ts and are not re-asserted here.
+// Evidence preservation and structural-value validation are asserted in detail in
+// stix-builder-security.spec.ts; the RT-09 lifecycle here carries punctuation-rich evidence
+// through every stage so a loss anywhere between import and the final download is visible.
 
 import { expect, test, type Page } from '@playwright/test';
 import {
@@ -25,6 +25,13 @@ test.afterEach(async ({ page }) => expectNoExternalRequests(page));
 const A = 'malware--11111111-1111-4111-8111-111111111111';
 const B = 'identity--22222222-2222-4222-8222-222222222222';
 const C = 'tool--33333333-3333-4333-8333-333333333333';
+const D = 'indicator--44444444-4444-4444-8444-444444444444';
+
+// Punctuation-rich evidence: every character the Composer used to strip or entity-encode,
+// plus literal entity text that must stay literal.
+const EVIDENCE_DESCRIPTION = 'Initial "quoted" \'single\' [bracketed] {braced}; <angle> & `tick` \\ back &lt;lit&gt;';
+const EDITED_NAME = 'Edited "lifecycle" [malware]; <v2> & {x}';
+const LIFECYCLE_PATTERN = "[file:size > 10 AND file:name = 'a--b.exe'] OR [domain-name:value = 'x.example']";
 
 function bundle(objects: unknown[], id = 'bundle--99999999-9999-4999-8999-999999999999') {
   return { type: 'bundle', id, spec_version: '2.1', objects };
@@ -45,12 +52,18 @@ const LIFECYCLE_OBJECTS = [
   {
     type: 'malware', spec_version: '2.1', id: A,
     created: '2026-01-01T00:00:00.000Z', modified: '2026-01-02T00:00:00.000Z',
-    name: 'Edited lifecycle malware', is_family: false, description: 'Initial description',
+    name: EDITED_NAME, is_family: false, description: EVIDENCE_DESCRIPTION,
   },
   {
     type: 'identity', spec_version: '2.1', id: B,
     created: '2026-01-01T00:00:00.000Z', modified: '2026-01-02T00:00:00.000Z',
     name: 'Lifecycle identity', identity_class: 'organization',
+  },
+  {
+    type: 'indicator', spec_version: '2.1', id: D,
+    created: '2026-01-01T00:00:00.000Z', modified: '2026-01-02T00:00:00.000Z',
+    name: 'Lifecycle indicator', pattern: LIFECYCLE_PATTERN, pattern_type: 'stix',
+    valid_from: '2026-01-01T00:00:00.000Z', labels: ['[label]', 'a "b" <c>'],
   },
 ];
 
@@ -289,15 +302,15 @@ test.describe('RT-09 Composer lifecycle (representative, not the full field matr
   test('create, edit, download, reimport in a fresh Composer and download again', async ({ page, browser }) => {
     await openComposer(page);
 
-    // PLAIN EVIDENCE ONLY, deliberately. The Composer strips [ ] { } ; " ' ` from every
-    // imported string today -- the separate sanitization case in
-    // stix-builder-security.spec.ts holds that open -- so punctuation-rich evidence cannot
-    // survive this flow yet. Marking the whole lifecycle as an expected failure would
-    // demonstrate no lifecycle at all, so this proves the stages are wired end to end and
-    // punctuation is added to this same flow once the sanitizer is fixed.
+    // Punctuation-rich evidence in an imported description, a typed name and an indicator
+    // pattern, so every stage must carry the exact characters, not just the objects.
     await importIntoComposer(page, bytes(bundle([
-      sdo(A, 'Lifecycle malware', { is_family: false, description: 'Initial description' }),
+      sdo(A, 'Lifecycle malware', { is_family: false, description: EVIDENCE_DESCRIPTION }),
       sdo(B, 'Lifecycle identity', { identity_class: 'organization' }),
+      sdo(D, 'Lifecycle indicator', {
+        pattern: LIFECYCLE_PATTERN, pattern_type: 'stix', valid_from: '2026-01-01T00:00:00.000Z',
+        labels: ['[label]', 'a "b" <c>'],
+      }),
     ])), 'lifecycle-source.json');
     expect(await settleComposerImport(page)).toBe('Bundle imported');
 
@@ -308,14 +321,15 @@ test.describe('RT-09 Composer lifecycle (representative, not the full field matr
     }, A);
     const nameField = page.locator('[data-field="name"]');
     await expect(nameField).toBeVisible();
-    await nameField.fill('Edited lifecycle malware');
+    await nameField.fill('');
+    await nameField.pressSequentially(EDITED_NAME);
     await nameField.blur();
 
     const edited = await composerState(page);
-    expect(edited.objects.find((o: any) => o.id === A).name).toBe('Edited lifecycle malware');
+    expect(edited.objects.find((o: any) => o.id === A).name).toBe(EDITED_NAME);
 
     const first = await exportFromComposer(page);
-    expect(first.json.objects).toHaveLength(2);
+    expect(first.json.objects).toHaveLength(3);
 
     await withFreshContext(browser, async freshPage => {
       await openComposer(freshPage);
@@ -325,9 +339,10 @@ test.describe('RT-09 Composer lifecycle (representative, not the full field matr
       expect(await settleComposerImport(freshPage)).toBe('Bundle imported');
 
       const restored = await composerState(freshPage);
-      expect(restored.objects.map((o: any) => o.id).sort()).toEqual([A, B].sort());
-      expect(restored.objects.find((o: any) => o.id === A).name).toBe('Edited lifecycle malware');
-      expect(restored.objects.find((o: any) => o.id === A).description).toBe('Initial description');
+      expect(restored.objects.map((o: any) => o.id).sort()).toEqual([A, B, D].sort());
+      expect(restored.objects.find((o: any) => o.id === A).name).toBe(EDITED_NAME);
+      expect(restored.objects.find((o: any) => o.id === A).description).toBe(EVIDENCE_DESCRIPTION);
+      expect(restored.objects.find((o: any) => o.id === D).pattern).toBe(LIFECYCLE_PATTERN);
       expect(restored.objects.find((o: any) => o.id === B).identity_class).toBe('organization');
 
       const second = await exportFromComposer(freshPage);

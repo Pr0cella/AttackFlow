@@ -523,7 +523,7 @@ Initialization order:
 
 Defense-in-depth implementation in v2.9.0:
 
-1. **Input blocking + normalization** on all text-entry paths.
+1. **Input normalization** on all text-entry paths: control characters removed and lengths bounded, printable evidence preserved. In the STIX Composer, structural values (identifiers and refs, dictionary/hash/extension keys, kill-chain values, granular-marking selectors, timestamps) are validated against allowlist grammars at import, at editor commit and in bundle validation; an invalid one rejects the whole imported file. No rule depends on keystroke blocking.
 2. **Output encoding** before template insertion (`esc`, `escAttr`, entity encoding).
 3. **Safe JSON parsing** using reviver to strip `__proto__` / `constructor` / `prototype`.
 4. **Null-prototype object construction** for untrusted accumulator objects.
