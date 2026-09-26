@@ -525,7 +525,7 @@ Defense-in-depth implementation in v2.9.3:
 
 1. **Input normalization** on all text-entry paths: control characters removed and lengths bounded, printable evidence preserved. In the STIX Composer, structural values (identifiers and refs, dictionary/hash/extension keys, kill-chain values, granular-marking selectors, timestamps) are validated against allowlist grammars at import, at editor commit and in bundle validation; an invalid or `null` value or list entry, or a kill-chain phase or granular marking entry that lacks a required property, rejects the whole imported file. No rule depends on keystroke blocking.
 2. **Output encoding** before template insertion (`esc`, `escAttr`, entity encoding).
-3. **Safe JSON parsing** using reviver to strip `__proto__` / `constructor` / `prototype`.
+3. **Safe JSON parsing**: the main editor uses a reviver to strip `__proto__` / `constructor` / `prototype`. The STIX Composer keeps these keys where STIX 2.1 allows them (dictionary keys, keys inside an extension) by copying every imported object into null-prototype objects, so they stay inert data; it refuses them as extension names.
 4. **Null-prototype object construction** for untrusted accumulator objects.
 5. **Import validation + limit enforcement** (file size/count/shape/ID formats).
 6. **IPC allowlisting + nonce checks + channel-only messaging + throttling**.

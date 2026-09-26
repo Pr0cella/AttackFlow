@@ -209,8 +209,8 @@ Please do not hesitate to create an issue / pull request or contact me directly 
 
 Import paths and JSON processing include explicit prototype pollution defenses:
 
-- **Dangerous key blocklist** — `__proto__`, `constructor`, and `prototype` keys are rejected in parse/sanitize paths.
-- **Safe JSON parsing** — untrusted JSON is parsed with a reviver that drops dangerous prototype keys.
+- **Dangerous key blocklist** — in the main editor, `__proto__`, `constructor`, and `prototype` keys are rejected in parse/sanitize paths. The STIX Composer keeps them as data where STIX 2.1 allows them (dictionary keys such as environment variable names, keys inside an extension) and refuses them as extension names.
+- **Safe JSON parsing** — the main editor parses untrusted JSON with a reviver that drops dangerous prototype keys. The STIX Composer copies every imported object into null-prototype objects.
 - **Null-prototype accumulators** — sanitized object collectors use `Object.create(null)` for untrusted key maps.
 - **Own-property checks** — import logic uses own-property guards for dynamic field copy to avoid inherited-property abuse.
 
