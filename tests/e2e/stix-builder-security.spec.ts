@@ -1067,19 +1067,33 @@ test.describe('Composer evidence and structural values', () => {
 
   // STIX 2.1 section 2.9 requires an RFC 4122 UUID, whose hex digits are case insensitive on
   // input (RFC 4122 section 3); the type prefix is a type name and always lowercase.
+  const VALID_IDS = [
+    'indicator--f81d4fae-7dec-11d0-a765-00a0c91e6bf6', 'indicator--F81D4FAE-7DEC-11D0-A765-00A0C91E6BF6',
+    'indicator--f81D4fae-7DEC-11d0-A765-00a0c91e6Bf6', 'indicator--00000000-0000-0000-0000-000000000000',
+    'x-acme-widget--F81D4FAE-7DEC-11D0-A765-00A0C91E6BF6',
+  ];
+  const INVALID_IDS = [
+    'Indicator--f81d4fae-7dec-11d0-a765-00a0c91e6bf6', 'INDICATOR--F81D4FAE-7DEC-11D0-A765-00A0C91E6BF6',
+    'indicator--F81D4FAE7DEC11D0A76500A0C91E6BF6', 'indicator--G81D4FAE-7DEC-11D0-A765-00A0C91E6BF6', '',
+  ];
+  const ID_GRAMMAR = [...VALID_IDS.map((v) => [v, true]), ...INVALID_IDS.map((v) => [v, false])];
+
   test('the identifier grammar accepts uppercase UUID hex but not an uppercase type prefix', async ({ page }) => {
     await openBuilder(page);
-    const valid = [
-      'indicator--f81d4fae-7dec-11d0-a765-00a0c91e6bf6', 'indicator--F81D4FAE-7DEC-11D0-A765-00A0C91E6BF6',
-      'indicator--f81D4fae-7DEC-11d0-A765-00a0c91e6Bf6', 'indicator--00000000-0000-0000-0000-000000000000',
-      'x-acme-widget--F81D4FAE-7DEC-11D0-A765-00A0C91E6BF6',
-    ];
-    const invalid = [
-      'Indicator--f81d4fae-7dec-11d0-a765-00a0c91e6bf6', 'INDICATOR--F81D4FAE-7DEC-11D0-A765-00A0C91E6BF6',
-      'indicator--F81D4FAE7DEC11D0A76500A0C91E6BF6', 'indicator--G81D4FAE-7DEC-11D0-A765-00A0C91E6BF6', '',
-    ];
-    expect(await isValid(page, 'identifier', [...valid, ...invalid]))
-      .toEqual([...valid.map((v) => [v, true]), ...invalid.map((v) => [v, false])]);
+    expect(await isValid(page, 'identifier', [...VALID_IDS, ...INVALID_IDS])).toEqual(ID_GRAMMAR);
+  });
+
+  // The page keeps its own copy of the id pattern for when the configuration does not define
+  // one; that copy must follow the same grammar.
+  test('the built-in identifier pattern follows the same grammar when the configuration lacks one', async ({ page }) => {
+    await page.route('**/stix-builder.config.js', async (route) => {
+      const body = await (await route.fetch()).text();
+      await route.fulfill({ contentType: 'application/javascript', body: body.replaceAll('STIX_ID_PATTERN', 'RENAMED_ID_PATTERN') });
+    });
+    await openBuilder(page);
+    expect(await page.evaluate(() => [typeof (window as any).STIX_ID_PATTERN, typeof (window as any).RENAMED_ID_PATTERN]))
+      .toEqual(['undefined', 'object']);
+    expect(await isValid(page, 'identifier', [...VALID_IDS, ...INVALID_IDS])).toEqual(ID_GRAMMAR);
   });
 
   // Uppercase UUID hex in ids and refs is accepted and stored lowercase, so a ref still finds
@@ -1128,6 +1142,19 @@ test.describe('Composer evidence and structural values', () => {
     const mixedId = { ...sdo('identity', 'e', { name: 'e', identity_class: 'individual' }), id: 'Identity--' + stixId('identity', 'e').split('--')[1] };
     expect((await uploadBundle(page, [plain, mixedId])).toast).toBe('Bundle imported');
     expect(await page.evaluate(() => (eval('state') as any).bundle.objects.map((o: any) => o.id))).toEqual([plain.id]);
+  });
+
+  // An extension definition lists created_by_ref among its own properties as well as the
+  // common ones; the value is still one value and is counted once.
+  test('counts a lowercased created_by_ref on an extension definition once', async ({ page }) => {
+    await openBuilder(page);
+    const author = sdo('identity', 'a', { name: 'Author', identity_class: 'organization' });
+    const definition = sdo('extension-definition', 'd', {
+      created_by_ref: stixId('identity', 'A'), name: 'rank', description: 'd',
+      schema: 'https://example.com/schema.json', version: '1.0', extension_types: ['property-extension'],
+    });
+    expect((await uploadBundle(page, [author, definition])).toast).toBe('Bundle imported, 1 identifier lowercased');
+    expect(await objectState(page, definition.id)).toMatchObject({ created_by_ref: author.id });
   });
 
   test('the editor commits uppercase UUID hex lowercased and refuses an uppercase type prefix', async ({ page }) => {

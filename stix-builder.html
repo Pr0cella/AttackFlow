@@ -2274,9 +2274,14 @@
             const commonFields = def.category !== 'sco'
                 ? [...(ACTIVE_STIX_COMMON_PROPERTIES.optional || [])]
                 : [];
-            const fields = [...commonFields, ...(def.required || []), ...(def.optional || [])];
+            // A type can list a common property again (extension-definition lists created_by_ref),
+            // so each key is imported once, with its last definition, and counted once in the report.
+            const fields = new Map();
+            [...commonFields, ...(def.required || []), ...(def.optional || [])].forEach((field) => {
+                if (field) fields.set(field.key, field);
+            });
             fields.forEach((field) => {
-                if (!field || isDangerousObjectKey(field.key)) return;
+                if (isDangerousObjectKey(field.key)) return;
                 if (!hasOwn(obj, field.key)) return;
                 const value = sanitizeImportedFieldValue(field, obj[field.key], report);
                 if (value !== null && value !== undefined && value !== '') {
