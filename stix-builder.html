@@ -1300,9 +1300,9 @@
         }
 
         // Structural values (keys, identifiers, kill-chain values, marking selectors,
-        // timestamps) follow the STIX 2.1 rules for their type. They are validated, never
-        // rewritten: an invalid one rejects an imported file, is refused by the editor and is
-        // reported by validation.
+        // timestamps) follow the STIX 2.1 rules for their type. They are validated, and only
+        // identifiers are rewritten (to lowercase, see toStoredIdentifier): an invalid one
+        // rejects an imported file, is refused by the editor and is reported by validation.
         const STRUCTURAL_PATTERNS = {
             // Dictionary keys (section 2.3); hash keys also need 3 characters (section 2.7).
             key: /^[A-Za-z0-9_-]{1,250}$/,
@@ -1353,6 +1353,29 @@
             return value;
         }
 
+        // UUID hex digits are case insensitive on input (RFC 4122 section 3), so a valid id is
+        // stored lowercase and refs that differ only in case find the same object. The type
+        // prefix is lowercase already. report.lowercased counts the values changed.
+        function toStoredIdentifier(value, report) {
+            const stored = value.toLowerCase();
+            if (stored !== value && report) report.lowercased += 1;
+            return stored;
+        }
+
+        // The editor stores an identifier the way import does and shows the stored form.
+        // Lowercasing keeps the length, so a focused field gets its caret back where the user
+        // left it; an unfocused field is not touched, because setting a selection can move focus.
+        function commitIdentifierInput(input) {
+            const stored = toStoredIdentifier(input.value);
+            if (input.value !== stored) {
+                const focused = input === document.activeElement;
+                const { selectionStart, selectionEnd } = input;
+                input.value = stored;
+                if (focused) input.setSelectionRange(selectionStart, selectionEnd);
+            }
+            return stored;
+        }
+
         // The editor stores '' for a structural field that is not filled in yet (new objects,
         // added rows, cleared inputs), so import treats '' as absent exactly as it always
         // has. Any other value must be valid.
@@ -1382,7 +1405,7 @@
             ? STIX_ID_PATTERN
             : (typeof window !== 'undefined' && window.STIX_ID_PATTERN instanceof RegExp)
             ? window.STIX_ID_PATTERN
-            : /^[a-z][a-z0-9-]*--[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+            : /^[a-z][a-z0-9-]*--[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
         const ACTIVE_STIX_OBJECT_DEFS = (typeof STIX_OBJECT_DEFS !== 'undefined' && STIX_OBJECT_DEFS)
             ? STIX_OBJECT_DEFS
@@ -2106,17 +2129,45 @@
             return out;
         }
 
-        function sanitizeExtensions(raw, where, maxItems = INPUT_LIMITS.maxListItems) {
+        function sanitizeExtensions(raw, where, maxItems = INPUT_LIMITS.maxListItems, report) {
             const out = createSafeObject();
             if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
-            Object.entries(raw).slice(0, maxItems).forEach(([k, v]) => {
-                const key = requireStructuralValue('extension-name', k, `${where} key`);
-                out[key] = sanitizeDictionary(v || {}, `${where}.${key}`);
+            const entries = Object.entries(raw).slice(0, maxItems);
+            const clashing = clashingExtensionKeys(entries.map(([k]) => k));
+            entries.forEach(([k, v]) => {
+                const name = requireStructuralValue('extension-name', k, `${where} key`);
+                out[toStoredExtensionKey(name, clashing, report)] = sanitizeDictionary(v || {}, `${where}.${name}`);
             });
             return out;
         }
 
-        function sanitizeImportedFieldValue(field, raw) {
+        // An extension key that is an extension-definition id names that definition (STIX 2.1
+        // section 7.3), so it is stored lowercase like the id. Keys that differ only in case
+        // would then clash (section 2.3), so they are kept as written; report.keptKeys counts them.
+        function isExtensionDefinitionId(key) {
+            return ACTIVE_STIX_ID_PATTERN.test(key) && key.startsWith('extension-definition--');
+        }
+
+        // Lowercase forms shared by more than one extension-definition id key.
+        function clashingExtensionKeys(keys) {
+            const counts = new Map();
+            keys.filter(isExtensionDefinitionId).forEach((key) => {
+                const lower = key.toLowerCase();
+                counts.set(lower, (counts.get(lower) || 0) + 1);
+            });
+            return new Set([...counts].filter(([, n]) => n > 1).map(([lower]) => lower));
+        }
+
+        function toStoredExtensionKey(key, clashing, report) {
+            if (!isExtensionDefinitionId(key)) return key;
+            if (clashing.has(key.toLowerCase())) {
+                if (report) report.keptKeys += 1;
+                return key;
+            }
+            return toStoredIdentifier(key, report);
+        }
+
+        function sanitizeImportedFieldValue(field, raw, report) {
             switch (field.type) {
                 case 'boolean':
                     return !!raw;
@@ -2142,7 +2193,7 @@
                 case 'object-marking-refs':
                     if (!Array.isArray(raw)) return [];
                     return raw.slice(0, INPUT_LIMITS.maxListItems)
-                        .map((v, i) => requireStructuralValueOrEmpty('identifier', v, `${field.key}[${i}]`))
+                        .map((v, i) => toStoredIdentifier(requireStructuralValueOrEmpty('identifier', v, `${field.key}[${i}]`), report))
                         .filter(Boolean);
                 case 'kill-chain-phases':
                     if (!Array.isArray(raw)) return [];
@@ -2168,7 +2219,7 @@
                         if (hasOwn(v, 'lang') && typeof v.lang !== 'string') throw new Error(`${where}.lang is invalid`);
                         const lang = hasOwn(v, 'lang') ? v.lang : '';
                         const marking_ref = hasOwn(v, 'marking_ref')
-                            ? requireStructuralValueOrEmpty('identifier', v.marking_ref, `${where}.marking_ref`)
+                            ? toStoredIdentifier(requireStructuralValueOrEmpty('identifier', v.marking_ref, `${where}.marking_ref`), report)
                             : '';
                         if (marking_ref && lang) throw new Error(`${where} has both marking_ref and lang`);
                         if (!hasOwn(v, 'marking_ref') && !lang) throw new Error(`${where}.marking_ref is missing`);
@@ -2188,20 +2239,21 @@
                 case 'hashes':
                     return sanitizeDictionary(raw || {}, field.key, INPUT_LIMITS.maxListItems, 'hash-key');
                 case 'extensions':
-                    return sanitizeExtensions(raw || {}, field.key);
+                    return sanitizeExtensions(raw || {}, field.key, INPUT_LIMITS.maxListItems, report);
                 case 'marking-definition':
                     return raw && typeof raw === 'object'
                         ? sanitizeDictionary(raw || {}, field.key, INPUT_LIMITS.maxListItems)
                         : {};
                 case 'identifier':
+                    return toStoredIdentifier(requireStructuralValueOrEmpty('identifier', raw, field.key), report);
                 case 'timestamp':
-                    return requireStructuralValueOrEmpty(field.type, raw, field.key);
+                    return requireStructuralValueOrEmpty('timestamp', raw, field.key);
                 default:
                     return sanitizeImportedString(String(raw ?? ''), INPUT_LIMITS.maxStringLength);
             }
         }
 
-        function sanitizeImportedObject(obj) {
+        function sanitizeImportedObject(obj, report) {
             if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return null;
             const def = resolveStixObjectDefinition(obj.type);
             if (!def) return null;
@@ -2210,7 +2262,7 @@
 
             const clean = {
                 type: obj.type,
-                id: obj.id,
+                id: toStoredIdentifier(obj.id, report),
                 spec_version: ACTIVE_STIX_VERSION
             };
 
@@ -2226,7 +2278,7 @@
             fields.forEach((field) => {
                 if (!field || isDangerousObjectKey(field.key)) return;
                 if (!hasOwn(obj, field.key)) return;
-                const value = sanitizeImportedFieldValue(field, obj[field.key]);
+                const value = sanitizeImportedFieldValue(field, obj[field.key], report);
                 if (value !== null && value !== undefined && value !== '') {
                     clean[field.key] = value;
                 }
@@ -2516,6 +2568,7 @@
                     const allowed = (value === '' && key !== 'id') || isValidStructuralValue(structuralType, value);
                     if (!setInputValidity(target, allowed)) return;
                 }
+                if (structuralType === 'identifier') value = commitIdentifierInput(target);
                 obj[key] = sanitizeValue(value);
                 if (key === 'id' && oldId !== obj.id) {
                     state.objectsById.delete(oldId);
@@ -2537,6 +2590,7 @@
                 if (listType === 'object-refs' || listType === 'object-marking-refs') {
                     const allowed = target.value === '' || isValidStructuralValue('identifier', target.value);
                     if (!setInputValidity(target, allowed)) return;
+                    commitIdentifierInput(target);
                 }
                 if (!Array.isArray(obj[key])) obj[key] = [];
                 obj[key][index] = sanitizeValue(target.value);
@@ -2582,7 +2636,7 @@
                 if (gmKey === 'selectors') {
                     obj[key][index].selectors = selectors;
                 } else {
-                    obj[key][index][gmKey] = target.value;
+                    obj[key][index][gmKey] = commitIdentifierInput(target);
                 }
                 renderBundlePreview();
                 return;
@@ -2660,7 +2714,9 @@
 
         function collectExtensions(fieldKey) {
             const extKeys = document.querySelectorAll(`[data-ext-field="${fieldKey}"][data-ext-role="key"]`);
+            const clashing = clashingExtensionKeys([...extKeys].map((input) => input.value));
             const dict = createSafeObject();
+            const lowered = [];
             let valid = true;
             extKeys.forEach((input, index) => {
                 const key = input.value;
@@ -2674,9 +2730,14 @@
                     valid = false;
                     return;
                 }
-                dict[key] = nested;
+                const stored = toStoredExtensionKey(key, clashing);
+                if (stored !== key) lowered.push(input);
+                dict[stored] = nested;
             });
-            return valid ? dict : null;
+            if (!valid) return null;
+            // Fields show the stored form only once the extensions are actually committed.
+            lowered.forEach((input) => commitIdentifierInput(input));
+            return dict;
         }
 
         function handleEditorClick(event) {
@@ -2841,7 +2902,9 @@
                 const key = target.dataset.extField;
                 const entries = Object.entries(obj[key] || {});
                 entries.splice(parseInt(target.dataset.index, 10), 1);
-                obj[key] = safeFromEntries(entries);
+                // A name kept as written because of a clash is stored lowercase once the clash is gone.
+                const clashing = clashingExtensionKeys(entries.map(([k]) => k));
+                obj[key] = safeFromEntries(entries.map(([k, v]) => [toStoredExtensionKey(k, clashing), v]));
                 renderEditor();
                 return;
             }
@@ -2893,9 +2956,10 @@
 
                     // Every incoming object is sanitized before anything is asked or replaced, so an
                     // invalid structural value rejects the whole file and the current bundle stays.
+                    const report = { lowercased: 0, keptKeys: 0 };
                     const candidates = raw.objects.map((obj, index) => {
                         try {
-                            return sanitizeImportedObject(obj);
+                            return sanitizeImportedObject(obj, report);
                         } catch (err) {
                             throw new Error(`object ${index + 1} ${err.message}`);
                         }
@@ -2908,9 +2972,12 @@
                         merge = true;
                     }
                     if (!merge) {
+                        const bundleId = typeof raw.id === 'string' && ACTIVE_STIX_ID_PATTERN.test(raw.id)
+                            ? toStoredIdentifier(raw.id, report)
+                            : raw.id;
                         state.bundle = {
                             type: 'bundle',
-                            id: raw.id || ('bundle--' + generateUUID()),
+                            id: bundleId || ('bundle--' + generateUUID()),
                             spec_version: raw.spec_version || ACTIVE_STIX_VERSION,
                             objects: []
                         };
@@ -2930,7 +2997,13 @@
                     if (state.ui.centerMode === 'visualizer') {
                         renderVisualizer();
                     }
-                    showToast('Bundle imported');
+                    const n = report.lowercased;
+                    const kept = report.keptKeys;
+                    showToast([
+                        'Bundle imported',
+                        ...(n ? [`${n} identifier${n === 1 ? '' : 's'} lowercased`] : []),
+                        ...(kept ? [`${kept} extension key${kept === 1 ? '' : 's'} kept as written (they differ only in case)`] : [])
+                    ].join(', '));
                 } catch (err) {
                     showToast('Import failed: ' + err.message);
                 }

@@ -296,7 +296,7 @@ test.describe('Composer evidence and structural values', () => {
   const TLP = stixId('marking-definition', 'f');
 
   let uploads = 0;
-  async function uploadBundle(page: Page, objects: unknown[]) {
+  async function uploadBundle(page: Page, objects: unknown[], bundleId = stixId('bundle', 'e')) {
     const dialogs: string[] = [];
     const onDialog = (dialog: any) => { dialogs.push(dialog.message()); dialog.accept(); };
     page.on('dialog', onDialog);
@@ -306,7 +306,7 @@ test.describe('Composer evidence and structural values', () => {
         name: `upload-${++uploads}.json`,
         mimeType: 'application/json',
         buffer: Buffer.from(JSON.stringify({
-          type: 'bundle', id: stixId('bundle', 'e'), spec_version: '2.1', objects,
+          type: 'bundle', id: bundleId, spec_version: '2.1', objects,
         }), 'utf8'),
       });
       await expect(page.locator('#toast')).not.toBeEmpty();
@@ -824,7 +824,7 @@ test.describe('Composer evidence and structural values', () => {
     try {
       const [download] = await Promise.all([page.waitForEvent('download'), page.locator('#export-bundle').click()]);
       const exported = JSON.parse(require('node:fs').readFileSync((await download.path())!, 'utf8'));
-      return { objects: exported.objects as any[], dialogs };
+      return { id: exported.id as string, objects: exported.objects as any[], dialogs };
     } finally {
       page.off('dialog', onDialog);
     }
@@ -1063,6 +1063,196 @@ test.describe('Composer evidence and structural values', () => {
     expect(await page.locator(refHashKey).getAttribute('aria-invalid')).toBe('true');
     await bypass(refHashKey, 'MD5');
     expect(Object.keys((await readActive('external_references'))[0].hashes)).toEqual(['MD5']);
+  });
+
+  // STIX 2.1 section 2.9 requires an RFC 4122 UUID, whose hex digits are case insensitive on
+  // input (RFC 4122 section 3); the type prefix is a type name and always lowercase.
+  test('the identifier grammar accepts uppercase UUID hex but not an uppercase type prefix', async ({ page }) => {
+    await openBuilder(page);
+    const valid = [
+      'indicator--f81d4fae-7dec-11d0-a765-00a0c91e6bf6', 'indicator--F81D4FAE-7DEC-11D0-A765-00A0C91E6BF6',
+      'indicator--f81D4fae-7DEC-11d0-A765-00a0c91e6Bf6', 'indicator--00000000-0000-0000-0000-000000000000',
+      'x-acme-widget--F81D4FAE-7DEC-11D0-A765-00A0C91E6BF6',
+    ];
+    const invalid = [
+      'Indicator--f81d4fae-7dec-11d0-a765-00a0c91e6bf6', 'INDICATOR--F81D4FAE-7DEC-11D0-A765-00A0C91E6BF6',
+      'indicator--F81D4FAE7DEC11D0A76500A0C91E6BF6', 'indicator--G81D4FAE-7DEC-11D0-A765-00A0C91E6BF6', '',
+    ];
+    expect(await isValid(page, 'identifier', [...valid, ...invalid]))
+      .toEqual([...valid.map((v) => [v, true]), ...invalid.map((v) => [v, false])]);
+  });
+
+  // Uppercase UUID hex in ids and refs is accepted and stored lowercase, so a ref still finds
+  // its object; the import reports how many values were lowercased.
+  test('imports uppercase UUID hex in ids and refs, stores and exports them lowercase', async ({ page }) => {
+    await openBuilder(page);
+    const marking = sdo('marking-definition', 'F', { definition_type: 'tlp', definition: { tlp: 'white' } });
+    const author = sdo('identity', 'A', {
+      name: 'Author', identity_class: 'organization', object_marking_refs: [marking.id],
+      granular_markings: [{ selectors: ['name'], marking_ref: marking.id }],
+    });
+    const target = sdo('identity', 'B', { name: 'Target', identity_class: 'organization', created_by_ref: author.id });
+    const link = sdo('relationship', 'C', { relationship_type: 'related-to', source_ref: target.id, target_ref: author.id });
+    const lower = {
+      bundle: stixId('bundle', 'e'), marking: stixId('marking-definition', 'f'),
+      author: stixId('identity', 'a'), target: stixId('identity', 'b'), link: stixId('relationship', 'c'),
+    };
+    const expected = {
+      [lower.author]: { object_marking_refs: [lower.marking], granular_markings: [{ selectors: ['name'], marking_ref: lower.marking }] },
+      [lower.target]: { created_by_ref: lower.author },
+      [lower.link]: { source_ref: lower.target, target_ref: lower.author },
+    };
+
+    // 4 object ids, 5 refs and the bundle id.
+    const { toast } = await uploadBundle(page, [marking, author, target, link], stixId('bundle', 'E'));
+    expect(toast).toBe('Bundle imported, 10 identifiers lowercased');
+    expect(await page.evaluate(() => (eval('state') as any).bundle.id)).toBe(lower.bundle);
+    for (const [id, props] of Object.entries(expected)) expect(await objectState(page, id)).toMatchObject(props);
+    expect(await page.evaluate(() => (window as any).validateBundle())).toEqual([]);
+
+    const exported = await exportObjects(page);
+    expect(exported.dialogs).toEqual([]);
+    expect(exported.id).toBe(lower.bundle);
+    expect(exported.objects.map((o) => o.id)).toEqual([lower.marking, lower.author, lower.target, lower.link]);
+    for (const [id, props] of Object.entries(expected)) expect(exported.objects.find((o) => o.id === id)).toMatchObject(props);
+
+    await openBuilder(page);
+    expect((await uploadBundle(page, exported.objects)).toast).toBe('Bundle imported');
+    for (const [id, props] of Object.entries(expected)) expect(await objectState(page, id)).toMatchObject(props);
+
+    // The type prefix is still lowercase only: in a ref it rejects the file, and an object
+    // whose id carries it is not imported.
+    const mixedRef = sdo('identity', 'd', { name: 'd', identity_class: 'individual', created_by_ref: 'Identity--' + lower.author.split('--')[1] });
+    expect((await uploadBundle(page, [mixedRef])).toast).toBe('Import failed: object 1 created_by_ref is invalid');
+    const plain = sdo('identity', 'd', { name: 'd', identity_class: 'individual' });
+    const mixedId = { ...sdo('identity', 'e', { name: 'e', identity_class: 'individual' }), id: 'Identity--' + stixId('identity', 'e').split('--')[1] };
+    expect((await uploadBundle(page, [plain, mixedId])).toast).toBe('Bundle imported');
+    expect(await page.evaluate(() => (eval('state') as any).bundle.objects.map((o: any) => o.id))).toEqual([plain.id]);
+  });
+
+  test('the editor commits uppercase UUID hex lowercased and refuses an uppercase type prefix', async ({ page }) => {
+    await openBuilder(page);
+    const bypass = (selector: string, value: string) => page.locator(selector).first().evaluate((element, text) => {
+      (element as HTMLInputElement).value = text;
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+    }, value);
+    const field = (selector: string) => page.locator(selector).first();
+    const readActive = () => page.evaluate(() => JSON.parse(JSON.stringify((window as any).getActiveObject())));
+
+    await page.locator('#add-type').selectOption('identity');
+    await page.locator('#add-object').click();
+    const idInput = '#editor-panel [data-field="id"]';
+    const refInput = '#editor-panel [data-field="created_by_ref"]';
+
+    // The field is rewritten to the stored lowercase form, so it shows what will be exported.
+    await bypass(idInput, stixId('identity', 'B'));
+    expect((await readActive()).id).toBe(stixId('identity', 'b'));
+    expect(await page.evaluate((id) => (eval('state') as any).objectsById.has(id), stixId('identity', 'b'))).toBe(true);
+    await expect(field(idInput)).toHaveValue(stixId('identity', 'b'));
+    await expect(field(idInput)).not.toHaveAttribute('aria-invalid');
+    // Overtyping one digit mid-id keeps the caret there, so the next keystroke lands in place.
+    await field(idInput).evaluate((element) => { (element as HTMLInputElement).focus(); (element as HTMLInputElement).setSelectionRange(10, 11); });
+    await page.keyboard.type('C');
+    await expect(field(idInput)).toHaveValue(`identity--c${'b'.repeat(7)}-bbbb-4bbb-8bbb-${'b'.repeat(12)}`);
+    expect(await field(idInput).evaluate((element) => (element as HTMLInputElement).selectionStart)).toBe(11);
+
+    await bypass(refInput, stixId('identity', 'A'));
+    expect((await readActive()).created_by_ref).toBe(stixId('identity', 'a'));
+    await expect(field(refInput)).toHaveValue(stixId('identity', 'a'));
+    await bypass(refInput, 'Identity--' + stixId('identity', 'c').split('--')[1]);
+    expect((await readActive()).created_by_ref).toBe(stixId('identity', 'a'));
+    await expect(field(refInput)).toHaveAttribute('aria-invalid', 'true');
+
+    await page.locator('#editor-panel [data-action="add-list"][data-list-field="object_marking_refs"]').click();
+    const listInput = '#editor-panel [data-list-field="object_marking_refs"][data-index="0"]';
+    await bypass(listInput, stixId('marking-definition', 'F'));
+    expect((await readActive()).object_marking_refs).toEqual([stixId('marking-definition', 'f')]);
+    await expect(field(listInput)).toHaveValue(stixId('marking-definition', 'f'));
+
+    await page.locator('#editor-panel [data-action="add-gm"]').click();
+    const gmInput = '#editor-panel [data-gm-key="marking_ref"]';
+    await bypass(gmInput, stixId('marking-definition', 'F'));
+    expect((await readActive()).granular_markings[0].marking_ref).toBe(stixId('marking-definition', 'f'));
+    await expect(field(gmInput)).toHaveValue(stixId('marking-definition', 'f'));
+  });
+
+  // An extension key that is an extension-definition id must match that definition's id
+  // (STIX 2.1 section 7.3), so it is lowercased like the id. Keys that differ only in case would
+  // then clash (section 2.3), so they are kept as written and the import says so.
+  test('lowercases extension keys that are extension-definition ids and keeps keys that differ only in case', async ({ page }) => {
+    await openBuilder(page);
+    const extUpper = stixId('extension-definition', 'D');
+    const extLower = stixId('extension-definition', 'd');
+    const mixedPrefix = 'Extension-Definition--' + extUpper.split('--')[1];
+    const definition = sdo('extension-definition', 'D', {
+      name: 'rank', description: 'd', schema: 'https://example.com/schema.json', version: '1.0', extension_types: ['property-extension'],
+    });
+    const fileOne = sco('file', '1', { name: 'a.exe', extensions: {
+      [extUpper]: { extension_type: 'property-extension', rank: '5' }, 'ntfs-ext': { sid: 'S-1' }, 'x-acme-EXT': { a: 'b' }, [mixedPrefix]: { m: 'n' },
+    } });
+    const clashA = stixId('extension-definition', 'E');
+    const clashB = stixId('extension-definition', 'e');
+    const fileTwo = sco('file', '2', { name: 'b.exe', extensions: { [clashA]: { v: '1' }, [clashB]: { v: '2' }, [extUpper]: { v: '3' } } });
+    const keysOf = (objects: any[], id: string) => Object.keys(objects.find((o) => o.id === id).extensions);
+    const expectedOne = [extLower, 'ntfs-ext', 'x-acme-EXT', mixedPrefix];
+    const expectedTwo = [clashA, clashB, extLower];
+
+    // The definition's id and one key in each file are lowercased; both clashing keys are kept.
+    const { toast } = await uploadBundle(page, [definition, fileOne, fileTwo]);
+    expect(toast).toBe('Bundle imported, 3 identifiers lowercased, 2 extension keys kept as written (they differ only in case)');
+    expect(Object.keys((await objectState(page, fileOne.id)).extensions)).toEqual(expectedOne);
+    expect(Object.keys((await objectState(page, fileTwo.id)).extensions)).toEqual(expectedTwo);
+    expect((await objectState(page, fileTwo.id)).extensions[clashB]).toEqual({ v: '2' });
+    expect(await objectState(page, extLower)).toMatchObject({ name: 'rank' });
+    expect(await page.evaluate(() => (window as any).validateBundle())).toEqual([]);
+
+    const exported = await exportObjects(page);
+    expect(keysOf(exported.objects, fileOne.id)).toEqual(expectedOne);
+    expect(keysOf(exported.objects, fileTwo.id)).toEqual(expectedTwo);
+    await openBuilder(page);
+    expect((await uploadBundle(page, exported.objects)).toast)
+      .toBe('Bundle imported, 2 extension keys kept as written (they differ only in case)');
+    expect(Object.keys((await objectState(page, fileTwo.id)).extensions)).toEqual(expectedTwo);
+  });
+
+  test('the editor lowercases an extension-definition id used as an extension key unless it clashes', async ({ page }) => {
+    await openBuilder(page);
+    const readKeys = () => page.evaluate(() => Object.keys((window as any).getActiveObject().extensions || {}));
+    await page.locator('#add-type').selectOption('file');
+    await page.locator('#add-object').click();
+    await page.locator('#editor-panel [data-action="add-ext"][data-ext-field="extensions"]').click();
+    await page.locator('#editor-panel [data-action="add-extdict"]').first().click();
+    // An extension name is committed together with its body, so each name change is
+    // followed by an edit inside the extension.
+    const names = page.locator('#editor-panel [data-ext-field="extensions"][data-ext-role="key"]');
+    const bodies = page.locator('#editor-panel [data-extdict-role="value"]');
+    await names.nth(0).fill(stixId('extension-definition', 'D'));
+    await bodies.nth(0).fill('5');
+    expect(await readKeys()).toEqual([stixId('extension-definition', 'd')]);
+    await expect(names.nth(0)).toHaveValue(stixId('extension-definition', 'd'));
+
+    await page.locator('#editor-panel [data-action="add-ext"][data-ext-field="extensions"]').click();
+    await page.locator('#editor-panel [data-action="add-extdict"]').nth(1).click();
+    await names.nth(1).fill(stixId('extension-definition', 'D'));
+    await bodies.nth(1).fill('6');
+    expect(await readKeys()).toEqual([stixId('extension-definition', 'd'), stixId('extension-definition', 'D')]);
+    await expect(names.nth(1)).toHaveValue(stixId('extension-definition', 'D'));
+    await expect(names.nth(1)).not.toHaveAttribute('aria-invalid');
+
+    // While another name is invalid nothing is committed, so no field is rewritten either.
+    await page.locator('#editor-panel [data-action="add-ext"][data-ext-field="extensions"]').click();
+    await page.locator('#editor-panel [data-action="add-extdict"]').nth(2).click();
+    await names.nth(2).fill('bad key');
+    await names.nth(0).fill(stixId('extension-definition', 'F'));
+    await bodies.nth(0).fill('7');
+    expect((await readKeys()).slice(0, 2)).toEqual([stixId('extension-definition', 'd'), stixId('extension-definition', 'D')]);
+    await expect(names.nth(0)).toHaveValue(stixId('extension-definition', 'F'));
+
+    // Removing one of two clashing names leaves the other free to be stored lowercase.
+    await page.locator('#editor-panel [data-action="remove-ext"][data-ext-field="extensions"]').nth(2).click();
+    await page.locator('#editor-panel [data-action="remove-ext"][data-ext-field="extensions"]').nth(0).click();
+    expect(await readKeys()).toEqual([stixId('extension-definition', 'd')]);
+    await expect(names.nth(0)).toHaveValue(stixId('extension-definition', 'd'));
   });
 
   // An object type is supported only if the configuration defines it as its own entry;
