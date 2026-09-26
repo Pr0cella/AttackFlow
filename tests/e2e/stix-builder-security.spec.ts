@@ -452,6 +452,11 @@ test.describe('Composer evidence and structural values', () => {
     { label: 'null object ref', field: 'object_refs[0]', object: sdo('report', '8', { name: 'r', published: T0, object_refs: [null] }) },
     { label: 'null kill chain phase', field: 'kill_chain_phases[0]', object: sdo('malware', '9', { name: 'm', is_family: false, kill_chain_phases: [null] }) },
     { label: 'kill chain phase without phase_name', field: 'kill_chain_phases[0].phase_name', object: sdo('malware', 'a', { name: 'm', is_family: false, kill_chain_phases: [{ kill_chain_name: 'mitre-attack' }] }) },
+    // Extension names must be a defined extension name or an extension id (STIX 2.1 sections
+    // 6.7 and 6.12). fromEntries makes '__proto__' an own key instead of setting the prototype.
+    { label: '__proto__ extension name', field: 'extensions', object: sco('file', 'c', { name: 'a.exe', extensions: Object.fromEntries([['__proto__', { k: 'v' }]]) }) },
+    { label: 'constructor extension name', field: 'extensions', object: sco('file', 'd', { name: 'a.exe', extensions: Object.fromEntries([['constructor', { k: 'v' }]]) }) },
+    { label: 'prototype extension name', field: 'extensions', object: sco('file', 'e', { name: 'a.exe', extensions: Object.fromEntries([['prototype', { k: 'v' }]]) }) },
   ];
 
   for (const { label, field, object } of INVALID_STRUCTURAL) {
@@ -505,6 +510,164 @@ test.describe('Composer evidence and structural values', () => {
     expect(storedFile.hashes).toEqual({ 'SHA-256': 'ab', x_custom_hash: 'cd' });
     expect(storedFile.extensions).toEqual({ 'ntfs-ext': { sid: 'S-1-5' } });
     expect((await objectState(page, process.id)).environment_variables).toEqual({ Path_Var_1: 'C:\\x', 'X-Mailer': 'y' });
+  });
+
+  // STIX 2.1 section 2.3 allows any dictionary key made of letters, digits, '-' and '_', so
+  // observed names such as __proto__ are evidence. fromEntries creates them as own keys.
+  const PROTO_KEYS: [string, string][] = [['__proto__', 'p'], ['constructor', 'c'], ['prototype', 't'], ['PATH', '/bin']];
+  const protoDictionary = () => Object.fromEntries(PROTO_KEYS);
+  // Extension property names must be lowercase letters, digits or '_' (section 7.3.2.1).
+  const PROTO_EXTENSION_KEYS: [string, string][] = [['__proto__', 'p'], ['constructor', 'c'], ['prototype', 't'], ['sid', 'S-1-5']];
+  const protoExtension = () => ({ 'ntfs-ext': Object.fromEntries(PROTO_EXTENSION_KEYS) });
+  // Reads a stored dictionary as entries, because '__proto__' would not survive a plain
+  // object passing between the page and the test.
+  const dictionaryView = (page: Page, id: string, field: string) => page.evaluate(({ objectId, key }) => {
+    const view = (dict: any): any => ({
+      nullPrototype: Object.getPrototypeOf(dict) === null,
+      entries: Object.entries(dict).map(([k, v]) => [k, v && typeof v === 'object' ? view(v) : v]),
+    });
+    return view((eval('state') as any).objectsById.get(objectId)[key]);
+  }, { objectId: id, key: field });
+  const prototypeSnapshot = (page: Page) => page.evaluate(() => ({
+    names: Object.getOwnPropertyNames(Object.prototype).sort(),
+    plainObjectProto: Object.getPrototypeOf({}) === Object.prototype,
+  }));
+  const PROTO_VIEW = { nullPrototype: true, entries: PROTO_KEYS };
+
+  test('keeps dictionary keys named like JavaScript prototype properties as inert data', async ({ page }) => {
+    await openBuilder(page);
+    const before = await prototypeSnapshot(page);
+    const process = sco('process', '1', { environment_variables: protoDictionary() });
+    const file = sco('file', '3', { name: 'a.exe', extensions: protoExtension() });
+    expect((await uploadBundle(page, [process, file])).toast).toBe('Bundle imported');
+
+    expect(await dictionaryView(page, process.id, 'environment_variables')).toEqual(PROTO_VIEW);
+    expect(await dictionaryView(page, file.id, 'extensions'))
+      .toEqual({ nullPrototype: true, entries: [['ntfs-ext', { nullPrototype: true, entries: PROTO_EXTENSION_KEYS }]] });
+    expect(await prototypeSnapshot(page)).toEqual(before);
+    expect(await page.evaluate(() => (window as any).validateBundle())).toEqual([]);
+  });
+
+  test('prototype-named dictionary keys survive an edit, export and reimport byte for byte', async ({ page }) => {
+    await openBuilder(page);
+    const process = sco('process', '4', { environment_variables: protoDictionary() });
+    expect((await uploadBundle(page, [process])).toast).toBe('Bundle imported');
+    await page.locator('#type-tabs .tab', { hasText: /^SCO$/ }).click();
+    await page.locator('#object-list .object-item', { hasText: process.id }).click();
+    const keys = await page.locator('#editor-panel [data-dict-field="environment_variables"][data-dict-role="key"]').evaluateAll(
+      (inputs) => inputs.map((input) => (input as HTMLInputElement).value),
+    );
+    await page.locator('#editor-panel [data-dict-field="environment_variables"][data-dict-role="value"]').nth(keys.indexOf('PATH')).fill('/usr/bin');
+
+    const download = async () => {
+      const [file] = await Promise.all([page.waitForEvent('download'), page.locator('#export-bundle').click()]);
+      return require('node:fs').readFileSync((await file.path())!, 'utf8') as string;
+    };
+    const first = await download();
+    expect(Object.entries(JSON.parse(first).objects[0].environment_variables))
+      .toEqual([['__proto__', 'p'], ['constructor', 'c'], ['prototype', 't'], ['PATH', '/usr/bin']]);
+
+    await openBuilder(page);
+    expect((await uploadBundle(page, JSON.parse(first).objects)).toast).toBe('Bundle imported');
+    expect(await download()).toBe(first);
+  });
+
+  test('the editor commits prototype-named dictionary keys as data but refuses them as extension names', async ({ page }) => {
+    await openBuilder(page);
+    const before = await prototypeSnapshot(page);
+    await page.locator('#add-type').selectOption('process');
+    await page.locator('#add-object').click();
+    const addRow = page.locator('#editor-panel [data-action="add-dict"][data-dict-field="environment_variables"]');
+    await addRow.click();
+    await addRow.click();
+    const keys = page.locator('#editor-panel [data-dict-field="environment_variables"][data-dict-role="key"]');
+    const values = page.locator('#editor-panel [data-dict-field="environment_variables"][data-dict-role="value"]');
+    await keys.nth(0).fill('__proto__');
+    await values.nth(0).fill('p');
+    await keys.nth(1).fill('constructor');
+    await values.nth(1).fill('c');
+    const processId = await page.evaluate(() => (window as any).getActiveObject().id);
+    expect(await dictionaryView(page, processId, 'environment_variables'))
+      .toEqual({ nullPrototype: true, entries: [['__proto__', 'p'], ['constructor', 'c']] });
+    expect(await keys.nth(0).getAttribute('aria-invalid')).toBeNull();
+    await page.locator('#editor-panel [data-action="remove-dict"][data-dict-field="environment_variables"]').nth(1).click();
+    expect(await dictionaryView(page, processId, 'environment_variables'))
+      .toEqual({ nullPrototype: true, entries: [['__proto__', 'p']] });
+
+    await page.locator('#add-type').selectOption('file');
+    await page.locator('#add-object').click();
+    await page.locator('#editor-panel [data-action="add-ext"][data-ext-field="extensions"]').click();
+    await page.locator('#editor-panel [data-action="add-extdict"]').click();
+    // An extension name is committed together with its body, so each name change is
+    // followed by an edit inside the extension.
+    const extensionName = page.locator('#editor-panel [data-ext-field="extensions"][data-ext-role="key"]');
+    const bodyValue = page.locator('#editor-panel [data-extdict-role="value"]');
+    await extensionName.fill('ntfs-ext');
+    await page.locator('#editor-panel [data-extdict-role="key"]').fill('__proto__');
+    await bodyValue.fill('S-1-5');
+    const fileId = await page.evaluate(() => (window as any).getActiveObject().id);
+    const committed = { nullPrototype: true, entries: [['ntfs-ext', { nullPrototype: true, entries: [['__proto__', 'S-1-5']] }]] };
+    expect(await dictionaryView(page, fileId, 'extensions')).toEqual(committed);
+
+    for (const name of ['__proto__', 'constructor', 'prototype']) {
+      await extensionName.fill(name);
+      await bodyValue.fill('S-1-6');
+      expect(await extensionName.getAttribute('aria-invalid'), `extension name ${name}`).toBe('true');
+      expect(await dictionaryView(page, fileId, 'extensions')).toEqual(committed);
+    }
+    expect(await prototypeSnapshot(page)).toEqual(before);
+  });
+
+  test('validation accepts prototype-named dictionary keys but reports them as extension names', async ({ page }) => {
+    await openBuilder(page);
+    const result = await page.evaluate(() => {
+      const safe = (pairs: [string, unknown][]) => {
+        const out = Object.create(null);
+        pairs.forEach(([k, v]) => { out[k] = v; });
+        return out;
+      };
+      (window as any).addObject('process');
+      const process = (window as any).getActiveObject();
+      process.environment_variables = safe([['__proto__', 'p'], ['constructor', 'c']]);
+      (window as any).addObject('file');
+      const file = (window as any).getActiveObject();
+      file.name = 'a.exe';
+      file.extensions = safe([['__proto__', safe([['sid', 'S-1-5']])]]);
+      return { fileId: file.id, issues: (window as any).validateBundle() as string[] };
+    });
+    expect(result.issues).toEqual([`file ${result.fileId} invalid extensions key`]);
+  });
+
+  // The visualizer's selection panel must show dictionaries and external references as text.
+  test('the visualizer panel shows objects with dictionaries and external references', async ({ page }) => {
+    await openBuilder(page);
+    const errors: string[] = [];
+    page.on('pageerror', (error) => errors.push(String(error)));
+    const identity = sdo('identity', '5', {
+      name: 'i', identity_class: 'individual', external_references: [{ source_name: 'src', url: 'https://example.test/' }],
+    });
+    const process = sco('process', '6', { environment_variables: protoDictionary() });
+    const file = sco('file', '7', { name: 'a.exe', extensions: protoExtension() });
+    expect((await uploadBundle(page, [identity, process, file])).toast).toBe('Bundle imported');
+
+    await page.locator('#mode-visualizer').click();
+    await page.locator('#visualize-bundle').click();
+    await expect(page.locator('#canvas canvas')).toHaveCount(1);
+    await expect(page.locator('#canvas-container')).not.toHaveClass(/is-loading/);
+    await page.locator('#type-tabs .tab', { hasText: /^All$/ }).click();
+
+    const selection = page.locator('#selection');
+    const expected = [
+      [identity.id, ['source_name', 'https://example.test/']],
+      [process.id, ['__proto__', 'constructor', 'prototype', 'PATH']],
+      [file.id, ['ntfs-ext', '__proto__', 'constructor', 'prototype', 'S-1-5']],
+    ] as const;
+    for (const [id, shown] of expected) {
+      await page.locator('#object-list .object-item', { hasText: id }).click();
+      await expect.poll(async () => errors.length > 0 || ((await selection.textContent()) || '').includes(id)).toBe(true);
+      expect(errors, `selecting ${id}`).toEqual([]);
+      for (const text of shown) await expect(selection).toContainText(text);
+    }
   });
 
   // The editor stores '' for structural fields that are not filled in yet: required refs and
@@ -573,7 +736,7 @@ test.describe('Composer evidence and structural values', () => {
     const generatedKeys = await readKeys();
     expect(generatedKeys).toHaveLength(1);
 
-    for (const bad of ['BAD[KEY]', 'a"b', '__proto__', 'x'.repeat(251)]) {
+    for (const bad of ['BAD[KEY]', 'a"b', 'x'.repeat(251)]) {
       await bypass(keyInput, bad);
       expect(await readKeys(), `dictionary key ${bad.slice(0, 20)} was committed`).toEqual(generatedKeys);
       expect(await invalid(keyInput)).toBe('true');

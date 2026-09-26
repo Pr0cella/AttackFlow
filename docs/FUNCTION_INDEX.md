@@ -459,8 +459,8 @@ Update strategy:
 - `isDangerousObjectKey`
 - `createSafeObject`
 - `hasOwn`
-- `parseJsonSafe`
-- `copyJsonWithoutDangerousKeys`
+- `safeFromEntries`
+- `copyJsonIntoSafeObjects`
 - `sanitizeImportedString`
 - `isValidStructuralValue`
 - `requireStructuralValue`

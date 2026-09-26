@@ -26,6 +26,8 @@
 - **Field Encoding**: Added defensive field encoding in STIX Composer fields
 - **Composer Evidence Preservation**: The STIX Composer keeps the printable characters of STIX patterns and other evidence text unchanged through import, typing, pasting, editing and export. Control characters, including line breaks and tabs, are removed and length is limited, and import also trims surrounding whitespace
 - **Composer Structural Validation**: Composer identifiers and references, dictionary/hash/extension keys, kill-chain values, granular-marking selectors and timestamps are validated against strict formats instead of being silently rewritten
+- **Composer Dictionary Keys**: Dictionary keys named `__proto__`, `constructor` or `prototype`, such as observed environment variable names, are now kept as plain data through import, editing and export instead of being silently dropped on import or refused by the editor. They are still refused as extension names
+- **Composer Visualizer Details**: Selecting an object in the Composer visualizer no longer fails with an error and an empty details panel when the object has a dictionary, hashes, extensions or an external reference
 - **CSV Serialization**: Fixed an issue where CSV cells protected against spreadsheet formula injection were quoted more than once. Protected cells now carry a single leading tab inside one layer of quoting, cells containing a carriage return are quoted, and records are terminated with CRLF
 - **STIX Property Export**: STIX bundle export and the bundle embedded in JSON export now preserve stored properties correctly
 - **Export Value Validation**: Incompatible value shapes now stop the download and report the affected property instead of omitting them

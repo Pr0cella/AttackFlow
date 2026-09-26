@@ -1267,20 +1267,21 @@
             return !!obj && Object.prototype.hasOwnProperty.call(obj, key);
         }
 
-        function parseJsonSafe(text) {
-            return JSON.parse(text, (key, value) => {
-                if (isDangerousObjectKey(key)) return undefined;
-                return value;
-            });
+        function safeFromEntries(entries) {
+            const out = createSafeObject();
+            entries.forEach(([k, v]) => { out[k] = v; });
+            return out;
         }
 
-        function copyJsonWithoutDangerousKeys(obj) {
-            if (Array.isArray(obj)) return obj.map(copyJsonWithoutDangerousKeys);
+        // STIX dictionary keys may be named __proto__, constructor or prototype (section 2.3).
+        // Every imported object is copied into null-prototype objects, where such a key is an
+        // ordinary own property: kept as data and never able to change a prototype.
+        function copyJsonIntoSafeObjects(obj) {
+            if (Array.isArray(obj)) return obj.map(copyJsonIntoSafeObjects);
             if (obj && typeof obj === 'object') {
                 const out = createSafeObject();
                 Object.entries(obj).forEach(([k, v]) => {
-                    if (isDangerousObjectKey(k)) return;
-                    out[k] = copyJsonWithoutDangerousKeys(v);
+                    out[k] = copyJsonIntoSafeObjects(v);
                 });
                 return out;
             }
@@ -1314,6 +1315,10 @@
                 case 'identifier':
                     return ACTIVE_STIX_ID_PATTERN.test(value);
                 case 'key':
+                    return STRUCTURAL_PATTERNS.key.test(value);
+                // Extension names must be a defined extension name or an extension id (sections
+                // 6.7 and 6.12), so the three prototype property names are never valid here.
+                case 'extension-name':
                     return STRUCTURAL_PATTERNS.key.test(value) && !isDangerousObjectKey(value);
                 case 'timestamp': {
                     if (!STRUCTURAL_PATTERNS.timestamp.test(value)) return false;
@@ -1564,7 +1569,7 @@
                 case 'hashes':
                 case 'extensions':
                 case 'marking-definition':
-                    return {};
+                    return createSafeObject();
                 default:
                     return '';
             }
@@ -2079,7 +2084,7 @@
             const out = createSafeObject();
             if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
             Object.entries(raw).slice(0, maxItems).forEach(([k, v]) => {
-                const key = requireStructuralValue('key', k, `${where} key`);
+                const key = requireStructuralValue('extension-name', k, `${where} key`);
                 out[key] = sanitizeDictionary(v || {}, `${where}.${key}`);
             });
             return out;
@@ -2240,7 +2245,9 @@
             }
             setCenterMode('visualizer');
             if (window.AttackFlowStixViz?.render) {
-                window.AttackFlowStixViz.render(sanitized, null);
+                // The visualizer converts only plain objects to Maps, so it gets JSON text and
+                // parses the null-prototype dictionaries itself.
+                window.AttackFlowStixViz.render(JSON.stringify(sanitized), null);
                 if (state.ui.activeObjectId) {
                     window.AttackFlowStixViz.selectAndPopulate?.(state.ui.activeObjectId);
                 }
@@ -2307,8 +2314,8 @@
         // wherever it sits, whichever route put it into state.
         function validateStructuralValues(obj, def, issues) {
             const prefix = `${obj.type} ${obj.id}`;
-            const keysValid = (dict) => !dict || typeof dict !== 'object'
-                || Object.keys(dict).every((k) => isValidStructuralValue('key', k));
+            const keysValid = (dict, kind = 'key') => !dict || typeof dict !== 'object'
+                || Object.keys(dict).every((k) => isValidStructuralValue(kind, k));
             getEditableFields(obj).forEach((field) => {
                 if (field.key === 'id') return;
                 const value = obj[field.key];
@@ -2363,7 +2370,7 @@
                         if (!keysValid(value)) issues.push(`${prefix} invalid ${field.key} key`);
                         break;
                     case 'extensions':
-                        if (!keysValid(value) || Object.values(value).some((ext) => !keysValid(ext))) {
+                        if (!keysValid(value, 'extension-name') || Object.values(value).some((ext) => !keysValid(ext))) {
                             issues.push(`${prefix} invalid ${field.key} key`);
                         }
                         break;
@@ -2607,7 +2614,7 @@
             const valInputs = document.querySelectorAll(`[data-${prefix}-field="${fieldKey}"][data-${prefix}-role="value"]`);
             // Returns null, and marks the offending key inputs, when any key is invalid, so the
             // caller commits nothing rather than a partly rewritten dictionary.
-            const dict = {};
+            const dict = createSafeObject();
             let valid = true;
             keyInputs.forEach((input, index) => {
                 const key = input.value;
@@ -2623,12 +2630,12 @@
 
         function collectExtensions(fieldKey) {
             const extKeys = document.querySelectorAll(`[data-ext-field="${fieldKey}"][data-ext-role="key"]`);
-            const dict = {};
+            const dict = createSafeObject();
             let valid = true;
             extKeys.forEach((input, index) => {
                 const key = input.value;
                 if (!key.trim()) return;
-                if (!setInputValidity(input, isValidStructuralValue('key', key))) {
+                if (!setInputValidity(input, isValidStructuralValue('extension-name', key))) {
                     valid = false;
                     return;
                 }
@@ -2725,7 +2732,7 @@
 
             if (target.dataset.action === 'add-dict') {
                 const key = target.dataset.dictField;
-                obj[key] = obj[key] || {};
+                obj[key] = obj[key] || createSafeObject();
                 obj[key]['key-' + Math.random().toString(36).slice(2, 7)] = '';
                 renderEditor();
                 return;
@@ -2735,14 +2742,14 @@
                 const key = target.dataset.dictField;
                 const entries = Object.entries(obj[key] || {});
                 entries.splice(parseInt(target.dataset.index, 10), 1);
-                obj[key] = Object.fromEntries(entries);
+                obj[key] = safeFromEntries(entries);
                 renderEditor();
                 return;
             }
 
             if (target.dataset.action === 'add-hash') {
                 const key = target.dataset.hashField;
-                obj[key] = obj[key] || {};
+                obj[key] = obj[key] || createSafeObject();
                 obj[key]['hash-' + Math.random().toString(36).slice(2, 7)] = '';
                 renderEditor();
                 return;
@@ -2753,7 +2760,7 @@
                 const index = parseInt(target.dataset.refIndex, 10);
                 if (!Array.isArray(obj[root])) obj[root] = [];
                 if (!obj[root][index]) obj[root][index] = {};
-                obj[root][index].hashes = obj[root][index].hashes || {};
+                obj[root][index].hashes = obj[root][index].hashes || createSafeObject();
                 obj[root][index].hashes['hash-' + Math.random().toString(36).slice(2, 7)] = '';
                 renderEditor();
                 return;
@@ -2763,7 +2770,7 @@
                 const key = target.dataset.hashField;
                 const entries = Object.entries(obj[key] || {});
                 entries.splice(parseInt(target.dataset.index, 10), 1);
-                obj[key] = Object.fromEntries(entries);
+                obj[key] = safeFromEntries(entries);
                 renderEditor();
                 return;
             }
@@ -2775,15 +2782,15 @@
                 if (!obj[root][index]) return;
                 const entries = Object.entries(obj[root][index].hashes || {});
                 entries.splice(parseInt(target.dataset.index, 10), 1);
-                obj[root][index].hashes = Object.fromEntries(entries);
+                obj[root][index].hashes = safeFromEntries(entries);
                 renderEditor();
                 return;
             }
 
             if (target.dataset.action === 'add-ext') {
                 const key = target.dataset.extField;
-                obj[key] = obj[key] || {};
-                obj[key]['extension-' + Math.random().toString(36).slice(2, 7)] = {};
+                obj[key] = obj[key] || createSafeObject();
+                obj[key]['extension-' + Math.random().toString(36).slice(2, 7)] = createSafeObject();
                 renderEditor();
                 return;
             }
@@ -2794,7 +2801,7 @@
                 const entries = Object.entries(obj[root] || {});
                 const extKey = entries[extIndex]?.[0];
                 if (!extKey) return;
-                obj[root][extKey] = obj[root][extKey] || {};
+                obj[root][extKey] = obj[root][extKey] || createSafeObject();
                 obj[root][extKey]['key-' + Math.random().toString(36).slice(2, 7)] = '';
                 renderEditor();
                 return;
@@ -2804,7 +2811,7 @@
                 const key = target.dataset.extField;
                 const entries = Object.entries(obj[key] || {});
                 entries.splice(parseInt(target.dataset.index, 10), 1);
-                obj[key] = Object.fromEntries(entries);
+                obj[key] = safeFromEntries(entries);
                 renderEditor();
                 return;
             }
@@ -2817,7 +2824,7 @@
                 if (!extKey) return;
                 const dictEntries = Object.entries(obj[root][extKey] || {});
                 dictEntries.splice(parseInt(target.dataset.index, 10), 1);
-                obj[root][extKey] = Object.fromEntries(dictEntries);
+                obj[root][extKey] = safeFromEntries(dictEntries);
                 renderEditor();
                 return;
             }
@@ -2849,8 +2856,7 @@
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {
-                    const rawData = parseJsonSafe(e.target.result);
-                    const raw = copyJsonWithoutDangerousKeys(rawData);
+                    const raw = copyJsonIntoSafeObjects(JSON.parse(e.target.result));
                     if (!raw || typeof raw !== 'object' || raw.type !== 'bundle') throw new Error('Invalid bundle');
                     if (!Array.isArray(raw.objects)) throw new Error('Bundle objects missing');
                     if (raw.objects.length > INPUT_LIMITS.maxObjects) throw new Error('Too many objects');
