@@ -1300,13 +1300,17 @@
         }
 
         // Structural values (keys, identifiers, kill-chain values, marking selectors,
-        // timestamps) follow a fixed grammar. They are validated, never rewritten: an invalid
-        // one rejects an imported file, is refused by the editor and is reported by validation.
+        // timestamps) follow the STIX 2.1 rules for their type. They are validated, never
+        // rewritten: an invalid one rejects an imported file, is refused by the editor and is
+        // reported by validation.
         const STRUCTURAL_PATTERNS = {
+            // Dictionary keys (section 2.3); hash keys also need 3 characters (section 2.7).
             key: /^[A-Za-z0-9_-]{1,250}$/,
-            'kill-chain': /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-            selector: /^[a-z0-9_]+(?:\.(?:\[\d+\]|[a-z0-9_]+))*$/,
-            timestamp: /^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?Z$/
+            'hash-key': /^[A-Za-z0-9_-]{3,250}$/,
+            // Section 7.2.3.1: a property name (3-250 lowercase characters, section 3.1) or id
+            // first, then property names, dictionary keys or [n] list indexes.
+            selector: /^(?:[a-z][a-z0-9_]{2,249}|id)(?:\.(?:\[\d+\]|[A-Za-z0-9_-]{1,250}))*$/,
+            timestamp: /^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])T(?:[01]\d|2[0-3]):[0-5]\d:(?:[0-5]\d|60)(?:\.\d+)?Z$/
         };
 
         function isValidStructuralValue(kind, value) {
@@ -1320,12 +1324,24 @@
                 // 6.7 and 6.12), so the three prototype property names are never valid here.
                 case 'extension-name':
                     return STRUCTURAL_PATTERNS.key.test(value) && !isDangerousObjectKey(value);
+                // Kill-chain names and phases are free text: section 2.11 only says they SHOULD
+                // be lowercase and hyphenated. Control characters and blank values are refused.
+                case 'kill-chain':
+                    return value.length <= INPUT_LIMITS.maxStringLength
+                        && !/[\x00-\x1F\x7F]/.test(value)
+                        && value.trim() !== '';
                 case 'timestamp': {
                     if (!STRUCTURAL_PATTERNS.timestamp.test(value)) return false;
+                    // RFC 3339, required by section 2.16, allows a leap second only as 23:59:60 at
+                    // the end of a month. Date cannot represent it, so the calendar check runs on
+                    // the second before, which must then be followed by the 1st of a month.
+                    const leap = value.slice(17, 19) === '60';
+                    const checked = leap ? `${value.slice(0, 17)}59Z` : value;
                     // Date.parse rolls impossible dates forward (Feb 30 -> Mar 2), so the parsed
                     // instant must reproduce the same calendar fields.
-                    const parsed = Date.parse(value);
-                    return !Number.isNaN(parsed) && new Date(parsed).toISOString().slice(0, 19) === value.slice(0, 19);
+                    const parsed = Date.parse(checked);
+                    if (Number.isNaN(parsed) || new Date(parsed).toISOString().slice(0, 19) !== checked.slice(0, 19)) return false;
+                    return !leap || new Date(parsed + 1000).getUTCDate() === 1;
                 }
                 default:
                     return !!STRUCTURAL_PATTERNS[kind] && STRUCTURAL_PATTERNS[kind].test(value);
@@ -1391,7 +1407,7 @@
             : (typeof window !== 'undefined' && typeof window.getStixObjectDefinition === 'function')
             ? window.getStixObjectDefinition.bind(window)
             : function (type) {
-                return ACTIVE_STIX_OBJECT_DEFS[type] || null;
+                return hasOwn(ACTIVE_STIX_OBJECT_DEFS, type) ? ACTIVE_STIX_OBJECT_DEFS[type] : null;
             };
 
         const resolveVocabulary = (typeof getVocabulary === 'function')
@@ -1806,12 +1822,22 @@
             `;
         }
 
+        // A stored value that the configuration does not list gets its own selected option, so
+        // the editor shows it as it is and an unrelated change cannot overwrite it.
+        function withStoredOption(options, stored) {
+            return stored && !options.includes(stored) ? [...options, stored] : options;
+        }
+
         function renderKillChainField(key, values) {
             const items = (values || []).map((item, index) => {
-                const chainOptions = Object.keys(ACTIVE_STIX_KILL_CHAIN_PHASES).map((kc) =>
+                const chainOptions = withStoredOption(Object.keys(ACTIVE_STIX_KILL_CHAIN_PHASES), item.kill_chain_name).map((kc) =>
                     `<option value="${InputSecurity.encodeHtmlEntities(kc)}" ${kc === item.kill_chain_name ? 'selected' : ''}>${esc(kc)}</option>`
                 ).join('');
-                const phaseOptions = (ACTIVE_STIX_KILL_CHAIN_PHASES[item.kill_chain_name] || []).map((p) =>
+                // Imported names are data, so only the configuration's own entries are phase lists.
+                const configured = hasOwn(ACTIVE_STIX_KILL_CHAIN_PHASES, item.kill_chain_name)
+                    ? ACTIVE_STIX_KILL_CHAIN_PHASES[item.kill_chain_name]
+                    : [];
+                const phaseOptions = withStoredOption(configured, item.phase_name).map((p) =>
                     `<option value="${InputSecurity.encodeHtmlEntities(p)}" ${p === item.phase_name ? 'selected' : ''}>${esc(p)}</option>`
                 ).join('');
                 return `
@@ -2070,11 +2096,11 @@
             showToast('Bundle cleared');
         }
 
-        function sanitizeDictionary(raw, where, maxItems = INPUT_LIMITS.maxListItems) {
+        function sanitizeDictionary(raw, where, maxItems = INPUT_LIMITS.maxListItems, keyKind = 'key') {
             const out = createSafeObject();
             if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
             Object.entries(raw).slice(0, maxItems).forEach(([k, v]) => {
-                const key = requireStructuralValue('key', k, `${where} key`);
+                const key = requireStructuralValue(keyKind, k, `${where} key`);
                 out[key] = sanitizeImportedString(String(v ?? ''), INPUT_LIMITS.maxStringLength);
             });
             return out;
@@ -2155,11 +2181,12 @@
                         description: sanitizeImportedString(ref?.description || '', 1000),
                         url: sanitizeImportedString(ref?.url || '', 2000),
                         external_id: sanitizeImportedString(ref?.external_id || '', 200),
-                        hashes: sanitizeDictionary(ref?.hashes || {}, `${field.key}.hashes`)
+                        hashes: sanitizeDictionary(ref?.hashes || {}, `${field.key}.hashes`, INPUT_LIMITS.maxListItems, 'hash-key')
                     })).filter((ref) => ref.source_name);
                 case 'dictionary':
-                case 'hashes':
                     return sanitizeDictionary(raw || {}, field.key);
+                case 'hashes':
+                    return sanitizeDictionary(raw || {}, field.key, INPUT_LIMITS.maxListItems, 'hash-key');
                 case 'extensions':
                     return sanitizeExtensions(raw || {}, field.key);
                 case 'marking-definition':
@@ -2277,7 +2304,7 @@
                     issues.push('Bundle contains invalid object');
                     return;
                 }
-                if (!obj.type || !ACTIVE_STIX_OBJECT_DEFS[obj.type]) {
+                if (!obj.type || !hasOwn(ACTIVE_STIX_OBJECT_DEFS, obj.type)) {
                     issues.push(`Unknown object type: ${obj.type}`);
                     return;
                 }
@@ -2360,12 +2387,14 @@
                         });
                         break;
                     case 'external-references':
-                        if (Array.isArray(value) && value.some((ref) => !keysValid(ref?.hashes))) {
+                        if (Array.isArray(value) && value.some((ref) => !keysValid(ref?.hashes, 'hash-key'))) {
                             issues.push(`${prefix} invalid ${field.key} key`);
                         }
                         break;
-                    case 'dictionary':
                     case 'hashes':
+                        if (!keysValid(value, 'hash-key')) issues.push(`${prefix} invalid ${field.key} key`);
+                        break;
+                    case 'dictionary':
                     case 'marking-definition':
                         if (!keysValid(value)) issues.push(`${prefix} invalid ${field.key} key`);
                         break;
@@ -2614,12 +2643,13 @@
             const valInputs = document.querySelectorAll(`[data-${prefix}-field="${fieldKey}"][data-${prefix}-role="value"]`);
             // Returns null, and marks the offending key inputs, when any key is invalid, so the
             // caller commits nothing rather than a partly rewritten dictionary.
+            const keyKind = prefix === 'hash' || prefix === 'refhash' ? 'hash-key' : 'key';
             const dict = createSafeObject();
             let valid = true;
             keyInputs.forEach((input, index) => {
                 const key = input.value;
                 if (!key.trim()) return;
-                if (!setInputValidity(input, isValidStructuralValue('key', key))) {
+                if (!setInputValidity(input, isValidStructuralValue(keyKind, key))) {
                     valid = false;
                     return;
                 }

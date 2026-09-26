@@ -427,8 +427,6 @@ test.describe('Composer evidence and structural values', () => {
     { label: 'dictionary key', field: 'environment_variables', object: sco('process', '1', { environment_variables: { 'BAD[KEY]': 'x' } }) },
     { label: 'hash key', field: 'hashes', object: sco('file', '2', { name: 'a.exe', hashes: { 'SHA 256': 'ab' } }) },
     { label: 'extension key', field: 'extensions', object: sco('file', '3', { name: 'a.exe', extensions: { 'ntfs"ext': { k: 'v' } } }) },
-    { label: 'kill chain name', field: 'kill_chain_phases', object: sdo('malware', '4', { name: 'm', is_family: false, kill_chain_phases: [{ kill_chain_name: 'Mitre Attack', phase_name: 'execution' }] }) },
-    { label: 'kill chain phase', field: 'kill_chain_phases', object: sdo('malware', '5', { name: 'm', is_family: false, kill_chain_phases: [{ kill_chain_name: 'mitre-attack', phase_name: 'exec[ution]' }] }) },
     { label: 'non-string kill chain value', field: 'kill_chain_phases', object: sdo('malware', '6', { name: 'm', is_family: false, kill_chain_phases: [{ kill_chain_name: 5, phase_name: 'execution' }] }) },
     { label: 'granular marking selector', field: 'granular_markings', object: sdo('identity', '7', { name: 'i', granular_markings: [{ selectors: ['description]'], marking_ref: TLP }] }) },
     { label: 'granular marking ref', field: 'granular_markings', object: sdo('identity', '8', { name: 'i', granular_markings: [{ selectors: ['description'], marking_ref: 'marking-definition--nope' }] }) },
@@ -773,6 +771,22 @@ test.describe('Composer evidence and structural values', () => {
     await bypass(selectorBox, 'description\nbad]');
     expect(await readSelectors()).toEqual(['description', 'external_references.[0].url']);
     expect(await invalid(selectorBox)).toBe('true');
+    await bypass(selectorBox, 'id\nexternal_references.[0].hashes.SHA-256');
+    expect(await readSelectors()).toEqual(['id', 'external_references.[0].hashes.SHA-256']);
+    expect(await invalid(selectorBox)).toBeNull();
+    for (const bad of ['id\nab', 'Description']) {
+      await bypass(selectorBox, bad);
+      expect(await readSelectors(), `selectors ${bad}`).toEqual(['id', 'external_references.[0].hashes.SHA-256']);
+      expect(await invalid(selectorBox)).toBe('true');
+    }
+
+    // A leap second is valid only as 23:59:60 on the last day of a month (RFC 3339 section 5.7).
+    await bypass('#editor-panel [data-field="created"]', '2026-06-15T23:59:60Z');
+    expect((await readIdentity()).created).toBe(original.created);
+    expect(await invalid('#editor-panel [data-field="created"]')).toBe('true');
+    await bypass('#editor-panel [data-field="created"]', '1990-12-31T23:59:60Z');
+    expect((await readIdentity()).created).toBe('1990-12-31T23:59:60Z');
+    expect(await invalid('#editor-panel [data-field="created"]')).toBeNull();
   });
 
   test('validation reports invalid structural values that reached state by another route', async ({ page }) => {
@@ -801,5 +815,273 @@ test.describe('Composer evidence and structural values', () => {
       `identity ${id} granular_markings entry missing marking_ref`,
       `identity ${id} invalid external_references key`,
     ]));
+  });
+
+  async function exportObjects(page: Page) {
+    const dialogs: string[] = [];
+    const onDialog = (dialog: any) => { dialogs.push(dialog.message()); dialog.accept(); };
+    page.on('dialog', onDialog);
+    try {
+      const [download] = await Promise.all([page.waitForEvent('download'), page.locator('#export-bundle').click()]);
+      const exported = JSON.parse(require('node:fs').readFileSync((await download.path())!, 'utf8'));
+      return { objects: exported.objects as any[], dialogs };
+    } finally {
+      page.off('dialog', onDialog);
+    }
+  }
+
+  // The whole path of a spec-valid value: import, state, clean validation, export and a fresh
+  // reimport of that export must all keep it exactly.
+  async function expectRoundTrip(page: Page, objects: any[], id: string, expected: Record<string, unknown>) {
+    expect((await uploadBundle(page, objects)).toast).toBe('Bundle imported');
+    expect(await objectState(page, id)).toMatchObject(expected);
+    expect(await page.evaluate(() => (window as any).validateBundle())).toEqual([]);
+    const { objects: exported, dialogs } = await exportObjects(page);
+    expect(dialogs).toEqual([]);
+    expect(exported.find((o) => o.id === id)).toMatchObject(expected);
+    await openBuilder(page);
+    expect((await uploadBundle(page, exported)).toast).toBe('Bundle imported');
+    expect(await objectState(page, id)).toMatchObject(expected);
+  }
+
+  const isValid = (page: Page, kind: string, values: string[]) => page.evaluate(
+    ({ k, list }) => list.map((v) => [v, (window as any).isValidStructuralValue(k, v)]), { k: kind, list: values },
+  );
+
+  // Selector components are property names, dictionary keys (letters, digits, '-', '_') or
+  // [n] list indexes; the first names a property: 3-250 lowercase characters, or 'id'
+  // (STIX 2.1 sections 7.2.3.1, 2.3 and 3.1).
+  test('the selector grammar follows STIX 2.1', async ({ page }) => {
+    await openBuilder(page);
+    const valid = [
+      'id', 'description', 'labels.[0]', 'hashes.SHA-256', 'x_acme_org_scoring.score',
+      `extensions.${stixId('extension-definition', 'd')}.rank`, 'external_references.[0].hashes.SHA-256',
+      'environment_variables.X', 'a'.repeat(250),
+    ];
+    const invalid = [
+      'ab', 'Description', '1abc', '_abc', 'labels.', '.labels', 'labels..x', 'labels.[x]', 'labels.[-1]',
+      'labels.a b', 'description]', '', 'a'.repeat(251), `labels.${'k'.repeat(251)}`,
+    ];
+    expect(await isValid(page, 'selector', [...valid, ...invalid]))
+      .toEqual([...valid.map((v) => [v, true]), ...invalid.map((v) => [v, false])]);
+  });
+
+  test('keeps spec-valid selectors through import, export and reimport', async ({ page }) => {
+    await openBuilder(page);
+    const selectors = ['id', 'description', 'external_references.[0].hashes.SHA-256', 'external_references.[0].url'];
+    const identity = sdo('identity', '1', {
+      name: 'i', identity_class: 'individual', description: 'd',
+      external_references: [{ source_name: 'src', url: 'https://example.test/', hashes: { 'SHA-256': 'ab' } }],
+      granular_markings: [{ selectors, marking_ref: TLP }],
+    });
+    await expectRoundTrip(page, [identity], identity.id, { granular_markings: [{ selectors, marking_ref: TLP }] });
+  });
+
+  // STIX 2.1 section 2.11 only says kill-chain values SHOULD be lowercase and hyphenated, so
+  // any other text is kept exactly as imported.
+  test('keeps kill-chain names and phases as free text through import, export and reimport', async ({ page }) => {
+    await openBuilder(page);
+    const phases = [
+      { kill_chain_name: 'Acme Kill Chain', phase_name: 'Initial Access' },
+      { kill_chain_name: 'mitre_attack', phase_name: 'Initial Access' },
+      { kill_chain_name: 'Mitre Attack', phase_name: 'exec[ution]' },
+      { kill_chain_name: 'mitre-attack', phase_name: HOSTILE },
+    ];
+    const malware = sdo('malware', '2', { name: 'm', is_family: false, kill_chain_phases: phases });
+    await expectRoundTrip(page, [malware], malware.id, { kill_chain_phases: phases });
+  });
+
+  // RFC 3339, which STIX 2.1 section 2.16 requires, allows a leap second as 23:59:60 at the
+  // end of a month (RFC 3339 sections 5.6 to 5.8).
+  test('keeps leap-second timestamps through import, export and reimport', async ({ page }) => {
+    await openBuilder(page);
+    const identity = { ...sdo('identity', '3', { name: 'i', identity_class: 'individual' }), created: '1990-12-31T23:59:60Z', modified: '1998-12-31T23:59:60.25Z' };
+    await expectRoundTrip(page, [identity], identity.id, { created: '1990-12-31T23:59:60Z', modified: '1998-12-31T23:59:60.25Z' });
+  });
+
+  test('the timestamp grammar allows a leap second only at the end of a month', async ({ page }) => {
+    await openBuilder(page);
+    const valid = [
+      '1990-12-31T23:59:60Z', '1972-06-30T23:59:60Z', '1998-12-31T23:59:60.25Z', '2024-02-29T23:59:60Z',
+      '2023-02-28T23:59:60Z', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00.123456Z',
+    ];
+    const invalid = [
+      '2026-06-15T23:59:60Z', '2024-02-28T23:59:60Z', '2016-12-31T12:00:60Z', '2016-12-31T23:58:60Z',
+      '2016-12-31T23:59:61Z', '2016-12-31T23:59:60+00:00', '2016-12-31T23:59:60.Z', '2026-02-30T00:00:00Z',
+    ];
+    expect(await isValid(page, 'timestamp', [...valid, ...invalid]))
+      .toEqual([...valid.map((v) => [v, true]), ...invalid.map((v) => [v, false])]);
+  });
+
+  // Browsers cannot represent 23:59:60, so the timeline must still render and order it.
+  test('the visualizer timeline renders and orders a leap second', async ({ page }) => {
+    await openBuilder(page);
+    const errors: string[] = [];
+    const dialogs: string[] = [];
+    page.on('pageerror', (error) => errors.push(String(error)));
+    page.on('dialog', (dialog) => { dialogs.push(dialog.message()); dialog.accept(); });
+    const before = { ...sdo('identity', '4', { name: 'before', identity_class: 'individual' }), modified: '1990-12-31T23:59:59Z' };
+    const leap = { ...sdo('identity', '5', { name: 'leap', identity_class: 'individual' }), created: '1990-12-31T23:59:59Z', modified: '1990-12-31T23:59:60Z' };
+    expect((await uploadBundle(page, [before, leap])).toast).toBe('Bundle imported');
+
+    await page.locator('#mode-visualizer').click();
+    await page.locator('#visualize-bundle').click();
+    await expect(page.locator('#canvas canvas')).toHaveCount(1);
+    await expect(page.locator('#canvas-container')).not.toHaveClass(/is-loading/);
+    expect(errors).toEqual([]);
+    expect(dialogs).toEqual([]);
+    const label = page.locator('label[for="timeline"]');
+    await expect(label).toHaveText('Timeline: 1990-12-31T23:59:59.999Z');
+    await page.locator('#timeline').evaluate((slider) => {
+      (slider as HTMLInputElement).value = '0';
+      slider.dispatchEvent(new Event('input', { bubbles: true }));
+      slider.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await expect(label).toHaveText('Timeline: 1990-12-31T23:59:59.000Z');
+    expect(errors).toEqual([]);
+  });
+
+  test('validation reports kill-chain values, selectors and timestamps that break the grammar', async ({ page }) => {
+    await openBuilder(page);
+    const result = await page.evaluate(({ tlp }) => {
+      const add = (type: string, fields: Record<string, unknown>) => {
+        (window as any).addObject(type);
+        const object = (window as any).getActiveObject();
+        Object.assign(object, fields);
+        return object.id;
+      };
+      const ids = {
+        control: add('malware', { name: 'm', is_family: false, kill_chain_phases: [{ kill_chain_name: 'acme\u0001chain', phase_name: 'x' }] }),
+        blank: add('malware', { name: 'm', is_family: false, kill_chain_phases: [{ kill_chain_name: 'acme', phase_name: ' \t ' }] }),
+        long: add('malware', { name: 'm', is_family: false, kill_chain_phases: [{ kill_chain_name: 'k'.repeat(5001), phase_name: 'x' }] }),
+        short: add('identity', { name: 'i', identity_class: 'individual', granular_markings: [{ selectors: ['ab'], marking_ref: tlp }] }),
+        upper: add('identity', { name: 'i', identity_class: 'individual', granular_markings: [{ selectors: ['Description'], marking_ref: tlp }] }),
+        leap: add('identity', { name: 'i', identity_class: 'individual', created: '2026-06-15T23:59:60Z' }),
+      };
+      return { ids, issues: (window as any).validateBundle() as string[] };
+    }, { tlp: TLP });
+    const { ids, issues } = result;
+    expect(issues).toEqual(expect.arrayContaining([
+      `malware ${ids.control} invalid kill_chain_phases kill chain value`,
+      `malware ${ids.blank} invalid kill_chain_phases kill chain value`,
+      `malware ${ids.long} invalid kill_chain_phases kill chain value`,
+      `identity ${ids.short} invalid granular_markings selector`,
+      `identity ${ids.upper} invalid granular_markings selector`,
+      `identity ${ids.leap} invalid created timestamp`,
+    ]));
+  });
+
+  // Kill-chain values are data: names such as constructor or __proto__ must not be looked up
+  // on the prototype of the configuration object.
+  for (const name of ['constructor', '__proto__', 'toString']) {
+    test(`opens the editor for an object whose kill chain is named ${name}`, async ({ page }) => {
+      await openBuilder(page);
+      const errors: string[] = [];
+      page.on('pageerror', (error) => errors.push(String(error)));
+      const malware = sdo('malware', '6', { name: 'm', is_family: false, kill_chain_phases: [{ kill_chain_name: name, phase_name: 'execution' }] });
+      expect((await uploadBundle(page, [malware])).toast).toBe('Bundle imported');
+      await page.locator('#object-list .object-item', { hasText: malware.id }).click();
+      const selects = page.locator('#editor-panel select[data-kc-field="kill_chain_phases"]');
+      await expect(selects).toHaveCount(2);
+      expect(await selects.evaluateAll((list) => list.map((s) => (s as HTMLSelectElement).value))).toEqual([name, 'execution']);
+      expect(errors).toEqual([]);
+    });
+  }
+
+  // A kill chain or phase that the configuration does not list is shown as stored, so the
+  // editor neither misrepresents it nor overwrites it when its select commits (an input event).
+  test('shows a kill chain missing from the configuration as stored and keeps it when its selects commit', async ({ page }) => {
+    await openBuilder(page);
+    await page.evaluate(() => { (window as any).__evidenceCanary = 0; });
+    const phases = [{ kill_chain_name: 'mitre-attack', phase_name: 'execution' }, { kill_chain_name: 'unified-kill-chain', phase_name: HOSTILE }];
+    const malware = sdo('malware', '7', { name: 'm', is_family: false, kill_chain_phases: phases });
+    expect((await uploadBundle(page, [malware])).toast).toBe('Bundle imported');
+    await page.locator('#object-list .object-item', { hasText: malware.id }).click();
+
+    const selects = page.locator('#editor-panel select[data-kc-field="kill_chain_phases"]');
+    expect(await selects.evaluateAll((list) => list.map((s) => (s as HTMLSelectElement).value)))
+      .toEqual(['mitre-attack', 'execution', 'unified-kill-chain', HOSTILE]);
+    expect(await page.locator('#editor-panel img').count()).toBe(0);
+    expect(await page.evaluate(() => (window as any).__evidenceCanary)).toBe(0);
+
+    await page.locator('#editor-panel [data-field="name"]').fill('m2');
+    for (const index of [0, 1, 2, 3]) {
+      await selects.nth(index).evaluate((select) => select.dispatchEvent(new Event('input', { bubbles: true })));
+    }
+    expect((await objectState(page, malware.id)).kill_chain_phases).toEqual(phases);
+  });
+
+  // Hash keys need 3 to 250 characters (STIX 2.1 section 2.7); other dictionary keys have no
+  // minimum (section 2.3).
+  test('hash keys need at least three characters, other dictionary keys do not', async ({ page }) => {
+    await openBuilder(page);
+    const file = sco('file', '8', { name: 'a.exe', hashes: { 'SHA-256': 'ab', MD5: 'cd', x_foo_hash: 'ef' } });
+    const identity = sdo('identity', '9', { name: 'i', identity_class: 'individual', external_references: [{ source_name: 's', hashes: { SHA3: 'aa' } }] });
+    const process = sco('process', 'a', { environment_variables: { ab: 'x', Z: 'y' } });
+    expect((await uploadBundle(page, [file, identity, process])).toast).toBe('Bundle imported');
+    expect((await objectState(page, file.id)).hashes).toEqual({ 'SHA-256': 'ab', MD5: 'cd', x_foo_hash: 'ef' });
+    expect((await objectState(page, identity.id)).external_references[0].hashes).toEqual({ SHA3: 'aa' });
+    expect((await objectState(page, process.id)).environment_variables).toEqual({ ab: 'x', Z: 'y' });
+    expect(await page.evaluate(() => (window as any).validateBundle())).toEqual([]);
+
+    const issues = await page.evaluate(({ fileId, identityId }) => {
+      const appState = eval('state');
+      appState.objectsById.get(fileId).hashes = { MD: 'x' };
+      appState.objectsById.get(identityId).external_references[0].hashes = { MD: 'x' };
+      return (window as any).validateBundle() as string[];
+    }, { fileId: file.id, identityId: identity.id });
+    expect(issues).toEqual([`file ${file.id} invalid hashes key`, `identity ${identity.id} invalid external_references key`]);
+  });
+
+  test('the editor refuses hash keys shorter than three characters', async ({ page }) => {
+    await openBuilder(page);
+    const bypass = (selector: string, value: string) => page.locator(selector).first().evaluate((element, text) => {
+      (element as HTMLInputElement).value = text;
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+    }, value);
+    const readActive = (field: string) => page.evaluate((key) => JSON.parse(JSON.stringify((window as any).getActiveObject()[key] ?? null)), field);
+
+    await page.locator('#add-type').selectOption('file');
+    await page.locator('#add-object').click();
+    await page.locator('#editor-panel [data-action="add-hash"][data-hash-field="hashes"]').click();
+    const hashKey = '#editor-panel [data-hash-field="hashes"][data-hash-role="key"]';
+    const generated = await readActive('hashes');
+    await bypass(hashKey, 'MD');
+    expect(await readActive('hashes')).toEqual(generated);
+    expect(await page.locator(hashKey).getAttribute('aria-invalid')).toBe('true');
+    await bypass(hashKey, 'SHA-256');
+    expect(Object.keys(await readActive('hashes'))).toEqual(['SHA-256']);
+
+    await page.locator('#add-type').selectOption('identity');
+    await page.locator('#add-object').click();
+    await page.locator('#editor-panel [data-action="add-ref"]').click();
+    await page.locator('#editor-panel [data-action="add-refhash"]').click();
+    const refHashKey = '#editor-panel [data-refhash-role="key"]';
+    const generatedRef = (await readActive('external_references'))[0].hashes;
+    await bypass(refHashKey, 'MD');
+    expect((await readActive('external_references'))[0].hashes).toEqual(generatedRef);
+    expect(await page.locator(refHashKey).getAttribute('aria-invalid')).toBe('true');
+    await bypass(refHashKey, 'MD5');
+    expect(Object.keys((await readActive('external_references'))[0].hashes)).toEqual(['MD5']);
+  });
+
+  // An object type is supported only if the configuration defines it as its own entry;
+  // 'constructor' is a valid custom type name (STIX 2.1 section 11.2.1), not a supported one.
+  test('does not treat an object of type constructor as a supported type', async ({ page }) => {
+    await openBuilder(page);
+    const identity = sdo('identity', 'b', { name: 'i', identity_class: 'individual' });
+    const custom = sdo('constructor', 'c', { name: 'c' });
+    expect((await uploadBundle(page, [identity, custom])).toast).toBe('Bundle imported');
+    await page.locator('#type-tabs .tab', { hasText: /^All$/ }).click();
+    await expect(page.locator('#object-list')).toContainText(identity.id);
+    await expect(page.locator('#object-list')).not.toContainText(custom.id);
+    expect(await page.evaluate(() => ['constructor', 'toString', '__proto__', 'hasOwnProperty']
+      .map((type) => (window as any).getStixObjectDefinition(type)))).toEqual([null, null, null, null]);
+
+    const issues = await page.evaluate((object) => {
+      eval('state').bundle.objects.push(object);
+      return (window as any).validateBundle() as string[];
+    }, custom);
+    expect(issues).toContain('Unknown object type: constructor');
   });
 });
