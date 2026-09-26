@@ -989,8 +989,8 @@ test.describe('Composer evidence and structural values', () => {
   }
 
   // A kill chain or phase that the configuration does not list is shown as stored, so the
-  // editor neither misrepresents it nor overwrites it on an unrelated change.
-  test('shows a kill chain missing from the configuration as stored and keeps it on unrelated edits', async ({ page }) => {
+  // editor neither misrepresents it nor overwrites it when its select commits (an input event).
+  test('shows a kill chain missing from the configuration as stored and keeps it when its selects commit', async ({ page }) => {
     await openBuilder(page);
     await page.evaluate(() => { (window as any).__evidenceCanary = 0; });
     const phases = [{ kill_chain_name: 'mitre-attack', phase_name: 'execution' }, { kill_chain_name: 'unified-kill-chain', phase_name: HOSTILE }];
@@ -1006,7 +1006,7 @@ test.describe('Composer evidence and structural values', () => {
 
     await page.locator('#editor-panel [data-field="name"]').fill('m2');
     for (const index of [0, 1, 2, 3]) {
-      await selects.nth(index).evaluate((select) => select.dispatchEvent(new Event('change', { bubbles: true })));
+      await selects.nth(index).evaluate((select) => select.dispatchEvent(new Event('input', { bubbles: true })));
     }
     expect((await objectState(page, malware.id)).kill_chain_phases).toEqual(phases);
   });
