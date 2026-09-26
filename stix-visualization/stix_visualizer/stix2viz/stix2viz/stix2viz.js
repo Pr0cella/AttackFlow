@@ -849,6 +849,23 @@ function determineTimestampFromConfig(stixObject, stixType, config)
 }
 
 /**
+ * Convert a STIX timestamp to epoch milliseconds.  RFC 3339 allows a leap
+ * second (23:59:60), which Date cannot represent, so it is placed on the
+ * last millisecond of its day.
+ *
+ * @param timestamp A STIX timestamp string
+ * @return Epoch milliseconds (NaN if the value is not a timestamp)
+ */
+
+function timestampToEpoch(timestamp)
+{
+    let epoch = new Date(timestamp).valueOf();
+    if (Number.isNaN(epoch) && typeof timestamp === "string")
+        epoch = new Date(timestamp.replace(/T23:59:60(\.\d+)?Z$/, "T23:59:59.999Z")).valueOf();
+    return epoch;
+}
+
+/**
  * Determine the timestamp based on the properties of the timestamp list
  *
  * @param stixObject The STIX object.  Provided to provide any info from it is
@@ -864,7 +881,7 @@ function determineTimestamp(stixObject, timestampList)
     for (let prop of timestampList)
     {
         if (stixObject.has(prop))
-            return new Date(stixObject.get(prop)).valueOf()
+            return timestampToEpoch(stixObject.get(prop))
     }
     return null
 }
@@ -927,9 +944,9 @@ function makeNodeObject(name, stixObject, observedDataNodes, config=null)
             node.version = determineTimestamp(stixObject, timelineTimestamps[stixType])
         // nothing in config or timelineTimestamps, use default behavior
         else if (stixObject.has("modified"))
-            node.version = new Date(stixObject.get("modified")).valueOf();
+            node.version = timestampToEpoch(stixObject.get("modified"));
         else if (stixObject.has("created"))
-            node.version = new Date(stixObject.get("created")).valueOf();
+            node.version = timestampToEpoch(stixObject.get("created"));
 
     if (node.version === null && observedDataNodes.length > 0)
         // still null, maybe it is an SCO

@@ -805,8 +805,9 @@ const STIX_SCHEMA = {
     });
 })();
 
+// Imported type names are data, so only the definitions' own entries count.
 function getStixObjectDefinition(type) {
-    return STIX_OBJECT_DEFS[type] || null;
+    return Object.prototype.hasOwnProperty.call(STIX_OBJECT_DEFS, type) ? STIX_OBJECT_DEFS[type] : null;
 }
 
 function getVocabulary(key) {

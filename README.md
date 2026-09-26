@@ -265,7 +265,7 @@ The [STIX visualizer](https://github.com/oasis-open/cti-stix-visualization)  is 
 - RequireJS `2.3.6` (`stix-visualization/stix_visualizer/require.js`)
 - RequireJS domReady plugin `2.0.1` (`stix-visualization/stix_visualizer/domReady.js`)
 - vis-network (vendored build used by stix2viz; (`stix-visualization/stix_visualizer/stix2viz/visjs/vis-network.js`))
-- stix2viz module (`stix-visualization/stix_visualizer/stix2viz/stix2viz/stix2viz.js`)
+- stix2viz module (`stix-visualization/stix_visualizer/stix2viz/stix2viz/stix2viz.js`); local change: leap-second timestamps (`23:59:60`) are placed on the last millisecond of their day on the timeline, because JavaScript dates cannot represent them
 
 ### Security Objectives
 1. **No execution of untrusted content** from local or upstream data (MITRE JSON/XML, user-imported layers).

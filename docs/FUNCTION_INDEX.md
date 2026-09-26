@@ -491,6 +491,7 @@ Update strategy:
 - `renderOpenVocabField`
 - `renderListField`
 - `renderObjectRefsField`
+- `withStoredOption`
 - `renderKillChainField`
 - `renderExternalReferencesField`
 - `renderReferenceHashesField`
