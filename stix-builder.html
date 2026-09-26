@@ -2116,22 +2116,33 @@
                 case 'kill-chain-phases':
                     if (!Array.isArray(raw)) return [];
                     return raw.slice(0, INPUT_LIMITS.maxListItems).map((v, i) => {
-                        const kill_chain_name = requireStructuralValueOrEmpty('kill-chain', v?.kill_chain_name, `${field.key}[${i}].kill_chain_name`);
-                        const phase_name = requireStructuralValueOrEmpty('kill-chain', v?.phase_name, `${field.key}[${i}].phase_name`);
+                        if (!v || typeof v !== 'object' || Array.isArray(v)) throw new Error(`${field.key}[${i}] is invalid`);
+                        const kill_chain_name = requireStructuralValueOrEmpty('kill-chain', v.kill_chain_name, `${field.key}[${i}].kill_chain_name`);
+                        const phase_name = requireStructuralValueOrEmpty('kill-chain', v.phase_name, `${field.key}[${i}].phase_name`);
                         return kill_chain_name && phase_name ? { kill_chain_name, phase_name } : null;
                     }).filter(Boolean);
                 case 'granular-markings':
                     if (!Array.isArray(raw)) return [];
-                    return raw.slice(0, INPUT_LIMITS.maxListItems).map((v, i) => ({
-                        selectors: Array.isArray(v?.selectors)
-                            ? v.selectors
-                                .map((sel, j) => requireStructuralValueOrEmpty('selector', sel, `${field.key}[${i}].selectors[${j}]`))
-                                .filter(Boolean)
-                            : [],
-                        marking_ref: v?.marking_ref === undefined
-                            ? ''
-                            : requireStructuralValueOrEmpty('identifier', v.marking_ref, `${field.key}[${i}].marking_ref`)
-                    }));
+                    return raw.slice(0, INPUT_LIMITS.maxListItems).map((v, i) => {
+                        const where = `${field.key}[${i}]`;
+                        if (!v || typeof v !== 'object' || Array.isArray(v)) throw new Error(`${where} is invalid`);
+                        if (!hasOwn(v, 'selectors')) throw new Error(`${where}.selectors is missing`);
+                        if (!Array.isArray(v.selectors)) throw new Error(`${where}.selectors is invalid`);
+                        const selectors = v.selectors
+                            .map((sel, j) => requireStructuralValueOrEmpty('selector', sel, `${where}.selectors[${j}]`))
+                            .filter(Boolean);
+                        // A marking carries exactly one of marking_ref or lang (STIX 2.1 section
+                        // 7.2.3.1). lang is not modelled here, so a language marking imports as
+                        // an unfilled row; '' counts as absent, as for other structural values.
+                        if (hasOwn(v, 'lang') && typeof v.lang !== 'string') throw new Error(`${where}.lang is invalid`);
+                        const lang = hasOwn(v, 'lang') ? v.lang : '';
+                        const marking_ref = hasOwn(v, 'marking_ref')
+                            ? requireStructuralValueOrEmpty('identifier', v.marking_ref, `${where}.marking_ref`)
+                            : '';
+                        if (marking_ref && lang) throw new Error(`${where} has both marking_ref and lang`);
+                        if (!hasOwn(v, 'marking_ref') && !lang) throw new Error(`${where}.marking_ref is missing`);
+                        return { selectors, marking_ref };
+                    });
                 case 'external-references':
                     if (!Array.isArray(raw)) return [];
                     return raw.slice(0, INPUT_LIMITS.maxListItems).map((ref) => ({
@@ -2330,10 +2341,13 @@
                         if (!Array.isArray(value)) break;
                         value.forEach((marking) => {
                             const selectors = Array.isArray(marking?.selectors) ? marking.selectors : [];
+                            if (!selectors.length) issues.push(`${prefix} ${field.key} entry missing selectors`);
                             if (selectors.some((sel) => !isValidStructuralValue('selector', sel))) {
                                 issues.push(`${prefix} invalid ${field.key} selector`);
                             }
-                            if (marking?.marking_ref && !isValidStructuralValue('identifier', marking.marking_ref)) {
+                            if (!marking?.marking_ref) {
+                                issues.push(`${prefix} ${field.key} entry missing marking_ref`);
+                            } else if (!isValidStructuralValue('identifier', marking.marking_ref)) {
                                 issues.push(`${prefix} invalid ${field.key} marking_ref`);
                             }
                         });
