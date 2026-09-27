@@ -515,6 +515,7 @@ Update strategy:
 - `clearBundle`
 - `sanitizeDictionary`
 - `sanitizeExtensions`
+- `dropEmptyEntries`
 - `sanitizeImportedFieldValue`
 - `sanitizeImportedObject`
 - `sanitizeBundleForVisualizer`
@@ -525,7 +526,13 @@ Update strategy:
 - `getEditableFields`
 - `getStructuralFieldType`
 - `setInputValidity`
+- `isRequiredProperty`
 - `isEmptyOptionalList`
+- `isNoValue`
+- `isEmptyDictionary`
+- `commitDictionary`
+- `getListRows`
+- `commitListRows`
 - `hasValue`
 - `validateObjectFields`
 - `sanitizeValue`
