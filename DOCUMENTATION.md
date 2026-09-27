@@ -365,7 +365,29 @@ Export:
   - deterministic ATT&CK `attack-pattern` SDOs
   - deterministic mitigation `course-of-action` SDOs
   - generated `relationship` SROs (`mitigates` + co-location relations)
-- `addRelationship(...)`
+  - each id once: a custom library entry with the id of a derived `attack-pattern` or
+    `course-of-action` (for example after importing a bundle this export wrote) is left out
+    while its technique (or a technique it mitigates) is assigned, and the derived copy is
+    written. The entry stays in the
+    library and in the JSON export's `customLibrary`; edits to it do not reach the STIX bundle,
+    but an invalid property value in it still stops the export.
+  - exception for an assigned technique without ATT&CK data (no technique record, or a
+    placeholder record without a description, e.g. a technique missing from the loaded data or
+    from a Navigator layer or CSV list that replaced the library): a library `attack-pattern`
+    with its derived id is written instead, with its name, description, labels and other
+    properties, plus the derived `external_references` and `kill_chain_phases`. It keeps the
+    entry's `created` when that is a real calendar date and time in the UTC `Z` form
+    (sections 2.16.1 and 3.2), with zeros added up to millisecond precision
+    (`2020-01-01T00:00:00Z` becomes `2020-01-01T00:00:00.000Z`, the same instant); for
+    anything else, such as February 30 or a time zone offset, it uses the export time;
+    `modified` is the export time, never earlier than `created`, because adding properties
+    makes a new version (STIX 2.1 section 3.6). Edits to that entry reach the STIX bundle; the
+    entry itself is not changed.
+- `addRelationship(...)`: one `related-to` co-location relation per pair of different custom
+  objects that share a phase's ungrouped items or one group, described by the first phase
+  where the pair occurs. Two instances of one object (the same
+  id, also after import lowercases case variants) are not related to each other; both stay in
+  the editor and in the JSON export's assignments.
 - `exportSTIXBundle()`
 - `exportCSV()` with formula-injection hardening (`sanitizeForCsv` prefix guard). Cells
   whose first character is `=`, `+`, `-`, `@`, tab or CR get one leading tab and are always

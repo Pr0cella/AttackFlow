@@ -9239,6 +9239,8 @@
                 }
                 objects.push(sdo);
             }
+            const customCount = objects.length;
+            const libraryById = new Map(objects.map(o => [o.id, o]));
 
             // Generate SROs for co-located items in same phase/group
             const relationshipSet = new Set();
@@ -9275,6 +9277,8 @@
                 }
             }
 
+            const derivedStart = objects.length;
+
             // Add attack-pattern SDOs for assigned techniques (deterministic IDs)
             const techniquePhases = new Map(); // techId → Set of phase names
             for (const [phaseKey, phaseData] of Object.entries(state.assignments)) {
@@ -9288,23 +9292,48 @@
             }
             for (const [techId, phases] of techniquePhases) {
                 const entity = state.library.techniques[techId];
+                const id = techniqueStixId(techId);
+                const external_references = [{
+                    source_name: 'mitre-attack',
+                    external_id: techId,
+                    url: `https://attack.mitre.org/techniques/${techId.replace('.', '/')}`
+                }];
+                const kill_chain_phases = [...phases].map(p => ({
+                    kill_chain_name: 'unified-kill-chain',
+                    phase_name: p
+                }));
+                // Without ATT&CK data for the technique, a library entry with its id knows more. Adding
+                // properties makes a new version: created is kept, modified is updated (section 3.6).
+                const libraryCopy = entity?.description ? null : libraryById.get(id);
+                if (libraryCopy) {
+                    // A created is a UTC timestamp with at least milliseconds (sections 2.16.1, 3.2): fewer
+                    // digits name the same instant padded with zeros. Date.parse rolls impossible dates
+                    // forward (Feb 30 -> Mar 1), so the parsed instant must give back the same fields.
+                    const stamp = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.(\d+))?Z$/.exec(libraryCopy.created);
+                    const parsed = stamp ? Date.parse(`${stamp[1]}Z`) : NaN;
+                    const created = !Number.isNaN(parsed) && new Date(parsed).toISOString().slice(0, 19) === stamp[1]
+                        ? `${stamp[1]}.${(stamp[2] || '').padEnd(3, '0')}Z`
+                        : now;
+                    objects.push({
+                        ...libraryCopy,
+                        created,
+                        modified: Date.parse(created) > Date.parse(now) ? created : now,
+                        name: libraryCopy.name || entity?.name || techId,
+                        external_references,
+                        kill_chain_phases
+                    });
+                    continue;
+                }
                 objects.push({
                     type: 'attack-pattern',
                     spec_version: '2.1',
-                    id: techniqueStixId(techId),
+                    id,
                     created: now,
                     modified: now,
                     name: entity?.name || techId,
                     ...(entity?.description ? { description: entity.description } : {}),
-                    external_references: [{
-                        source_name: 'mitre-attack',
-                        external_id: techId,
-                        url: `https://attack.mitre.org/techniques/${techId.replace('.', '/')}`
-                    }],
-                    kill_chain_phases: [...phases].map(p => ({
-                        kill_chain_name: 'unified-kill-chain',
-                        phase_name: p
-                    }))
+                    external_references,
+                    kill_chain_phases
                 });
             }
 
@@ -9343,6 +9372,9 @@
                     }]
                 });
             }
+            // Objects with one id are versions of one object (STIX 2.1 section 3.2): a library
+            // entry with the id of a derived object, e.g. from a re-imported bundle, is left out.
+            const derivedIds = new Set(objects.slice(derivedStart).map(o => o.id));
 
             // Emit mitigates SROs
             for (const [techSid, mitSids] of techMitLinks) {
@@ -9367,11 +9399,13 @@
                 type: 'bundle',
                 id: `bundle--${generateUUID()}`,
                 spec_version: '2.1',
-                objects: objects
+                objects: objects.filter((o, index) => index >= customCount || !derivedIds.has(o.id))
             };
         }
 
         function addRelationship(objects, seen, sourceId, targetId, phaseKey, timestamp) {
+            // Two instances of one object in a phase are not a link between two objects.
+            if (sourceId === targetId) return;
             const sourceType = getStixIdType(sourceId);
             const targetType = getStixIdType(targetId);
             if (!sourceType || !targetType) return;
