@@ -30,7 +30,7 @@
 7. [Data Types & Shapes](#7-data-types--shapes)
 8. [Security Model](#8-security-model)
 9. [Global Event Listeners](#9-global-event-listeners)
-10. [Module Mapping (Current → v3.0)](#10-module-mapping-current--v30)
+10. [Function Index Reference](#10-function-index-reference)
 
 ---
 
