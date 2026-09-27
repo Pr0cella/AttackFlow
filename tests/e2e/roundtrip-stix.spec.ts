@@ -357,3 +357,48 @@ test.describe('RT-08 generated STIX graph', () => {
     });
   });
 });
+
+test.describe('STIX identifiers with uppercase UUID hex', () => {
+  // STIX 2.1 section 2.9 requires an RFC 4122 UUID, whose hex digits are case-insensitive on
+  // input, and a lowercase type name. Such ids are kept, stored in lowercase and reported.
+  const UPPER = 'malware--AAAAAAAA-BBBB-4CCC-8DDD-EEEEEEEEEEEE';
+  const UPPER_STORED = 'malware--aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
+  const MIXED = 'tool--Cccccccc-dDdD-4eEe-8FfF-000000000000';
+  const MIXED_STORED = 'tool--cccccccc-dddd-4eee-8fff-000000000000';
+  const TYPE_CASE = 'Malware--11111111-2222-4333-8444-555555555555';
+  const at = '2026-01-01T00:00:00.000Z';
+  const sdo = (type: string, id: string, name: string, extra: Record<string, unknown> = {}) =>
+    ({ type, spec_version: '2.1', id, created: at, modified: at, name, ...extra });
+  const bundleOf = (objects: unknown[]) =>
+    bytes({ type: 'bundle', id: 'bundle--99999999-8888-4777-8666-555555555555', objects });
+
+  test('imports uppercase-hex ids in lowercase, reports them and treats case variants as one id', async ({ page }) => {
+    await openApp(page);
+    await importStix(page, bundleOf([
+      sdo('malware', UPPER, 'Upper malware', { is_family: false }),
+      sdo('tool', MIXED, 'Mixed tool'),
+      sdo('malware', TYPE_CASE, 'Type-case malware', { is_family: false }),
+    ]));
+
+    const library = (await readState(page)).customLibrary;
+    // A capital in the type name is still refused, so only two objects arrive.
+    expect(Object.keys(library).sort()).toEqual([UPPER_STORED, MIXED_STORED]);
+    expect(library[UPPER_STORED]).toMatchObject({ id: UPPER_STORED, name: 'Upper malware' });
+    expect(library[MIXED_STORED]).toMatchObject({ id: MIXED_STORED, name: 'Mixed tool' });
+    await expect(page.locator('#toast'))
+      .toHaveText('Imported 2 STIX objects, 2 identifiers lowercased, 1 invalid skipped');
+
+    const exported = (await exportStix(page)).json;
+    const ids = exported.objects.map((o: any) => o.id);
+    expect(ids).toEqual(expect.arrayContaining([UPPER_STORED, MIXED_STORED]));
+    for (const id of ids) expect(id).toMatch(new RegExp(`^[a-z][a-z0-9-]*--${UUID}$`));
+
+    // The uppercase form of an id already in the library names the same object.
+    await importStix(page, bundleOf([sdo('malware', UPPER, 'Second copy', { is_family: false })]));
+    await expect(page.locator('#toast'))
+      .toHaveText('Imported 0 STIX objects, 1 identifier lowercased, 1 duplicate skipped');
+    const after = (await readState(page)).customLibrary;
+    expect(Object.keys(after).sort()).toEqual([UPPER_STORED, MIXED_STORED]);
+    expect(after[UPPER_STORED].name).toBe('Upper malware');
+  });
+});

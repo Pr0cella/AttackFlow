@@ -4528,8 +4528,14 @@
         // All entity type keys for iteration
         const ALL_ENTITY_TYPES = Object.keys(TYPE_KEYS);
 
-        // STIX 2.1 ID format: {type}--{uuid}
-        const STIX_ID_PATTERN = /^[a-z][a-z0-9-]*--[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+        // STIX 2.1 ID format: {type}--{uuid}. The type name is lowercase; UUID hex digits are
+        // case-insensitive on input (RFC 4122) and stored in lowercase via lowercaseStixId().
+        const STIX_ID_PATTERN = /^[a-z][a-z0-9-]*--[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
+        // Only for ids that match STIX_ID_PATTERN, whose type name is already lowercase.
+        function lowercaseStixId(id) {
+            return id.toLowerCase();
+        }
 
         // Valid STIX SDO type values
         const VALID_STIX_TYPES = new Set((typeof CONFIG !== 'undefined' && CONFIG.stixTypes || []).map(t => t.value));
@@ -7014,7 +7020,7 @@
                         throw new Error(`Too many objects: ${data.objects.length} (max ${STIX_BUNDLE_IMPORT_LIMITS.maxObjects})`);
                     }
 
-                    let imported = 0, skipped = 0, duplicates = 0;
+                    let imported = 0, skipped = 0, duplicates = 0, lowercased = 0;
 
                     // Auto-clear existing STIX data if configured
                     if (CONFIG.imports?.clearStixOnBundleImport) {
@@ -7051,11 +7057,13 @@
                         }
 
                         // Validate STIX ID format
-                        const objId = obj.id;
-                        if (typeof objId !== 'string' || !STIX_ID_PATTERN.test(objId)) {
+                        const rawId = obj.id;
+                        if (typeof rawId !== 'string' || !STIX_ID_PATTERN.test(rawId)) {
                             skipped++;
                             continue;
                         }
+                        const objId = lowercaseStixId(rawId);
+                        const idLowercased = objId !== rawId;
 
                         // Verify ID prefix matches declared type
                         if (objId.split('--')[0] !== objType) {
@@ -7066,6 +7074,7 @@
                         // Skip if already exists in library
                         if (state.library.custom[objId]) {
                             duplicates++;
+                            if (idLowercased) lowercased++;
                             continue;
                         }
 
@@ -7085,10 +7094,12 @@
 
                         state.library.custom[objId] = entry;
                         imported++;
+                        if (idLowercased) lowercased++;
                     }
 
                     // Build result message
                     let msg = `Imported ${imported} STIX object${imported !== 1 ? 's' : ''}`;
+                    if (lowercased > 0) msg += `, ${lowercased} identifier${lowercased !== 1 ? 's' : ''} lowercased`;
                     if (duplicates > 0) msg += `, ${duplicates} duplicate${duplicates !== 1 ? 's' : ''} skipped`;
                     if (skipped > 0) msg += `, ${skipped} invalid skipped`;
 
@@ -9556,18 +9567,21 @@
             return { id: id, metadata: metadata, instanceId: assignment.instanceId || createAssignmentInstanceId() };
         }
 
-        function sanitizeImportedCustomAssignment(assignment) {
+        function sanitizeImportedCustomAssignment(assignment, idCounts) {
             if (!assignment || typeof assignment !== 'object') return null;
 
-            const id = assignment.id || assignment.entityId;
-            if (typeof id !== 'string') return null;
+            const rawId = assignment.id || assignment.entityId;
+            if (typeof rawId !== 'string') return null;
 
             // Validate STIX ID format: {type}--{uuid}
-            if (!STIX_ID_PATTERN.test(id)) return null;
+            if (!STIX_ID_PATTERN.test(rawId)) return null;
 
             // Extract and validate STIX type from ID
-            const stixType = id.split('--')[0];
+            const stixType = rawId.split('--')[0];
             if (!VALID_STIX_TYPES.has(stixType)) return null;
+
+            const id = lowercaseStixId(rawId);
+            if (id !== rawId && idCounts) idCounts.lowercased++;
 
             // Extract metadata
             const metadata = sanitizeAssignmentMetadata(assignment);
@@ -9693,6 +9707,10 @@
             const sanitized = {
                 assignments: createSafeObject()
             };
+            // Custom ids whose UUID hex was stored in lowercase, reported by the import toast.
+            // Assignments are counted per phase, because only known phases are imported.
+            const libraryIdCounts = { lowercased: 0 };
+            const phaseIdCounts = createSafeObject();
 
             // Sanitize assignments
             const assignmentSource = (data && typeof data === 'object' && data.assignments && typeof data.assignments === 'object')
@@ -9708,6 +9726,8 @@
                     groups: [],
                     layout: []
                 };
+                const idCounts = { lowercased: 0 };
+                phaseIdCounts[phaseKey] = idCounts;
 
                 for (const key of ['techniques', 'capecs', 'cwes']) {
                     const list = Array.isArray(phaseData[key]) ? phaseData[key] : [];
@@ -9719,7 +9739,7 @@
                 // Sanitize custom items separately (STIX ID format)
                 if (Array.isArray(phaseData.customItems)) {
                     sanitized.assignments[phaseKey].customItems = phaseData.customItems
-                        .map(a => sanitizeImportedCustomAssignment(a))
+                        .map(a => sanitizeImportedCustomAssignment(a, idCounts))
                         .filter(a => a !== null);
                 }
 
@@ -9734,7 +9754,7 @@
                             const items = rawItems
                                 .map(item => {
                                     if (item.type === 'custom') {
-                                        const sanitizedItem = sanitizeImportedCustomAssignment(item);
+                                        const sanitizedItem = sanitizeImportedCustomAssignment(item, idCounts);
                                         if (!sanitizedItem) return null;
                                         return { ...sanitizedItem, type: 'custom' };
                                     }
@@ -9818,13 +9838,20 @@
                 sanitized.customLibrary = createSafeObject();
                 const maxItems = 500;
                 let count = 0;
-                for (const [id, item] of Object.entries(data.customLibrary)) {
-                    if (count >= maxItems) break;
-                    if (isDangerousObjectKey(id)) continue;
-                    if (!STIX_ID_PATTERN.test(id)) continue;
+                for (const [rawId, item] of Object.entries(data.customLibrary)) {
+                    if (isDangerousObjectKey(rawId)) continue;
+                    if (!STIX_ID_PATTERN.test(rawId)) continue;
                     if (!item || typeof item !== 'object') continue;
-                    const stixType = id.split('--')[0];
+                    const stixType = rawId.split('--')[0];
                     if (!VALID_STIX_TYPES.has(stixType)) continue;
+
+                    // Keys that differ only in UUID case name one object: the first is kept, and
+                    // a later variant is counted even beyond the entry limit.
+                    const id = lowercaseStixId(rawId);
+                    const isVariant = hasOwn(sanitized.customLibrary, id);
+                    if (!isVariant && count >= maxItems) continue;
+                    if (id !== rawId) libraryIdCounts.lowercased++;
+                    if (isVariant) continue;
 
                     const entry = {
                         id: id,
@@ -9879,6 +9906,7 @@
                 }
             }
 
+            sanitized.lowercasedIds = { library: libraryIdCounts.lowercased, phases: phaseIdCounts };
             return sanitized;
         }
 
@@ -9909,9 +9937,11 @@
 
                     // Reset assignments and load sanitized state
                     initAssignments();
+                    let lowercased = sanitized.lowercasedIds.library;
                     for (const [phaseKey, phaseData] of Object.entries(sanitized.assignments)) {
                         if (state.assignments[phaseKey]) {
                             state.assignments[phaseKey] = phaseData;
+                            lowercased += sanitized.lowercasedIds.phases[phaseKey].lowercased;
                         }
                     }
 
@@ -9957,7 +9987,9 @@
 
                     switchTab(state.activeTab);
                     renderAll();
-                    showToast('Imported kill chain');
+                    showToast(lowercased > 0
+                        ? `Imported kill chain, ${lowercased} identifier${lowercased !== 1 ? 's' : ''} lowercased`
+                        : 'Imported kill chain');
                 } catch (err) {
                     showToast('Import failed: ' + err.message);
                 }

@@ -114,6 +114,7 @@ Update strategy:
 - `getAssignmentInstanceId`
 - `generateUUID`
 - `generateStixId`
+- `lowercaseStixId`
 - `uuidv5`
 - `sha1Bytes`
 - `mitigationStixId`
