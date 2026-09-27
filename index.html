@@ -4528,9 +4528,16 @@
         // All entity type keys for iteration
         const ALL_ENTITY_TYPES = Object.keys(TYPE_KEYS);
 
-        // STIX 2.1 ID format: {type}--{uuid}. The type name is lowercase; UUID hex digits are
-        // case-insensitive on input (RFC 4122) and stored in lowercase via lowercaseStixId().
-        const STIX_ID_PATTERN = /^[a-z][a-z0-9-]*--[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+        // STIX 2.1 ID format: {type}--{uuid}. The type name is lowercase and never contains "--"
+        // (sections 7.3.2.2 and 11.2.1); UUID hex digits are case-insensitive on input (RFC 4122)
+        // and stored in lowercase via lowercaseStixId().
+        const STIX_ID_PATTERN = /^[a-z](?:-?[a-z0-9])*-?--[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
+        // The type of an id is everything before the final "--" in front of the 36-character
+        // UUID, so a type ending in a hyphen stays whole. Returns '' for a value that is not an id.
+        function getStixIdType(id) {
+            return typeof id === 'string' && STIX_ID_PATTERN.test(id) ? id.slice(0, -38) : '';
+        }
 
         // Only for ids that match STIX_ID_PATTERN, whose type name is already lowercase.
         function lowercaseStixId(id) {
@@ -7080,7 +7087,7 @@
                         const idLowercased = objId !== rawId;
 
                         // Verify ID prefix matches declared type
-                        if (objId.split('--')[0] !== objType) {
+                        if (getStixIdType(objId) !== objType) {
                             skipped++;
                             continue;
                         }
@@ -9365,8 +9372,8 @@
         }
 
         function addRelationship(objects, seen, sourceId, targetId, phaseKey, timestamp) {
-            const sourceType = sourceId.split('--')[0] || '';
-            const targetType = targetId.split('--')[0] || '';
+            const sourceType = getStixIdType(sourceId);
+            const targetType = getStixIdType(targetId);
             if (!sourceType || !targetType) return;
 
             // Look up relationship type from STIX_RELATIONSHIP_MAP
@@ -9484,7 +9491,7 @@
                     if (!state.library.custom[id]) {
                         state.library.custom[id] = {
                             id,
-                            stixType: id.split('--')[0] || 'x-custom',
+                            stixType: getStixIdType(id) || 'x-custom',
                             name: id,
                             description: '',
                             labels: [],
@@ -9596,7 +9603,7 @@
             if (!STIX_ID_PATTERN.test(rawId)) return null;
 
             // Extract and validate STIX type from ID
-            const stixType = rawId.split('--')[0];
+            const stixType = getStixIdType(rawId);
             if (!VALID_STIX_TYPES.has(stixType)) return null;
 
             const id = lowercaseStixId(rawId);
@@ -9861,7 +9868,7 @@
                     if (isDangerousObjectKey(rawId)) continue;
                     if (!STIX_ID_PATTERN.test(rawId)) continue;
                     if (!item || typeof item !== 'object') continue;
-                    const stixType = rawId.split('--')[0];
+                    const stixType = getStixIdType(rawId);
                     if (!VALID_STIX_TYPES.has(stixType)) continue;
 
                     // Keys that differ only in UUID case name one object: the first is kept, and

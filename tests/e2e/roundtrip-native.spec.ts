@@ -1350,3 +1350,44 @@ test.describe('Custom STIX identifiers with uppercase UUID hex', () => {
     });
   });
 });
+
+test.describe('Custom STIX identifiers whose type part holds a double hyphen', () => {
+  // A type never contains "--" (STIX 2.1 sections 7.3.2.2 and 11.2.1), so the type part of an
+  // id ends at the final "--" before the UUID. Keys and assignments of other types are dropped.
+  const IDENTITY = 'identity--0a0b0c0d-1e1f-4a2b-8c3d-4e5f6a7b8c9d';
+  const INNER = 'malware--tool--aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
+  const TRAILING = 'tool---11111111-2222-4333-8444-555555555555';
+  const custom = (id: string, n: number) => ({ id, instanceId: `itm-d-${n}`, type: 'custom', metadata: {} });
+
+  test('native import drops keys and assignments whose id type part is not a supported type', async ({ page }) => {
+    await openApp(page);
+    await importNative(page, bytes({
+      assignments: {
+        'IN:reconnaissance': {
+          techniques: [], capecs: [], cwes: [],
+          customItems: [custom(INNER, 1), custom(TRAILING, 2), custom(IDENTITY, 3)],
+          groups: [{ groupId: 'grp-d-1', label: 'Group', items: [custom(INNER, 4), custom(IDENTITY, 5)] }],
+          layout: [],
+        },
+      },
+      customLibrary: {
+        [INNER]: { stixType: 'malware', name: 'Inner malware', is_family: false },
+        [TRAILING]: { stixType: 'tool', name: 'Trailing tool' },
+        [IDENTITY]: { stixType: 'identity', name: 'Identity', identity_class: 'organization' },
+      },
+    }));
+
+    const state = await readState(page);
+    expect(Object.keys(state.customLibrary)).toEqual([IDENTITY]);
+    const recon = state.assignments['IN:reconnaissance'];
+    expect(recon.customItems.map((a: any) => a.id)).toEqual([IDENTITY]);
+    expect(recon.groups[0].items.map((a: any) => a.id)).toEqual([IDENTITY]);
+
+    const native = await exportNative(page);
+    expect(Object.keys(native.json.customLibrary)).toEqual([IDENTITY]);
+    const bundle = (await exportStix(page)).json;
+    const ids = bundle.objects.flatMap((o: any) => [o.id, o.source_ref, o.target_ref]).filter(Boolean);
+    expect(ids).toContain(IDENTITY);
+    for (const id of [INNER, TRAILING]) expect(ids).not.toContain(id);
+  });
+});

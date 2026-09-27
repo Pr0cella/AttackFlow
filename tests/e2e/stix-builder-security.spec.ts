@@ -1731,6 +1731,14 @@ test.describe('Composer evidence and structural values', () => {
     'indicator--F81D4FAE7DEC11D0A76500A0C91E6BF6', 'indicator--G81D4FAE-7DEC-11D0-A765-00A0C91E6BF6', '',
   ];
   const ID_GRAMMAR = [...VALID_IDS.map((v) => [v, true]), ...INVALID_IDS.map((v) => [v, false])];
+  // A type never contains "--" (STIX 2.1 sections 7.3.2.2 and 11.2.1), so the type part ends at
+  // the final "--" before the UUID. No rule forbids a type that ends in a hyphen.
+  const TYPE_PART_GRAMMAR: Array<[string, boolean]> = [
+    ['x-acme---f81d4fae-7dec-11d0-a765-00a0c91e6bf6', true], ['a---f81d4fae-7dec-11d0-a765-00a0c91e6bf6', true],
+    ['indicator--tool--f81d4fae-7dec-11d0-a765-00a0c91e6bf6', false], ['x--y--f81d4fae-7dec-11d0-a765-00a0c91e6bf6', false],
+    ['indicator----f81d4fae-7dec-11d0-a765-00a0c91e6bf6', false],
+  ];
+  const typePartIds = TYPE_PART_GRAMMAR.map(([v]) => v);
 
   test('the identifier grammar accepts uppercase UUID hex but not an uppercase type prefix', async ({ page }) => {
     await openBuilder(page);
@@ -1748,6 +1756,12 @@ test.describe('Composer evidence and structural values', () => {
     expect(await page.evaluate(() => [typeof (window as any).STIX_ID_PATTERN, typeof (window as any).RENAMED_ID_PATTERN]))
       .toEqual(['undefined', 'object']);
     expect(await isValid(page, 'identifier', [...VALID_IDS, ...INVALID_IDS])).toEqual(ID_GRAMMAR);
+    expect(await isValid(page, 'identifier', typePartIds)).toEqual(TYPE_PART_GRAMMAR);
+  });
+
+  test('the identifier grammar refuses "--" inside the type part', async ({ page }) => {
+    await openBuilder(page);
+    expect(await isValid(page, 'identifier', typePartIds)).toEqual(TYPE_PART_GRAMMAR);
   });
 
   // Uppercase UUID hex in ids and refs is accepted and stored lowercase, so a ref still finds
@@ -1855,6 +1869,57 @@ test.describe('Composer evidence and structural values', () => {
     await bypass(gmInput, stixId('marking-definition', 'F'));
     expect((await readActive()).granular_markings[0].marking_ref).toBe(stixId('marking-definition', 'f'));
     await expect(field(gmInput)).toHaveValue(stixId('marking-definition', 'f'));
+  });
+
+  // The type of an id is everything before the final "--", so an id with "--" in its type part,
+  // or whose type part is not the object's type, names no object of that type.
+  test('import and editor refuse ids whose type part holds a double hyphen', async ({ page }) => {
+    await openBuilder(page);
+    const uuid = (hex: string) => stixId('x', hex).slice('x--'.length);
+    const person = (hex: string, extra: Record<string, unknown> = {}) =>
+      sdo('identity', hex, { name: hex, identity_class: 'individual', ...extra });
+    const readIds = () => page.evaluate(() => (eval('state') as any).bundle.objects.map((o: any) => o.id));
+
+    const plain = person('a');
+    const inner = { ...person('b'), id: `identity--x--${uuid('b')}` };
+    const trailing = { ...person('c'), id: `identity---${uuid('c')}` };
+    expect((await uploadBundle(page, [plain, inner, trailing])).toast).toBe('Bundle imported');
+    expect(await readIds()).toEqual([plain.id]);
+
+    expect((await uploadBundle(page, [person('d', { created_by_ref: `identity--x--${uuid('a')}` })])).toast)
+      .toBe('Import failed: object 1 created_by_ref is invalid');
+    // A type may end in a hyphen: this ref names an object of type "x-acme-" outside the bundle.
+    const outside = person('e', { created_by_ref: `x-acme---${uuid('a')}` });
+    expect((await uploadBundle(page, [outside])).toast).toBe('Bundle imported');
+    expect(await objectState(page, outside.id)).toMatchObject({ created_by_ref: `x-acme---${uuid('a')}` });
+
+    await uploadBundle(page, [plain], `bundle--x--${uuid('f')}`);
+    expect(await page.evaluate(() => (window as any).validateBundle())).toContain('Bundle id must be a valid STIX id');
+
+    // Neither key is an extension-definition id (types "extension-definition--x" and
+    // "extension-definition-"), so both are kept as written, not lowercased.
+    const keys = [`extension-definition--x--${uuid('C')}`, `extension-definition---${uuid('D')}`];
+    const body = { extension_type: 'property-extension', rank: '1' };
+    const extended = sco('file', '7', { name: 'a.exe', extensions: { [keys[0]]: body, [keys[1]]: body } });
+    expect((await uploadBundle(page, [extended])).toast).toBe('Bundle imported');
+    expect(Object.keys((await objectState(page, extended.id)).extensions)).toEqual(keys);
+
+    const bypass = (selector: string, value: string) => page.locator(selector).first().evaluate((element, text) => {
+      (element as HTMLInputElement).value = text;
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+    }, value);
+    const readActive = () => page.evaluate(() => JSON.parse(JSON.stringify((window as any).getActiveObject())));
+    await page.locator('#add-type').selectOption('identity');
+    await page.locator('#add-object').click();
+    const idInput = '#editor-panel [data-field="id"]';
+    const refInput = '#editor-panel [data-field="created_by_ref"]';
+    const before = (await readActive()).id;
+    await bypass(idInput, `identity--x--${uuid('8')}`);
+    expect((await readActive()).id).toBe(before);
+    await expect(page.locator(idInput).first()).toHaveAttribute('aria-invalid', 'true');
+    await bypass(refInput, `identity--x--${uuid('a')}`);
+    expect((await readActive()).created_by_ref).toBeUndefined();
+    await expect(page.locator(refInput).first()).toHaveAttribute('aria-invalid', 'true');
   });
 
   // An extension key that is an extension-definition id must match that definition's id

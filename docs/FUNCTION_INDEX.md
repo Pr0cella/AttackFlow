@@ -115,6 +115,7 @@ Update strategy:
 - `generateUUID`
 - `generateStixId`
 - `lowercaseStixId`
+- `getStixIdType`
 - `isStixRefProperty`
 - `lowercaseStixRef`
 - `uuidv5`
@@ -468,6 +469,7 @@ Update strategy:
 - `isValidStructuralValue`
 - `requireStructuralValue`
 - `requireStructuralValueOrEmpty`
+- `getStixIdType`
 
 ### Object Model / Editor / Renderers
 

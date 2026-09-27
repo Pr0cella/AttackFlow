@@ -459,3 +459,60 @@ test.describe('STIX identifiers with uppercase UUID hex', () => {
     expect(byId(ANALYSIS).sample_ref).toBe(FILE);
   });
 });
+
+test.describe('STIX identifiers whose type part holds a double hyphen', () => {
+  // A type never contains "--" (STIX 2.1 sections 7.3.2.2 and 11.2.1), so the type part of an
+  // id ends at the final "--" before the UUID. No rule forbids a type that ends in a hyphen.
+  const VALID = 'malware--aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
+  const INNER = 'malware--tool--11111111-2222-4333-8444-555555555555';
+  const TRAILING = 'malware---22222222-3333-4444-8555-666666666666';
+  const at = '2026-01-01T00:00:00.000Z';
+  const sdo = (type: string, id: string, name: string, extra: Record<string, unknown> = {}) =>
+    ({ type, spec_version: '2.1', id, created: at, modified: at, name, ...extra });
+  const bundleOf = (objects: unknown[]) =>
+    bytes({ type: 'bundle', id: 'bundle--99999999-8888-4777-8666-555555555555', objects });
+
+  test('the identifier grammar refuses "--" inside the type part', async ({ page }) => {
+    await openApp(page);
+    const rows: Array<[string, boolean]> = [
+      [VALID, true], [TRAILING, true], ['x-acme---aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee', true],
+      [INNER, false], ['x--y--aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee', false],
+      ['malware----aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee', false],
+    ];
+    const results = await page.evaluate(
+      (ids) => ids.map((id) => [id, (eval('STIX_ID_PATTERN') as RegExp).test(id)]), rows.map(([id]) => id),
+    );
+    expect(results).toEqual(rows);
+  });
+
+  test('bundle import skips objects whose id type part is not their type', async ({ page }) => {
+    // TRAILING matches the grammar, but its type part is "malware-", not "malware".
+    await openApp(page);
+    await importStix(page, bundleOf([
+      sdo('malware', VALID, 'Valid malware', { is_family: false }),
+      sdo('malware', INNER, 'Inner malware', { is_family: false }),
+      sdo('malware', TRAILING, 'Trailing malware', { is_family: false }),
+    ]));
+
+    expect(Object.keys((await readState(page)).customLibrary)).toEqual([VALID]);
+    await expect(page.locator('#toast')).toHaveText('Imported 1 STIX object, 2 invalid skipped');
+    const ids = (await exportStix(page)).json.objects.map((o: any) => o.id);
+    expect(ids).toContain(VALID);
+    for (const id of [INNER, TRAILING]) expect(ids).not.toContain(id);
+  });
+
+  test('a reference is lowercased only when its type part is a type name', async ({ page }) => {
+    // "x-acme-" is a valid type name, so that reference is an id; "tool--x" is not.
+    const REPORT = 'report--12121212-3434-4565-8787-909090909090';
+    const TRAILING_REF = 'x-acme---AAAAAAAA-BBBB-4CCC-8DDD-EEEEEEEEEEEE';
+    const INNER_REF = 'tool--x--AAAAAAAA-BBBB-4CCC-8DDD-EEEEEEEEEEEE';
+    await openApp(page);
+    await importStix(page, bundleOf([
+      sdo('report', REPORT, 'Report', { published: at, object_refs: [TRAILING_REF, INNER_REF] }),
+    ]));
+
+    const expectedRefs = ['x-acme---aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee', INNER_REF];
+    expect((await readState(page)).customLibrary[REPORT].object_refs).toEqual(expectedRefs);
+    await expect(page.locator('#toast')).toHaveText('Imported 1 STIX object, 1 identifier lowercased');
+  });
+});
