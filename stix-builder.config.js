@@ -2,9 +2,10 @@
 
 // STIX 2.1 Builder Config
 const STIX_VERSION = '2.1';
-// The type prefix is a lowercase type name (STIX 2.1 section 2.9); UUID hex digits are case
-// insensitive on input (RFC 4122 section 3).
-const STIX_ID_PATTERN = /^[a-z][a-z0-9-]*--[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+// The type prefix is a lowercase type name (STIX 2.1 section 2.9) that never contains "--"
+// (sections 7.3.2.2 and 11.2.1); UUID hex digits are case insensitive on input (RFC 4122
+// section 3).
+const STIX_ID_PATTERN = /^[a-z](?:-?[a-z0-9])*-?--[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
 // Import, and the copy of the bundle the visualizer draws, keep at most this many entries of each
 // list other than a list of identifiers, and of each dictionary, hashes property, extensions
