@@ -1154,9 +1154,9 @@ test.describe('Composer evidence and structural values', () => {
     await page.locator('#add-object').click();
     await page.locator('#editor-panel [data-action="add-hash"][data-hash-field="hashes"]').click();
     const hashKey = '#editor-panel [data-hash-field="hashes"][data-hash-role="key"]';
-    const generated = await readActive('hashes');
+    expect(await readActive('hashes')).toBeNull();
     await bypass(hashKey, 'MD');
-    expect(await readActive('hashes')).toEqual(generated);
+    expect(await readActive('hashes')).toBeNull();
     expect(await page.locator(hashKey).getAttribute('aria-invalid')).toBe('true');
     await bypass(hashKey, 'SHA-256');
     expect(Object.keys(await readActive('hashes'))).toEqual(['SHA-256']);
@@ -1166,9 +1166,9 @@ test.describe('Composer evidence and structural values', () => {
     await page.locator('#editor-panel [data-action="add-ref"]').click();
     await page.locator('#editor-panel [data-action="add-refhash"]').click();
     const refHashKey = '#editor-panel [data-refhash-role="key"]';
-    const generatedRef = (await readActive('external_references'))[0].hashes;
+    expect((await readActive('external_references'))[0].hashes).toBeUndefined();
     await bypass(refHashKey, 'MD');
-    expect((await readActive('external_references'))[0].hashes).toEqual(generatedRef);
+    expect((await readActive('external_references'))[0].hashes).toBeUndefined();
     expect(await page.locator(refHashKey).getAttribute('aria-invalid')).toBe('true');
     await bypass(refHashKey, 'MD5');
     expect(Object.keys((await readActive('external_references'))[0].hashes)).toEqual(['MD5']);
@@ -1491,7 +1491,11 @@ test.describe('Composer evidence and structural values', () => {
       hashes: { MD5: 'aa', 'SHA-256': 'bb' },
       extensions: { 'x-acme-ext': { one: '1', two: '2' }, 'x-other-ext': { rank: 'v' } },
     });
-    expect((await uploadBundle(page, [proc, file])).toast).toBe('Bundle imported');
+    const identity = sdo('identity', '7', {
+      name: 'i', identity_class: 'individual',
+      external_references: [{ source_name: 'src', hashes: { MD5: 'aa', 'SHA-256': 'bb' } }],
+    });
+    expect((await uploadBundle(page, [proc, file, identity])).toast).toBe('Bundle imported');
 
     await page.evaluate((id) => (window as any).selectObject(id), proc.id);
     await q('[data-dict-role="key"]').nth(0).fill('');
@@ -1515,6 +1519,13 @@ test.describe('Composer evidence and structural values', () => {
     expect((await objectState(page, file.id)).extensions).toEqual({ 'x-other-ext': { rank: 'v' } });
     await expect(q('[data-ext-role="key"]')).toHaveCount(1);
     await expect(q('[data-ext-role="key"]')).toHaveValue('x-other-ext');
+
+    await page.evaluate((id) => (window as any).selectObject(id), identity.id);
+    await q('[data-refhash-role="key"]').nth(0).fill('');
+    await q('[data-action="remove-refhash"]').nth(0).click();
+    expect((await objectState(page, identity.id)).external_references).toEqual([{ source_name: 'src', hashes: { 'SHA-256': 'bb' } }]);
+    await expect(q('[data-refhash-role="key"]')).toHaveCount(1);
+    await expect(q('[data-refhash-role="key"]')).toHaveValue('SHA-256');
   });
 
   // An extension needs content (STIX 2.1 sections 2.3 and 3.2). Its name stays in the row while
