@@ -465,7 +465,6 @@ Update strategy:
 - `isValidStructuralValue`
 - `requireStructuralValue`
 - `requireStructuralValueOrEmpty`
-- `isSafeHttpUrl`
 
 ### Object Model / Editor / Renderers
 
