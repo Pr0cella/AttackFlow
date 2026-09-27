@@ -529,11 +529,11 @@ test.describe('RT-08 generated STIX graph', () => {
     });
   });
 
-  test('a library entry for a technique without ATT&CK data brings its created only when it is a STIX timestamp', async ({ page }) => {
+  test('a library entry for a technique without ATT&CK data brings its created only when it is a real UTC timestamp', async ({ page }) => {
     // created and modified need the UTC "Z" form with at least millisecond precision (STIX 2.1
     // sections 2.16.1 and 3.2), and modified is never earlier than created.
     await openApp(page);
-    const techniques = ['T1998', 'T1999'];
+    const techniques = ['T1995', 'T1996', 'T1997', 'T1998', 'T1999'];
     for (const id of techniques) expect(ATTACK_TECHNIQUES[id], `pinned resource must not describe ${id}`).toBeUndefined();
     await importNative(page, bytes({ assignments: { 'IN:delivery': {
       techniques: techniques.map((id, n) => ({ id, instanceId: `itm-t-${n}` })), capecs: [], cwes: [], customItems: [], groups: [], layout: [],
@@ -545,20 +545,28 @@ test.describe('RT-08 generated STIX graph', () => {
     });
     await importStix(page, bytes({
       type: 'bundle', id: 'bundle--e0e0e0e0-0000-4000-8000-000000000002',
-      objects: [entry('T1998', '2999-01-01T00:00:00.000Z'), entry('T1999', '2020-01-01T00:00:00Z')],
+      objects: [
+        entry('T1995', '2020-01-01T00:00:00.123456Z'), entry('T1996', '2020-02-30T00:00:00.000Z'),
+        entry('T1997', '2020-01-01T00:00:00.5Z'), entry('T1998', '2999-01-01T00:00:00.000Z'),
+        entry('T1999', '2020-01-01T00:00:00Z'),
+      ],
     }), 'rt-08-timestamps-bundle.json');
 
     const startedAt = Date.now();
     const written = new Map(byType((await exportStix(page)).json, 'attack-pattern')
       .map((o: any) => [o.external_references[0].external_id, o]));
+    for (const id of techniques) expect(written.get(id).name).toBe(`Newer ${id}`);
     // A future created is kept, so modified moves up to it.
-    expect(['name', 'created', 'modified'].map(key => written.get('T1998')[key]))
-      .toEqual(['Newer T1998', '2999-01-01T00:00:00.000Z', '2999-01-01T00:00:00.000Z']);
-    // Without milliseconds it is not a valid created, so the export time is used; the content stays.
-    const late = written.get('T1999');
-    expect(late.name).toBe('Newer T1999');
-    expectIsoTimestampWithin(late.created, startedAt);
-    expect(late.modified).toBe(late.created);
+    expect(['created', 'modified'].map(key => written.get('T1998')[key]))
+      .toEqual(['2999-01-01T00:00:00.000Z', '2999-01-01T00:00:00.000Z']);
+    // Fewer than three fractional digits name the same instant padded to milliseconds; more are kept.
+    expect(['T1995', 'T1997', 'T1999'].map(id => written.get(id).created))
+      .toEqual(['2020-01-01T00:00:00.123456Z', '2020-01-01T00:00:00.500Z', '2020-01-01T00:00:00.000Z']);
+    for (const id of ['T1995', 'T1997', 'T1999']) expectIsoTimestampWithin(written.get(id).modified, startedAt);
+    // February 30 is not a date, so the export time is used for both.
+    const impossible = written.get('T1996');
+    expectIsoTimestampWithin(impossible.created, startedAt);
+    expect(impossible.modified).toBe(impossible.created);
   });
 });
 

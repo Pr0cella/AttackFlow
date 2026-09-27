@@ -376,8 +376,10 @@ Export:
     from a Navigator layer or CSV list that replaced the library): a library `attack-pattern`
     with its derived id is written instead, with its name, description, labels and other
     properties, plus the derived `external_references` and `kill_chain_phases`. It keeps the
-    entry's `created` when that is a valid STIX timestamp (UTC `Z` form with at least
-    millisecond precision, sections 2.16.1 and 3.2), otherwise it uses the export time;
+    entry's `created` when that is a real calendar date and time in the UTC `Z` form
+    (sections 2.16.1 and 3.2), with zeros added up to millisecond precision
+    (`2020-01-01T00:00:00Z` becomes `2020-01-01T00:00:00.000Z`, the same instant); for
+    anything else, such as February 30 or a time zone offset, it uses the export time;
     `modified` is the export time, never earlier than `created`, because adding properties
     makes a new version (STIX 2.1 section 3.6). Edits to that entry reach the STIX bundle; the
     entry itself is not changed.

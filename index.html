@@ -9306,9 +9306,14 @@
                 // properties makes a new version: created is kept, modified is updated (section 3.6).
                 const libraryCopy = entity?.description ? null : libraryById.get(id);
                 if (libraryCopy) {
-                    // Only a UTC timestamp with at least milliseconds is a valid created (sections 2.16.1, 3.2).
-                    const created = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3,}Z$/.test(libraryCopy.created)
-                        && !Number.isNaN(Date.parse(libraryCopy.created)) ? libraryCopy.created : now;
+                    // A created is a UTC timestamp with at least milliseconds (sections 2.16.1, 3.2): fewer
+                    // digits name the same instant padded with zeros. Date.parse rolls impossible dates
+                    // forward (Feb 30 -> Mar 1), so the parsed instant must give back the same fields.
+                    const stamp = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.(\d+))?Z$/.exec(libraryCopy.created);
+                    const parsed = stamp ? Date.parse(`${stamp[1]}Z`) : NaN;
+                    const created = !Number.isNaN(parsed) && new Date(parsed).toISOString().slice(0, 19) === stamp[1]
+                        ? `${stamp[1]}.${(stamp[2] || '').padEnd(3, '0')}Z`
+                        : now;
                     objects.push({
                         ...libraryCopy,
                         created,
