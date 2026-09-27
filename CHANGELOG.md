@@ -15,7 +15,7 @@
 
 ### Fixed
 - **Custom Object Name Preservation**: Native kill-chain imports keep custom STIX object names up to the same 200-character limit the create and edit modals allow, instead of shortening them to the 50-character label limit. Label, description and other field limits are unchanged
-- **Main Editor STIX Identifiers**: Kill-chain and STIX bundle imports in the main editor keep custom STIX objects and assignments whose identifiers use uppercase hex digits instead of dropping them. The identifiers are stored and exported in lowercase, and the import message displays the number changed
+- **Main Editor STIX Identifiers**: Kill-chain and STIX bundle imports in the main editor keep custom STIX objects and assignments whose identifiers use uppercase hex digits instead of dropping them. The identifiers, and identifiers in reference properties such as `object_refs` and `sample_ref`, are stored and exported in lowercase, so references still match their objects, and the import message displays the number changed
 - **Support Legacy CVE Metadata**: Native kill-chain imports preserve legacy `metadata.cves` entries, including CVE scores and validated CVSS vectors, and normalize them into the current metadata format
 - **Reject invalid array assignments**: Native JSON imports now reject array-valued document roots and `assignments` containers before replacing assignments, groups, layout, title, view, or custom STIX library data
 - **Group Assignment Preservation**: Deleting a group now keeps STIX assignments in the correct phase array with their metadata and instance IDs intact, including through JSON export/import. Invalid item or layout data stops deletion before any assignments are moved

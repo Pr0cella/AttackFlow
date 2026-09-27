@@ -115,6 +115,8 @@ Update strategy:
 - `generateUUID`
 - `generateStixId`
 - `lowercaseStixId`
+- `isStixRefProperty`
+- `lowercaseStixRef`
 - `uuidv5`
 - `sha1Bytes`
 - `mitigationStixId`

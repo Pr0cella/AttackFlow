@@ -420,4 +420,42 @@ test.describe('STIX identifiers with uppercase UUID hex', () => {
     await expect(page.locator('#toast'))
       .toHaveText('Imported 2 STIX objects, 2 identifiers lowercased, 2 duplicates skipped');
   });
+
+  test('stores id-valued references in lowercase and counts them with the ids', async ({ page }) => {
+    // Properties ending in _ref or _refs hold identifiers (STIX 2.1 section 3.1). Valid ids are
+    // lowercased like object ids, list entries that become equal are both kept, other values stay.
+    const REPORT = 'report--12121212-3434-4565-8787-909090909090';
+    const ANALYSIS = 'malware-analysis--23232323-4545-4676-8989-010101010101';
+    const FILE_UPPER = 'file--0A0A0A0A-1B1B-4C2C-8D3D-4E4E4E4E4E4E';
+    const FILE = 'file--0a0a0a0a-1b1b-4c2c-8d3d-4e4e4e4e4e4e';
+    const SOFTWARE_UPPER = 'software--5F5F5F5F-6A6A-4B7B-8C8C-9D9D9D9D9D9D';
+    const SOFTWARE = 'software--5f5f5f5f-6a6a-4b7b-8c8c-9d9d9d9d9d9d';
+    const refs = [UPPER, UPPER_STORED, TYPE_CASE, 'not an id'];
+    await openApp(page);
+    await importStix(page, bundleOf([
+      sdo('malware', UPPER, 'Upper malware', { is_family: false }),
+      sdo('report', REPORT, 'Report', { published: at, object_refs: refs }),
+      sdo('malware-analysis', ANALYSIS, 'Analysis', {
+        product: 'scanner', sample_ref: FILE_UPPER,
+        host_vm_ref: SOFTWARE_UPPER, installed_software_refs: [SOFTWARE_UPPER],
+      }),
+      // A duplicate is not imported, so its references are not counted.
+      sdo('report', REPORT, 'Report copy', { published: at, object_refs: [UPPER] }),
+    ]));
+
+    const expectedRefs = [UPPER_STORED, UPPER_STORED, TYPE_CASE, 'not an id'];
+    const library = (await readState(page)).customLibrary;
+    expect(library[REPORT].object_refs).toEqual(expectedRefs);
+    expect(library[ANALYSIS]).toMatchObject({
+      sample_ref: FILE, host_vm_ref: SOFTWARE, installed_software_refs: [SOFTWARE],
+    });
+    // One object id and four references were lowercased.
+    await expect(page.locator('#toast'))
+      .toHaveText('Imported 3 STIX objects, 5 identifiers lowercased, 1 duplicate skipped');
+
+    const exported = (await exportStix(page)).json;
+    const byId = (id: string) => exported.objects.find((o: any) => o.id === id);
+    expect(byId(REPORT).object_refs).toEqual(expectedRefs);
+    expect(byId(ANALYSIS).sample_ref).toBe(FILE);
+  });
 });

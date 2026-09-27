@@ -1302,4 +1302,51 @@ test.describe('Custom STIX identifiers with uppercase UUID hex', () => {
     expect(recon.groups[0].items.map((a: any) => a.id)).toEqual([MALWARE]);
     await expect(page.locator('#toast')).toHaveText('Imported kill chain, 2 identifiers lowercased');
   });
+
+  test('library references that are ids are lowercased, counted and exported', async ({ page, browser }) => {
+    // Properties ending in _ref or _refs hold identifiers (STIX 2.1 section 3.1). Valid ids are
+    // lowercased like the keys, list entries that become equal are both kept, other values stay.
+    const REPORT = 'report--abababab-3434-4565-8787-909090909090';
+    const REPORT_UPPER = 'report--ABABABAB-3434-4565-8787-909090909090';
+    const ANALYSIS = 'malware-analysis--23232323-4545-4676-8989-010101010101';
+    const FILE_UPPER = 'file--0A0A0A0A-1B1B-4C2C-8D3D-4E4E4E4E4E4E';
+    const FILE = 'file--0a0a0a0a-1b1b-4c2c-8d3d-4e4e4e4e4e4e';
+    const expectedRefs = [MALWARE, MALWARE, TYPE_CASE, 'not an id'];
+    const fixture = {
+      assignments: {},
+      customLibrary: {
+        [MALWARE]: { stixType: 'malware', name: 'Malware', is_family: false },
+        [REPORT]: { stixType: 'report', name: 'Report', object_refs: [MALWARE_UPPER, MALWARE, TYPE_CASE, 'not an id'] },
+        // A skipped case variant counts for its key only, not for its references.
+        [REPORT_UPPER]: { stixType: 'report', name: 'Report variant', object_refs: [MALWARE_UPPER] },
+        [ANALYSIS]: { stixType: 'malware-analysis', name: 'Analysis', product: 'scanner', sample_ref: FILE_UPPER },
+      },
+    };
+
+    await openApp(page);
+    await clearToast(page);
+    await page.locator('#import-killchain-input').setInputFiles({
+      name: 'library-refs.json', mimeType: 'application/json', buffer: bytes(fixture),
+    });
+    await expect(page.locator('#toast')).not.toBeEmpty();
+
+    const library = (await readState(page)).customLibrary;
+    expect(library[REPORT]).toMatchObject({ name: 'Report', object_refs: expectedRefs });
+    expect(library[ANALYSIS].sample_ref).toBe(FILE);
+    // One variant key and two references were lowercased.
+    await expect(page.locator('#toast')).toHaveText('Imported kill chain, 3 identifiers lowercased');
+
+    const native = await exportNative(page);
+    expect(native.json.customLibrary[REPORT].object_refs).toEqual(expectedRefs);
+    expect(native.json.customLibrary[ANALYSIS].sample_ref).toBe(FILE);
+    const bundle = (await exportStix(page)).json;
+    expect(bundle.objects.find((o: any) => o.id === REPORT).object_refs).toEqual(expectedRefs);
+
+    // The lowercase export reimports with nothing left to lowercase.
+    await withFreshContext(browser, async freshPage => {
+      await importNative(freshPage, native.buffer, native.name);
+      await expect(freshPage.locator('#toast')).toHaveText('Imported kill chain');
+      expect((await readState(freshPage)).customLibrary[REPORT].object_refs).toEqual(expectedRefs);
+    });
+  });
 });
