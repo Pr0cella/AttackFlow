@@ -703,7 +703,7 @@ test.describe('Composer evidence and structural values', () => {
     const byType = async (type: string) => objectState(page, source.find((o: any) => o.type === type).id);
     expect(Object.prototype.hasOwnProperty.call(await byType('relationship'), 'source_ref')).toBe(false);
     expect(Object.prototype.hasOwnProperty.call(await byType('indicator'), 'valid_from')).toBe(false);
-    expect((await byType('malware')).kill_chain_phases).toEqual([]);
+    expect(Object.prototype.hasOwnProperty.call(await byType('malware'), 'kill_chain_phases')).toBe(false);
     expect((await byType('report')).object_refs).toEqual([]);
 
     // The unfilled marking row stays so the analyst can finish it, and validation flags it.
@@ -815,6 +815,114 @@ test.describe('Composer evidence and structural values', () => {
       `identity ${id} granular_markings entry missing marking_ref`,
       `identity ${id} invalid external_references key`,
     ]));
+  });
+
+  // A selector must name content present on the marked object (STIX 2.1 section 7.2.3.1),
+  // including content the Composer dropped at import and names found only on the prototype.
+  test('validation reports granular-marking selectors whose target is not present', async ({ page }) => {
+    await openBuilder(page);
+    const marked = (hex: string, selector: string, extra: Record<string, unknown> = {}) => sdo('identity', hex, {
+      name: 'i', identity_class: 'individual', ...extra, granular_markings: [{ selectors: [selector], marking_ref: TLP }],
+    });
+    const dangling = [
+      marked('1', 'description'),
+      marked('2', 'labels', { labels: [] }),
+      marked('3', 'external_references.[3]', { external_references: [{ source_name: 's', url: 'https://example.test/' }] }),
+      marked('4', 'description.[0]', { description: 'd' }),
+      marked('5', 'labels.name', { labels: ['a'] }),
+      marked('6', 'x_acme_note', { x_acme_note: 'n' }),
+      marked('7', 'constructor'),
+    ];
+    const present = sdo('identity', '8', {
+      name: 'i', identity_class: 'individual', description: 'd', labels: ['a'], confidence: 0, revoked: false,
+      external_references: [{ source_name: 's', url: 'https://example.test/' }],
+      granular_markings: [{
+        selectors: ['id', 'description', 'labels', 'labels.[0]', 'external_references.[0].url', 'confidence', 'revoked'],
+        marking_ref: TLP,
+      }],
+    });
+    expect((await uploadBundle(page, [...dangling, present])).toast).toBe('Bundle imported');
+    // '' and null hold no value, so they are not a target either, whichever route stored them.
+    const blank = await page.evaluate(({ tlp }) => {
+      (window as any).addObject('identity');
+      const object = (window as any).getActiveObject();
+      Object.assign(object, {
+        name: 'i', identity_class: 'individual', description: '', confidence: null,
+        granular_markings: [{ selectors: ['description', 'confidence'], marking_ref: tlp }],
+      });
+      return object.id as string;
+    }, { tlp: TLP });
+
+    const issues = await page.evaluate(() => (window as any).validateBundle() as string[]);
+    const forObject = (id: string) => issues.filter((issue) => issue.includes(id));
+    const message = (id: string, selector: string) => `identity ${id} granular_markings selector ${selector} refers to content not present`;
+    for (const object of dangling) {
+      const [selector] = object.granular_markings[0].selectors;
+      expect(forObject(object.id), selector).toEqual([message(object.id, selector)]);
+    }
+    expect(forObject(blank)).toEqual([message(blank, 'description'), message(blank, 'confidence')]);
+    expect(forObject(present.id)).toEqual([]);
+  });
+
+  // A property holding no value (removed, or cleared to "" or null) is not a selector target,
+  // so editor changes that take away the target are reported.
+  test('validation reports selectors left without a target by editor changes', async ({ page }) => {
+    await openBuilder(page);
+    const identity = sdo('identity', '9', {
+      name: 'i', identity_class: 'individual', description: 'd', confidence: 50, labels: ['a'],
+      granular_markings: [{ selectors: ['description', 'confidence', 'labels'], marking_ref: TLP }],
+    });
+    expect((await uploadBundle(page, [identity])).toast).toBe('Bundle imported');
+    const validate = () => page.evaluate(() => (window as any).validateBundle() as string[]);
+    expect(await validate()).toEqual([]);
+
+    await page.locator('#object-list .object-item', { hasText: identity.id }).click();
+    await page.locator('#editor-panel [data-field="description"]').fill('');
+    await page.locator('#editor-panel [data-field="confidence"]').fill('');
+    await page.locator('#editor-panel [data-action="remove-list"][data-list-field="labels"]').click();
+    expect(await validate()).toEqual(['description', 'confidence', 'labels'].map(
+      (selector) => `identity ${identity.id} granular_markings selector ${selector} refers to content not present`,
+    ));
+  });
+
+  // protocols is required on network-traffic (STIX 2.1 section 6.12), so a missing or empty list
+  // is one missing required property, reported once and naming the object.
+  test('validation reports a missing or empty network-traffic protocols once', async ({ page }) => {
+    await openBuilder(page);
+    const address = sco('ipv4-addr', '1', { value: '10.0.0.1' });
+    const absent = sco('network-traffic', '2', { src_ref: address.id });
+    const empty = sco('network-traffic', '3', { src_ref: address.id, protocols: [] });
+    const filled = sco('network-traffic', '4', { src_ref: address.id, protocols: ['tcp'] });
+    expect((await uploadBundle(page, [address, absent, empty, filled])).toast).toBe('Bundle imported');
+    const added = await page.evaluate(() => {
+      (window as any).addObject('network-traffic');
+      return (window as any).getActiveObject().id as string;
+    });
+    expect(await page.evaluate(() => (window as any).validateBundle())).toEqual(
+      [absent.id, empty.id, added].map((id) => `network-traffic ${id} missing protocols`),
+    );
+  });
+
+  // A blank required relationship_type is one missing property, reported once; the vocabulary
+  // check only reports a value that is not a string.
+  test('validation reports a blank relationship_type once', async ({ page }) => {
+    await openBuilder(page);
+    const relationship = (hex: string) => sdo('relationship', hex, {
+      relationship_type: 'uses', source_ref: stixId('malware', '1'), target_ref: stixId('identity', '2'),
+    });
+    const blank = relationship('3');
+    const numeric = relationship('4');
+    expect((await uploadBundle(page, [blank, numeric])).toast).toBe('Bundle imported');
+    const validate = () => page.evaluate(() => (window as any).validateBundle() as string[]);
+    expect(await validate()).toEqual([]);
+
+    await page.evaluate((id) => (window as any).selectObject(id), blank.id);
+    await page.locator('#editor-panel [data-field="relationship_type"]').fill('   ');
+    await page.evaluate((id) => { (eval('state') as any).objectsById.get(id).relationship_type = 5; }, numeric.id);
+    expect(await validate()).toEqual([
+      `relationship ${blank.id} missing relationship_type`,
+      `relationship ${numeric.id} relationship_type must be string`,
+    ]);
   });
 
   async function exportObjects(page: Page) {
@@ -1105,6 +1213,106 @@ test.describe('Composer evidence and structural values', () => {
     expect((await uploadBundle(page, [empty, allDropped])).toast).toBe('Bundle imported');
     expect(Object.keys(await objectState(page, empty.id))).not.toContain('external_references');
     expect(Object.keys(await objectState(page, allDropped.id))).not.toContain('external_references');
+  });
+
+  // The same rule for every other optional list (STIX 2.1 section 2.12), whether the list arrives
+  // empty, loses all its entries at import or is not a list, on SDOs, SROs and SCOs. A required
+  // list must be present, so an empty one stays.
+  test('empty optional lists are omitted at import and export', async ({ page }) => {
+    await openBuilder(page);
+    const LISTS = ['kill_chain_phases', 'labels', 'malware_types', 'object_marking_refs', 'granular_markings', 'sample_refs'];
+    const empty = sdo('malware', '5', { name: 'm', is_family: false, ...Object.fromEntries(LISTS.map((key) => [key, []])) });
+    const allDropped = sdo('malware', '6', {
+      name: 'd', is_family: false, labels: [''], kill_chain_phases: [{ kill_chain_name: '', phase_name: '' }],
+    });
+    const notLists = sdo('indicator', '7', {
+      name: 'i', pattern: PATTERN, pattern_type: 'stix', valid_from: T0, labels: 5, kill_chain_phases: 'x',
+    });
+    const sighting = sdo('sighting', '8', {
+      sighting_of_ref: empty.id, observed_data_refs: [], where_sighted_refs: [stixId('identity', '9')],
+    });
+    const report = sdo('report', 'a', { name: 'r', published: T0, object_refs: [] });
+    const email = sco('email-message', 'b', { is_multipart: false, to_refs: [], received_lines: [] });
+    const traffic = sco('network-traffic', 'c', { protocols: [] });
+    const omitted: Array<[string, string[]]> = [
+      [empty.id, LISTS],
+      [allDropped.id, ['labels', 'kill_chain_phases']],
+      [notLists.id, ['labels', 'kill_chain_phases']],
+      [sighting.id, ['observed_data_refs']],
+      [email.id, ['to_refs', 'received_lines']],
+    ];
+    const expectOmitted = (objects: any[]) => omitted.forEach(([id, keys]) => {
+      const present = Object.keys(objects.find((o) => o.id === id));
+      keys.forEach((key) => expect(present, `${id} ${key}`).not.toContain(key));
+    });
+
+    expect((await uploadBundle(page, [empty, allDropped, notLists, sighting, report, email, traffic])).toast).toBe('Bundle imported');
+    const state = await page.evaluate(() => JSON.parse(JSON.stringify((eval('state') as any).bundle.objects)));
+    expectOmitted(state);
+    expect((await objectState(page, sighting.id)).where_sighted_refs).toEqual([stixId('identity', '9')]);
+    expect((await objectState(page, report.id)).object_refs).toEqual([]);
+    expect((await objectState(page, traffic.id)).protocols).toEqual([]);
+
+    const { objects: exported } = await exportObjects(page);
+    expectOmitted(exported);
+    expect(exported.find((o) => o.id === report.id).object_refs).toEqual([]);
+    expect(exported.find((o) => o.id === traffic.id).protocols).toEqual([]);
+  });
+
+  // Removing the last entry of an optional list removes the property (section 2.12); a required
+  // list stays as an empty placeholder for the analyst to fill.
+  test('the editor removes an optional list when its last entry is removed', async ({ page }) => {
+    await openBuilder(page);
+    const malware = sdo('malware', '5', {
+      name: 'm', is_family: false, labels: ['a', 'b'], object_marking_refs: [TLP],
+      kill_chain_phases: [{ kill_chain_name: 'k', phase_name: 'p' }],
+      granular_markings: [{ selectors: ['name'], marking_ref: TLP }],
+    });
+    const report = sdo('report', 'a', { name: 'r', published: T0, object_refs: [malware.id] });
+    expect((await uploadBundle(page, [malware, report])).toast).toBe('Bundle imported');
+
+    await page.locator('#object-list .object-item', { hasText: malware.id }).click();
+    await page.locator('#editor-panel [data-action="remove-list"][data-list-field="labels"][data-index="1"]').click();
+    expect((await objectState(page, malware.id)).labels, 'a remaining entry keeps the list').toEqual(['a']);
+    const removals: Array<[string, string]> = [
+      ['kill_chain_phases', '[data-action="remove-kc"]'],
+      ['labels', '[data-action="remove-list"][data-list-field="labels"]'],
+      ['object_marking_refs', '[data-action="remove-list"][data-list-field="object_marking_refs"]'],
+      ['granular_markings', '[data-action="remove-gm"]'],
+    ];
+    for (const [key, button] of removals) {
+      await page.locator(`#editor-panel ${button}`).click();
+      expect(Object.keys(await objectState(page, malware.id)), key).not.toContain(key);
+    }
+
+    await page.locator('#object-list .object-item', { hasText: report.id }).click();
+    await page.locator('#editor-panel [data-action="remove-list"][data-list-field="object_refs"]').click();
+    expect((await objectState(page, report.id)).object_refs).toEqual([]);
+    expect(await page.evaluate(() => (window as any).validateBundle())).toEqual([`report ${report.id} missing object_refs`]);
+  });
+
+  // An empty optional list that reaches state by another route is reported; an empty required
+  // list is reported once, as missing.
+  test('validation reports empty optional lists and an empty required list once', async ({ page }) => {
+    await openBuilder(page);
+    await page.evaluate(() => (window as any).addObject('malware'));
+    const id = await page.evaluate(() => (window as any).getActiveObject().id);
+    const keys = ['labels', 'object_marking_refs', 'granular_markings', 'malware_types', 'kill_chain_phases'];
+    const issues = await page.evaluate((listKeys) => {
+      const object = (window as any).getActiveObject();
+      Object.assign(object, { name: 'm', is_family: false }, Object.fromEntries(listKeys.map((key) => [key, []])));
+      return (window as any).validateBundle() as string[];
+    }, keys);
+    expect([...issues].sort()).toEqual(keys.map((key) => `malware ${id} ${key} must not be an empty list`).sort());
+
+    await page.evaluate(() => (window as any).addObject('report'));
+    const reportId = await page.evaluate(() => {
+      Object.assign((window as any).getActiveObject(), { name: 'r', published: '2026-01-01T00:00:00.000Z', object_refs: [] });
+      return (window as any).getActiveObject().id;
+    });
+    const reportIssues = (await page.evaluate(() => (window as any).validateBundle() as string[]))
+      .filter((issue) => issue.includes(reportId));
+    expect(reportIssues).toEqual([`report ${reportId} missing object_refs`]);
   });
 
   // Clearing an optional reference field removes it instead of storing '' or {}; source_name is
