@@ -9372,6 +9372,8 @@
         }
 
         function addRelationship(objects, seen, sourceId, targetId, phaseKey, timestamp) {
+            // Two instances of one object in a phase are not a link between two objects.
+            if (sourceId === targetId) return;
             const sourceType = getStixIdType(sourceId);
             const targetType = getStixIdType(targetId);
             if (!sourceType || !targetType) return;

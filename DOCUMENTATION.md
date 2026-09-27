@@ -365,7 +365,11 @@ Export:
   - deterministic ATT&CK `attack-pattern` SDOs
   - deterministic mitigation `course-of-action` SDOs
   - generated `relationship` SROs (`mitigates` + co-location relations)
-- `addRelationship(...)`
+- `addRelationship(...)`: one `related-to` co-location relation per pair of different custom
+  objects that share a phase's ungrouped items or one group, described by the first phase
+  where the pair occurs. Two instances of one object (the same
+  id, also after import lowercases case variants) are not related to each other; both stay in
+  the editor and in the JSON export's assignments.
 - `exportSTIXBundle()`
 - `exportCSV()` with formula-injection hardening (`sanitizeForCsv` prefix guard). Cells
   whose first character is `=`, `+`, `-`, `@`, tab or CR get one leading tab and are always

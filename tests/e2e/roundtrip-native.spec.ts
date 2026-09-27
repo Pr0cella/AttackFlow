@@ -1391,3 +1391,83 @@ test.describe('Custom STIX identifiers whose type part holds a double hyphen', (
     for (const id of [INNER, TRAILING]) expect(ids).not.toContain(id);
   });
 });
+
+test.describe('Custom objects placed twice in one phase', () => {
+  // A STIX relationship links two objects (STIX 2.1 section 5.1). Two instances of one object
+  // in a phase keep their own metadata in the editor, but the STIX export relates them to
+  // nothing: only co-location with a different object becomes an edge.
+  const A = 'malware--a1a1a1a1-0000-4000-8000-000000000001';
+  const A_UPPER = 'malware--A1A1A1A1-0000-4000-8000-000000000001';
+  const B = 'malware--b2b2b2b2-0000-4000-8000-000000000002';
+  const C = 'malware--c3c3c3c3-0000-4000-8000-000000000003';
+  const D = 'malware--d4d4d4d4-0000-4000-8000-000000000004';
+  const D_UPPER = 'malware--D4D4D4D4-0000-4000-8000-000000000004';
+  const E = 'malware--e5e5e5e5-0000-4000-8000-000000000005';
+  const F = 'tool--f6f6f6f6-0000-4000-8000-000000000006';
+  const G = 'tool--a7a7a7a7-0000-4000-8000-000000000007';
+  const custom = (id: string, n: number) => ({ id, instanceId: `itm-s-${n}`, type: 'custom', metadata: {} });
+  const malware = (name: string) => ({ stixType: 'malware', name, is_family: false });
+
+  test('the STIX export has no relationship from an object to itself', async ({ page }) => {
+    await openApp(page);
+    await clearToast(page);
+    await page.locator('#import-killchain-input').setInputFiles({
+      name: 'placed-twice.json', mimeType: 'application/json', buffer: bytes({
+        assignments: {
+          'IN:reconnaissance': {
+            techniques: [], capecs: [], cwes: [],
+            // A as two case variants of one id, B twice as written.
+            customItems: [custom(A_UPPER, 1), custom(A, 2), custom(B, 3), custom(B, 4), custom(F, 5)],
+            groups: [], layout: [],
+          },
+          'IN:exploitation': {
+            techniques: [], capecs: [], cwes: [],
+            customItems: [custom(C, 6), custom(F, 7)],
+            // D twice in one group; C once ungrouped and once grouped; E in two groups.
+            groups: [
+              { groupId: 'grp-s-1', label: 'One', items: [custom(C, 8), custom(D, 9), custom(D_UPPER, 10), custom(E, 11)] },
+              { groupId: 'grp-s-2', label: 'Two', items: [custom(E, 12), custom(F, 13)] },
+            ],
+            layout: [],
+          },
+        },
+        customLibrary: {
+          [A]: malware('A'), [B]: malware('B'), [C]: malware('C'), [D]: malware('D'), [E]: malware('E'),
+          [F]: { stixType: 'tool', name: 'F' }, [G]: { stixType: 'tool', name: 'G' },
+        },
+      }),
+    });
+    await expect(page.locator('#toast')).toHaveText('Imported kill chain, 2 identifiers lowercased');
+
+    // G is placed twice through the real library card.
+    await page.locator('.sidebar-tab.custom').click();
+    for (let n = 0; n < 2; n++) {
+      await dispatchDragAndDrop(page, `#tab-custom .entity-item.custom[ondragstart*="${G}"]`, '[data-phase="IN:delivery"]');
+    }
+
+    const bundle = (await exportStix(page)).json;
+    const edges = bundle.objects.filter((o: any) => o.type === 'relationship');
+    expect(edges.filter((e: any) => e.source_ref === e.target_ref).map((e: any) => e.source_ref)).toEqual([]);
+
+    // Every edge between two different objects stays; C once ungrouped and once grouped, and
+    // E in two groups, never produced a self-edge, so they guard against over-pruning.
+    const pair = (e: any) => `${e.description}|${[e.source_ref, e.target_ref].sort().join('|')}`;
+    const recon = 'Co-located in phase IN:reconnaissance';
+    const exploitation = 'Co-located in phase IN:exploitation';
+    expect(edges.map(pair).sort()).toEqual([
+      `${recon}|${A}|${B}`, `${recon}|${A}|${F}`, `${recon}|${B}|${F}`,
+      `${exploitation}|${C}|${F}`, `${exploitation}|${C}|${D}`, `${exploitation}|${C}|${E}`,
+      `${exploitation}|${D}|${E}`, `${exploitation}|${E}|${F}`,
+    ].sort());
+
+    // The native export keeps every instance; its embedded bundle has no self-edge either.
+    const native = (await exportNative(page)).json;
+    const embedded = native.stixBundle.objects.filter((o: any) => o.type === 'relationship');
+    expect(embedded.filter((e: any) => e.source_ref === e.target_ref)).toEqual([]);
+    expect(embedded.map(pair).sort()).toEqual(edges.map(pair).sort());
+    const assignments = native.assignments;
+    expect(assignments['IN:reconnaissance'].customItems.map((a: any) => a.id)).toEqual([A, A, B, B, F]);
+    expect(assignments['IN:exploitation'].groups[0].items.map((a: any) => a.id)).toEqual([C, D, D, E]);
+    expect(assignments['IN:delivery'].customItems.map((a: any) => a.id)).toEqual([G, G]);
+  });
+});
