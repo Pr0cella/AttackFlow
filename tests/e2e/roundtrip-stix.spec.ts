@@ -9,7 +9,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import {
   EXPORT_NAME, UUID, clickExportControl, exportNative, exportStix, expectBundleEnvelope,
   expectIsoTimestampWithin, expectNoDownload, expectNoExternalRequests, importNative,
@@ -357,23 +357,44 @@ test.describe('RT-08 generated STIX graph', () => {
     });
   });
 
-  test('exporting after importing its own bundle writes each derived object once', async ({ page, browser }) => {
-    // A re-imported bundle puts the derived attack pattern and mitigations in the library too.
-    // Objects with one id are versions of one object (STIX 2.1 section 3.2), so the export writes
-    // only the complete derived copy while the technique is assigned.
+  // Exports the graph and imports that bundle again, so the derived attack pattern and its
+  // mitigations are also library entries while the technique stays assigned.
+  async function reimportOwnBundle(page: Page) {
     await openApp(page);
     await importNative(page, bytes(graphFixture()), 'rt-08-source.json');
     const first = await exportStix(page);
-    const derivedIds = first.json.objects
+    const derivedIds: string[] = first.json.objects
       .filter((o: any) => o.type === 'attack-pattern' || o.type === 'course-of-action')
       .map((o: any) => o.id);
     expect(derivedIds).toHaveLength(6);
     await importStix(page, first.buffer, first.name);
     await expect(page.locator('#toast')).toHaveText('Imported 6 STIX objects, 4 duplicates skipped');
+    const patternId = byType(first.json, 'attack-pattern')[0].id;
+    return { first, derivedIds, patternId };
+  }
+
+  test('exporting after importing its own bundle writes each derived object once', async ({ page, browser }) => {
+    // A re-imported bundle puts the derived attack pattern and mitigations in the library too.
+    // Objects with one id are versions of one object (STIX 2.1 section 3.2), so the export writes
+    // only the complete derived copy while the technique is assigned.
+    const { first, derivedIds } = await reimportOwnBundle(page);
 
     const second = (await exportStix(page)).json;
     const ids = second.objects.map((o: any) => o.id);
     expect(ids.filter((id: string, i: number) => ids.indexOf(id) !== i), 'ids written twice').toEqual([]);
+
+    // Library objects without a derived id are still written, in library order, and the
+    // bundle keeps its layout: library objects, co-location edges, derived SDOs, mitigates.
+    expect(second.objects.slice(0, 4).map((o: any) => [o.id, o.name])).toEqual([
+      [A, 'Graph malware'], [B, 'Graph identity'], [C, 'Graph tool'], [D, 'Graph indicator'],
+    ]);
+    const kind = (o: any) => (o.type === 'relationship' ? `relationship:${o.relationship_type}` : o.type);
+    expect(second.objects.map(kind)).toEqual([
+      'malware', 'identity', 'tool', 'indicator',
+      'relationship:related-to', 'relationship:related-to',
+      'attack-pattern', ...Array(5).fill('course-of-action'),
+      ...Array(5).fill('relationship:mitigates'),
+    ]);
 
     const pattern = byType(second, 'attack-pattern');
     expect(pattern).toHaveLength(1);
@@ -413,6 +434,36 @@ test.describe('RT-08 generated STIX graph', () => {
       ]);
       expect(byType(alone, 'course-of-action')).toHaveLength(5);
     });
+  });
+
+  test('an edit to a library entry with a derived id stays in the library, not in the STIX export', async ({ page }) => {
+    // While the technique is assigned, the derived copy is written in place of the library entry.
+    const { patternId } = await reimportOwnBundle(page);
+    await page.evaluate(id => (window as any).openStixEditor(id), patternId);
+    await page.locator('#stix-edit-name').fill('Edited library copy');
+    await page.locator('#stix-edit-aliases').fill('Edited alias');
+    await page.locator('.btn-stix-save').click();
+    await expect(page.locator('#toast')).toHaveText('STIX item updated');
+
+    const bundle = (await exportStix(page)).json;
+    const patterns = byType(bundle, 'attack-pattern');
+    expect(patterns.map((o: any) => o.id)).toEqual([patternId]);
+    expect(patterns[0].name).toBe(pinnedTechnique('T1059.001').name);
+    expect(patterns[0]).not.toHaveProperty('aliases');
+    const library = (await exportNative(page)).json.customLibrary[patternId];
+    expect([library.name, library.aliases]).toEqual(['Edited library copy', ['Edited alias']]);
+  });
+
+  test('an invalid value in a library entry with a derived id still stops the export', async ({ page }) => {
+    // The entry is type-checked before it is left out, so both exports refuse and write nothing.
+    const { patternId } = await reimportOwnBundle(page);
+    await page.evaluate(id => { eval('state').library.custom[id].aliases = [1]; }, patternId);
+    const message = 'Cannot export STIX property "attack-pattern.aliases": expected array of strings.';
+
+    await expectNoDownload(page, () => clickExportControl(page, 'STIX Bundle'));
+    await expect(page.locator('#toast')).toHaveText(`STIX export failed: ${message}`);
+    await expectNoDownload(page, () => clickExportControl(page, 'JSON'));
+    await expect(page.locator('#toast')).toHaveText(`JSON export failed: ${message}`);
   });
 });
 
