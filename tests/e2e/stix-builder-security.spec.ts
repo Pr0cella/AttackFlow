@@ -270,8 +270,9 @@ test.describe('STIX Builder hardening', () => {
     await expect(latitude).toHaveValue('-12.5');
     await expect(confidence).toHaveValue('0');
 
+    // A cleared number removes the property rather than storing null.
     await latitude.fill('');
-    expect(await page.evaluate(() => (window as any).getActiveObject().latitude)).toBeNull();
+    expect(await page.evaluate(() => Object.keys((window as any).getActiveObject()))).not.toContain('latitude');
   });
 });
 
@@ -685,10 +686,11 @@ test.describe('Composer evidence and structural values', () => {
     await page.locator('#editor-panel [data-action="add-list"][data-list-field="object_refs"]').click();
     await page.locator('#editor-panel [data-action="add-gm"]').click();
 
+    // Unfilled required fields and list rows are not stored; unfilled entry rows are.
     const source = await page.evaluate(() => JSON.parse(JSON.stringify((eval('state') as any).bundle.objects)));
-    expect(source.find((o: any) => o.type === 'relationship').source_ref).toBe('');
+    expect(Object.keys(source.find((o: any) => o.type === 'relationship'))).not.toContain('source_ref');
     expect(source.find((o: any) => o.type === 'malware').kill_chain_phases).toEqual([{ kill_chain_name: 'unified-kill-chain', phase_name: '' }]);
-    expect(source.find((o: any) => o.type === 'report').object_refs).toEqual(['']);
+    expect(source.find((o: any) => o.type === 'report').object_refs).toEqual([]);
     expect(source.find((o: any) => o.type === 'report').granular_markings).toEqual([{ selectors: [], marking_ref: '' }]);
 
     // Validation reports the unfilled required fields, so export asks before downloading.
@@ -1246,7 +1248,8 @@ test.describe('Composer evidence and structural values', () => {
       keys.forEach((key) => expect(present, `${id} ${key}`).not.toContain(key));
     });
 
-    expect((await uploadBundle(page, [empty, allDropped, notLists, sighting, report, email, traffic])).toast).toBe('Bundle imported');
+    expect((await uploadBundle(page, [empty, allDropped, notLists, sighting, report, email, traffic])).toast)
+      .toBe('Bundle imported, 1 empty value left out');
     const state = await page.evaluate(() => JSON.parse(JSON.stringify((eval('state') as any).bundle.objects)));
     expectOmitted(state);
     expect((await objectState(page, sighting.id)).where_sighted_refs).toEqual([stixId('identity', '9')]);
@@ -1313,6 +1316,172 @@ test.describe('Composer evidence and structural values', () => {
     const reportIssues = (await page.evaluate(() => (window as any).validateBundle() as string[]))
       .filter((issue) => issue.includes(reportId));
     expect(reportIssues).toEqual([`report ${reportId} missing object_refs`]);
+  });
+
+  // A cleared editor input, or one holding only spaces, removes the property instead of storing
+  // "" or null; a cleared required property is then reported once, as missing.
+  test('the editor removes a property when its input is cleared', async ({ page }) => {
+    await openBuilder(page);
+    const actor = sdo('threat-actor', '5', {
+      name: 'a', description: 'd', sophistication: 'expert', confidence: 50, created_by_ref: stixId('identity', '6'),
+    });
+    expect((await uploadBundle(page, [actor])).toast).toBe('Bundle imported');
+    await page.evaluate((id) => (window as any).selectObject(id), actor.id);
+    await page.locator('#editor-panel [data-field="name"]').fill('');
+    await page.locator('#editor-panel [data-field="description"]').fill('   ');
+    await page.locator('#editor-panel [data-field="sophistication"]').selectOption('');
+    await page.locator('#editor-panel [data-field="confidence"]').fill('');
+    await page.locator('#editor-panel [data-field="created_by_ref"]').fill('');
+
+    const base = { type: 'threat-actor', spec_version: '2.1', id: actor.id, created: T0, modified: T0 };
+    expect(await objectState(page, actor.id)).toEqual(base);
+    expect(await page.evaluate(() => (window as any).validateBundle())).toEqual([`threat-actor ${actor.id} missing name`]);
+    const { objects } = await exportObjects(page);
+    expect(objects).toEqual([base]);
+  });
+
+  // An unfilled or cleared list row is editor state, not data: nothing is stored for it and the
+  // row stays on screen to be filled. A required list stays present and is reported missing.
+  test('the editor never stores a blank list entry', async ({ page }) => {
+    await openBuilder(page);
+    const actor = sdo('threat-actor', '5', { name: 'a', aliases: ['x'] });
+    const report = sdo('report', '6', { name: 'r', published: T0, object_refs: [actor.id] });
+    const traffic = sco('network-traffic', '7', { protocols: ['tcp'] });
+    expect((await uploadBundle(page, [actor, report, traffic])).toast).toBe('Bundle imported');
+    const add = (key: string) => page.locator(`#editor-panel [data-action="add-list"][data-list-field="${key}"]`).click();
+    const row = (key: string, index: number) => page.locator(`#editor-panel input[data-list-field="${key}"][data-index="${index}"]`);
+    const rows = (key: string) => page.locator(`#editor-panel input[data-list-field="${key}"]`);
+
+    await page.evaluate((id) => (window as any).selectObject(id), actor.id);
+    await add('aliases');
+    await add('roles');
+    await add('object_marking_refs');
+    await expect(rows('aliases')).toHaveCount(2);
+    await expect(rows('roles')).toHaveCount(1);
+    await expect(rows('object_marking_refs')).toHaveCount(1);
+    expect(await objectState(page, actor.id)).toEqual({ ...actor, aliases: ['x'] });
+
+    await row('aliases', 1).fill('y');
+    await row('object_marking_refs', 0).fill(TLP);
+    expect(await objectState(page, actor.id)).toMatchObject({ aliases: ['x', 'y'], object_marking_refs: [TLP] });
+    await row('aliases', 0).fill('  ');
+    expect((await objectState(page, actor.id)).aliases, 'only spaces is blank').toEqual(['y']);
+    await row('aliases', 1).fill('');
+    await row('object_marking_refs', 0).fill('');
+    expect(await objectState(page, actor.id)).toEqual({ ...actor, aliases: undefined });
+    await expect(rows('aliases')).toHaveCount(2);
+
+    await page.evaluate((id) => (window as any).selectObject(id), report.id);
+    await row('object_refs', 0).fill('');
+    await add('object_refs');
+    await page.evaluate((id) => (window as any).selectObject(id), traffic.id);
+    await page.locator('#editor-panel [data-action="remove-list"][data-list-field="protocols"]').click();
+    await add('protocols');
+    await expect(rows('protocols')).toHaveCount(1);
+    expect((await objectState(page, report.id)).object_refs).toEqual([]);
+    expect((await objectState(page, traffic.id)).protocols).toEqual([]);
+    expect(await page.evaluate(() => (window as any).validateBundle())).toEqual([
+      `report ${report.id} missing object_refs`,
+      `network-traffic ${traffic.id} missing protocols`,
+    ]);
+    const { objects } = await exportObjects(page);
+    expect(JSON.stringify(objects)).not.toContain('""');
+  });
+
+  // A new object gets only real defaults (false, required lists as []); required text,
+  // identifiers, timestamps and dictionaries start absent and are reported missing once.
+  test('new objects hold no blank required values', async ({ page }) => {
+    await openBuilder(page);
+    const created = await page.evaluate((types) => types.map((type) => {
+      (window as any).addObject(type);
+      return JSON.parse(JSON.stringify((window as any).getActiveObject()));
+    }), ['report', 'relationship', 'network-traffic', 'malware', 'marking-definition']);
+    expect(created.map(({ id, created: c, modified, spec_version, ...rest }: any) => rest)).toEqual([
+      { type: 'report', object_refs: [] },
+      { type: 'relationship' },
+      { type: 'network-traffic', protocols: [] },
+      { type: 'malware', is_family: false },
+      { type: 'marking-definition' },
+    ]);
+    const [report, relationship, traffic] = created.map((o: any) => o.id);
+    const issues = (await page.evaluate(() => (window as any).validateBundle() as string[]))
+      .filter((issue) => [report, relationship, traffic].some((id) => issue.includes(id)));
+    expect(issues).toEqual([
+      ...['name', 'published', 'object_refs'].map((key) => `report ${report} missing ${key}`),
+      ...['relationship_type', 'source_ref', 'target_ref'].map((key) => `relationship ${relationship} missing ${key}`),
+      `network-traffic ${traffic} missing protocols`,
+    ]);
+  });
+
+  // Empty dictionaries are prohibited (STIX 2.1 section 2.3): one is left out at import and when
+  // its last entry is removed, and one reaching state another way is reported. Values inside a
+  // dictionary are kept as they are, including "".
+  test('empty dictionaries are omitted at import and by the editor', async ({ page }) => {
+    await openBuilder(page);
+    const file = sco('file', '5', { name: 'f', hashes: {}, extensions: {} });
+    const emptyVars = sco('process', '6', { command_line: 'c', environment_variables: {} });
+    const blankValue = sco('process', '7', { command_line: 'c', environment_variables: { FOO: '' } });
+    expect((await uploadBundle(page, [file, emptyVars, blankValue])).toast).toBe('Bundle imported');
+    expect(await objectState(page, file.id)).toEqual({ type: 'file', id: file.id, spec_version: '2.1', name: 'f' });
+    expect(Object.keys(await objectState(page, emptyVars.id))).not.toContain('environment_variables');
+    expect((await objectState(page, blankValue.id)).environment_variables).toEqual({ FOO: '' });
+
+    await page.evaluate((id) => (window as any).selectObject(id), blankValue.id);
+    await page.locator('#editor-panel [data-action="remove-dict"][data-dict-field="environment_variables"]').click();
+    expect(Object.keys(await objectState(page, blankValue.id))).not.toContain('environment_variables');
+
+    // definition is a required dictionary in the Composer's configuration.
+    const marking = await page.evaluate((fileId) => {
+      (eval('state') as any).objectsById.get(fileId).hashes = {};
+      (window as any).addObject('marking-definition');
+      Object.assign((window as any).getActiveObject(), { definition_type: 'statement', definition: {} });
+      return (window as any).getActiveObject().id as string;
+    }, file.id);
+    expect(await page.evaluate(() => (window as any).validateBundle())).toEqual([
+      `file ${file.id} hashes must not be an empty dictionary`,
+      `marking-definition ${marking} missing definition`,
+    ]);
+  });
+
+  // Import leaves out "" values (also after trimming) in properties and list entries and says
+  // how many. Values inside a dictionary are not touched or counted.
+  test('import leaves out empty values and says how many', async ({ page }) => {
+    await openBuilder(page);
+    const actor = sdo('threat-actor', '5', { name: 'a', description: '', aliases: ['x', '', '  '], goals: [''] });
+    const report = sdo('report', '6', { name: 'r', published: T0, object_refs: [actor.id, ''], created_by_ref: '' });
+    const proc = sco('process', '7', { command_line: ' \t ', environment_variables: { FOO: '' } });
+    expect((await uploadBundle(page, [actor, report, proc])).toast).toBe('Bundle imported, 7 empty values left out');
+    expect(await objectState(page, actor.id)).toEqual({ ...actor, description: undefined, aliases: ['x'], goals: undefined });
+    expect((await objectState(page, report.id)).object_refs).toEqual([actor.id]);
+    expect(Object.keys(await objectState(page, report.id))).not.toContain('created_by_ref');
+    expect(await objectState(page, proc.id)).toEqual({ type: 'process', id: proc.id, spec_version: '2.1', environment_variables: { FOO: '' } });
+
+    await openBuilder(page);
+    expect((await uploadBundle(page, [sdo('threat-actor', '8', { name: 'a', description: '' })])).toast)
+      .toBe('Bundle imported, 1 empty value left out');
+
+    // A created time holding "" is treated like a missing one. An object merged into a bundle
+    // that already has its id is not imported, so its empty values are not counted.
+    await openBuilder(page);
+    const undated = sdo('threat-actor', '9', { name: 'u', created: '' });
+    expect((await uploadBundle(page, [undated])).toast).toBe('Bundle imported, 1 empty value left out');
+    expect((await objectState(page, undated.id)).created).toMatch(/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?Z$/);
+    await page.evaluate(() => { window.confirm = (message?: string) => !String(message).startsWith('Replace'); });
+    expect((await uploadBundle(page, [{ ...undated, created: T0, description: '' }])).toast).toBe('Bundle imported');
+  });
+
+  // Only a top-level property holding "" has no value. Inside an entry "" is content, so a
+  // selector naming it has a target (a registry default value is named "", section 6.17).
+  test('a selector naming an empty string inside an entry has a target', async ({ page }) => {
+    await openBuilder(page);
+    const identity = sdo('identity', '5', {
+      name: 'i', identity_class: 'individual',
+      external_references: [{ source_name: 's', description: '', url: 'https://example.test/' }],
+      granular_markings: [{ selectors: ['external_references.[0].description'], marking_ref: TLP }],
+    });
+    expect((await uploadBundle(page, [identity])).toast).toBe('Bundle imported');
+    expect((await objectState(page, identity.id)).external_references[0].description).toBe('');
+    expect(await page.evaluate(() => (window as any).validateBundle())).toEqual([]);
   });
 
   // Clearing an optional reference field removes it instead of storing '' or {}; source_name is

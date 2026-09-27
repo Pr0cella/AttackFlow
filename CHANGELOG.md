@@ -35,6 +35,7 @@
 - **Composer Empty Lists**: The STIX Composer no longer writes empty optional lists such as `kill_chain_phases` or `labels`.
 - **Composer Granular-Marking Selectors**: STIX Composer validation now reports a granular-marking selector that points at content not present on the object.
 - **Composer Duplicate Issues**: STIX Composer validation reports a missing network-traffic `protocols` list or a `relationship_type` of only spaces once instead of twice.
+- **Composer Empty Values**: The STIX Composer no longer writes empty text, `null` or empty dictionaries: a cleared field or unfilled list row is not stored, and import leaves out empty values and says how many.
 - **Composer Visualizer Details**: Selecting an object in the Composer visualizer no longer fails with an error and an empty details panel when the object has a dictionary, hashes, extensions or an external reference
 - **CSV Serialization**: Fixed an issue where CSV cells protected against spreadsheet formula injection were quoted more than once. Protected cells now carry a single leading tab inside one layer of quoting, cells containing a carriage return are quoted, and records are terminated with CRLF
 - **STIX Property Export**: STIX bundle export and the bundle embedded in JSON export now preserve stored properties correctly

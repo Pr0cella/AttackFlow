@@ -1376,9 +1376,9 @@
             return stored;
         }
 
-        // The editor stores '' for a structural field that is not filled in yet (new objects,
-        // added rows, cleared inputs), so import treats '' as absent exactly as it always
-        // has. Any other value must be valid.
+        // '' holds no value: older Composer exports have it for structural fields not filled in
+        // yet, and unfilled granular-marking and kill-chain rows still do, so import treats ''
+        // as absent exactly as it always has. Any other value must be valid.
         function requireStructuralValueOrEmpty(kind, value, where) {
             return value === '' ? '' : requireStructuralValue(kind, value, where);
         }
@@ -1571,9 +1571,12 @@
                 obj.modified = now;
             }
             const requiredFields = def.required || [];
+            // Only real defaults are stored; required text, identifiers, timestamps and dictionaries
+            // start absent, and validation reports them as missing.
             requiredFields.forEach((field) => {
                 if (hasOwn(obj, field.key)) return;
-                obj[field.key] = getDefaultForField(field);
+                const value = getDefaultForField(field);
+                if (!isNoValue(value) && !isEmptyDictionary(value)) obj[field.key] = value;
             });
             return obj;
         }
@@ -1744,11 +1747,11 @@
                     return renderOpenVocabField(field, key, value);
                 case 'list':
                 case 'list:open-vocab':
-                    return renderListField(field, key, value || []);
+                    return renderListField(field, key, getListRows(obj, field.key));
                 case 'object-refs':
-                    return renderObjectRefsField(field, key, value || []);
+                    return renderObjectRefsField(field, key, getListRows(obj, field.key));
                 case 'object-marking-refs':
-                    return renderObjectRefsField(field, key, value || []);
+                    return renderObjectRefsField(field, key, getListRows(obj, field.key));
                 case 'kill-chain-phases':
                     return renderKillChainField(key, value || []);
                 case 'granular-markings':
@@ -2155,6 +2158,16 @@
             return toStoredIdentifier(key, report);
         }
 
+        // Keeps the entries that hold a value. An entry that was text and is '' once cleaned is
+        // counted in report.emptyValues for the import message.
+        function dropEmptyEntries(raw, cleaned, report) {
+            return cleaned.filter((value, i) => {
+                if (value) return true;
+                if (report && typeof raw[i] === 'string') report.emptyValues += 1;
+                return false;
+            });
+        }
+
         function sanitizeImportedFieldValue(field, raw, report) {
             switch (field.type) {
                 case 'boolean':
@@ -2172,17 +2185,17 @@
                     return num;
                 }
                 case 'list':
-                case 'list:open-vocab':
+                case 'list:open-vocab': {
                     if (!Array.isArray(raw)) return [];
-                    return raw.slice(0, INPUT_LIMITS.maxListItems)
-                        .map((v) => sanitizeImportedString(String(v ?? ''), 500))
-                        .filter(Boolean);
+                    const items = raw.slice(0, INPUT_LIMITS.maxListItems);
+                    return dropEmptyEntries(items, items.map((v) => sanitizeImportedString(String(v ?? ''), 500)), report);
+                }
                 case 'object-refs':
-                case 'object-marking-refs':
+                case 'object-marking-refs': {
                     if (!Array.isArray(raw)) return [];
-                    return raw.slice(0, INPUT_LIMITS.maxListItems)
-                        .map((v, i) => toStoredIdentifier(requireStructuralValueOrEmpty('identifier', v, `${field.key}[${i}]`), report))
-                        .filter(Boolean);
+                    const items = raw.slice(0, INPUT_LIMITS.maxListItems);
+                    return dropEmptyEntries(items, items.map((v, i) => toStoredIdentifier(requireStructuralValueOrEmpty('identifier', v, `${field.key}[${i}]`), report)), report);
+                }
                 case 'kill-chain-phases':
                     if (!Array.isArray(raw)) return [];
                     return raw.slice(0, INPUT_LIMITS.maxListItems).map((v, i) => {
@@ -2261,9 +2274,14 @@
                 spec_version: ACTIVE_STIX_VERSION
             };
 
+            // A created or modified time holding '' has no value, so it is counted and set like a
+            // missing one.
             if (def.category !== 'sco') {
-                clean.created = hasOwn(obj, 'created') ? requireStructuralValueOrEmpty('timestamp', obj.created, 'created') : new Date().toISOString();
-                clean.modified = hasOwn(obj, 'modified') ? requireStructuralValueOrEmpty('timestamp', obj.modified, 'modified') : new Date().toISOString();
+                ['created', 'modified'].forEach((key) => {
+                    const value = hasOwn(obj, key) ? requireStructuralValueOrEmpty('timestamp', obj[key], key) : '';
+                    if (value === '' && obj[key] === '' && report) report.emptyValues += 1;
+                    clean[key] = value || new Date().toISOString();
+                });
             }
 
             const commonFields = def.category !== 'sco'
@@ -2278,8 +2296,13 @@
             fields.forEach((field) => {
                 if (isDangerousObjectKey(field.key)) return;
                 if (!hasOwn(obj, field.key)) return;
-                const value = sanitizeImportedFieldValue(field, obj[field.key], report);
-                if (value !== null && value !== undefined && value !== '' && !isEmptyOptionalList(clean, field.key, value)) {
+                const raw = obj[field.key];
+                const value = sanitizeImportedFieldValue(field, raw, report);
+                // Text that is '' once cleaned holds no value: it is left out and counted. Empty
+                // dictionaries (STIX 2.1 section 2.3) and empty optional lists are left out too.
+                if (value === '' && typeof raw === 'string' && report) report.emptyValues += 1;
+                if (value !== null && value !== undefined && value !== '' && !isEmptyDictionary(value)
+                    && !isEmptyOptionalList(clean, field.key, value)) {
                     clean[field.key] = value;
                 }
             });
@@ -2390,11 +2413,13 @@
         }
 
         // Selectors must refer to content present on the marked object (STIX 2.1 section 7.2.3.1).
-        // A name step needs an own property holding a value (not undefined, null or ''), the
-        // same "no value" rule import and validation use; an [n] step needs a list longer than n.
+        // A name step needs an own property that is not undefined or null; a top-level property
+        // holding '' has no value either, the rule import and the editor use. Inside an entry ''
+        // is content (a registry default value is named '', section 6.17). An [n] step needs a
+        // list longer than n.
         function isSelectorTargetPresent(obj, selector) {
             let node = obj;
-            return selector.split('.').every((step) => {
+            return selector.split('.').every((step, depth) => {
                 const index = /^\[(\d+)\]$/.exec(step);
                 if (index) {
                     if (!Array.isArray(node) || Number(index[1]) >= node.length) return false;
@@ -2403,7 +2428,7 @@
                 }
                 if (!node || typeof node !== 'object' || Array.isArray(node) || !hasOwn(node, step)) return false;
                 node = node[step];
-                return node !== undefined && node !== null && node !== '';
+                return node !== undefined && node !== null && (depth > 0 || node !== '');
             });
         }
 
@@ -2509,18 +2534,61 @@
             'kill-chain-phases', 'granular-markings', 'external-references'
         ]);
 
-        function isEmptyOptionalList(obj, key, value) {
-            if (!Array.isArray(value) || value.length) return false;
+        function isRequiredProperty(obj, key) {
             const def = resolveStixObjectDefinition(obj.type);
             const common = def?.category !== 'sco' ? (ACTIVE_STIX_COMMON_PROPERTIES.required || []) : [];
-            return ![...common, ...(def?.required || [])].some((field) => field.key === key);
+            return [...common, ...(def?.required || [])].some((field) => field.key === key);
+        }
+
+        function isEmptyOptionalList(obj, key, value) {
+            if (!Array.isArray(value) || value.length) return false;
+            return !isRequiredProperty(obj, key);
+        }
+
+        // One "no value" rule: undefined, null and '' mean the property is absent, and so does
+        // editor text holding only spaces. The Composer removes such a property instead of storing it.
+        function isNoValue(value) {
+            return value === undefined || value === null || (typeof value === 'string' && !value.trim());
+        }
+
+        // Empty dictionaries are prohibited in STIX (section 2.3), so the Composer never stores one.
+        const DICTIONARY_FIELD_TYPES = new Set(['dictionary', 'hashes', 'extensions', 'marking-definition']);
+
+        function isEmptyDictionary(value) {
+            return !!value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === 0;
+        }
+
+        function commitDictionary(obj, key, dict) {
+            if (Object.keys(dict).length) obj[key] = dict;
+            else delete obj[key];
+        }
+
+        // The rows shown for a list field, blank ones included. A blank row is editor state, not
+        // data: the object stores only the rows holding a value. A draft is used only while its
+        // filled rows equal the stored list, so any other change to the list discards it.
+        const listRowDrafts = new WeakMap();
+
+        function getListRows(obj, key) {
+            const stored = Array.isArray(obj[key]) ? obj[key] : [];
+            const draft = listRowDrafts.get(obj)?.get(key);
+            if (!draft) return [...stored];
+            const filled = draft.filter((value) => !isNoValue(value));
+            const current = filled.length === stored.length && filled.every((value, i) => value === stored[i]);
+            return current ? [...draft] : [...stored];
+        }
+
+        function commitListRows(obj, key, rows) {
+            if (!listRowDrafts.has(obj)) listRowDrafts.set(obj, new Map());
+            listRowDrafts.get(obj).set(key, rows);
+            obj[key] = rows.filter((value) => !isNoValue(value));
+            if (isEmptyOptionalList(obj, key, obj[key])) delete obj[key];
         }
 
         function hasValue(value, type) {
             if (type === 'boolean') return value === true || value === false;
             if (type === 'integer' || type === 'number') return value !== null && value !== undefined && value !== '';
             if (type === 'list' || type === 'list:open-vocab' || type === 'object-refs' || type === 'object-marking-refs') return Array.isArray(value) && value.length > 0;
-            if (type === 'dictionary' || type === 'hashes' || type === 'extensions' || type === 'marking-definition') return value && typeof value === 'object';
+            if (DICTIONARY_FIELD_TYPES.has(type)) return !!value && typeof value === 'object' && Object.keys(value).length > 0;
             return value !== null && value !== undefined && String(value).trim() !== '';
         }
 
@@ -2531,6 +2599,11 @@
                 if (value === undefined || value === null || value === '') return;
                 if (LIST_FIELD_TYPES.has(field.type) && isEmptyOptionalList(obj, field.key, value)) {
                     issues.push(`${obj.type} ${obj.id} ${field.key} must not be an empty list`);
+                    return;
+                }
+                // A required empty dictionary is reported once, as missing.
+                if (DICTIONARY_FIELD_TYPES.has(field.type) && isEmptyDictionary(value)) {
+                    if (!isRequiredProperty(obj, field.key)) issues.push(`${obj.type} ${obj.id} ${field.key} must not be an empty dictionary`);
                     return;
                 }
                 switch (field.type) {
@@ -2616,7 +2689,10 @@
                     if (!setInputValidity(target, allowed)) return;
                 }
                 if (structuralType === 'identifier') value = commitIdentifierInput(target);
-                obj[key] = sanitizeValue(value);
+                // A cleared input, or one holding only spaces, removes the property.
+                value = sanitizeValue(value);
+                if (isNoValue(value)) delete obj[key];
+                else obj[key] = value;
                 if (key === 'id' && oldId !== obj.id) {
                     state.objectsById.delete(oldId);
                     state.objectsById.set(obj.id, obj);
@@ -2639,8 +2715,10 @@
                     if (!setInputValidity(target, allowed)) return;
                     commitIdentifierInput(target);
                 }
-                if (!Array.isArray(obj[key])) obj[key] = [];
-                obj[key][index] = sanitizeValue(target.value);
+                const rows = getListRows(obj, key);
+                while (rows.length < index) rows.push('');
+                rows[index] = sanitizeValue(target.value);
+                commitListRows(obj, key, rows);
                 renderBundlePreview();
                 return;
             }
@@ -2697,7 +2775,7 @@
                 const key = target.dataset.dictField;
                 const collected = collectDictionary(key, 'dict');
                 if (!collected) return;
-                obj[key] = collected;
+                commitDictionary(obj, key, collected);
                 renderBundlePreview();
                 return;
             }
@@ -2706,7 +2784,7 @@
                 const key = target.dataset.hashField;
                 const collected = collectDictionary(key, 'hash');
                 if (!collected) return;
-                obj[key] = collected;
+                commitDictionary(obj, key, collected);
                 renderBundlePreview();
                 return;
             }
@@ -2730,7 +2808,7 @@
                 const key = target.dataset.extRoot;
                 const collected = collectExtensions(key);
                 if (!collected) return;
-                obj[key] = collected;
+                commitDictionary(obj, key, collected);
                 renderBundlePreview();
                 return;
             }
@@ -2810,19 +2888,21 @@
                 return;
             }
 
+            // An added row is shown but stores nothing until it holds a value.
             if (target.dataset.action === 'add-list') {
                 const key = target.dataset.listField;
-                if (!Array.isArray(obj[key])) obj[key] = [];
-                obj[key].push('');
+                const rows = getListRows(obj, key);
+                rows.push('');
+                commitListRows(obj, key, rows);
                 renderEditor();
                 return;
             }
 
             if (target.dataset.action === 'remove-list') {
                 const key = target.dataset.listField;
-                const index = parseInt(target.dataset.index, 10);
-                obj[key].splice(index, 1);
-                if (isEmptyOptionalList(obj, key, obj[key])) delete obj[key];
+                const rows = getListRows(obj, key);
+                rows.splice(parseInt(target.dataset.index, 10), 1);
+                commitListRows(obj, key, rows);
                 renderEditor();
                 return;
             }
@@ -2895,7 +2975,7 @@
                 const key = target.dataset.dictField;
                 const entries = Object.entries(obj[key] || {});
                 entries.splice(parseInt(target.dataset.index, 10), 1);
-                obj[key] = safeFromEntries(entries);
+                commitDictionary(obj, key, safeFromEntries(entries));
                 renderEditor();
                 return;
             }
@@ -2924,7 +3004,7 @@
                 const key = target.dataset.hashField;
                 const entries = Object.entries(obj[key] || {});
                 entries.splice(parseInt(target.dataset.index, 10), 1);
-                obj[key] = safeFromEntries(entries);
+                commitDictionary(obj, key, safeFromEntries(entries));
                 renderEditor();
                 return;
             }
@@ -2969,7 +3049,7 @@
                 entries.splice(parseInt(target.dataset.index, 10), 1);
                 // A name kept as written because of a clash is stored lowercase once the clash is gone.
                 const clashing = clashingExtensionKeys(entries.map(([k]) => k));
-                obj[key] = safeFromEntries(entries.map(([k, v]) => [toStoredExtensionKey(k, clashing), v]));
+                commitDictionary(obj, key, safeFromEntries(entries.map(([k, v]) => [toStoredExtensionKey(k, clashing), v])));
                 renderEditor();
                 return;
             }
@@ -3021,10 +3101,16 @@
 
                     // Every incoming object is sanitized before anything is asked or replaced, so an
                     // invalid structural value rejects the whole file and the current bundle stays.
-                    const report = { lowercased: 0, keptKeys: 0 };
+                    const report = { lowercased: 0, keptKeys: 0, emptyValues: 0 };
+                    // Empty values are counted per object, so an object that is not imported
+                    // (its id is already in the bundle) adds none to the import message.
+                    const emptyByCandidate = [];
                     const candidates = raw.objects.map((obj, index) => {
                         try {
-                            return sanitizeImportedObject(obj, report);
+                            const before = report.emptyValues;
+                            const clean = sanitizeImportedObject(obj, report);
+                            emptyByCandidate.push(report.emptyValues - before);
+                            return clean;
                         } catch (err) {
                             throw new Error(`object ${index + 1} ${err.message}`);
                         }
@@ -3048,9 +3134,11 @@
                         };
                         state.objectsById = new Map();
                     }
-                    candidates.forEach((clean) => {
+                    let empty = 0;
+                    candidates.forEach((clean, index) => {
                         if (!clean) return;
                         if (state.objectsById.has(clean.id)) return;
+                        empty += emptyByCandidate[index];
                         state.bundle.objects.push(clean);
                         state.objectsById.set(clean.id, clean);
                     });
@@ -3067,7 +3155,8 @@
                     showToast([
                         'Bundle imported',
                         ...(n ? [`${n} identifier${n === 1 ? '' : 's'} lowercased`] : []),
-                        ...(kept ? [`${kept} extension key${kept === 1 ? '' : 's'} kept as written (they differ only in case)`] : [])
+                        ...(kept ? [`${kept} extension key${kept === 1 ? '' : 's'} kept as written (they differ only in case)`] : []),
+                        ...(empty ? [`${empty} empty value${empty === 1 ? '' : 's'} left out`] : [])
                     ].join(', '));
                 } catch (err) {
                     showToast('Import failed: ' + err.message);
