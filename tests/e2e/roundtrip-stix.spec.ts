@@ -401,4 +401,23 @@ test.describe('STIX identifiers with uppercase UUID hex', () => {
     expect(Object.keys(after).sort()).toEqual([UPPER_STORED, MIXED_STORED]);
     expect(after[UPPER_STORED].name).toBe('Upper malware');
   });
+
+  test('keeps the first of two ids in one bundle that differ only in case', async ({ page }) => {
+    // Both orders: the first object wins and the second counts as a duplicate; only ids
+    // that were changed count as lowercased.
+    await openApp(page);
+    await importStix(page, bundleOf([
+      sdo('malware', UPPER, 'First upper', { is_family: false }),
+      sdo('malware', UPPER_STORED, 'Second lower', { is_family: false }),
+      sdo('tool', MIXED_STORED, 'First lower'),
+      sdo('tool', MIXED, 'Second mixed'),
+    ]));
+
+    const library = (await readState(page)).customLibrary;
+    expect(Object.keys(library).sort()).toEqual([UPPER_STORED, MIXED_STORED]);
+    expect(library[UPPER_STORED].name).toBe('First upper');
+    expect(library[MIXED_STORED].name).toBe('First lower');
+    await expect(page.locator('#toast'))
+      .toHaveText('Imported 2 STIX objects, 2 identifiers lowercased, 2 duplicates skipped');
+  });
 });

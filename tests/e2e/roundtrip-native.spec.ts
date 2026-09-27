@@ -1273,4 +1273,33 @@ test.describe('Custom STIX identifiers with uppercase UUID hex', () => {
     expect(library[key(0)].name).toBe('Tool 0');
     await expect(page.locator('#toast')).toHaveText('Imported kill chain, 1 identifier lowercased');
   });
+
+  test('an assignment that names its object in entityId is lowercased and reported', async ({ page }) => {
+    // Assignments may carry the id in entityId instead of id; that form is lowercased and
+    // counted too, ungrouped and grouped.
+    const byEntityId = (n: number) => ({ entityId: MALWARE_UPPER, instanceId: `itm-e-${n}`, type: 'custom', metadata: {} });
+    const fixture = {
+      assignments: {
+        'IN:reconnaissance': {
+          techniques: [], capecs: [], cwes: [],
+          customItems: [byEntityId(1)],
+          groups: [{ groupId: 'grp-e-1', label: 'Entity group', items: [byEntityId(2)] }],
+          layout: [],
+        },
+      },
+      customLibrary: { [MALWARE]: { stixType: 'malware', name: 'Lower malware', is_family: false } },
+    };
+
+    await openApp(page);
+    await clearToast(page);
+    await page.locator('#import-killchain-input').setInputFiles({
+      name: 'entity-id.json', mimeType: 'application/json', buffer: bytes(fixture),
+    });
+    await expect(page.locator('#toast')).not.toBeEmpty();
+
+    const recon = (await readState(page)).assignments['IN:reconnaissance'];
+    expect(recon.customItems.map((a: any) => a.id)).toEqual([MALWARE]);
+    expect(recon.groups[0].items.map((a: any) => a.id)).toEqual([MALWARE]);
+    await expect(page.locator('#toast')).toHaveText('Imported kill chain, 2 identifiers lowercased');
+  });
 });
