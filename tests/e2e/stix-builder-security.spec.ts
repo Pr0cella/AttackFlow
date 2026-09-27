@@ -1957,4 +1957,143 @@ test.describe('Composer evidence and structural values', () => {
     }, custom);
     expect(issues).toContain('Unknown object type: constructor');
   });
+
+  // Serves the Composer configuration with each given limit setting replaced by (or given) the
+  // source text passed; null renames the setting so the page cannot see it.
+  async function configureLimits(page: Page, limits: { entry?: string | null; reference?: string | null }) {
+    await page.unroute('**/stix-builder.config.js');
+    await page.route('**/stix-builder.config.js', async (route) => {
+      let body = await (await route.fetch()).text();
+      for (const [name, value] of [['STIX_ENTRY_LIMIT', limits.entry], ['STIX_REFERENCE_LIMIT', limits.reference]] as const) {
+        if (value === undefined) continue;
+        if (value === null) {
+          body = body.replaceAll(name, `RENAMED_${name}`);
+          continue;
+        }
+        const declaration = new RegExp(`const ${name} = [^;]*;`);
+        body = declaration.test(body)
+          ? body.replace(declaration, () => `const ${name} = ${value};`)
+          : `${body}\nconst ${name} = ${value};\n`;
+      }
+      await route.fulfill({ contentType: 'application/javascript', body });
+    });
+  }
+  const numbered = <T>(n: number, make: (i: number) => T) => Array.from({ length: n }, (_, i) => make(i));
+  const refIds = (n: number) => numbered(n, (i) => `identity--${String(i).padStart(8, '0')}-0000-4000-8000-000000000000`);
+
+  // The entry limit is a local bound, not a STIX 2.1 rule (section 2.12 sets no maximum). A
+  // configured value applies to every list and dictionary kind at import and keeps the first entries.
+  test('a configured entry limit applies to every list and dictionary kind at import', async ({ page }) => {
+    await configureLimits(page, { entry: '3' });
+    await openBuilder(page);
+    const five = <T>(make: (i: number) => T) => numbered(5, make);
+    const dict = (prefix: string) => Object.fromEntries(five((i) => [`${prefix}${i}`, 'v']));
+    const pattern = sdo('attack-pattern', 'a', {
+      name: 'p', labels: five((i) => `l${i}`), aliases: five((i) => `a${i}`),
+      kill_chain_phases: five((i) => ({ kill_chain_name: 'unified-kill-chain', phase_name: `p${i}` })),
+      external_references: five((i) => ({ source_name: `s${i}`, external_id: `e${i}`, hashes: dict('SHA-') })),
+      granular_markings: five(() => ({ selectors: five(() => 'name'), marking_ref: TLP })),
+      object_marking_refs: five((i) => stixId('marking-definition', String(i))),
+    });
+    const file = sco('file', 'b', { name: 'f', hashes: dict('SHA-'), extensions: Object.fromEntries(five((i) => [`x-ext-${i}`, dict('k')])) });
+    const proc = sco('process', 'c', { environment_variables: dict('VAR') });
+    expect((await uploadBundle(page, [pattern, file, proc])).toast).toBe('Bundle imported');
+
+    const p = await objectState(page, pattern.id);
+    const f = await objectState(page, file.id);
+    const pr = await objectState(page, proc.id);
+    const keys = (value: object) => Object.keys(value).length;
+    expect({
+      labels: p.labels, aliases: p.aliases.length, kill_chain_phases: p.kill_chain_phases.length,
+      external_references: p.external_references.length, referenceHashes: p.external_references.map((r: any) => keys(r.hashes)),
+      granular_markings: p.granular_markings.length, selectors: p.granular_markings.map((g: any) => g.selectors.length),
+      hashes: keys(f.hashes), extensions: Object.keys(f.extensions), extensionBodies: Object.values(f.extensions).map((b: any) => keys(b)),
+      environment_variables: keys(pr.environment_variables),
+      // A list of identifiers follows its own limit, which is not set here.
+      object_marking_refs: p.object_marking_refs.length,
+    }).toEqual({
+      labels: ['l0', 'l1', 'l2'], aliases: 3, kill_chain_phases: 3,
+      external_references: 3, referenceHashes: [3, 3, 3],
+      granular_markings: 3, selectors: [3, 3, 3],
+      hashes: 3, extensions: ['x-ext-0', 'x-ext-1', 'x-ext-2'], extensionBodies: [3, 3, 3],
+      environment_variables: 3,
+      object_marking_refs: 5,
+    });
+  });
+
+  // Granular-marking selectors are list entries like any other, so the default limit keeps the first 100.
+  test('keeps at most 100 granular-marking selectors at import by default', async ({ page }) => {
+    await openBuilder(page);
+    const selectors = numbered(101, (i) => `labels.[${i}]`);
+    const identity = sdo('identity', 'a', {
+      name: 'i', identity_class: 'individual', granular_markings: [{ selectors, marking_ref: TLP }],
+    });
+    expect((await uploadBundle(page, [identity])).toast).toBe('Bundle imported');
+    expect((await objectState(page, identity.id)).granular_markings[0].selectors).toEqual(selectors.slice(0, 100));
+  });
+
+  // Lists of identifiers grow with the bundle rather than with typed values, so they have their
+  // own limit, 5000 by default like the object limit, while other lists keep 100.
+  test('identifier lists have their own limit, 5000 by default', async ({ page }) => {
+    await openBuilder(page);
+    const large = sdo('grouping', 'a', { name: 'g', context: 'unspecified', object_refs: refIds(5001), labels: numbered(101, (i) => `l${i}`) });
+    expect((await uploadBundle(page, [large])).toast).toBe('Bundle imported');
+    const kept = await objectState(page, large.id);
+    expect([kept.object_refs.length, kept.labels.length]).toEqual([5000, 100]);
+    expect(kept.object_refs).toEqual(refIds(5000));
+
+    await configureLimits(page, { reference: '2' });
+    await openBuilder(page);
+    const small = sdo('grouping', 'b', {
+      name: 'g', context: 'unspecified', object_refs: refIds(5), labels: numbered(5, (i) => `l${i}`),
+      object_marking_refs: numbered(5, (i) => stixId('marking-definition', String(i))),
+    });
+    expect((await uploadBundle(page, [small])).toast).toBe('Bundle imported');
+    const cut = await objectState(page, small.id);
+    expect([cut.object_refs, cut.object_marking_refs.length, cut.labels.length]).toEqual([refIds(2), 2, 5]);
+  });
+
+  // A limit setting that is not a whole number from 1 to 10000 falls back to its default with a
+  // console warning, so a bad value never removes the bound; a missing setting falls back silently.
+  test('an out-of-range limit setting falls back to its default', async ({ page }) => {
+    const warnings: string[] = [];
+    page.on('console', (message) => {
+      if (message.type() === 'warning' && /STIX_(ENTRY|REFERENCE)_LIMIT/.test(message.text())) warnings.push(message.text());
+    });
+    const WARNED = [
+      'STIX_ENTRY_LIMIT must be a whole number from 1 to 10000; using 100',
+      'STIX_REFERENCE_LIMIT must be a whole number from 1 to 10000; using 5000',
+    ];
+    const grouping = sdo('grouping', 'a', { name: 'g', context: 'unspecified', object_refs: refIds(5001), labels: numbered(101, (i) => `l${i}`) });
+    // [setting source text, labels kept, references kept, warnings]
+    const cases: [string | null, number, number, string[]][] = [
+      ['0', 100, 5000, WARNED], ['-1', 100, 5000, WARNED], ['10001', 100, 5000, WARNED], ['2.5', 100, 5000, WARNED],
+      ["'50'", 100, 5000, WARNED], ['NaN', 100, 5000, WARNED], [null, 100, 5000, []],
+      ['1', 1, 1, []], ['10000', 101, 5001, []],
+    ];
+    for (const [value, labels, refs, warned] of cases) {
+      await configureLimits(page, { entry: value, reference: value });
+      warnings.length = 0;
+      await openBuilder(page);
+      expect((await uploadBundle(page, [grouping])).toast).toBe('Bundle imported');
+      const kept = await objectState(page, grouping.id);
+      expect([value, kept.labels.length, kept.object_refs.length]).toEqual([value, labels, refs]);
+      expect([value, warnings]).toEqual([value, warned]);
+    }
+
+    // A setting given only as a window property, as other configuration values may be, is read too.
+    await page.unroute('**/stix-builder.config.js');
+    await page.route('**/stix-builder.config.js', async (route) => {
+      const body = (await (await route.fetch()).text()).replaceAll('STIX_ENTRY_LIMIT', 'RENAMED_ENTRY_LIMIT')
+        .replaceAll('STIX_REFERENCE_LIMIT', 'RENAMED_REFERENCE_LIMIT');
+      await route.fulfill({
+        contentType: 'application/javascript',
+        body: `${body}\nwindow.STIX_ENTRY_LIMIT = 3;\nwindow.STIX_REFERENCE_LIMIT = 2;\n`,
+      });
+    });
+    await openBuilder(page);
+    expect((await uploadBundle(page, [grouping])).toast).toBe('Bundle imported');
+    const fromWindow = await objectState(page, grouping.id);
+    expect([fromWindow.labels.length, fromWindow.object_refs.length]).toEqual([3, 2]);
+  });
 });

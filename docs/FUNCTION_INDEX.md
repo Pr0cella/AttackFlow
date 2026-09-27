@@ -513,6 +513,7 @@ Update strategy:
 - `openBundleIssues`
 - `closeBundleIssues`
 - `clearBundle`
+- `readLimitSetting`
 - `sanitizeDictionary`
 - `sanitizeExtensions`
 - `dropEmptyEntries`

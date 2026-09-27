@@ -11,6 +11,7 @@
 ### Changed
 - **Export Filenames**: Downloads are now named from a fixed prefix and a UTC timestamp instead of being derived from the document title
 - **Export Contents**: JSON export no longer writes the sidebar filter state or the current entity selection. Documents that still contain the two keys import normally and the values are ignored
+- **Composer Entry Limits**: The STIX Composer's import entry limits are now set in `stix-builder.config.js`, with `STIX_ENTRY_LIMIT` (default 100) now also covering granular-marking selectors and a separate `STIX_REFERENCE_LIMIT` (default 5000, previously 100) for identifier lists such as `object_refs`.
 - **Composer Import Strictness**: STIX Composer import rejects the whole file, naming the object and field, for invalid or `null` structural values and for kill-chain phases or granular markings that are malformed or missing a required property. The current bundle is left unchanged. Validation now flags granular markings without selectors or a marking reference.
 
 ### Fixed
