@@ -2547,7 +2547,8 @@
                         if (field.vocabulary && !resolveVocabulary(field.vocabulary).includes(value)) issues.push(`${obj.type} ${obj.id} ${field.key} invalid enum`);
                         break;
                     case 'open-vocab':
-                        if (typeof value !== 'string' || !value.trim()) issues.push(`${obj.type} ${obj.id} ${field.key} required`);
+                        // A blank value is left to the required-property check, so it is reported once.
+                        if (typeof value !== 'string') issues.push(`${obj.type} ${obj.id} ${field.key} must be string`);
                         break;
                     case 'kill-chain-phases':
                         if (!Array.isArray(value)) issues.push(`${obj.type} ${obj.id} ${field.key} must be list`);
@@ -2584,9 +2585,6 @@
 
             if (obj.type === 'artifact') {
                 if (!obj.payload_bin && !obj.url) issues.push('artifact requires payload_bin or url');
-            }
-            if (obj.type === 'network-traffic') {
-                if (!Array.isArray(obj.protocols) || obj.protocols.length === 0) issues.push('network-traffic requires protocols');
             }
             if (obj.type === 'sighting') {
                 const hasObserved = Array.isArray(obj.observed_data_refs) && obj.observed_data_refs.length > 0;

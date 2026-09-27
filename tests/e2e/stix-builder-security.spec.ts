@@ -885,6 +885,46 @@ test.describe('Composer evidence and structural values', () => {
     ));
   });
 
+  // protocols is required on network-traffic (STIX 2.1 section 6.12), so a missing or empty list
+  // is one missing required property, reported once and naming the object.
+  test('validation reports a missing or empty network-traffic protocols once', async ({ page }) => {
+    await openBuilder(page);
+    const address = sco('ipv4-addr', '1', { value: '10.0.0.1' });
+    const absent = sco('network-traffic', '2', { src_ref: address.id });
+    const empty = sco('network-traffic', '3', { src_ref: address.id, protocols: [] });
+    const filled = sco('network-traffic', '4', { src_ref: address.id, protocols: ['tcp'] });
+    expect((await uploadBundle(page, [address, absent, empty, filled])).toast).toBe('Bundle imported');
+    const added = await page.evaluate(() => {
+      (window as any).addObject('network-traffic');
+      return (window as any).getActiveObject().id as string;
+    });
+    expect(await page.evaluate(() => (window as any).validateBundle())).toEqual(
+      [absent.id, empty.id, added].map((id) => `network-traffic ${id} missing protocols`),
+    );
+  });
+
+  // A blank required relationship_type is one missing property, reported once; the vocabulary
+  // check only reports a value that is not a string.
+  test('validation reports a blank relationship_type once', async ({ page }) => {
+    await openBuilder(page);
+    const relationship = (hex: string) => sdo('relationship', hex, {
+      relationship_type: 'uses', source_ref: stixId('malware', '1'), target_ref: stixId('identity', '2'),
+    });
+    const blank = relationship('3');
+    const numeric = relationship('4');
+    expect((await uploadBundle(page, [blank, numeric])).toast).toBe('Bundle imported');
+    const validate = () => page.evaluate(() => (window as any).validateBundle() as string[]);
+    expect(await validate()).toEqual([]);
+
+    await page.evaluate((id) => (window as any).selectObject(id), blank.id);
+    await page.locator('#editor-panel [data-field="relationship_type"]').fill('   ');
+    await page.evaluate((id) => { (eval('state') as any).objectsById.get(id).relationship_type = 5; }, numeric.id);
+    expect(await validate()).toEqual([
+      `relationship ${blank.id} missing relationship_type`,
+      `relationship ${numeric.id} relationship_type must be string`,
+    ]);
+  });
+
   async function exportObjects(page: Page) {
     const dialogs: string[] = [];
     const onDialog = (dialog: any) => { dialogs.push(dialog.message()); dialog.accept(); };
