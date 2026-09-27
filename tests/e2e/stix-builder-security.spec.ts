@@ -597,8 +597,8 @@ test.describe('Composer evidence and structural values', () => {
     await page.locator('#add-object').click();
     await page.locator('#editor-panel [data-action="add-ext"][data-ext-field="extensions"]').click();
     await page.locator('#editor-panel [data-action="add-extdict"]').click();
-    // An extension name is committed together with its body, so each name change is
-    // followed by an edit inside the extension.
+    // A name is checked when it is typed and again with every edit inside the extension, so
+    // each name change is followed by a body edit.
     const extensionName = page.locator('#editor-panel [data-ext-field="extensions"][data-ext-role="key"]');
     const bodyValue = page.locator('#editor-panel [data-extdict-role="value"]');
     await extensionName.fill('ntfs-ext');
@@ -733,12 +733,11 @@ test.describe('Composer evidence and structural values', () => {
     await page.locator('#editor-panel [data-action="add-dict"][data-dict-field="environment_variables"]').click();
     const keyInput = '#editor-panel [data-dict-field="environment_variables"][data-dict-role="key"]';
     const readKeys = () => page.evaluate(() => Object.keys((window as any).getActiveObject().environment_variables || {}));
-    const generatedKeys = await readKeys();
-    expect(generatedKeys).toHaveLength(1);
+    expect(await readKeys()).toEqual([]);
 
     for (const bad of ['BAD[KEY]', 'a"b', 'x'.repeat(251)]) {
       await bypass(keyInput, bad);
-      expect(await readKeys(), `dictionary key ${bad.slice(0, 20)} was committed`).toEqual(generatedKeys);
+      expect(await readKeys(), `dictionary key ${bad.slice(0, 20)} was committed`).toEqual([]);
       expect(await invalid(keyInput)).toBe('true');
     }
     await bypass(keyInput, 'GOOD_KEY-1');
@@ -1155,9 +1154,9 @@ test.describe('Composer evidence and structural values', () => {
     await page.locator('#add-object').click();
     await page.locator('#editor-panel [data-action="add-hash"][data-hash-field="hashes"]').click();
     const hashKey = '#editor-panel [data-hash-field="hashes"][data-hash-role="key"]';
-    const generated = await readActive('hashes');
+    expect(await readActive('hashes')).toBeNull();
     await bypass(hashKey, 'MD');
-    expect(await readActive('hashes')).toEqual(generated);
+    expect(await readActive('hashes')).toBeNull();
     expect(await page.locator(hashKey).getAttribute('aria-invalid')).toBe('true');
     await bypass(hashKey, 'SHA-256');
     expect(Object.keys(await readActive('hashes'))).toEqual(['SHA-256']);
@@ -1167,9 +1166,9 @@ test.describe('Composer evidence and structural values', () => {
     await page.locator('#editor-panel [data-action="add-ref"]').click();
     await page.locator('#editor-panel [data-action="add-refhash"]').click();
     const refHashKey = '#editor-panel [data-refhash-role="key"]';
-    const generatedRef = (await readActive('external_references'))[0].hashes;
+    expect((await readActive('external_references'))[0].hashes).toBeUndefined();
     await bypass(refHashKey, 'MD');
-    expect((await readActive('external_references'))[0].hashes).toEqual(generatedRef);
+    expect((await readActive('external_references'))[0].hashes).toBeUndefined();
     expect(await page.locator(refHashKey).getAttribute('aria-invalid')).toBe('true');
     await bypass(refHashKey, 'MD5');
     expect(Object.keys((await readActive('external_references'))[0].hashes)).toEqual(['MD5']);
@@ -1440,6 +1439,172 @@ test.describe('Composer evidence and structural values', () => {
     expect(await page.evaluate(() => (window as any).validateBundle())).toEqual([
       `file ${file.id} hashes must not be an empty dictionary`,
       `marking-definition ${marking} missing definition`,
+    ]);
+  });
+
+  // "Add" shows a row but stores nothing until its key is filled: an invented key would be
+  // exported as data, and a hash key must name the algorithm (STIX 2.1 section 2.7).
+  test('"Add" in dictionary, hashes and extension fields invents no key', async ({ page }) => {
+    await openBuilder(page);
+    const q = (selector: string) => page.locator(`#editor-panel ${selector}`);
+    const active = () => page.evaluate(() => JSON.parse(JSON.stringify((window as any).getActiveObject())));
+
+    await page.locator('#add-type').selectOption('process');
+    await page.locator('#add-object').click();
+    await q('[data-action="add-dict"][data-dict-field="environment_variables"]').click();
+    await expect(q('[data-dict-field="environment_variables"][data-dict-role="key"]')).toHaveCount(1);
+    expect(Object.keys(await active())).not.toContain('environment_variables');
+    await q('[data-dict-field="environment_variables"][data-dict-role="key"]').fill('FOO');
+    expect((await active()).environment_variables).toEqual({ FOO: '' });
+
+    await page.locator('#add-type').selectOption('file');
+    await page.locator('#add-object').click();
+    await q('[data-action="add-hash"][data-hash-field="hashes"]').click();
+    await q('[data-action="add-ext"][data-ext-field="extensions"]').click();
+    await q('[data-action="add-extdict"]').click();
+    await expect(q('[data-hash-field="hashes"][data-hash-role="key"]')).toHaveCount(1);
+    await expect(q('[data-ext-field="extensions"][data-ext-role="key"]')).toHaveCount(1);
+    await expect(q('[data-extdict-role="key"]')).toHaveCount(1);
+    expect(Object.keys(await active())).not.toContain('hashes');
+    expect(Object.keys(await active())).not.toContain('extensions');
+
+    await page.locator('#add-type').selectOption('identity');
+    await page.locator('#add-object').click();
+    await q('[data-action="add-ref"]').click();
+    await q('[data-ref-key="source_name"]').fill('src');
+    await q('[data-action="add-refhash"]').click();
+    await expect(q('[data-refhash-role="key"]')).toHaveCount(1);
+    expect((await active()).external_references).toEqual([{ source_name: 'src' }]);
+
+    const { objects } = await exportObjects(page);
+    expect(JSON.stringify(objects)).not.toMatch(/"(key|hash|extension)-[a-z0-9]{5}"/);
+  });
+
+  // A row whose key was cleared is still shown, so its Remove button must remove that row
+  // and leave the stored entries of the other rows alone.
+  test('Remove on a row whose key was cleared removes only that row', async ({ page }) => {
+    await openBuilder(page);
+    const q = (selector: string) => page.locator(`#editor-panel ${selector}`);
+    const proc = sco('process', '5', { command_line: 'c', environment_variables: { A: '1', B: '2' } });
+    const file = sco('file', '6', {
+      name: 'f',
+      hashes: { MD5: 'aa', 'SHA-256': 'bb' },
+      extensions: { 'x-acme-ext': { one: '1', two: '2' }, 'x-other-ext': { rank: 'v' } },
+    });
+    const identity = sdo('identity', '7', {
+      name: 'i', identity_class: 'individual',
+      external_references: [{ source_name: 'src', hashes: { MD5: 'aa', 'SHA-256': 'bb' } }],
+    });
+    expect((await uploadBundle(page, [proc, file, identity])).toast).toBe('Bundle imported');
+
+    await page.evaluate((id) => (window as any).selectObject(id), proc.id);
+    await q('[data-dict-role="key"]').nth(0).fill('');
+    expect((await objectState(page, proc.id)).environment_variables).toEqual({ B: '2' });
+    await q('[data-action="remove-dict"]').nth(0).click();
+    expect((await objectState(page, proc.id)).environment_variables).toEqual({ B: '2' });
+    await expect(q('[data-dict-role="key"]')).toHaveCount(1);
+    await expect(q('[data-dict-role="key"]')).toHaveValue('B');
+
+    await page.evaluate((id) => (window as any).selectObject(id), file.id);
+    await q('[data-hash-role="key"]').nth(0).fill('');
+    await q('[data-action="remove-hash"]').nth(0).click();
+    await q('[data-extdict-role="key"]').nth(0).fill('');
+    await q('[data-action="remove-extdict"]').nth(0).click();
+    expect(await objectState(page, file.id)).toMatchObject({
+      hashes: { 'SHA-256': 'bb' },
+      extensions: { 'x-acme-ext': { two: '2' }, 'x-other-ext': { rank: 'v' } },
+    });
+    await q('[data-ext-role="key"]').nth(0).fill('');
+    await q('[data-action="remove-ext"]').nth(0).click();
+    expect((await objectState(page, file.id)).extensions).toEqual({ 'x-other-ext': { rank: 'v' } });
+    await expect(q('[data-ext-role="key"]')).toHaveCount(1);
+    await expect(q('[data-ext-role="key"]')).toHaveValue('x-other-ext');
+
+    await page.evaluate((id) => (window as any).selectObject(id), identity.id);
+    await q('[data-refhash-role="key"]').nth(0).fill('');
+    await q('[data-action="remove-refhash"]').nth(0).click();
+    expect((await objectState(page, identity.id)).external_references).toEqual([{ source_name: 'src', hashes: { 'SHA-256': 'bb' } }]);
+    await expect(q('[data-refhash-role="key"]')).toHaveCount(1);
+    await expect(q('[data-refhash-role="key"]')).toHaveValue('SHA-256');
+  });
+
+  // An extension needs content (STIX 2.1 sections 2.3 and 3.2). Its name stays in the row while
+  // the body is filled, and removing its last body entry removes the extension.
+  test('an extension is stored only once it has a body entry', async ({ page }) => {
+    await openBuilder(page);
+    const q = (selector: string) => page.locator(`#editor-panel ${selector}`);
+    const active = () => page.evaluate(() => JSON.parse(JSON.stringify((window as any).getActiveObject())));
+    await page.locator('#add-type').selectOption('file');
+    await page.locator('#add-object').click();
+    await q('[data-action="add-ext"][data-ext-field="extensions"]').click();
+    const name = q('[data-ext-field="extensions"][data-ext-role="key"]');
+    await name.fill('x-acme-ext');
+    await q('[data-action="add-extdict"]').click();
+    await expect(name).toHaveValue('x-acme-ext');
+    expect(Object.keys(await active())).not.toContain('extensions');
+
+    await q('[data-extdict-role="key"]').fill('rank');
+    expect((await active()).extensions).toEqual({ 'x-acme-ext': { rank: '' } });
+    await q('[data-extdict-role="value"]').fill('1');
+    await name.fill('x-renamed-ext');
+    expect((await active()).extensions).toEqual({ 'x-renamed-ext': { rank: '1' } });
+
+    await q('[data-action="remove-extdict"]').click();
+    expect(Object.keys(await active())).not.toContain('extensions');
+    await expect(name).toHaveValue('x-renamed-ext');
+  });
+
+  // Names that differ only in case are both kept as written. Emptying one body for a moment
+  // must not rename the other, or refilling it would merge the two extensions into one.
+  test('emptying the body of one of two case-variant extension names keeps both', async ({ page }) => {
+    await openBuilder(page);
+    const upper = stixId('extension-definition', 'D');
+    const lower = stixId('extension-definition', 'd');
+    const file = sco('file', '5', { name: 'f', extensions: { [upper]: { rank: '1' }, [lower]: { rank: '2' } } });
+    expect((await uploadBundle(page, [file])).toast).toContain('Bundle imported');
+    await page.evaluate((id) => (window as any).selectObject(id), file.id);
+    const bodyKeys = page.locator('#editor-panel [data-extdict-role="key"]');
+
+    await bodyKeys.nth(1).fill('');
+    expect((await objectState(page, file.id)).extensions).toEqual({ [upper]: { rank: '1' } });
+    await bodyKeys.nth(1).fill('rank');
+    expect((await objectState(page, file.id)).extensions).toEqual({ [upper]: { rank: '1' }, [lower]: { rank: '2' } });
+
+    await page.locator('#editor-panel [data-action="remove-extdict"]').nth(1).click();
+    await page.locator('#editor-panel [data-action="add-extdict"]').nth(1).click();
+    await bodyKeys.nth(1).fill('rank');
+    expect((await objectState(page, file.id)).extensions).toEqual({ [upper]: { rank: '1' }, [lower]: { rank: '' } });
+    await expect(page.locator('#editor-panel [data-ext-role="key"]').nth(0)).toHaveValue(upper);
+  });
+
+  // An extension body that imports empty is not stored once the extensions are edited, so the
+  // preview, status and Visualize button must follow at once.
+  test('adding an extension row refreshes the status when it drops an empty body', async ({ page }) => {
+    await openBuilder(page);
+    const file = sco('file', '5', { name: 'f', extensions: { 'x-acme-ext': { rank: '1' }, 'x-empty-ext': null } });
+    expect((await uploadBundle(page, [file])).toast).toBe('Bundle imported');
+    await page.evaluate((id) => (window as any).selectObject(id), file.id);
+    await expect(page.locator('#visualize-bundle')).toBeDisabled();
+    await page.locator('#editor-panel [data-action="add-ext"][data-ext-field="extensions"]').click();
+    expect((await objectState(page, file.id)).extensions).toEqual({ 'x-acme-ext': { rank: '1' } });
+    await expect(page.locator('#visualize-bundle')).toBeEnabled();
+  });
+
+  // An extension with an empty body is not valid STIX (sections 2.3 and 3.2): import leaves it
+  // out, and validation reports one that reaches state another way.
+  test('import leaves out an extension with an empty body and validation reports one', async ({ page }) => {
+    await openBuilder(page);
+    const file = sco('file', '5', { name: 'f', extensions: { 'x-empty-ext': {}, 'ntfs-ext': { sid: 'S-1-5' } } });
+    const bare = sco('file', '6', { name: 'g', extensions: { 'x-empty-ext': {} } });
+    expect((await uploadBundle(page, [file, bare])).toast).toBe('Bundle imported');
+    expect((await objectState(page, file.id)).extensions).toEqual({ 'ntfs-ext': { sid: 'S-1-5' } });
+    expect(Object.keys(await objectState(page, bare.id))).not.toContain('extensions');
+
+    await page.evaluate((id) => {
+      (eval('state') as any).objectsById.get(id).extensions = { 'ntfs-ext': { sid: 'S-1-5' }, 'x-empty-ext': {} };
+    }, file.id);
+    expect(await page.evaluate(() => (window as any).validateBundle())).toEqual([
+      `file ${file.id} extensions x-empty-ext must not be an empty dictionary`,
     ]);
   });
 
@@ -1738,11 +1903,12 @@ test.describe('Composer evidence and structural values', () => {
     await page.locator('#add-object').click();
     await page.locator('#editor-panel [data-action="add-ext"][data-ext-field="extensions"]').click();
     await page.locator('#editor-panel [data-action="add-extdict"]').first().click();
-    // An extension name is committed together with its body, so each name change is
-    // followed by an edit inside the extension.
+    // An extension is stored once it has a body entry, so each new one gets a body key.
     const names = page.locator('#editor-panel [data-ext-field="extensions"][data-ext-role="key"]');
+    const bodyKeys = page.locator('#editor-panel [data-extdict-role="key"]');
     const bodies = page.locator('#editor-panel [data-extdict-role="value"]');
     await names.nth(0).fill(stixId('extension-definition', 'D'));
+    await bodyKeys.nth(0).fill('rank');
     await bodies.nth(0).fill('5');
     expect(await readKeys()).toEqual([stixId('extension-definition', 'd')]);
     await expect(names.nth(0)).toHaveValue(stixId('extension-definition', 'd'));
@@ -1750,6 +1916,7 @@ test.describe('Composer evidence and structural values', () => {
     await page.locator('#editor-panel [data-action="add-ext"][data-ext-field="extensions"]').click();
     await page.locator('#editor-panel [data-action="add-extdict"]').nth(1).click();
     await names.nth(1).fill(stixId('extension-definition', 'D'));
+    await bodyKeys.nth(1).fill('rank');
     await bodies.nth(1).fill('6');
     expect(await readKeys()).toEqual([stixId('extension-definition', 'd'), stixId('extension-definition', 'D')]);
     await expect(names.nth(1)).toHaveValue(stixId('extension-definition', 'D'));
