@@ -874,11 +874,25 @@
     </div>
 
     <script>
+        // The entry limits come from stix-builder.config.js. They are local bounds, not STIX 2.1
+        // rules, so a setting that is not a whole number from 1 to 10000 must not remove them:
+        // it falls back to the default with a warning. A missing setting uses the default. The
+        // typeof reads below also find a setting given only as a window property.
+        function readLimitSetting(name, value, fallback) {
+            if (value === undefined) return fallback;
+            if (Number.isInteger(value) && value >= 1 && value <= 10000) return value;
+            console.warn(`${name} must be a whole number from 1 to 10000; using ${fallback}`);
+            return fallback;
+        }
+
         const INPUT_LIMITS = {
             maxFileSize: 50 * 1024 * 1024,
             maxObjects: 5000,
             maxStringLength: 5000,
-            maxListItems: 100
+            maxListItems: readLimitSetting('STIX_ENTRY_LIMIT',
+                typeof STIX_ENTRY_LIMIT === 'undefined' ? undefined : STIX_ENTRY_LIMIT, 100),
+            maxReferenceItems: readLimitSetting('STIX_REFERENCE_LIMIT',
+                typeof STIX_REFERENCE_LIMIT === 'undefined' ? undefined : STIX_REFERENCE_LIMIT, 5000)
         };
 
         const LIST_LIMITS = {
@@ -2191,7 +2205,7 @@
                 case 'object-refs':
                 case 'object-marking-refs': {
                     if (!Array.isArray(raw)) return [];
-                    const items = raw.slice(0, INPUT_LIMITS.maxListItems);
+                    const items = raw.slice(0, INPUT_LIMITS.maxReferenceItems);
                     return dropEmptyEntries(items, items.map((v, i) => toStoredIdentifier(requireStructuralValueOrEmpty('identifier', v, `${field.key}[${i}]`), report)), report);
                 }
                 case 'kill-chain-phases':
@@ -2209,7 +2223,7 @@
                         if (!v || typeof v !== 'object' || Array.isArray(v)) throw new Error(`${where} is invalid`);
                         if (!hasOwn(v, 'selectors')) throw new Error(`${where}.selectors is missing`);
                         if (!Array.isArray(v.selectors)) throw new Error(`${where}.selectors is invalid`);
-                        const selectors = v.selectors
+                        const selectors = v.selectors.slice(0, INPUT_LIMITS.maxListItems)
                             .map((sel, j) => requireStructuralValueOrEmpty('selector', sel, `${where}.selectors[${j}]`))
                             .filter(Boolean);
                         // A marking carries exactly one of marking_ref or lang (STIX 2.1 section

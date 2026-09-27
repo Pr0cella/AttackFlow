@@ -6,6 +6,18 @@ const STIX_VERSION = '2.1';
 // insensitive on input (RFC 4122 section 3).
 const STIX_ID_PATTERN = /^[a-z][a-z0-9-]*--[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
+// Import, and the copy of the bundle the visualizer draws, keep at most this many entries of each
+// list other than a list of identifiers, and of each dictionary, hashes property, extensions
+// property, extension body and granular-marking selectors list. STIX 2.1 sets no maximum
+// (section 2.12), so this is a local bound. A whole number from 1 to 10000; any other value
+// falls back to 100.
+const STIX_ENTRY_LIMIT = 100;
+
+// Lists of identifiers, such as object_refs and object_marking_refs, grow with the bundle rather
+// than with typed values, so they have their own limit, applied in the same places. A whole
+// number from 1 to 10000; any other value falls back to 5000.
+const STIX_REFERENCE_LIMIT = 5000;
+
 const STIX_KILL_CHAIN_PHASES = {
     'unified-kill-chain': [
         'reconnaissance',
@@ -819,6 +831,8 @@ function getVocabulary(key) {
 if (typeof window !== 'undefined') {
     window.STIX_VERSION = STIX_VERSION;
     window.STIX_ID_PATTERN = STIX_ID_PATTERN;
+    window.STIX_ENTRY_LIMIT = STIX_ENTRY_LIMIT;
+    window.STIX_REFERENCE_LIMIT = STIX_REFERENCE_LIMIT;
     window.STIX_KILL_CHAIN_PHASES = STIX_KILL_CHAIN_PHASES;
     window.STIX_VOCABULARIES = STIX_VOCABULARIES;
     window.STIX_COMMON_PROPERTIES = STIX_COMMON_PROPERTIES;
