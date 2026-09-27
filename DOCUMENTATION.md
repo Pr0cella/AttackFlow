@@ -539,7 +539,7 @@ Defense-in-depth implementation in v2.9.3:
    - **Deliberate limits** where the Composer is stricter than STIX 2.1, which allows any string for kill-chain values and any number of list entries:
      - a kill-chain name or phase must not be blank, must not contain control characters and may have at most 5000 characters;
      - a kill-chain phase whose name or phase is an empty string is dropped at import;
-     - import keeps at most the first 100 entries of each list other than a list of identifiers, and of each dictionary, hashes property (including the hashes of an external reference), extensions property, extension body and granular-marking `selectors` list, and at most the first 5000 identifiers of each list of identifiers, such as `object_refs` or `object_marking_refs`. Further entries are left out without a message and are not checked, so an invalid entry past the limit does not reject the file. `STIX_ENTRY_LIMIT` (default 100) and `STIX_REFERENCE_LIMIT` (default 5000) in `stix-builder.config.js` set the two limits; each must be a whole number from 1 to 10000, otherwise its default is used and the browser console shows a warning. The visualizer applies the same limits to the copy of the bundle it draws; the editor has no limit.
+     - import keeps at most the first 100 entries of each list other than a list of identifiers, and of each dictionary, hashes property (including the hashes of an external reference), extensions property, extension body and granular-marking `selectors` list, and at most the first 5000 identifiers of each list of identifiers, such as `object_refs` or `object_marking_refs`. Further entries are left out without a message and are not checked, so an invalid entry past the limit does not reject the file. `STIX_ENTRY_LIMIT` (default 100) and `STIX_REFERENCE_LIMIT` (default 5000) in `stix-builder.config.js` set the two limits; each must be a whole number from 1 to 10000, otherwise its default is used and the browser console shows a warning; a missing setting uses the default without a warning. The visualizer applies the same limits to the copy of the bundle it draws; the editor has no limit.
 2. **Output encoding** before template insertion (`esc`, `escAttr`, entity encoding).
 3. **Safe JSON parsing**: the main editor uses a reviver to strip `__proto__` / `constructor` / `prototype`. The STIX Composer keeps these keys where STIX 2.1 allows them (dictionary keys, keys inside an extension) by copying every imported object into null-prototype objects, so they stay inert data; it refuses them as extension names.
 4. **Null-prototype object construction** for untrusted accumulator objects.
@@ -567,7 +567,6 @@ Primary listeners include:
 - iframe `load` handlers for explorer and STIX builder channel setup
 
 ---
-
 
 ## 10. Function Index Reference
 
