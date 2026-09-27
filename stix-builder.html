@@ -2389,6 +2389,24 @@
             return issues;
         }
 
+        // Selectors must refer to content present on the marked object (STIX 2.1 section 7.2.3.1).
+        // A name step needs an own property holding a value (not undefined, null or ''), the
+        // same "no value" rule import and validation use; an [n] step needs a list longer than n.
+        function isSelectorTargetPresent(obj, selector) {
+            let node = obj;
+            return selector.split('.').every((step) => {
+                const index = /^\[(\d+)\]$/.exec(step);
+                if (index) {
+                    if (!Array.isArray(node) || Number(index[1]) >= node.length) return false;
+                    node = node[Number(index[1])];
+                    return true;
+                }
+                if (!node || typeof node !== 'object' || Array.isArray(node) || !hasOwn(node, step)) return false;
+                node = node[step];
+                return node !== undefined && node !== null && node !== '';
+            });
+        }
+
         // Covers common properties as well as type fields, so a structural value is checked
         // wherever it sits, whichever route put it into state.
         function validateStructuralValues(obj, def, issues) {
@@ -2431,6 +2449,9 @@
                             if (selectors.some((sel) => !isValidStructuralValue('selector', sel))) {
                                 issues.push(`${prefix} invalid ${field.key} selector`);
                             }
+                            selectors
+                                .filter((sel) => isValidStructuralValue('selector', sel) && !isSelectorTargetPresent(obj, sel))
+                                .forEach((sel) => issues.push(`${prefix} ${field.key} selector ${sel} refers to content not present`));
                             if (!marking?.marking_ref) {
                                 issues.push(`${prefix} ${field.key} entry missing marking_ref`);
                             } else if (!isValidStructuralValue('identifier', marking.marking_ref)) {

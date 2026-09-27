@@ -817,6 +817,74 @@ test.describe('Composer evidence and structural values', () => {
     ]));
   });
 
+  // A selector must name content present on the marked object (STIX 2.1 section 7.2.3.1),
+  // including content the Composer dropped at import and names found only on the prototype.
+  test('validation reports granular-marking selectors whose target is not present', async ({ page }) => {
+    await openBuilder(page);
+    const marked = (hex: string, selector: string, extra: Record<string, unknown> = {}) => sdo('identity', hex, {
+      name: 'i', identity_class: 'individual', ...extra, granular_markings: [{ selectors: [selector], marking_ref: TLP }],
+    });
+    const dangling = [
+      marked('1', 'description'),
+      marked('2', 'labels', { labels: [] }),
+      marked('3', 'external_references.[3]', { external_references: [{ source_name: 's', url: 'https://example.test/' }] }),
+      marked('4', 'description.[0]', { description: 'd' }),
+      marked('5', 'labels.name', { labels: ['a'] }),
+      marked('6', 'x_acme_note', { x_acme_note: 'n' }),
+      marked('7', 'constructor'),
+    ];
+    const present = sdo('identity', '8', {
+      name: 'i', identity_class: 'individual', description: 'd', labels: ['a'], confidence: 0, revoked: false,
+      external_references: [{ source_name: 's', url: 'https://example.test/' }],
+      granular_markings: [{
+        selectors: ['id', 'description', 'labels', 'labels.[0]', 'external_references.[0].url', 'confidence', 'revoked'],
+        marking_ref: TLP,
+      }],
+    });
+    expect((await uploadBundle(page, [...dangling, present])).toast).toBe('Bundle imported');
+    // '' and null hold no value, so they are not a target either, whichever route stored them.
+    const blank = await page.evaluate(({ tlp }) => {
+      (window as any).addObject('identity');
+      const object = (window as any).getActiveObject();
+      Object.assign(object, {
+        name: 'i', identity_class: 'individual', description: '', confidence: null,
+        granular_markings: [{ selectors: ['description', 'confidence'], marking_ref: tlp }],
+      });
+      return object.id as string;
+    }, { tlp: TLP });
+
+    const issues = await page.evaluate(() => (window as any).validateBundle() as string[]);
+    const forObject = (id: string) => issues.filter((issue) => issue.includes(id));
+    const message = (id: string, selector: string) => `identity ${id} granular_markings selector ${selector} refers to content not present`;
+    for (const object of dangling) {
+      const [selector] = object.granular_markings[0].selectors;
+      expect(forObject(object.id), selector).toEqual([message(object.id, selector)]);
+    }
+    expect(forObject(blank)).toEqual([message(blank, 'description'), message(blank, 'confidence')]);
+    expect(forObject(present.id)).toEqual([]);
+  });
+
+  // A property holding no value (removed, or cleared to "" or null) is not a selector target,
+  // so editor changes that take away the target are reported.
+  test('validation reports selectors left without a target by editor changes', async ({ page }) => {
+    await openBuilder(page);
+    const identity = sdo('identity', '9', {
+      name: 'i', identity_class: 'individual', description: 'd', confidence: 50, labels: ['a'],
+      granular_markings: [{ selectors: ['description', 'confidence', 'labels'], marking_ref: TLP }],
+    });
+    expect((await uploadBundle(page, [identity])).toast).toBe('Bundle imported');
+    const validate = () => page.evaluate(() => (window as any).validateBundle() as string[]);
+    expect(await validate()).toEqual([]);
+
+    await page.locator('#object-list .object-item', { hasText: identity.id }).click();
+    await page.locator('#editor-panel [data-field="description"]').fill('');
+    await page.locator('#editor-panel [data-field="confidence"]').fill('');
+    await page.locator('#editor-panel [data-action="remove-list"][data-list-field="labels"]').click();
+    expect(await validate()).toEqual(['description', 'confidence', 'labels'].map(
+      (selector) => `identity ${identity.id} granular_markings selector ${selector} refers to content not present`,
+    ));
+  });
+
   async function exportObjects(page: Page) {
     const dialogs: string[] = [];
     const onDialog = (dialog: any) => { dialogs.push(dialog.message()); dialog.accept(); };

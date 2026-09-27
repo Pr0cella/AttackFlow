@@ -520,6 +520,7 @@ Update strategy:
 - `sanitizeBundleForVisualizer`
 - `renderVisualizer`
 - `validateBundle`
+- `isSelectorTargetPresent`
 - `validateStructuralValues`
 - `getEditableFields`
 - `getStructuralFieldType`

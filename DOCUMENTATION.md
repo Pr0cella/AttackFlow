@@ -525,7 +525,7 @@ Defense-in-depth implementation in v2.9.3:
 
 1. **Input normalization** on all text-entry paths: control characters removed and lengths bounded, printable evidence preserved. In the STIX Composer, structural values (identifiers and refs, dictionary/hash/extension keys, kill-chain values, granular-marking selectors, timestamps) are validated against the STIX 2.1 rules for their type at import, at editor commit and in bundle validation. No rule depends on keystroke blocking.
    - **Keys** use letters, digits, `-` and `_`. Keys of `hashes` properties and external-reference hashes need at least 3 characters.
-   - **Selectors** follow the section 7.2.3.1 syntax.
+   - **Selectors** follow the section 7.2.3.1 syntax and must point at content present on the marked object (section 7.2.3.1). Validation reports each selector whose target is missing: a property that is absent or holds no value (`null` or an empty string), a list index past the end of the list or on a value that is not a list, a name on a list or on a plain value such as a string, or a property the Composer left out at import. Import and the editor keep such a selector, so the target can still be filled in.
    - **Kill-chain values** are free text without control characters.
    - **Timestamps** follow RFC 3339 in UTC, including a leap second as `23:59:60` on the last day of a month.
    - **Identifiers** follow `type--UUID` with a lowercase type name. The UUID's hex digits may be written in either case (RFC 4122) and are stored in lowercase at import and editor commit; the import message gives the number of values lowercased.
