@@ -114,6 +114,9 @@ Update strategy:
 - `getAssignmentInstanceId`
 - `generateUUID`
 - `generateStixId`
+- `lowercaseStixId`
+- `isStixRefProperty`
+- `lowercaseStixRef`
 - `uuidv5`
 - `sha1Bytes`
 - `mitigationStixId`
@@ -465,7 +468,6 @@ Update strategy:
 - `isValidStructuralValue`
 - `requireStructuralValue`
 - `requireStructuralValueOrEmpty`
-- `isSafeHttpUrl`
 
 ### Object Model / Editor / Renderers
 

@@ -9,8 +9,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
 import {
-  ALL_PHASES, ASSIGNMENT_KEYS, EXPORT_NAME, NATIVE_EXPORT_KEYS, dispatchDragAndDrop, exportNative, expectInertRender,
-  expectIsoTimestampWithin, expectNativeExportsEquivalent, expectNoExternalRequests,
+  ALL_PHASES, ASSIGNMENT_KEYS, EXPORT_NAME, NATIVE_EXPORT_KEYS, UUID, clearToast, dispatchDragAndDrop, exportNative,
+  exportStix, expectInertRender, expectIsoTimestampWithin, expectNativeExportsEquivalent, expectNoExternalRequests,
   importNative, openApp, readState, withFreshContext,
 } from './helpers/roundtrip';
 import {
@@ -1161,6 +1161,192 @@ test.describe('RT-05 custom type name limit', () => {
       expect(restored.customTypeName).toBe(TYPE_NAME);
       // The name on the same object is bounded by the name policy, not the label one.
       expect(restored.name).toBe('RT Custom Type Probe');
+    });
+  });
+});
+
+test.describe('Custom STIX identifiers with uppercase UUID hex', () => {
+  // STIX 2.1 section 2.9 requires an RFC 4122 UUID, whose hex digits are case-insensitive on
+  // input, and a lowercase type name. Library keys and custom assignments are stored in
+  // lowercase and reported, so every assignment still finds its library entry.
+  const MALWARE_UPPER = 'malware--AAAAAAAA-BBBB-4CCC-8DDD-EEEEEEEEEEEE';
+  const MALWARE = 'malware--aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
+  const TOOL_UPPER = 'tool--CCCCCCCC-DDDD-4EEE-8FFF-000000000000';
+  const TOOL = 'tool--cccccccc-dddd-4eee-8fff-000000000000';
+  const IDENTITY_UPPER = 'identity--0A0B0C0D-1E1F-4A2B-8C3D-4E5F6A7B8C9D';
+  const IDENTITY = 'identity--0a0b0c0d-1e1f-4a2b-8c3d-4e5f6a7b8c9d';
+  const TYPE_CASE = 'Malware--11111111-2222-4333-8444-555555555555';
+  const custom = (id: string, n: number) => ({ id, instanceId: `itm-u-${n}`, type: 'custom', metadata: {} });
+
+  function upperFixture() {
+    return {
+      assignments: {
+        'IN:reconnaissance': {
+          techniques: [], capecs: [], cwes: [],
+          // TOOL is keyed in lowercase below and referenced here in uppercase.
+          customItems: [custom(MALWARE_UPPER, 1), custom(TOOL_UPPER, 2), custom(TYPE_CASE, 3)],
+          groups: [{ groupId: 'grp-u-1', label: 'Upper group', items: [custom(MALWARE_UPPER, 4)] }],
+          layout: [],
+        },
+        // A phase the kill chain does not have is not imported, so its ids are not counted.
+        'XX:unknown-phase': {
+          techniques: [], capecs: [], cwes: [], customItems: [custom(TOOL_UPPER, 5)], groups: [], layout: [],
+        },
+      },
+      customLibrary: {
+        [MALWARE_UPPER]: { stixType: 'malware', name: 'Upper malware', is_family: false },
+        [TOOL]: { stixType: 'tool', name: 'Lower tool' },
+        [TYPE_CASE]: { stixType: 'malware', name: 'Type-case malware', is_family: false },
+        // Two keys that differ only in case name one object: the first is kept.
+        [IDENTITY]: { stixType: 'identity', name: 'First identity', identity_class: 'organization' },
+        [IDENTITY_UPPER]: { stixType: 'identity', name: 'Second identity', identity_class: 'organization' },
+      },
+    };
+  }
+
+  test('imports keys and assignments in lowercase, reports them and exports resolvable ids', async ({ page, browser }) => {
+    await openApp(page);
+    await clearToast(page);
+    await page.locator('#import-killchain-input').setInputFiles({
+      name: 'uppercase-ids.json', mimeType: 'application/json', buffer: bytes(upperFixture()),
+    });
+    await expect(page.locator('#toast')).not.toBeEmpty();
+
+    const state = await readState(page);
+    // A capital in the type name is still refused, as key and as assignment.
+    expect(Object.keys(state.customLibrary).sort()).toEqual([IDENTITY, MALWARE, TOOL]);
+    expect(state.customLibrary[MALWARE]).toMatchObject({ id: MALWARE, name: 'Upper malware' });
+    expect(state.customLibrary[TOOL]).toMatchObject({ id: TOOL, name: 'Lower tool' });
+    expect(state.customLibrary[IDENTITY]).toMatchObject({ id: IDENTITY, name: 'First identity' });
+    const recon = state.assignments['IN:reconnaissance'];
+    expect(recon.customItems.map((a: any) => a.id)).toEqual([MALWARE, TOOL]);
+    expect(recon.groups[0].items.map((a: any) => a.id)).toEqual([MALWARE]);
+    // Two keys and three assignments were lowercased; the skipped case variant counts too.
+    await expect(page.locator('#toast')).toHaveText('Imported kill chain, 5 identifiers lowercased');
+
+    const native = await exportNative(page);
+    expect(Object.keys(native.json.customLibrary).sort()).toEqual([IDENTITY, MALWARE, TOOL]);
+    const exportedRecon = native.json.assignments['IN:reconnaissance'];
+    expect(exportedRecon.customItems.map((a: any) => a.id)).toEqual([MALWARE, TOOL]);
+    expect(exportedRecon.groups[0].items.map((a: any) => a.id)).toEqual([MALWARE]);
+
+    const bundle = (await exportStix(page)).json;
+    const ids = new Set(bundle.objects.map((o: any) => o.id));
+    for (const id of [IDENTITY, MALWARE, TOOL]) expect(ids.has(id), `${id} exported`).toBe(true);
+    for (const id of ids) expect(id).toMatch(new RegExp(`^[a-z][a-z0-9-]*--${UUID}$`));
+    const edges = bundle.objects.filter((o: any) => o.type === 'relationship');
+    expect(edges.length).toBeGreaterThan(0);
+    for (const edge of edges) {
+      expect(ids.has(edge.source_ref), `dangling source_ref ${edge.source_ref}`).toBe(true);
+      expect(ids.has(edge.target_ref), `dangling target_ref ${edge.target_ref}`).toBe(true);
+    }
+
+    // The lowercase export reimports with nothing left to lowercase.
+    await withFreshContext(browser, async freshPage => {
+      await importNative(freshPage, native.buffer, native.name);
+      const restored = await readState(freshPage);
+      expect(Object.keys(restored.customLibrary).sort()).toEqual([IDENTITY, MALWARE, TOOL]);
+      expect(restored.assignments['IN:reconnaissance'].customItems.map((a: any) => a.id))
+        .toEqual([MALWARE, TOOL]);
+    });
+  });
+
+  test('a case variant after the 500-entry library limit is still reported', async ({ page }) => {
+    // The library keeps at most 500 entries. A later key naming one of them is skipped but
+    // counted; a new object beyond the limit is not imported, so it is not counted.
+    const key = (n: number) => `tool--aaaaaaaa-0000-4000-8000-${String(n).padStart(12, '0')}`;
+    const customLibrary: Record<string, unknown> = {};
+    for (let n = 0; n < 500; n++) customLibrary[key(n)] = { stixType: 'tool', name: `Tool ${n}` };
+    customLibrary['tool--AAAAAAAA-0000-4000-8000-000000000000'] = { stixType: 'tool', name: 'Variant' };
+    customLibrary['tool--BBBBBBBB-0000-4000-8000-000000000000'] = { stixType: 'tool', name: 'Over limit' };
+
+    await openApp(page);
+    await clearToast(page);
+    await page.locator('#import-killchain-input').setInputFiles({
+      name: 'library-limit.json', mimeType: 'application/json',
+      buffer: bytes({ assignments: {}, customLibrary }),
+    });
+    await expect(page.locator('#toast')).not.toBeEmpty();
+
+    const library = (await readState(page)).customLibrary;
+    expect(Object.keys(library)).toHaveLength(500);
+    expect(library[key(0)].name).toBe('Tool 0');
+    await expect(page.locator('#toast')).toHaveText('Imported kill chain, 1 identifier lowercased');
+  });
+
+  test('an assignment that names its object in entityId is lowercased and reported', async ({ page }) => {
+    // Assignments may carry the id in entityId instead of id; that form is lowercased and
+    // counted too, ungrouped and grouped.
+    const byEntityId = (n: number) => ({ entityId: MALWARE_UPPER, instanceId: `itm-e-${n}`, type: 'custom', metadata: {} });
+    const fixture = {
+      assignments: {
+        'IN:reconnaissance': {
+          techniques: [], capecs: [], cwes: [],
+          customItems: [byEntityId(1)],
+          groups: [{ groupId: 'grp-e-1', label: 'Entity group', items: [byEntityId(2)] }],
+          layout: [],
+        },
+      },
+      customLibrary: { [MALWARE]: { stixType: 'malware', name: 'Lower malware', is_family: false } },
+    };
+
+    await openApp(page);
+    await clearToast(page);
+    await page.locator('#import-killchain-input').setInputFiles({
+      name: 'entity-id.json', mimeType: 'application/json', buffer: bytes(fixture),
+    });
+    await expect(page.locator('#toast')).not.toBeEmpty();
+
+    const recon = (await readState(page)).assignments['IN:reconnaissance'];
+    expect(recon.customItems.map((a: any) => a.id)).toEqual([MALWARE]);
+    expect(recon.groups[0].items.map((a: any) => a.id)).toEqual([MALWARE]);
+    await expect(page.locator('#toast')).toHaveText('Imported kill chain, 2 identifiers lowercased');
+  });
+
+  test('library references that are ids are lowercased, counted and exported', async ({ page, browser }) => {
+    // Properties ending in _ref or _refs hold identifiers (STIX 2.1 section 3.1). Valid ids are
+    // lowercased like the keys, list entries that become equal are both kept, other values stay.
+    const REPORT = 'report--abababab-3434-4565-8787-909090909090';
+    const REPORT_UPPER = 'report--ABABABAB-3434-4565-8787-909090909090';
+    const ANALYSIS = 'malware-analysis--23232323-4545-4676-8989-010101010101';
+    const FILE_UPPER = 'file--0A0A0A0A-1B1B-4C2C-8D3D-4E4E4E4E4E4E';
+    const FILE = 'file--0a0a0a0a-1b1b-4c2c-8d3d-4e4e4e4e4e4e';
+    const expectedRefs = [MALWARE, MALWARE, TYPE_CASE, 'not an id'];
+    const fixture = {
+      assignments: {},
+      customLibrary: {
+        [MALWARE]: { stixType: 'malware', name: 'Malware', is_family: false },
+        [REPORT]: { stixType: 'report', name: 'Report', object_refs: [MALWARE_UPPER, MALWARE, TYPE_CASE, 'not an id'] },
+        // A skipped case variant counts for its key only, not for its references.
+        [REPORT_UPPER]: { stixType: 'report', name: 'Report variant', object_refs: [MALWARE_UPPER] },
+        [ANALYSIS]: { stixType: 'malware-analysis', name: 'Analysis', product: 'scanner', sample_ref: FILE_UPPER },
+      },
+    };
+
+    await openApp(page);
+    await clearToast(page);
+    await page.locator('#import-killchain-input').setInputFiles({
+      name: 'library-refs.json', mimeType: 'application/json', buffer: bytes(fixture),
+    });
+    await expect(page.locator('#toast')).not.toBeEmpty();
+
+    const library = (await readState(page)).customLibrary;
+    expect(library[REPORT]).toMatchObject({ name: 'Report', object_refs: expectedRefs });
+    expect(library[ANALYSIS].sample_ref).toBe(FILE);
+    // One variant key and two references were lowercased.
+    await expect(page.locator('#toast')).toHaveText('Imported kill chain, 3 identifiers lowercased');
+
+    const native = await exportNative(page);
+    expect(native.json.customLibrary[REPORT].object_refs).toEqual(expectedRefs);
+    expect(native.json.customLibrary[ANALYSIS].sample_ref).toBe(FILE);
+    const bundle = (await exportStix(page)).json;
+    expect(bundle.objects.find((o: any) => o.id === REPORT).object_refs).toEqual(expectedRefs);
+
+    // The lowercase export reimports with nothing left to lowercase.
+    await withFreshContext(browser, async freshPage => {
+      await importNative(freshPage, native.buffer, native.name);
+      await expect(freshPage.locator('#toast')).toHaveText('Imported kill chain');
+      expect((await readState(freshPage)).customLibrary[REPORT].object_refs).toEqual(expectedRefs);
     });
   });
 });
