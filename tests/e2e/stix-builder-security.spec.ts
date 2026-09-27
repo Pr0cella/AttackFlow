@@ -703,7 +703,7 @@ test.describe('Composer evidence and structural values', () => {
     const byType = async (type: string) => objectState(page, source.find((o: any) => o.type === type).id);
     expect(Object.prototype.hasOwnProperty.call(await byType('relationship'), 'source_ref')).toBe(false);
     expect(Object.prototype.hasOwnProperty.call(await byType('indicator'), 'valid_from')).toBe(false);
-    expect((await byType('malware')).kill_chain_phases).toEqual([]);
+    expect(Object.prototype.hasOwnProperty.call(await byType('malware'), 'kill_chain_phases')).toBe(false);
     expect((await byType('report')).object_refs).toEqual([]);
 
     // The unfilled marking row stays so the analyst can finish it, and validation flags it.
@@ -1105,6 +1105,106 @@ test.describe('Composer evidence and structural values', () => {
     expect((await uploadBundle(page, [empty, allDropped])).toast).toBe('Bundle imported');
     expect(Object.keys(await objectState(page, empty.id))).not.toContain('external_references');
     expect(Object.keys(await objectState(page, allDropped.id))).not.toContain('external_references');
+  });
+
+  // The same rule for every other optional list (STIX 2.1 section 2.12), whether the list arrives
+  // empty, loses all its entries at import or is not a list, on SDOs, SROs and SCOs. A required
+  // list must be present, so an empty one stays.
+  test('empty optional lists are omitted at import and export', async ({ page }) => {
+    await openBuilder(page);
+    const LISTS = ['kill_chain_phases', 'labels', 'malware_types', 'object_marking_refs', 'granular_markings', 'sample_refs'];
+    const empty = sdo('malware', '5', { name: 'm', is_family: false, ...Object.fromEntries(LISTS.map((key) => [key, []])) });
+    const allDropped = sdo('malware', '6', {
+      name: 'd', is_family: false, labels: [''], kill_chain_phases: [{ kill_chain_name: '', phase_name: '' }],
+    });
+    const notLists = sdo('indicator', '7', {
+      name: 'i', pattern: PATTERN, pattern_type: 'stix', valid_from: T0, labels: 5, kill_chain_phases: 'x',
+    });
+    const sighting = sdo('sighting', '8', {
+      sighting_of_ref: empty.id, observed_data_refs: [], where_sighted_refs: [stixId('identity', '9')],
+    });
+    const report = sdo('report', 'a', { name: 'r', published: T0, object_refs: [] });
+    const email = sco('email-message', 'b', { is_multipart: false, to_refs: [], received_lines: [] });
+    const traffic = sco('network-traffic', 'c', { protocols: [] });
+    const omitted: Array<[string, string[]]> = [
+      [empty.id, LISTS],
+      [allDropped.id, ['labels', 'kill_chain_phases']],
+      [notLists.id, ['labels', 'kill_chain_phases']],
+      [sighting.id, ['observed_data_refs']],
+      [email.id, ['to_refs', 'received_lines']],
+    ];
+    const expectOmitted = (objects: any[]) => omitted.forEach(([id, keys]) => {
+      const present = Object.keys(objects.find((o) => o.id === id));
+      keys.forEach((key) => expect(present, `${id} ${key}`).not.toContain(key));
+    });
+
+    expect((await uploadBundle(page, [empty, allDropped, notLists, sighting, report, email, traffic])).toast).toBe('Bundle imported');
+    const state = await page.evaluate(() => JSON.parse(JSON.stringify((eval('state') as any).bundle.objects)));
+    expectOmitted(state);
+    expect((await objectState(page, sighting.id)).where_sighted_refs).toEqual([stixId('identity', '9')]);
+    expect((await objectState(page, report.id)).object_refs).toEqual([]);
+    expect((await objectState(page, traffic.id)).protocols).toEqual([]);
+
+    const { objects: exported } = await exportObjects(page);
+    expectOmitted(exported);
+    expect(exported.find((o) => o.id === report.id).object_refs).toEqual([]);
+    expect(exported.find((o) => o.id === traffic.id).protocols).toEqual([]);
+  });
+
+  // Removing the last entry of an optional list removes the property (section 2.12); a required
+  // list stays as an empty placeholder for the analyst to fill.
+  test('the editor removes an optional list when its last entry is removed', async ({ page }) => {
+    await openBuilder(page);
+    const malware = sdo('malware', '5', {
+      name: 'm', is_family: false, labels: ['a', 'b'], object_marking_refs: [TLP],
+      kill_chain_phases: [{ kill_chain_name: 'k', phase_name: 'p' }],
+      granular_markings: [{ selectors: ['name'], marking_ref: TLP }],
+    });
+    const report = sdo('report', 'a', { name: 'r', published: T0, object_refs: [malware.id] });
+    expect((await uploadBundle(page, [malware, report])).toast).toBe('Bundle imported');
+
+    await page.locator('#object-list .object-item', { hasText: malware.id }).click();
+    await page.locator('#editor-panel [data-action="remove-list"][data-list-field="labels"][data-index="1"]').click();
+    expect((await objectState(page, malware.id)).labels, 'a remaining entry keeps the list').toEqual(['a']);
+    const removals: Array<[string, string]> = [
+      ['kill_chain_phases', '[data-action="remove-kc"]'],
+      ['labels', '[data-action="remove-list"][data-list-field="labels"]'],
+      ['object_marking_refs', '[data-action="remove-list"][data-list-field="object_marking_refs"]'],
+      ['granular_markings', '[data-action="remove-gm"]'],
+    ];
+    for (const [key, button] of removals) {
+      await page.locator(`#editor-panel ${button}`).click();
+      expect(Object.keys(await objectState(page, malware.id)), key).not.toContain(key);
+    }
+
+    await page.locator('#object-list .object-item', { hasText: report.id }).click();
+    await page.locator('#editor-panel [data-action="remove-list"][data-list-field="object_refs"]').click();
+    expect((await objectState(page, report.id)).object_refs).toEqual([]);
+    expect(await page.evaluate(() => (window as any).validateBundle())).toEqual([`report ${report.id} missing object_refs`]);
+  });
+
+  // An empty optional list that reaches state by another route is reported; an empty required
+  // list is reported once, as missing.
+  test('validation reports empty optional lists and an empty required list once', async ({ page }) => {
+    await openBuilder(page);
+    await page.evaluate(() => (window as any).addObject('malware'));
+    const id = await page.evaluate(() => (window as any).getActiveObject().id);
+    const keys = ['labels', 'object_marking_refs', 'granular_markings', 'malware_types', 'kill_chain_phases'];
+    const issues = await page.evaluate((listKeys) => {
+      const object = (window as any).getActiveObject();
+      Object.assign(object, { name: 'm', is_family: false }, Object.fromEntries(listKeys.map((key) => [key, []])));
+      return (window as any).validateBundle() as string[];
+    }, keys);
+    expect([...issues].sort()).toEqual(keys.map((key) => `malware ${id} ${key} must not be an empty list`).sort());
+
+    await page.evaluate(() => (window as any).addObject('report'));
+    const reportId = await page.evaluate(() => {
+      Object.assign((window as any).getActiveObject(), { name: 'r', published: '2026-01-01T00:00:00.000Z', object_refs: [] });
+      return (window as any).getActiveObject().id;
+    });
+    const reportIssues = (await page.evaluate(() => (window as any).validateBundle() as string[]))
+      .filter((issue) => issue.includes(reportId));
+    expect(reportIssues).toEqual([`report ${reportId} missing object_refs`]);
   });
 
   // Clearing an optional reference field removes it instead of storing '' or {}; source_name is

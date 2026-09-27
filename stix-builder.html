@@ -2279,7 +2279,7 @@
                 if (isDangerousObjectKey(field.key)) return;
                 if (!hasOwn(obj, field.key)) return;
                 const value = sanitizeImportedFieldValue(field, obj[field.key], report);
-                if (value !== null && value !== undefined && value !== '') {
+                if (value !== null && value !== undefined && value !== '' && !isEmptyOptionalList(clean, field.key, value)) {
                     clean[field.key] = value;
                 }
             });
@@ -2480,6 +2480,21 @@
             return valid;
         }
 
+        // Empty lists are prohibited in place of an omitted optional property (STIX 2.1 section
+        // 2.12), so an optional list is removed instead. A required list must be present, so an
+        // empty one stays for the analyst to fill and validation reports it as missing.
+        const LIST_FIELD_TYPES = new Set([
+            'list', 'list:open-vocab', 'object-refs', 'object-marking-refs',
+            'kill-chain-phases', 'granular-markings', 'external-references'
+        ]);
+
+        function isEmptyOptionalList(obj, key, value) {
+            if (!Array.isArray(value) || value.length) return false;
+            const def = resolveStixObjectDefinition(obj.type);
+            const common = def?.category !== 'sco' ? (ACTIVE_STIX_COMMON_PROPERTIES.required || []) : [];
+            return ![...common, ...(def?.required || [])].some((field) => field.key === key);
+        }
+
         function hasValue(value, type) {
             if (type === 'boolean') return value === true || value === false;
             if (type === 'integer' || type === 'number') return value !== null && value !== undefined && value !== '';
@@ -2493,6 +2508,10 @@
             getEditableFields(obj).forEach((field) => {
                 const value = obj[field.key];
                 if (value === undefined || value === null || value === '') return;
+                if (LIST_FIELD_TYPES.has(field.type) && isEmptyOptionalList(obj, field.key, value)) {
+                    issues.push(`${obj.type} ${obj.id} ${field.key} must not be an empty list`);
+                    return;
+                }
                 switch (field.type) {
                     case 'integer':
                         if (!Number.isInteger(value)) issues.push(`${obj.type} ${obj.id} ${field.key} must be integer`);
@@ -2517,12 +2536,11 @@
                         break;
                     case 'external-references':
                         // STIX 2.1 sections 2.5.1 and 2.5.2; a url is any URL reference, so its
-                        // scheme is not checked. An empty list is prohibited (section 2.12).
+                        // scheme is not checked. An empty list is reported above (section 2.12).
                         if (!Array.isArray(value)) {
                             issues.push(`${obj.type} ${obj.id} ${field.key} must be list`);
                             break;
                         }
-                        if (!value.length) issues.push(`${obj.type} ${obj.id} ${field.key} must not be an empty list`);
                         value.forEach((ref) => {
                             if (typeof ref?.source_name !== 'string') issues.push(`${obj.type} ${obj.id} external_references missing source_name`);
                             else if (!ref.source_name.trim()) issues.push(`${obj.type} ${obj.id} external_references entry has an empty source_name`);
@@ -2785,6 +2803,7 @@
                 const key = target.dataset.listField;
                 const index = parseInt(target.dataset.index, 10);
                 obj[key].splice(index, 1);
+                if (isEmptyOptionalList(obj, key, obj[key])) delete obj[key];
                 renderEditor();
                 return;
             }
@@ -2823,6 +2842,7 @@
                 const key = target.dataset.kcField;
                 const index = parseInt(target.dataset.index, 10);
                 obj[key].splice(index, 1);
+                if (isEmptyOptionalList(obj, key, obj[key])) delete obj[key];
                 renderEditor();
                 return;
             }
@@ -2839,6 +2859,7 @@
                 const key = target.dataset.gmField;
                 const index = parseInt(target.dataset.index, 10);
                 obj[key].splice(index, 1);
+                if (isEmptyOptionalList(obj, key, obj[key])) delete obj[key];
                 renderEditor();
                 return;
             }

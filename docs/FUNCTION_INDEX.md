@@ -524,6 +524,7 @@ Update strategy:
 - `getEditableFields`
 - `getStructuralFieldType`
 - `setInputValidity`
+- `isEmptyOptionalList`
 - `hasValue`
 - `validateObjectFields`
 - `sanitizeValue`
