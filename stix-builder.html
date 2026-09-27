@@ -1759,11 +1759,11 @@
                 case 'external-references':
                     return renderExternalReferencesField(key, value || []);
                 case 'dictionary':
-                    return renderDictionaryField(key, value || {});
+                    return renderDictionaryField(key, getDictRows(obj, field.key));
                 case 'hashes':
-                    return renderHashesField(key, value || {});
+                    return renderHashesField(key, getDictRows(obj, field.key));
                 case 'extensions':
-                    return renderExtensionsField(key, value || {});
+                    return renderExtensionsField(key, getDictRows(obj, field.key, true));
                 case 'marking-definition':
                     return renderMarkingDefinitionField(obj, key, value || {});
                 default:
@@ -1880,7 +1880,7 @@
                         <input type="text" data-ref-field="${key}" data-index="${index}" data-ref-key="description" placeholder="description" value="${InputSecurity.encodeHtmlEntities(item.description || '')}">
                         <input type="text" data-ref-field="${key}" data-index="${index}" data-ref-key="url" placeholder="url" value="${InputSecurity.encodeHtmlEntities(item.url || '')}">
                         <input type="text" data-ref-field="${key}" data-index="${index}" data-ref-key="external_id" placeholder="external_id" value="${InputSecurity.encodeHtmlEntities(item.external_id || '')}">
-                        ${renderReferenceHashesField(key, index, item.hashes || {})}
+                        ${renderReferenceHashesField(key, index, getDictRows(item, 'hashes'))}
                     </div>
                     <button class="mini-btn danger" data-action="remove-ref" data-ref-field="${key}" data-index="${index}">Remove</button>
                 </div>
@@ -1893,10 +1893,9 @@
             `;
         }
 
-        function renderReferenceHashesField(refKey, index, hashes) {
+        function renderReferenceHashesField(refKey, index, rows) {
             const fieldKey = `refhash-${refKey}-${index}`;
-            const entries = Object.entries(hashes || {});
-            const items = entries.map(([k, v], idx) => `
+            const items = rows.map(([k, v], idx) => `
                 <div class="list-item">
                     <div>
                         <input type="text" data-refhash-field="${fieldKey}" data-ref-root="${refKey}" data-ref-index="${index}" data-index="${idx}" data-refhash-role="key" value="${InputSecurity.encodeHtmlEntities(k || '')}" placeholder="hash type">
@@ -1936,9 +1935,8 @@
             `;
         }
 
-        function renderDictionaryField(key, values, prefix = 'dict', meta = {}) {
-            const entries = Object.entries(values || {});
-            const items = entries.map(([k, v], index) => `
+        function renderDictionaryField(key, rows, prefix = 'dict', meta = {}) {
+            const items = rows.map(([k, v], index) => `
                 <div class="list-item">
                     <div>
                         <input type="text" data-${prefix}-field="${key}" data-index="${index}" data-${prefix}-role="key" ${meta.root ? `data-ext-root="${meta.root}" data-ext-index="${meta.extIndex}"` : ''} value="${InputSecurity.encodeHtmlEntities(k || '')}" placeholder="key">
@@ -1955,9 +1953,8 @@
             `;
         }
 
-        function renderHashesField(key, values, inline, prefix = 'hash') {
-            const entries = Object.entries(values || {});
-            const items = entries.map(([k, v], index) => `
+        function renderHashesField(key, rows, inline, prefix = 'hash') {
+            const items = rows.map(([k, v], index) => `
                 <div class="list-item">
                     <div>
                         <input type="text" data-${prefix}-field="${key}" data-index="${index}" data-${prefix}-role="key" value="${InputSecurity.encodeHtmlEntities(k || '')}" placeholder="hash type">
@@ -1975,13 +1972,12 @@
             return inline ? wrapper : `<div class="hint">${wrapper}</div>`;
         }
 
-        function renderExtensionsField(key, values) {
-            const entries = Object.entries(values || {});
-            const items = entries.map(([k, v], index) => `
+        function renderExtensionsField(key, rows) {
+            const items = rows.map(([k, v], index) => `
                 <div class="list-item">
                     <div>
                         <input type="text" data-ext-field="${key}" data-index="${index}" data-ext-role="key" value="${InputSecurity.encodeHtmlEntities(k || '')}" placeholder="extension id">
-                        ${renderDictionaryField(`${key}-ext-${index}`, v || {}, 'extdict', { root: key, extIndex: index })}
+                        ${renderDictionaryField(`${key}-ext-${index}`, v, 'extdict', { root: key, extIndex: index })}
                     </div>
                     <button class="mini-btn danger" data-action="remove-ext" data-ext-field="${key}" data-index="${index}">Remove</button>
                 </div>
@@ -2123,10 +2119,12 @@
         function sanitizeExtensions(raw, where, maxItems = INPUT_LIMITS.maxListItems, report) {
             const out = createSafeObject();
             if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
-            const entries = Object.entries(raw).slice(0, maxItems);
-            const clashing = clashingExtensionKeys(entries.map(([k]) => k));
-            entries.forEach(([k, v]) => {
-                const name = requireStructuralValue('extension-name', k, `${where} key`);
+            const entries = Object.entries(raw).slice(0, maxItems)
+                .map(([k, v]) => [requireStructuralValue('extension-name', k, `${where} key`), v])
+                // An extension with an empty body is not valid STIX (sections 2.3 and 3.2), so it is left out.
+                .filter(([, v]) => !isEmptyDictionary(v));
+            const clashing = clashingExtensionKeys(entries.map(([name]) => name));
+            entries.forEach(([name, v]) => {
                 out[toStoredExtensionKey(name, clashing, report)] = sanitizeDictionary(v || {}, `${where}.${name}`);
             });
             return out;
@@ -2500,6 +2498,9 @@
                         if (!keysValid(value, 'extension-name') || Object.values(value).some((ext) => !keysValid(ext))) {
                             issues.push(`${prefix} invalid ${field.key} key`);
                         }
+                        // An extension must have content (STIX 2.1 sections 2.3 and 3.2).
+                        Object.entries(value).filter(([, ext]) => isEmptyDictionary(ext))
+                            .forEach(([name]) => issues.push(`${prefix} ${field.key} ${name} must not be an empty dictionary`));
                         break;
                     default:
                         break;
@@ -2561,6 +2562,68 @@
         function commitDictionary(obj, key, dict) {
             if (Object.keys(dict).length) obj[key] = dict;
             else delete obj[key];
+        }
+
+        // The rows shown for a dictionary, hashes or extensions field, unfilled ones included, as
+        // [key, value] pairs; an extension's value is the rows of its body. As with list rows, an
+        // unfilled row is editor state: only rows with a key are stored, and a draft is used only
+        // while the rows it would store equal the stored value.
+        const dictRowDrafts = new WeakMap();
+
+        function rowsToDictionary(rows) {
+            return safeFromEntries(rows.filter(([key]) => !isNoValue(key)));
+        }
+
+        // An extension is stored only with a name and at least one body entry (STIX 2.1 sections
+        // 2.3 and 3.2).
+        function isStoredExtensionRow([name, body]) {
+            return !isNoValue(name) && Object.keys(rowsToDictionary(body)).length > 0;
+        }
+
+        // Every named row counts for a clash, stored or not, so a body emptied for a moment does
+        // not rename the other name and merge the two extensions once it is filled again.
+        function extensionRowClashes(rows) {
+            return clashingExtensionKeys(rows.map(([name]) => name));
+        }
+
+        function rowsToExtensions(rows) {
+            const stored = rows.filter(isStoredExtensionRow);
+            const clashing = extensionRowClashes(rows);
+            return safeFromEntries(stored.map(([name, body]) => [toStoredExtensionKey(name, clashing), rowsToDictionary(body)]));
+        }
+
+        function isSameStoredValue(a, b) {
+            if (a && b && typeof a === 'object' && typeof b === 'object') {
+                const left = Object.entries(a);
+                const right = Object.entries(b);
+                return left.length === right.length
+                    && left.every(([key, value], i) => key === right[i][0] && isSameStoredValue(value, right[i][1]));
+            }
+            return a === b;
+        }
+
+        function copyRows(rows) {
+            return rows.map(([key, value]) => [key, Array.isArray(value) ? copyRows(value) : value]);
+        }
+
+        function getDictRows(container, key, isExtensions = false) {
+            const stored = container?.[key] || createSafeObject();
+            const draft = dictRowDrafts.get(container)?.get(key);
+            const toStored = isExtensions ? rowsToExtensions : rowsToDictionary;
+            if (draft && isSameStoredValue(toStored(draft), stored)) return copyRows(draft);
+            const bodyRows = (body) => (body && typeof body === 'object' ? Object.entries(body) : []);
+            return Object.entries(stored).map(([k, v]) => [k, isExtensions ? bodyRows(v) : v]);
+        }
+
+        function commitDictRows(container, key, rows, isExtensions = false) {
+            if (isExtensions) {
+                // A stored extension's row shows its stored name.
+                const clashing = extensionRowClashes(rows);
+                rows.filter(isStoredExtensionRow).forEach((row) => { row[0] = toStoredExtensionKey(row[0], clashing); });
+            }
+            if (!dictRowDrafts.has(container)) dictRowDrafts.set(container, new Map());
+            dictRowDrafts.get(container).set(key, rows);
+            commitDictionary(container, key, isExtensions ? rowsToExtensions(rows) : rowsToDictionary(rows));
         }
 
         // The rows shown for a list field, blank ones included. A blank row is editor state, not
@@ -2773,18 +2836,18 @@
 
             if (target.dataset.dictField) {
                 const key = target.dataset.dictField;
-                const collected = collectDictionary(key, 'dict');
-                if (!collected) return;
-                commitDictionary(obj, key, collected);
+                const rows = collectDictionaryRows(key, 'dict');
+                if (!rows) return;
+                commitDictRows(obj, key, rows);
                 renderBundlePreview();
                 return;
             }
 
             if (target.dataset.hashField) {
                 const key = target.dataset.hashField;
-                const collected = collectDictionary(key, 'hash');
-                if (!collected) return;
-                commitDictionary(obj, key, collected);
+                const rows = collectDictionaryRows(key, 'hash');
+                if (!rows) return;
+                commitDictRows(obj, key, rows);
                 renderBundlePreview();
                 return;
             }
@@ -2793,22 +2856,27 @@
                 const fieldKey = target.dataset.refhashField;
                 const root = target.dataset.refRoot;
                 const index = parseInt(target.dataset.refIndex, 10);
-                const collected = collectDictionary(fieldKey, 'refhash');
-                if (!collected) return;
+                const rows = collectDictionaryRows(fieldKey, 'refhash');
+                if (!rows) return;
                 if (!Array.isArray(obj[root])) obj[root] = [];
                 if (!obj[root][index]) obj[root][index] = {};
                 // Empty hashes are omitted, never stored (STIX 2.1 section 2.3).
-                if (Object.keys(collected).length) obj[root][index].hashes = collected;
-                else delete obj[root][index].hashes;
+                commitDictRows(obj[root][index], 'hashes', rows);
                 renderBundlePreview();
                 return;
             }
 
-            if (target.dataset.extRoot) {
-                const key = target.dataset.extRoot;
-                const collected = collectExtensions(key);
-                if (!collected) return;
-                commitDictionary(obj, key, collected);
+            // An edit inside an extension, or of its name.
+            if (target.dataset.extRoot || (target.dataset.extField && target.dataset.extRole === 'key')) {
+                const key = target.dataset.extRoot || target.dataset.extField;
+                const nameInputs = [...document.querySelectorAll(`[data-ext-field="${key}"][data-ext-role="key"]`)];
+                const rows = collectExtensionRows(key, nameInputs);
+                if (!rows) return;
+                commitDictRows(obj, key, rows, true);
+                // Fields show the stored form only once the extensions are actually committed.
+                nameInputs.forEach((input, index) => {
+                    if (input.value !== rows[index][0]) commitIdentifierInput(input);
+                });
                 renderBundlePreview();
                 return;
             }
@@ -2823,52 +2891,34 @@
             }
         }
 
-        function collectDictionary(fieldKey, prefix) {
+        // The shown rows of a dictionary field as [key, value] pairs, unfilled ones included.
+        // Returns null, and marks the offending key inputs, when any key is invalid, so the
+        // caller commits nothing rather than a partly rewritten dictionary.
+        function collectDictionaryRows(fieldKey, prefix) {
             const keyInputs = document.querySelectorAll(`[data-${prefix}-field="${fieldKey}"][data-${prefix}-role="key"]`);
             const valInputs = document.querySelectorAll(`[data-${prefix}-field="${fieldKey}"][data-${prefix}-role="value"]`);
-            // Returns null, and marks the offending key inputs, when any key is invalid, so the
-            // caller commits nothing rather than a partly rewritten dictionary.
             const keyKind = prefix === 'hash' || prefix === 'refhash' ? 'hash-key' : 'key';
-            const dict = createSafeObject();
             let valid = true;
-            keyInputs.forEach((input, index) => {
+            const rows = [...keyInputs].map((input, index) => {
                 const key = input.value;
-                if (!key.trim()) return;
-                if (!setInputValidity(input, isValidStructuralValue(keyKind, key))) {
-                    valid = false;
-                    return;
-                }
-                dict[key] = sanitizeValue(valInputs[index]?.value || '');
+                if (key.trim() && !setInputValidity(input, isValidStructuralValue(keyKind, key))) valid = false;
+                return [key, sanitizeValue(valInputs[index]?.value || '')];
             });
-            return valid ? dict : null;
+            return valid ? rows : null;
         }
 
-        function collectExtensions(fieldKey) {
-            const extKeys = document.querySelectorAll(`[data-ext-field="${fieldKey}"][data-ext-role="key"]`);
-            const clashing = clashingExtensionKeys([...extKeys].map((input) => input.value));
-            const dict = createSafeObject();
-            const lowered = [];
+        // The shown extension rows as [name, body rows] pairs, or null when a name or body key
+        // is invalid.
+        function collectExtensionRows(fieldKey, nameInputs) {
             let valid = true;
-            extKeys.forEach((input, index) => {
-                const key = input.value;
-                if (!key.trim()) return;
-                if (!setInputValidity(input, isValidStructuralValue('extension-name', key))) {
-                    valid = false;
-                    return;
-                }
-                const nested = collectDictionary(`${fieldKey}-ext-${index}`, 'extdict');
-                if (!nested) {
-                    valid = false;
-                    return;
-                }
-                const stored = toStoredExtensionKey(key, clashing);
-                if (stored !== key) lowered.push(input);
-                dict[stored] = nested;
+            const rows = nameInputs.map((input, index) => {
+                const name = input.value;
+                if (name.trim() && !setInputValidity(input, isValidStructuralValue('extension-name', name))) valid = false;
+                const body = collectDictionaryRows(`${fieldKey}-ext-${index}`, 'extdict');
+                if (!body) valid = false;
+                return [name, body || []];
             });
-            if (!valid) return null;
-            // Fields show the stored form only once the extensions are actually committed.
-            lowered.forEach((input) => commitIdentifierInput(input));
-            return dict;
+            return valid ? rows : null;
         }
 
         function handleEditorClick(event) {
@@ -2963,107 +3013,66 @@
                 return;
             }
 
-            if (target.dataset.action === 'add-dict') {
+            // An added dictionary, hashes or extension row is shown but stores nothing until its
+            // key is filled; Remove removes the row it belongs to.
+            if (target.dataset.action === 'add-dict' || target.dataset.action === 'remove-dict') {
                 const key = target.dataset.dictField;
-                obj[key] = obj[key] || createSafeObject();
-                obj[key]['key-' + Math.random().toString(36).slice(2, 7)] = '';
+                const rows = getDictRows(obj, key);
+                if (target.dataset.action === 'add-dict') rows.push(['', '']);
+                else rows.splice(parseInt(target.dataset.index, 10), 1);
+                commitDictRows(obj, key, rows);
                 renderEditor();
                 return;
             }
 
-            if (target.dataset.action === 'remove-dict') {
-                const key = target.dataset.dictField;
-                const entries = Object.entries(obj[key] || {});
-                entries.splice(parseInt(target.dataset.index, 10), 1);
-                commitDictionary(obj, key, safeFromEntries(entries));
-                renderEditor();
-                return;
-            }
-
-            if (target.dataset.action === 'add-hash') {
+            if (target.dataset.action === 'add-hash' || target.dataset.action === 'remove-hash') {
                 const key = target.dataset.hashField;
-                obj[key] = obj[key] || createSafeObject();
-                obj[key]['hash-' + Math.random().toString(36).slice(2, 7)] = '';
+                const rows = getDictRows(obj, key);
+                if (target.dataset.action === 'add-hash') rows.push(['', '']);
+                else rows.splice(parseInt(target.dataset.index, 10), 1);
+                commitDictRows(obj, key, rows);
                 renderEditor();
                 return;
             }
 
-            if (target.dataset.action === 'add-refhash') {
+            if (target.dataset.action === 'add-refhash' || target.dataset.action === 'remove-refhash') {
                 const root = target.dataset.refRoot;
                 const index = parseInt(target.dataset.refIndex, 10);
-                if (!Array.isArray(obj[root])) obj[root] = [];
-                if (!obj[root][index]) obj[root][index] = {};
-                obj[root][index].hashes = obj[root][index].hashes || createSafeObject();
-                obj[root][index].hashes['hash-' + Math.random().toString(36).slice(2, 7)] = '';
+                if (!Array.isArray(obj[root]) || !obj[root][index]) return;
+                const rows = getDictRows(obj[root][index], 'hashes');
+                if (target.dataset.action === 'add-refhash') rows.push(['', '']);
+                else rows.splice(parseInt(target.dataset.index, 10), 1);
+                commitDictRows(obj[root][index], 'hashes', rows);
                 renderEditor();
                 renderBundlePreview();
                 return;
             }
 
-            if (target.dataset.action === 'remove-hash') {
-                const key = target.dataset.hashField;
-                const entries = Object.entries(obj[key] || {});
-                entries.splice(parseInt(target.dataset.index, 10), 1);
-                commitDictionary(obj, key, safeFromEntries(entries));
-                renderEditor();
-                return;
-            }
-
-            if (target.dataset.action === 'remove-refhash') {
-                const root = target.dataset.refRoot;
-                const index = parseInt(target.dataset.refIndex, 10);
-                if (!Array.isArray(obj[root])) return;
-                if (!obj[root][index]) return;
-                const entries = Object.entries(obj[root][index].hashes || {});
-                entries.splice(parseInt(target.dataset.index, 10), 1);
-                if (entries.length) obj[root][index].hashes = safeFromEntries(entries);
-                else delete obj[root][index].hashes;
-                renderEditor();
-                renderBundlePreview();
-                return;
-            }
-
-            if (target.dataset.action === 'add-ext') {
+            // Removing an extension, or its last body entry, removes it from the object. A name kept
+            // as written because of a clash is stored lowercase once the clash is gone. An empty
+            // body that reached state another way is not stored again, so an add refreshes the
+            // preview and status too.
+            if (target.dataset.action === 'add-ext' || target.dataset.action === 'remove-ext') {
                 const key = target.dataset.extField;
-                obj[key] = obj[key] || createSafeObject();
-                obj[key]['extension-' + Math.random().toString(36).slice(2, 7)] = createSafeObject();
+                const rows = getDictRows(obj, key, true);
+                if (target.dataset.action === 'add-ext') rows.push(['', []]);
+                else rows.splice(parseInt(target.dataset.index, 10), 1);
+                commitDictRows(obj, key, rows, true);
                 renderEditor();
+                if (target.dataset.action === 'add-ext') renderBundlePreview();
                 return;
             }
 
-            if (target.dataset.action === 'add-extdict') {
+            if (target.dataset.action === 'add-extdict' || target.dataset.action === 'remove-extdict') {
                 const root = target.dataset.extRoot;
-                const extIndex = parseInt(target.dataset.extIndex, 10);
-                const entries = Object.entries(obj[root] || {});
-                const extKey = entries[extIndex]?.[0];
-                if (!extKey) return;
-                obj[root][extKey] = obj[root][extKey] || createSafeObject();
-                obj[root][extKey]['key-' + Math.random().toString(36).slice(2, 7)] = '';
+                const rows = getDictRows(obj, root, true);
+                const body = rows[parseInt(target.dataset.extIndex, 10)]?.[1];
+                if (!body) return;
+                if (target.dataset.action === 'add-extdict') body.push(['', '']);
+                else body.splice(parseInt(target.dataset.index, 10), 1);
+                commitDictRows(obj, root, rows, true);
                 renderEditor();
-                return;
-            }
-
-            if (target.dataset.action === 'remove-ext') {
-                const key = target.dataset.extField;
-                const entries = Object.entries(obj[key] || {});
-                entries.splice(parseInt(target.dataset.index, 10), 1);
-                // A name kept as written because of a clash is stored lowercase once the clash is gone.
-                const clashing = clashingExtensionKeys(entries.map(([k]) => k));
-                commitDictionary(obj, key, safeFromEntries(entries.map(([k, v]) => [toStoredExtensionKey(k, clashing), v])));
-                renderEditor();
-                return;
-            }
-
-            if (target.dataset.action === 'remove-extdict') {
-                const root = target.dataset.extRoot;
-                const extIndex = parseInt(target.dataset.extIndex, 10);
-                const entries = Object.entries(obj[root] || {});
-                const extKey = entries[extIndex]?.[0];
-                if (!extKey) return;
-                const dictEntries = Object.entries(obj[root][extKey] || {});
-                dictEntries.splice(parseInt(target.dataset.index, 10), 1);
-                obj[root][extKey] = safeFromEntries(dictEntries);
-                renderEditor();
+                if (target.dataset.action === 'add-extdict') renderBundlePreview();
                 return;
             }
         }
