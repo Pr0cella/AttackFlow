@@ -9240,6 +9240,7 @@
                 objects.push(sdo);
             }
             const customCount = objects.length;
+            const libraryById = new Map(objects.map(o => [o.id, o]));
 
             // Generate SROs for co-located items in same phase/group
             const relationshipSet = new Set();
@@ -9291,23 +9292,43 @@
             }
             for (const [techId, phases] of techniquePhases) {
                 const entity = state.library.techniques[techId];
+                const id = techniqueStixId(techId);
+                const external_references = [{
+                    source_name: 'mitre-attack',
+                    external_id: techId,
+                    url: `https://attack.mitre.org/techniques/${techId.replace('.', '/')}`
+                }];
+                const kill_chain_phases = [...phases].map(p => ({
+                    kill_chain_name: 'unified-kill-chain',
+                    phase_name: p
+                }));
+                // Without ATT&CK data for the technique, a library entry with its id knows more. Adding
+                // properties makes a new version: created is kept, modified is updated (section 3.6).
+                const libraryCopy = entity?.description ? null : libraryById.get(id);
+                if (libraryCopy) {
+                    // Only a UTC timestamp with at least milliseconds is a valid created (sections 2.16.1, 3.2).
+                    const created = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3,}Z$/.test(libraryCopy.created)
+                        && !Number.isNaN(Date.parse(libraryCopy.created)) ? libraryCopy.created : now;
+                    objects.push({
+                        ...libraryCopy,
+                        created,
+                        modified: Date.parse(created) > Date.parse(now) ? created : now,
+                        name: libraryCopy.name || entity?.name || techId,
+                        external_references,
+                        kill_chain_phases
+                    });
+                    continue;
+                }
                 objects.push({
                     type: 'attack-pattern',
                     spec_version: '2.1',
-                    id: techniqueStixId(techId),
+                    id,
                     created: now,
                     modified: now,
                     name: entity?.name || techId,
                     ...(entity?.description ? { description: entity.description } : {}),
-                    external_references: [{
-                        source_name: 'mitre-attack',
-                        external_id: techId,
-                        url: `https://attack.mitre.org/techniques/${techId.replace('.', '/')}`
-                    }],
-                    kill_chain_phases: [...phases].map(p => ({
-                        kill_chain_name: 'unified-kill-chain',
-                        phase_name: p
-                    }))
+                    external_references,
+                    kill_chain_phases
                 });
             }
 

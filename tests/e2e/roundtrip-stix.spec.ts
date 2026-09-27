@@ -13,7 +13,7 @@ import { expect, test, type Page } from '@playwright/test';
 import {
   EXPORT_NAME, UUID, clickExportControl, exportNative, exportStix, expectBundleEnvelope,
   expectIsoTimestampWithin, expectNoDownload, expectNoExternalRequests, importNative,
-  importStix, openApp, readState, withFreshContext,
+  importNavigatorLayer, importStix, openApp, readState, withFreshContext,
 } from './helpers/roundtrip';
 import { IDS, nativeFull } from '../fixtures/roundtrip/native';
 
@@ -464,6 +464,101 @@ test.describe('RT-08 generated STIX graph', () => {
     await expect(page.locator('#toast')).toHaveText(`STIX export failed: ${message}`);
     await expectNoDownload(page, () => clickExportControl(page, 'JSON'));
     await expect(page.locator('#toast')).toHaveText(`JSON export failed: ${message}`);
+  });
+
+  test('a technique without ATT&CK data is exported from the library entry with its derived id', async ({ page, browser }) => {
+    // With no technique record (or one without a description), the library entry knows more: its
+    // content is written with the ATT&CK reference and phases, keeping its created (STIX 2.1 section 3.2).
+    const { first, patternId } = await reimportOwnBundle(page);
+    const original = byType(first.json, 'attack-pattern')[0];
+    await importNavigatorLayer(page, bytes({ name: 'Parent only', domain: 'enterprise-attack', techniques: [{ techniqueID: 'T1059' }] }));
+    await expect(page.locator('#toast')).toHaveText('Loaded 1 techniques (library replaced)');
+    const technique = pinnedTechnique('T1059.001');
+    const reference = [{
+      source_name: 'mitre-attack', external_id: 'T1059.001', url: 'https://attack.mitre.org/techniques/T1059/001',
+    }];
+    const phases = (...names: string[]) => names.map(phase_name => ({ kill_chain_name: 'unified-kill-chain', phase_name }));
+
+    const libraryBefore = (await exportNative(page)).json.customLibrary[patternId];
+    expect([libraryBefore.name, libraryBefore.description.length > 0]).toEqual([technique.name, true]);
+    let startedAt = Date.now();
+    let patterns = byType((await exportStix(page)).json, 'attack-pattern');
+    expect(patterns).toEqual([{
+      type: 'attack-pattern', spec_version: '2.1', id: patternId, created: original.created,
+      modified: patterns[0]?.modified, name: technique.name, description: libraryBefore.description,
+      external_references: reference, kill_chain_phases: expect.arrayContaining(phases('reconnaissance', 'exploitation')),
+    }]);
+    expect(patterns[0].kill_chain_phases).toHaveLength(2);
+    expectIsoTimestampWithin(patterns[0].modified, startedAt);
+    expect(Date.parse(patterns[0].modified)).toBeGreaterThanOrEqual(Date.parse(original.created));
+    expect((await exportNative(page)).json.customLibrary[patternId], 'export leaves the entry as stored').toEqual(libraryBefore);
+
+    // An edit to the library entry reaches the export for such a technique.
+    await page.evaluate(id => (window as any).openStixEditor(id), patternId);
+    await page.locator('#stix-edit-name').fill('Edited library copy');
+    await page.locator('.btn-stix-save').click();
+    patterns = byType((await exportStix(page)).json, 'attack-pattern');
+    expect(patterns.map((o: any) => [o.id, o.name, o.created])).toEqual([[patternId, 'Edited library copy', original.created]]);
+
+    // A technique the ATT&CK data does not know gets a placeholder record without a description.
+    expect(ATTACK_TECHNIQUES['T1999'], 'pinned resource must not describe T1999').toBeUndefined();
+    await withFreshContext(browser, async freshPage => {
+      await importNative(freshPage, bytes({ assignments: { 'IN:delivery': {
+        techniques: [{ id: 'T1999', instanceId: 'itm-u-1' }], capecs: [], cwes: [], customItems: [], groups: [], layout: [],
+      } } }), 'rt-08-unknown.json');
+      const placeholder = byType((await exportStix(freshPage)).json, 'attack-pattern');
+      expect(placeholder.map((o: any) => o.name)).toEqual(['Technique T1999']);
+      const unknownId = placeholder[0].id;
+      await importStix(freshPage, bytes({
+        type: 'bundle', id: 'bundle--e0e0e0e0-0000-4000-8000-000000000001', objects: [{
+          type: 'attack-pattern', spec_version: '2.1', id: unknownId,
+          created: '2020-01-01T00:00:00.000Z', modified: '2021-01-01T00:00:00.000Z',
+          name: 'Newer technique', description: 'Described by a newer ATT&CK release', labels: ['newer'], aliases: ['Other name'],
+        }],
+      }), 'rt-08-newer.json');
+      startedAt = Date.now();
+      const written = byType((await exportStix(freshPage)).json, 'attack-pattern');
+      expect(written).toEqual([{
+        type: 'attack-pattern', spec_version: '2.1', id: unknownId,
+        created: '2020-01-01T00:00:00.000Z', modified: written[0]?.modified,
+        name: 'Newer technique', description: 'Described by a newer ATT&CK release', labels: ['newer'], aliases: ['Other name'],
+        external_references: [{ source_name: 'mitre-attack', external_id: 'T1999', url: 'https://attack.mitre.org/techniques/T1999' }],
+        kill_chain_phases: phases('delivery'),
+      }]);
+      expectIsoTimestampWithin(written[0].modified, startedAt);
+    });
+  });
+
+  test('a library entry for a technique without ATT&CK data brings its created only when it is a STIX timestamp', async ({ page }) => {
+    // created and modified need the UTC "Z" form with at least millisecond precision (STIX 2.1
+    // sections 2.16.1 and 3.2), and modified is never earlier than created.
+    await openApp(page);
+    const techniques = ['T1998', 'T1999'];
+    for (const id of techniques) expect(ATTACK_TECHNIQUES[id], `pinned resource must not describe ${id}`).toBeUndefined();
+    await importNative(page, bytes({ assignments: { 'IN:delivery': {
+      techniques: techniques.map((id, n) => ({ id, instanceId: `itm-t-${n}` })), capecs: [], cwes: [], customItems: [], groups: [], layout: [],
+    } } }), 'rt-08-timestamps.json');
+    const idOf = new Map(byType((await exportStix(page)).json, 'attack-pattern')
+      .map((o: any) => [o.external_references[0].external_id, o.id]));
+    const entry = (technique: string, created: string) => ({
+      type: 'attack-pattern', spec_version: '2.1', id: idOf.get(technique), created, modified: created, name: `Newer ${technique}`,
+    });
+    await importStix(page, bytes({
+      type: 'bundle', id: 'bundle--e0e0e0e0-0000-4000-8000-000000000002',
+      objects: [entry('T1998', '2999-01-01T00:00:00.000Z'), entry('T1999', '2020-01-01T00:00:00Z')],
+    }), 'rt-08-timestamps-bundle.json');
+
+    const startedAt = Date.now();
+    const written = new Map(byType((await exportStix(page)).json, 'attack-pattern')
+      .map((o: any) => [o.external_references[0].external_id, o]));
+    // A future created is kept, so modified moves up to it.
+    expect(['name', 'created', 'modified'].map(key => written.get('T1998')[key]))
+      .toEqual(['Newer T1998', '2999-01-01T00:00:00.000Z', '2999-01-01T00:00:00.000Z']);
+    // Without milliseconds it is not a valid created, so the export time is used; the content stays.
+    const late = written.get('T1999');
+    expect(late.name).toBe('Newer T1999');
+    expectIsoTimestampWithin(late.created, startedAt);
+    expect(late.modified).toBe(late.created);
   });
 });
 

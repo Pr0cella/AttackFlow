@@ -371,6 +371,16 @@ Export:
     written. The entry stays in the
     library and in the JSON export's `customLibrary`; edits to it do not reach the STIX bundle,
     but an invalid property value in it still stops the export.
+  - exception for an assigned technique without ATT&CK data (no technique record, or a
+    placeholder record without a description, e.g. a technique missing from the loaded data or
+    from a Navigator layer or CSV list that replaced the library): a library `attack-pattern`
+    with its derived id is written instead, with its name, description, labels and other
+    properties, plus the derived `external_references` and `kill_chain_phases`. It keeps the
+    entry's `created` when that is a valid STIX timestamp (UTC `Z` form with at least
+    millisecond precision, sections 2.16.1 and 3.2), otherwise it uses the export time;
+    `modified` is the export time, never earlier than `created`, because adding properties
+    makes a new version (STIX 2.1 section 3.6). Edits to that entry reach the STIX bundle; the
+    entry itself is not changed.
 - `addRelationship(...)`: one `related-to` co-location relation per pair of different custom
   objects that share a phase's ungrouped items or one group, described by the first phase
   where the pair occurs. Two instances of one object (the same
