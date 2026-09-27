@@ -356,6 +356,64 @@ test.describe('RT-08 generated STIX graph', () => {
       }
     });
   });
+
+  test('exporting after importing its own bundle writes each derived object once', async ({ page, browser }) => {
+    // A re-imported bundle puts the derived attack pattern and mitigations in the library too.
+    // Objects with one id are versions of one object (STIX 2.1 section 3.2), so the export writes
+    // only the complete derived copy while the technique is assigned.
+    await openApp(page);
+    await importNative(page, bytes(graphFixture()), 'rt-08-source.json');
+    const first = await exportStix(page);
+    const derivedIds = first.json.objects
+      .filter((o: any) => o.type === 'attack-pattern' || o.type === 'course-of-action')
+      .map((o: any) => o.id);
+    expect(derivedIds).toHaveLength(6);
+    await importStix(page, first.buffer, first.name);
+    await expect(page.locator('#toast')).toHaveText('Imported 6 STIX objects, 4 duplicates skipped');
+
+    const second = (await exportStix(page)).json;
+    const ids = second.objects.map((o: any) => o.id);
+    expect(ids.filter((id: string, i: number) => ids.indexOf(id) !== i), 'ids written twice').toEqual([]);
+
+    const pattern = byType(second, 'attack-pattern');
+    expect(pattern).toHaveLength(1);
+    expect(Object.keys(pattern[0]).sort()).toEqual([
+      'created', 'description', 'external_references', 'id', 'kill_chain_phases',
+      'modified', 'name', 'spec_version', 'type',
+    ]);
+    const mitigations = byType(second, 'course-of-action');
+    expect(mitigations).toHaveLength(5);
+    for (const mitigation of mitigations) {
+      expect(Object.keys(mitigation).sort()).toEqual([
+        'created', 'description', 'external_references', 'id', 'modified', 'name',
+        'spec_version', 'type',
+      ]);
+    }
+    const present = new Set(ids);
+    for (const edge of byType(second, 'relationship')) {
+      expect(present.has(edge.source_ref), `dangling source_ref ${edge.source_ref}`).toBe(true);
+      expect(present.has(edge.target_ref), `dangling target_ref ${edge.target_ref}`).toBe(true);
+    }
+    expect(byType(second, 'relationship').filter((r: any) => r.relationship_type === 'mitigates')).toHaveLength(5);
+
+    // The imported library entries stay in the native export, whose embedded bundle is deduplicated too.
+    const native = (await exportNative(page)).json;
+    for (const id of derivedIds) expect(native.customLibrary[id], `library keeps ${id}`).toBeDefined();
+    const embeddedIds = native.stixBundle.objects.map((o: any) => o.id);
+    expect(embeddedIds.filter((id: string, i: number) => embeddedIds.indexOf(id) !== i), 'embedded ids written twice').toEqual([]);
+
+    // Without the technique assigned, the library entry is the only copy and is still written.
+    await withFreshContext(browser, async freshPage => {
+      await importStix(freshPage, first.buffer, first.name);
+      const alone = (await exportStix(freshPage)).json;
+      const patterns = byType(alone, 'attack-pattern');
+      expect(patterns.map((o: any) => o.id)).toEqual([pattern[0].id]);
+      expect(Object.keys(patterns[0]).sort()).toEqual([
+        'created', 'description', 'id', 'modified', 'name', 'spec_version', 'type',
+      ]);
+      expect(byType(alone, 'course-of-action')).toHaveLength(5);
+    });
+  });
 });
 
 test.describe('STIX identifiers with uppercase UUID hex', () => {

@@ -365,6 +365,12 @@ Export:
   - deterministic ATT&CK `attack-pattern` SDOs
   - deterministic mitigation `course-of-action` SDOs
   - generated `relationship` SROs (`mitigates` + co-location relations)
+  - each id once: a custom library entry with the id of a derived `attack-pattern` or
+    `course-of-action` (for example after importing a bundle this export wrote) is left out
+    while its technique (or a technique it mitigates) is assigned, and the derived copy is
+    written. The entry stays in the
+    library and in the JSON export's `customLibrary`; edits to it do not reach the STIX bundle,
+    but an invalid property value in it still stops the export.
 - `addRelationship(...)`: one `related-to` co-location relation per pair of different custom
   objects that share a phase's ungrouped items or one group, described by the first phase
   where the pair occurs. Two instances of one object (the same

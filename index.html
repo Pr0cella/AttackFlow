@@ -9239,6 +9239,7 @@
                 }
                 objects.push(sdo);
             }
+            const customCount = objects.length;
 
             // Generate SROs for co-located items in same phase/group
             const relationshipSet = new Set();
@@ -9274,6 +9275,8 @@
                     }
                 }
             }
+
+            const derivedStart = objects.length;
 
             // Add attack-pattern SDOs for assigned techniques (deterministic IDs)
             const techniquePhases = new Map(); // techId → Set of phase names
@@ -9343,6 +9346,9 @@
                     }]
                 });
             }
+            // Objects with one id are versions of one object (STIX 2.1 section 3.2): a library
+            // entry with the id of a derived object, e.g. from a re-imported bundle, is left out.
+            const derivedIds = new Set(objects.slice(derivedStart).map(o => o.id));
 
             // Emit mitigates SROs
             for (const [techSid, mitSids] of techMitLinks) {
@@ -9367,7 +9373,7 @@
                 type: 'bundle',
                 id: `bundle--${generateUUID()}`,
                 spec_version: '2.1',
-                objects: objects
+                objects: objects.filter((o, index) => index >= customCount || !derivedIds.has(o.id))
             };
         }
 
