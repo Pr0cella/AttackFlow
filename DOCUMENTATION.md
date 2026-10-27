@@ -370,6 +370,8 @@ Import:
 - `ensureAssignmentShape`, `ensureLibraryFallbacks`
 - `importKillChain(event)`
 
+Imported group IDs must match `grp-{base36 timestamp}-{1 to 5 lowercase alphanumeric characters}`. Invalid IDs and duplicates within a phase receive new IDs. Layout references are remapped; ambiguous duplicate references retain the first group, and later groups are appended by `ensurePhaseLayout`. Group controls read encoded `data-*` values through static handlers. Group rename saves on Enter or blur and cancels on Escape.
+
 ### 6.13 METADATA EDITOR + MODALS + INIT
 
 Metadata editor:

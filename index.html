@@ -8248,28 +8248,29 @@
                             const collapsedClass = group.collapsed ? 'collapsed' : '';
                             const groupItems = group.items || [];
                             const safeGroupLabel = esc(group.label || 'Group');
+                            const groupDataAttrs = `data-phase-key="${InputSecurity.encodeHtmlEntities(phaseKey)}" data-group-id="${InputSecurity.encodeHtmlEntities(group.groupId)}"`;
                             const groupHeaderClick = group.editing
                                 ? 'event.stopPropagation();'
-                                : `toggleGroupCollapse('${phaseKey}', '${group.groupId}')`;
+                                : 'toggleGroupCollapse(this.dataset.phaseKey, this.dataset.groupId)';
                             const groupDragStart = group.editing
                                 ? 'event.preventDefault();'
-                                : `handleGroupDragStart(event, '${phaseKey}', '${group.groupId}')`;
+                                : 'handleGroupDragStart(event, this.dataset.phaseKey, this.dataset.groupId)';
                             html += `
-                                <div class="phase-group ${collapsedClass}" data-group-id="${escAttr(group.groupId)}" ondragover="event.stopPropagation(); handleDragOver(event)" ondragleave="event.stopPropagation(); handleDragLeave(event)" ondrop="handleGroupDrop(event, '${phaseKey}', '${group.groupId}')">
-                                    <div class="phase-group-header" draggable="${group.editing ? 'false' : 'true'}" ondragstart="${groupDragStart}" ondragend="handleDragEnd(event)" onclick="${groupHeaderClick}">
+                                <div class="phase-group ${collapsedClass}" ${groupDataAttrs} ondragover="event.stopPropagation(); handleDragOver(event)" ondragleave="event.stopPropagation(); handleDragLeave(event)" ondrop="handleGroupDrop(event, this.dataset.phaseKey, this.dataset.groupId)">
+                                    <div class="phase-group-header" ${groupDataAttrs} draggable="${group.editing ? 'false' : 'true'}" ondragstart="${groupDragStart}" ondragend="handleDragEnd(event)" onclick="${groupHeaderClick}">
                                         ${group.editing ? `
-                                            <input class="metadata-input" id="group-rename-${escAttr(group.groupId)}" value="${safeGroupLabel}"
+                                            <input class="metadata-input" ${groupDataAttrs} id="group-rename-${InputSecurity.encodeHtmlEntities(group.groupId)}" value="${InputSecurity.encodeHtmlEntities(group.label || 'Group')}"
                                                 onclick="event.stopPropagation()" onmousedown="event.stopPropagation()"
-                                                onblur="commitRenameGroup('${phaseKey}', '${escAttr(group.groupId)}', this.value)"
-                                                onkeydown="if (event.key === 'Enter') { event.preventDefault(); commitRenameGroup('${phaseKey}', '${escAttr(group.groupId)}', this.value); } if (event.key === 'Escape') { event.preventDefault(); commitRenameGroup('${phaseKey}', '${escAttr(group.groupId)}', this.value, true); }" />
+                                                onblur="commitRenameGroup(this.dataset.phaseKey, this.dataset.groupId, this.value)"
+                                                onkeydown="if (event.key === 'Enter' || event.key === 'Escape') { event.preventDefault(); this.onblur = null; commitRenameGroup(this.dataset.phaseKey, this.dataset.groupId, this.value, event.key === 'Escape'); }" />
                                         ` : `<span class="phase-group-title">${safeGroupLabel}</span>`}
                                         <span class="phase-group-count">${groupItems.length}</span>
                                         <span class="group-header-actions">
                                             <span class="group-actions">
-                                                <button class="group-action-btn rename" title="Rename" onclick="event.stopPropagation(); startRenameGroup('${phaseKey}', '${group.groupId}')">
+                                                <button class="group-action-btn rename" ${groupDataAttrs} title="Rename" onclick="event.stopPropagation(); startRenameGroup(this.dataset.phaseKey, this.dataset.groupId)">
                                                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17.25V21h3.75L17.8 9.95l-3.75-3.75L3 17.25Zm2.92 2.83H5v-.92l8.79-8.79.92.92-8.79 8.79ZM20.7 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83Z"/></svg>
                                                 </button>
-                                                <button class="group-action-btn delete" title="Delete Group" onclick="event.stopPropagation(); removeGroup('${phaseKey}', '${group.groupId}')">
+                                                <button class="group-action-btn delete" ${groupDataAttrs} title="Delete Group" onclick="event.stopPropagation(); removeGroup(this.dataset.phaseKey, this.dataset.groupId)">
                                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M576 192C576 156.7 547.3 128 512 128L205.3 128C188.3 128 172 134.7 160 146.7L9.4 297.4C3.4 303.4 0 311.5 0 320C0 328.5 3.4 336.6 9.4 342.6L160 493.3C172 505.3 188.3 512 205.3 512L512 512C547.3 512 576 483.3 576 448L576 192zM284.1 252.1C293.5 242.7 308.7 242.7 318 252.1L351.9 286L385.8 252.1C395.2 242.7 410.4 242.7 419.7 252.1C429 261.5 429.1 276.7 419.7 286L385.8 319.9L419.7 353.8C429.1 363.2 429.1 378.4 419.7 387.7C410.3 397 395.1 397.1 385.8 387.7L351.9 353.8L318 387.7C308.6 397.1 293.4 397.1 284.1 387.7C274.8 378.3 274.7 363.1 284.1 353.8L318 319.9L284.1 286C274.7 276.6 274.7 261.4 284.1 252.1z"></path></svg>
                                                 </button>
                                             </span>
@@ -8319,7 +8320,7 @@
             const safeIdAttr = InputSecurity.encodeHtmlEntities(id);
             const safePhaseKey = InputSecurity.sanitizeAttr(phaseKey);
             const safeInstanceId = InputSecurity.sanitizeAttr(instanceId || '');
-            const safeGroupId = InputSecurity.sanitizeAttr(sourceGroupId || '');
+            const safeGroupId = InputSecurity.encodeHtmlEntities(sourceGroupId || '');
             const isCompact = state.compactMode && state.view === 'killchain';
             const compactTitle = isCompact ? `title="${InputSecurity.encodeHtmlEntities(`${id} — ${displayName}`)}"` : '';
             let domainBadge = '';
@@ -8419,8 +8420,8 @@
 
             return `
                 <div class="${tagClass}" data-score="${score}" ${compactTitle}
-                     draggable="true"
-                     ondragstart="handleAssignmentDragStart(event, '${safeType}', '${safeIdAttr}', '${safePhaseKey}', '${safeInstanceId}', '${safeGroupId}')"
+                     draggable="true" data-source-group-id="${safeGroupId}"
+                     ondragstart="handleAssignmentDragStart(event, '${safeType}', '${safeIdAttr}', '${safePhaseKey}', '${safeInstanceId}', this.dataset.sourceGroupId)"
                      ondragend="handleDragEnd(event)"
                      onclick="openEntityModal('${safeType}', '${safeIdAttr}', '${safePhaseKey}', '${safeInstanceId}')">
                     <span class="tag-header-row">
@@ -9612,7 +9613,7 @@
                     cwes: [],
                     customItems: [],
                     groups: [],
-                    layout: Array.isArray(phaseData.layout) ? phaseData.layout : []
+                    layout: []
                 };
 
                 for (const key of ['techniques', 'capecs', 'cwes']) {
@@ -9629,7 +9630,10 @@
                         .filter(a => a !== null);
                 }
 
+                const groupIdMap = new Map();
                 if (Array.isArray(phaseData.groups)) {
+                    const reservedGroupIds = new Set(phaseData.groups.map(g => g?.groupId));
+                    const usedGroupIds = new Set();
                     sanitized.assignments[phaseKey].groups = phaseData.groups
                         .filter(g => g && typeof g === 'object')
                         .map(g => {
@@ -9649,14 +9653,39 @@
                                 })
                                 .filter(item => item && item.id && item.type);
 
+                            let groupId = g.groupId;
+                            const validGroupId = typeof groupId === 'string'
+                                && /^grp-[a-z0-9]+-[a-z0-9]{1,5}$/.exec(groupId)?.[0] === groupId;
+                            if (!validGroupId || usedGroupIds.has(groupId)) {
+                                do {
+                                    groupId = generateGroupId();
+                                } while (reservedGroupIds.has(groupId) || usedGroupIds.has(groupId));
+                            }
+                            usedGroupIds.add(groupId);
+                            // ambiguous duplicate references retain the first group's position.
+                            if (typeof g.groupId === 'string' && !groupIdMap.has(g.groupId)) {
+                                groupIdMap.set(g.groupId, groupId);
+                            }
+
                             return {
-                                groupId: typeof g.groupId === 'string' ? g.groupId : generateGroupId(),
+                                groupId,
                                 label: sanitizeImportedString(g.label || 'Group', 80),
                                 collapsed: !!g.collapsed,
                                 items
                             };
                         });
                 }
+                const layout = Array.isArray(phaseData.layout) ? phaseData.layout : [];
+                const layoutGroupIds = new Set();
+                sanitized.assignments[phaseKey].layout = layout.flatMap(entry => {
+                    if (!entry || typeof entry !== 'object') return [];
+                    if (entry.kind === 'item') return [{ ...entry }];
+                    if (entry.kind !== 'group' || !groupIdMap.has(entry.groupId)) return [];
+                    const groupId = groupIdMap.get(entry.groupId);
+                    if (layoutGroupIds.has(groupId)) return [];
+                    layoutGroupIds.add(groupId);
+                    return [{ kind: 'group', groupId }];
+                });
             }
 
             // Sanitize optional view state (booleans/strings only)
