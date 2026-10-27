@@ -2,10 +2,18 @@
 ---
 ## [2.9.2] - 2026-04-30
 
+### Added 
+- **CVSS v4 Support**: Support for CVSS v4 vector strings in phase item metadata
+- Small HTML Docstring with project info
+
+### Changed
+- **CSV Formula Injection Mitigation**: Cells starting with formula characters are now prefixed with a tab character (\t) and wrapped in double quotes instead of just the single quote prefix that was used previously
+
 ### Fixed
-- Fixed an issue where malicious group IDs in imported files could run JavaScript when users interacted with a group. Invalid or duplicate IDs are now replaced, and group controls handle IDs safely
-- Fixed group renaming so pressing Escape cancels the edit without saving it
-- Fixed a security issue where malicious text appended to a CVSS vector could inject HTML attributes into a vulnerability tooltip.
+- **STIX Composer Export**: Fixed browser blocking downloads from the composer's sandboxed iframe. It now has `allow-downloads`.
+- **CVSS Tooltip Injection**: Fixed an issue where malicious text appended to a CVSS vector could inject HTML attributes into a vulnerability tooltip
+- **Group ID Injection**: Fixed an issue where malicious group IDs in imported files could run JavaScript when users interacted with such a group. Invalid or duplicate IDs are now replaced, and group controls handle IDs safely
+- **Group Rename Cancel**: Fixed group renaming so pressing Escape cancels the edit without saving it
 
 ### Added 
 - Small HTML Docstring with project info
