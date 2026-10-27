@@ -7482,7 +7482,7 @@
         function buildStixReadonlyField(label, value) {
             return `<div class="stix-field-group">
                 <label>${esc(label)}</label>
-                <input type="text" value="${esc(value)}" readonly>
+                <input type="text" value="${InputSecurity.encodeHtmlEntities(value)}" readonly>
             </div>`;
         }
 
