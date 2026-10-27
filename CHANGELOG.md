@@ -5,6 +5,7 @@
 ### Fixed
 - Fixed an issue where malicious group IDs in imported files could run JavaScript when users interacted with a group. Invalid or duplicate IDs are now replaced, and group controls handle IDs safely
 - Fixed group renaming so pressing Escape cancels the edit without saving it
+- Fixed a security issue where malicious text appended to a CVSS vector could inject HTML attributes into a vulnerability tooltip.
 
 ### Added 
 - Small HTML Docstring with project info
