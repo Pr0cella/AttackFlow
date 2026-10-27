@@ -5,15 +5,13 @@
 ### Fixed
 - Fixed an issue where malicious group IDs in imported files could run JavaScript when users interacted with a group. Invalid or duplicate IDs are now replaced, and group controls handle IDs safely
 - Fixed group renaming so pressing Escape cancels the edit without saving it
+- **STIX Composer Export**: Fixed browser blocking downloads from the composer's sandboxed iframe. It now has `allow-downloads`
 
 ### Added 
 - Small HTML Docstring with project info
 
 ### Changed
 - **CSV Formula Injection Mitigation**: Cells starting with formula characters are now prefixed with a tab character (\t) and wrapped in double quotes instead of just the single quote prefix that was used previously
-
-### Fixed
-- **STIX Composer Export**: Fixed browser blocking downloads from the composer's sandboxed iframe. It now has `allow-downloads`.
 
 ## [2.9.1] - 2026-02-28
 
