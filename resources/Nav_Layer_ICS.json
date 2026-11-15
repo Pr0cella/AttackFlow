@@ -1,7 +1,7 @@
 {
   "name": "ICS",
   "versions": {
-    "attack": "18",
+    "attack": "20",
     "navigator": "5.3.0",
     "layer": "4.5"
   },
@@ -9,7 +9,11 @@
   "description": "",
   "filters": {
     "platforms": [
-      "None"
+      "None",
+      "Embedded",
+      "Linux",
+      "Network Devices",
+      "Windows"
     ]
   },
   "sorting": 0,
@@ -25,218 +29,8 @@
   "hideDisabled": false,
   "techniques": [
     {
-      "techniqueID": "T0803",
-      "tactic": "inhibit-response-function",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0881",
-      "tactic": "inhibit-response-function",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0836",
-      "tactic": "impair-process-control",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0821",
-      "tactic": "execution",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0887",
-      "tactic": "discovery",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0887",
-      "tactic": "collection",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0829",
-      "tactic": "impact",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
       "techniqueID": "T0800",
       "tactic": "inhibit-response-function",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0831",
-      "tactic": "impact",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0814",
-      "tactic": "inhibit-response-function",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0805",
-      "tactic": "inhibit-response-function",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0894",
-      "tactic": "evasion",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0807",
-      "tactic": "execution",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0861",
-      "tactic": "collection",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0816",
-      "tactic": "inhibit-response-function",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0863",
-      "tactic": "execution",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0860",
-      "tactic": "initial-access",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0858",
-      "tactic": "execution",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0858",
-      "tactic": "evasion",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0878",
-      "tactic": "inhibit-response-function",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0868",
-      "tactic": "collection",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0837",
-      "tactic": "impact",
       "color": "#bdbdbd",
       "comment": "",
       "enabled": true,
@@ -255,106 +49,6 @@
       "showSubtechniques": false
     },
     {
-      "techniqueID": "T0853",
-      "tactic": "execution",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0888",
-      "tactic": "discovery",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0845",
-      "tactic": "collection",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0819",
-      "tactic": "initial-access",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0811",
-      "tactic": "collection",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0864",
-      "tactic": "initial-access",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0835",
-      "tactic": "inhibit-response-function",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0842",
-      "tactic": "discovery",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0851",
-      "tactic": "evasion",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0851",
-      "tactic": "inhibit-response-function",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
       "techniqueID": "T0802",
       "tactic": "collection",
       "color": "#bdbdbd",
@@ -365,17 +59,7 @@
       "showSubtechniques": false
     },
     {
-      "techniqueID": "T0804",
-      "tactic": "inhibit-response-function",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0855",
+      "techniqueID": "T0806",
       "tactic": "impair-process-control",
       "color": "#bdbdbd",
       "comment": "",
@@ -395,7 +79,17 @@
       "showSubtechniques": false
     },
     {
-      "techniqueID": "T0832",
+      "techniqueID": "T0811",
+      "tactic": "collection",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0813",
       "tactic": "impact",
       "color": "#bdbdbd",
       "comment": "",
@@ -405,18 +99,8 @@
       "showSubtechniques": false
     },
     {
-      "techniqueID": "T0872",
-      "tactic": "evasion",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0877",
-      "tactic": "collection",
+      "techniqueID": "T0814",
+      "tactic": "inhibit-response-function",
       "color": "#bdbdbd",
       "comment": "",
       "enabled": true,
@@ -435,58 +119,8 @@
       "showSubtechniques": false
     },
     {
-      "techniqueID": "T0871",
-      "tactic": "execution",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0862",
-      "tactic": "initial-access",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0880",
-      "tactic": "impact",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0828",
-      "tactic": "impact",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0865",
-      "tactic": "initial-access",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0895",
-      "tactic": "execution",
+      "techniqueID": "T0816",
+      "tactic": "inhibit-response-function",
       "color": "#bdbdbd",
       "comment": "",
       "enabled": true,
@@ -505,88 +139,8 @@
       "showSubtechniques": false
     },
     {
-      "techniqueID": "T0879",
-      "tactic": "impact",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0856",
-      "tactic": "evasion",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0856",
-      "tactic": "impair-process-control",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0866",
+      "techniqueID": "T0819",
       "tactic": "initial-access",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0866",
-      "tactic": "lateral-movement",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0812",
-      "tactic": "lateral-movement",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0822",
-      "tactic": "initial-access",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0806",
-      "tactic": "impair-process-control",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0830",
-      "tactic": "collection",
       "color": "#bdbdbd",
       "comment": "",
       "enabled": true,
@@ -605,17 +159,7 @@
       "showSubtechniques": false
     },
     {
-      "techniqueID": "T0827",
-      "tactic": "impact",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0874",
+      "techniqueID": "T0821",
       "tactic": "execution",
       "color": "#bdbdbd",
       "comment": "",
@@ -625,27 +169,7 @@
       "showSubtechniques": false
     },
     {
-      "techniqueID": "T0874",
-      "tactic": "privilege-escalation",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0823",
-      "tactic": "execution",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0848",
+      "techniqueID": "T0822",
       "tactic": "initial-access",
       "color": "#bdbdbd",
       "comment": "",
@@ -655,7 +179,7 @@
       "showSubtechniques": false
     },
     {
-      "techniqueID": "T0834",
+      "techniqueID": "T0823",
       "tactic": "execution",
       "color": "#bdbdbd",
       "comment": "",
@@ -675,7 +199,7 @@
       "showSubtechniques": false
     },
     {
-      "techniqueID": "T0882",
+      "techniqueID": "T0827",
       "tactic": "impact",
       "color": "#bdbdbd",
       "comment": "",
@@ -685,8 +209,8 @@
       "showSubtechniques": false
     },
     {
-      "techniqueID": "T0857",
-      "tactic": "persistence",
+      "techniqueID": "T0828",
+      "tactic": "impact",
       "color": "#bdbdbd",
       "comment": "",
       "enabled": true,
@@ -695,8 +219,8 @@
       "showSubtechniques": false
     },
     {
-      "techniqueID": "T0857",
-      "tactic": "inhibit-response-function",
+      "techniqueID": "T0829",
+      "tactic": "impact",
       "color": "#bdbdbd",
       "comment": "",
       "enabled": true,
@@ -705,37 +229,7 @@
       "showSubtechniques": false
     },
     {
-      "techniqueID": "T0849",
-      "tactic": "evasion",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0843",
-      "tactic": "lateral-movement",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0847",
-      "tactic": "initial-access",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0852",
+      "techniqueID": "T0830",
       "tactic": "collection",
       "color": "#bdbdbd",
       "comment": "",
@@ -745,8 +239,8 @@
       "showSubtechniques": false
     },
     {
-      "techniqueID": "T0891",
-      "tactic": "lateral-movement",
+      "techniqueID": "T0831",
+      "tactic": "impact",
       "color": "#bdbdbd",
       "comment": "",
       "enabled": true,
@@ -755,8 +249,8 @@
       "showSubtechniques": false
     },
     {
-      "techniqueID": "T0891",
-      "tactic": "persistence",
+      "techniqueID": "T0832",
+      "tactic": "impact",
       "color": "#bdbdbd",
       "comment": "",
       "enabled": true,
@@ -765,8 +259,8 @@
       "showSubtechniques": false
     },
     {
-      "techniqueID": "T0859",
-      "tactic": "persistence",
+      "techniqueID": "T0834",
+      "tactic": "execution",
       "color": "#bdbdbd",
       "comment": "",
       "enabled": true,
@@ -775,8 +269,8 @@
       "showSubtechniques": false
     },
     {
-      "techniqueID": "T0859",
-      "tactic": "lateral-movement",
+      "techniqueID": "T0835",
+      "tactic": "inhibit-response-function",
       "color": "#bdbdbd",
       "comment": "",
       "enabled": true,
@@ -785,8 +279,8 @@
       "showSubtechniques": false
     },
     {
-      "techniqueID": "T0890",
-      "tactic": "privilege-escalation",
+      "techniqueID": "T0836",
+      "tactic": "impair-process-control",
       "color": "#bdbdbd",
       "comment": "",
       "enabled": true,
@@ -795,57 +289,7 @@
       "showSubtechniques": false
     },
     {
-      "techniqueID": "T0846",
-      "tactic": "discovery",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0884",
-      "tactic": "command-and-control",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0869",
-      "tactic": "command-and-control",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0886",
-      "tactic": "initial-access",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0886",
-      "tactic": "lateral-movement",
-      "color": "#bdbdbd",
-      "comment": "",
-      "enabled": true,
-      "metadata": [],
-      "links": [],
-      "showSubtechniques": false
-    },
-    {
-      "techniqueID": "T0813",
+      "techniqueID": "T0837",
       "tactic": "impact",
       "color": "#bdbdbd",
       "comment": "",
@@ -865,8 +309,8 @@
       "showSubtechniques": false
     },
     {
-      "techniqueID": "T0885",
-      "tactic": "command-and-control",
+      "techniqueID": "T0840",
+      "tactic": "discovery",
       "color": "#bdbdbd",
       "comment": "",
       "enabled": true,
@@ -875,7 +319,197 @@
       "showSubtechniques": false
     },
     {
-      "techniqueID": "T0873",
+      "techniqueID": "T0842",
+      "tactic": "discovery",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0843",
+      "tactic": "lateral-movement",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0843.001",
+      "tactic": "lateral-movement",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0843.002",
+      "tactic": "lateral-movement",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0843.003",
+      "tactic": "lateral-movement",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0845",
+      "tactic": "collection",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0846",
+      "tactic": "discovery",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0846.001",
+      "tactic": "discovery",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0846.002",
+      "tactic": "discovery",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0846.003",
+      "tactic": "discovery",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0847",
+      "tactic": "initial-access",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0848",
+      "tactic": "initial-access",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0849",
+      "tactic": "evasion",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0851",
+      "tactic": "evasion",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0851",
+      "tactic": "inhibit-response-function",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0852",
+      "tactic": "collection",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0858",
+      "tactic": "evasion",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0858",
+      "tactic": "execution",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0859",
+      "tactic": "lateral-movement",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0859",
       "tactic": "persistence",
       "color": "#bdbdbd",
       "comment": "",
@@ -885,8 +519,78 @@
       "showSubtechniques": false
     },
     {
-      "techniqueID": "T0840",
-      "tactic": "discovery",
+      "techniqueID": "T0860",
+      "tactic": "initial-access",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0861",
+      "tactic": "collection",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0862",
+      "tactic": "initial-access",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0863",
+      "tactic": "execution",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0864",
+      "tactic": "initial-access",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0865",
+      "tactic": "initial-access",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0866",
+      "tactic": "initial-access",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0866",
+      "tactic": "lateral-movement",
       "color": "#bdbdbd",
       "comment": "",
       "enabled": true,
@@ -905,7 +609,67 @@
       "showSubtechniques": false
     },
     {
-      "techniqueID": "T0839",
+      "techniqueID": "T0868",
+      "tactic": "collection",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0869",
+      "tactic": "command-and-control",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0869.001",
+      "tactic": "command-and-control",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0869.002",
+      "tactic": "command-and-control",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0871",
+      "tactic": "execution",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0872",
+      "tactic": "evasion",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0873",
       "tactic": "persistence",
       "color": "#bdbdbd",
       "comment": "",
@@ -915,8 +679,88 @@
       "showSubtechniques": false
     },
     {
-      "techniqueID": "T0839",
-      "tactic": "impair-process-control",
+      "techniqueID": "T0873.001",
+      "tactic": "persistence",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0874",
+      "tactic": "execution",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0874",
+      "tactic": "privilege-escalation",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0877",
+      "tactic": "collection",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0878",
+      "tactic": "inhibit-response-function",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0879",
+      "tactic": "impact",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0880",
+      "tactic": "impact",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0881",
+      "tactic": "inhibit-response-function",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0882",
+      "tactic": "impact",
       "color": "#bdbdbd",
       "comment": "",
       "enabled": true,
@@ -935,8 +779,88 @@
       "showSubtechniques": false
     },
     {
-      "techniqueID": "T0893",
+      "techniqueID": "T0884",
+      "tactic": "command-and-control",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0885",
+      "tactic": "command-and-control",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0886",
+      "tactic": "initial-access",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0886",
+      "tactic": "lateral-movement",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0887",
       "tactic": "collection",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0887",
+      "tactic": "discovery",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0888",
+      "tactic": "discovery",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0889",
+      "tactic": "persistence",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0890",
+      "tactic": "privilege-escalation",
       "color": "#bdbdbd",
       "comment": "",
       "enabled": true,
@@ -955,8 +879,378 @@
       "showSubtechniques": false
     },
     {
-      "techniqueID": "T0889",
+      "techniqueID": "T0893",
+      "tactic": "collection",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0894",
+      "tactic": "evasion",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T0895",
+      "tactic": "execution",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1691",
+      "tactic": "inhibit-response-function",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1691.001",
+      "tactic": "inhibit-response-function",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1691.002",
+      "tactic": "inhibit-response-function",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1692",
+      "tactic": "evasion",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1692",
+      "tactic": "impair-process-control",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1692.001",
+      "tactic": "evasion",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1692.001",
+      "tactic": "impair-process-control",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1692.002",
+      "tactic": "evasion",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1692.002",
+      "tactic": "impair-process-control",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1693",
+      "tactic": "impair-process-control",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1693",
+      "tactic": "inhibit-response-function",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1693",
       "tactic": "persistence",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1693.001",
+      "tactic": "impair-process-control",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1693.001",
+      "tactic": "inhibit-response-function",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1693.001",
+      "tactic": "persistence",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1693.002",
+      "tactic": "impair-process-control",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1693.002",
+      "tactic": "inhibit-response-function",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1693.002",
+      "tactic": "persistence",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1694",
+      "tactic": "lateral-movement",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1694",
+      "tactic": "persistence",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1694.001",
+      "tactic": "lateral-movement",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1694.001",
+      "tactic": "persistence",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1694.002",
+      "tactic": "lateral-movement",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1694.002",
+      "tactic": "persistence",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1695",
+      "tactic": "inhibit-response-function",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1695.001",
+      "tactic": "inhibit-response-function",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1695.002",
+      "tactic": "inhibit-response-function",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1695.003",
+      "tactic": "inhibit-response-function",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1701",
+      "tactic": "execution",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1701.001",
+      "tactic": "execution",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1701.002",
+      "tactic": "execution",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1701.003",
+      "tactic": "execution",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1701.004",
+      "tactic": "execution",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1701.005",
+      "tactic": "execution",
+      "color": "#bdbdbd",
+      "comment": "",
+      "enabled": true,
+      "metadata": [],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1701.006",
+      "tactic": "execution",
       "color": "#bdbdbd",
       "comment": "",
       "enabled": true,

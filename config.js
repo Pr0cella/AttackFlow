@@ -7,25 +7,27 @@
 
 const CONFIG = {
     // Application info
-    version: '2.9.2',
+    version: '2.9.3',
     changelogUrl: 'CHANGELOG.md',
     
     // Framework source files (for extraction scripts)
     sources: {
-        // CAPEC XML files
+        // CAPEC XML files (v3.9, latest release as of 11/2026)
         capec: {
+            version: '3.9',
             domains: 'frameworks/CAPEC/DOMAINS.xml',
             mechanisms: 'frameworks/CAPEC/MECHANISMS.xml'
         },
-        // CWE XML files
+        // CWE XML files (v5.0, CWE Schema 8.0)
         cwe: {
+            version: '5.0',
             hardware: 'frameworks/CWE/HARDWARE.xml',
             software: 'frameworks/CWE/SOFTWARE.xml',
             all: 'frameworks/CWE/ALL.xml'
         },
-        // ATT&CK STIX bundles (v18.1 as of 01/2026)
+        // ATT&CK STIX bundles (v20.1 as of 11/2026)
         attack: {
-            version: '18.1',
+            version: '20.1',
             enterprise: 'frameworks/ATTCK/ENTERPRISE.json',
             mobile: 'frameworks/ATTCK/MOBILE.json',
             ics: 'frameworks/ATTCK/ICS.json'

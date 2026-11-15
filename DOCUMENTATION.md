@@ -95,7 +95,8 @@ Major additions reflected in v2.9.0 runtime:
 ### 4.1 `CONFIG` Highlights (v2.9.0)
 
 - `version: '2.9.0'`
-- `sources.attack.version: '18.1'`
+- `sources.attack.version: '20.1'`
+- `sources.capec.version: '3.9'`, `sources.cwe.version: '5.0'` — expected source versions; `extract-data.py` warns on mismatch
 - `imports.clearStixOnBundleImport`, `imports.clearStixOnKillChainImport`
 - `navigation.confirmOnLeave`, `navigation.showStixBuilder`
 - `visualizer.enabled`

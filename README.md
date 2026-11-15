@@ -4,8 +4,10 @@ An editor for creating enriched Cyber Kill Chain assessments by mapping MITRE AT
 
 ### Work in progress 
 
-![Version](https://img.shields.io/badge/version-2.9.2-blue)
-[![MITRE ATT&CK® 18](https://img.shields.io/badge/MITRE%20ATT%26CK®-v18-red)](https://attack.mitre.org/versions/v18/)
+![Version](https://img.shields.io/badge/version-2.9.3-blue)
+[![MITRE ATT&CK® 20](https://img.shields.io/badge/MITRE%20ATT%26CK®-v20-red)](https://attack.mitre.org/versions/v20/)
+[![CAPEC 3.9](https://img.shields.io/badge/CAPEC-v3.9-purple)](https://capec.mitre.org/data/downloads.html)
+[![CWE 5.0](https://img.shields.io/badge/CWE-v5.0-orange)](https://cwe.mitre.org/data/downloads.html)
 ![License](https://img.shields.io/badge/license-Apache%202.0-green)
 ![Dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)
 
@@ -28,7 +30,7 @@ An editor for creating enriched Cyber Kill Chain assessments by mapping MITRE AT
 
 ### Resource Corpus
 - **Unified Kill Chain** — Map entities to IN → THROUGH → OUT phases
-- **Multi-Domain ATT&CK** — 898 techniques across Enterprise, Mobile, and ICS
+- **Multi-Domain ATT&CK** — 935 techniques across Enterprise, Mobile, and ICS
 - **CAPEC/CWE Integration** — Link attack patterns and weaknesses
 - **STIX 2.1 Objects** — Create and manage all 19 configured SDO types (including `x-custom`)
 
@@ -134,7 +136,7 @@ See the usecases [README](docs/Usecases/README.md) for details.
 │       ├── HARDWARE.xml            # CWE hardware design weaknesses
 │       └── SOFTWARE.xml            # CWE software development weaknesses
 └── resources/                      # Generated data (do not edit directly)
-    ├── attack-techniques.json      # ATT&CK library (898 techniques)
+    ├── attack-techniques.json      # ATT&CK library (935 techniques)
     ├── capec-full.json             # CAPEC attack patterns
     ├── cwe-full.json               # CWE weaknesses
     ├── capec-to-technique.json     # CAPEC → ATT&CK mappings
@@ -270,16 +272,17 @@ Download the latest framework data and run the extraction scripts:
 # Place in frameworks/ATTCK/ as ENTERPRISE.json, MOBILE.json, ICS.json
 
 # Download CAPEC XML views from https://capec.mitre.org/data/
-# Place in frameworks/CAPEC/ as DOMAINS.xml, MECHANISMS.xml
+# Place in frameworks/CAPEC/ as DOMAINS.xml (view 3000), MECHANISMS.xml (view 1000)
 
-# Download CWE XML views from https://cwe.mitre.org/data/
-# Place in frameworks/CWE/ as ALL.xml, SOFTWARE.xml, HARDWARE.xml
+# Download CWE XML from https://cwe.mitre.org/data/ (CWE Schema 7.x and 8.x are supported)
+# Place in frameworks/CWE/ as ALL.xml (cwec_vX.Y.xml), SOFTWARE.xml (view 699), HARDWARE.xml (view 1194)
 
-# Run extraction scripts
-python3 scripts/extract-attack.py    # Parse ATT&CK techniques
+# Run extraction scripts (either order; both produce the same result)
+python3 scripts/extract-attack.py    # Parse ATT&CK techniques, rebuild Navigator layers
 python3 scripts/extract-data.py      # Parse CAPEC/CWE
+# Both scripts remap revoked ATT&CK IDs in the CAPEC mappings when the ATT&CK bundles are present
 
-# File paths are configurable in config.js under sources.*
+# File paths and expected source versions are configurable in config.js under sources.*
 # JSON sanitization paths are configurable in config.js under sanitize.paths
 # Sanitization runs before and after parsing to keep source and generated files clean
 ```

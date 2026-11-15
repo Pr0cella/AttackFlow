@@ -1,5 +1,61 @@
 # Changelog
 ---
+## [2.9.3] - 2026-11-15
+
+### Changed
+- **MITRE ATT&CK v20.1**: Technique data and the bundled Navigator layers were regenerated from the ATT&CK v20.1 STIX 2.1 bundles (`mitre-attack/attack-stix-data`). The library now has 935 techniques (706 Enterprise, 125 Mobile, 104 ICS), up from 898 in v18.1. Enterprise Defense Evasion is now split into Stealth (TA0005) and Defense Impairment (TA0112). ICS now has sub-techniques, and new ICS techniques use `T1xxx` IDs.
+- **Detection Strategies**: The technique detail panel now lists ATT&CK detection strategies (`DETxxxx`) with links to attack.mitre.org. They replace the detection text that ATT&CK stopped publishing in v18. The `detection` field in `attack-techniques.json` is replaced by `detectionStrategies`.
+- **Navigator layers**: `scripts/extract-attack.py` now regenerates `resources/Nav_Layer_*.json` from the bundles. It keeps each existing layer's settings, replaces the ATT&CK version and the technique list, and adds platforms used by the techniques to the layer's platform filter (the ICS layer previously filtered on `None` only, which would hide most v20 ICS techniques in ATT&CK Navigator).
+- **Use case examples**: `T1562.001` (revoked) was replaced with `T1685` in the incident response and ransomware playbook examples.
+- **CWE 5.0**: CWE data was regenerated from CWE 5.0 (CWE Schema 8.0). The library now has 984 weaknesses: 956 active and 28 deprecated. The 15 new weaknesses (CWE-1461 to CWE-1476, except CWE-1468, which is a view) include session and credential weaknesses. Deprecated entries keep MITRE's "DEPRECATED:" name, so saved kill chains that use them (for example CWE-613) still resolve. CAPEC-149 and CAPEC-155 reference the deprecated CWE-377.
+- **CWE Schema 8 support**: `scripts/extract-data.py` now accepts both CWE Schema 7.x (`cwe-7` namespace, `Category`) and Schema 8.x (`cwe-8` namespace, `Grouping`). It stops without updating the generated files if a source file cannot be parsed, has an unsupported namespace, or yields no CAPEC patterns or CWE weaknesses. Before, CWE 5.0 produced a CWE library of 336 placeholder entries without an error, and a file with an XML error was skipped, which wrote a reduced library.
+- **Source versions**: `config.js` now records `sources.capec.version` (3.9) and `sources.cwe.version` (5.0). The extractor logs each file's version and warns when it differs from the config.
+- **CAPEC 3.9 confirmed**: CAPEC 3.9 (2023-01-24) is the latest CAPEC release, and its ATT&CK mappings are based on ATT&CK 12.0. Extracting the CAPEC 3.9 views reproduced the previously shipped CAPEC files byte for byte.
+- **CAPEC technique remap**: Both extraction scripts now remap revoked ATT&CK IDs in `capec-full.json`, `capec-to-technique.json` and `technique-to-capec.json` to their replacements, using the ATT&CK `revoked-by` relationships. Affected patterns record each change in a new `attackRemaps` field, for example `{"from": "T1562.002", "to": "T1685.001"}`. The remapped links are derived from ATT&CK data and are not CAPEC's own mapping. 14 references in 5 patterns were remapped (CAPEC-13, CAPEC-268, CAPEC-571, CAPEC-578, CAPEC-641).
+
+### Fixed
+- **Mobile and ICS tactics**: Mobile and ICS techniques now include their tactics. Previously the extractor accepted only the Enterprise kill chain name.
+- **Domain fallback**: `detectDomain()` no longer labels unknown Enterprise IDs in the T1398 to T1665 range as Mobile. Unknown IDs now fall back to ICS for `T0xxx` and Enterprise otherwise.
+- **Deterministic CWE output**: Merging CAPEC references for CWEs that appear in several source files no longer changes their order between runs.
+
+### Revoked techniques (v18.1 to v20.1)
+Saved kill chains that use these IDs show the ID without metadata. Replace them manually with the new ID:
+
+| Old ID | Old name | Replaced by |
+|---|---|---|
+| T1562 | Impair Defenses | T1685 Disable or Modify Tools |
+| T1562.001 | Disable or Modify Tools | T1685 Disable or Modify Tools |
+| T1562.002 | Disable Windows Event Logging | T1685.001 Disable or Modify Windows Event Log |
+| T1562.003 | Impair Command History Logging | T1690 Prevent Command History Logging |
+| T1562.004 | Disable or Modify System Firewall | T1686 Disable or Modify System Firewall |
+| T1562.006 | Indicator Blocking | T1685 Disable or Modify Tools |
+| T1562.007 | Disable or Modify Cloud Firewall | T1686.001 Cloud Firewall |
+| T1562.008 | Disable or Modify Cloud Logs | T1685.002 Disable or Modify Cloud Log |
+| T1562.009 | Safe Mode Boot | T1688 Safe Mode Boot |
+| T1562.010 | Downgrade Attack | T1689 Downgrade Attack |
+| T1562.011 | Spoof Security Alerting | T1685.003 Modify or Spoof Tool UI |
+| T1562.012 | Disable or Modify Linux Audit System | T1685.004 Disable or Modify Linux Audit System Log |
+| T1562.013 | Disable or Modify Network Device Firewall | T1686.002 Network Device Firewall |
+| T1070.001 | Clear Windows Event Logs | T1685.005 Clear Windows Event Logs |
+| T1070.002 | Clear Linux or Mac System Logs | T1685.006 Clear Linux or Mac System Logs |
+| T1656 | Impersonation | T1684.001 Impersonation |
+| T1672 | Email Spoofing | T1684.002 Email Spoofing |
+| T0803 | Block Command Message | T1691.001 Command Message |
+| T0804 | Block Reporting Message | T1691.002 Reporting Message |
+| T0805 | Block Serial COM | T1695.001 Serial COM |
+| T0812 | Default Credentials | T1694.001 Default Credentials |
+| T0839 | Module Firmware | T1693.002 Module Firmware |
+| T0855 | Unauthorized Command Message | T1692.001 Command Message |
+| T0856 | Spoof Reporting Message | T1692.002 Reporting Message |
+| T0857 | System Firmware | T1693.001 System Firmware |
+| T0891 | Hardcoded Credentials | T1694.002 Hardcoded Credentials |
+| T0807 | Command-Line Interface | Deprecated, no replacement listed (closest new technique: T1701 Command and Scripting Interpreter) |
+| T0853 | Scripting | Deprecated, no replacement listed (closest new technique: T1701 Command and Scripting Interpreter) |
+
+### Known limitations
+- CAPEC has not updated its ATT&CK mappings since CAPEC 3.9 (January 2023). Techniques added to ATT&CK since then, including the 65 added in v19 and v20, have no CAPEC links, except 7 that inherit links through the revoked-ID remap (T1685, T1685.001, T1685.002, T1686, T1686.001, T1688, T1690).
+- `resources/cwe-to-capec.json` is built from CAPEC 3.9 data, so CWEs added in CWE 5.0 have no CAPEC links.
+
 ## [2.9.2] - 2026-04-30
 
 ### Added 

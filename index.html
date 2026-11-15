@@ -4055,7 +4055,7 @@
         // ============================================================
         // VERSION - Loaded dynamically from changelog
         // ============================================================
-        let APP_VERSION = '2.9.2';  // Fallback version
+        let APP_VERSION = '2.9.3';  // Fallback version
         
         async function loadVersion() {
             try {
@@ -6228,10 +6228,10 @@
         }
 
         // Domain detection
+        // fallback for IDs missing from the loaded library; ID ranges are shared
+        // across domains (e.g. T1566 is enterprise, T1691 is ics), so only T0xxx is reliable
         function detectDomain(techId) {
             if (techId.startsWith('T0')) return 'ics';
-            const num = parseInt(techId.replace(/^T/, '').split('.')[0], 10);
-            if (num >= 1398 && num <= 1665) return 'mobile';
             return 'enterprise';
         }
 
@@ -7696,6 +7696,17 @@
                     `).join('') + (mitigations.length > 8 ? `<div class="list-info">+${mitigations.length - 8} more</div>` : '')
                     : '<div class="list-info">No mitigations available</div>';
 
+                // ATT&CK v18+ detection strategies (replace per-technique detection text)
+                const detectionStrategies = (Array.isArray(entity?.detectionStrategies) ? entity.detectionStrategies : [])
+                    .filter(d => typeof d?.id === 'string' && /^DET\d{4,}$/.test(d.id));
+                const detectionHtml = detectionStrategies.map(d => `
+                    <div class="detail-list-item">
+                        <a href="https://attack.mitre.org/detectionstrategies/${escAttr(d.id)}" target="_blank" rel="noopener noreferrer" style="color: var(--text-secondary); text-decoration: none;">
+                            <span class="id">${esc(d.id)}</span> ${esc(d.name || '')} →
+                        </a>
+                    </div>
+                `).join('');
+
                 const refs = entity?.references || [];
                 const refsHtml = refs.slice(0, 3).map(r => {
                     const url = r?.url || '';
@@ -7727,13 +7738,12 @@
                             <div class="detail-list-item"><span>Version:</span><span>${esc(entity?.version || '1.0')}</span></div>
                         </div>
                     </div>
-                    ${entity?.detection ? `
+                    ${detectionStrategies.length > 0 ? `
                     <div class="detail-section">
-                        <h4>Detection</h4>
-                        <details>
-                            <summary>Show / hide detection guidance</summary>
-                            <p style="font-size: 0.75rem;">${renderDescriptionWithBadges(esc(entity.detection))}</p>
-                        </details>
+                        <h4>Detection Strategies (${detectionStrategies.length})</h4>
+                        <div class="detail-list">
+                            ${detectionHtml}
+                        </div>
                     </div>
                     ` : ''}
                     <div class="detail-section">
