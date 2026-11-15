@@ -1,0 +1,32 @@
+{
+  "_comment": "SHOULD PASS SANITIZED: hostile group ID and layout reference are regenerated",
+  "version": "2.9.2",
+  "schema": "killchain-export-lite",
+  "assignments": {
+    "IN:reconnaissance": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": [],
+      "customItems": [],
+      "groups": [
+        {
+          "groupId": "grp-demo-1\" onclick=\"alert(1)",
+          "label": "Group <script>alert(1)</script>",
+          "items": [
+            {
+              "type": "attack",
+              "id": "T1595",
+              "comments": "Grouped item"
+            }
+          ]
+        }
+      ],
+      "layout": [
+        {
+          "kind": "group",
+          "groupId": "grp-demo-1\" onclick=\"alert(1)"
+        }
+      ]
+    }
+  }
+}

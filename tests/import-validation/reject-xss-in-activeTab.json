@@ -1,0 +1,12 @@
+{
+  "_comment": "MUST FAIL: Invalid activeTab value",
+  "version": "2.4.2",
+  "activeTab": "<script>alert(1)</script>",
+  "assignments": {
+    "in:reconnaissance": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": []
+    }
+  }
+}
