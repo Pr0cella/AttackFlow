@@ -1,0 +1,22 @@
+{
+  "_comment": "Prototype pollution attempt through constructor/prototype keys",
+  "version": "2.9.0",
+  "assignments": {
+    "in:reconnaissance": {
+      "techniques": [
+        {
+          "id": "T1595",
+          "metadata": {
+            "constructor": {
+              "prototype": {
+                "afPolluted": true
+              }
+            }
+          }
+        }
+      ],
+      "capecs": [],
+      "cwes": []
+    }
+  }
+}

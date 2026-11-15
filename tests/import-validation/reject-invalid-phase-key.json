@@ -1,0 +1,11 @@
+{
+  "_comment": "MUST FAIL: Invalid phase key format (no colon)",
+  "version": "2.4.2",
+  "assignments": {
+    "invalid_phase_key": {
+      "techniques": [{ "id": "T1595" }],
+      "capecs": [],
+      "cwes": []
+    }
+  }
+}

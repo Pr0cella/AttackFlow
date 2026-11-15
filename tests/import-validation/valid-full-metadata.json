@@ -1,0 +1,50 @@
+{
+  "version": "2.4.2",
+  "schema": "killchain-export-lite",
+  "exportedAt": "2026-01-30T10:00:00.000Z",
+  "view": "killchain",
+  "activeTab": "attack",
+  "layers": { "attack": true, "capec": true, "cwe": false },
+  "hideEmpty": true,
+  "assignments": {
+    "in:reconnaissance": {
+      "techniques": [
+        {
+          "id": "T1595",
+          "score": "high",
+          "confidence": 85,
+          "cve": "CVE-2024-12345",
+          "cvss": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+          "comments": "Active scanning observed from external IPs",
+          "hyperlinks": [
+            { "label": "Reference", "url": "https://example.com/report" }
+          ],
+          "observables": [
+            { "type": "ipv4-addr", "value": "192.168.1.100" },
+            { "type": "domain-name", "value": "malicious.example.com" }
+          ]
+        }
+      ],
+      "capecs": [
+        { "id": "CAPEC-169", "score": "medium", "confidence": 70 }
+      ],
+      "cwes": [
+        { "id": "CWE-200", "score": "low" }
+      ]
+    },
+    "in:exploitation": {
+      "techniques": [
+        { "id": "T1190", "score": "critical", "confidence": 95 }
+      ],
+      "capecs": [],
+      "cwes": []
+    },
+    "through:privilege-escalation": {
+      "techniques": [
+        { "id": "T1068", "score": "high" }
+      ],
+      "capecs": [],
+      "cwes": []
+    }
+  }
+}
