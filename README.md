@@ -3,7 +3,7 @@
 An editor for creating enriched Cyber Kill Chain assessments by mapping MITRE ATT&CK, CAPEC, CWE, and STIX 2.1 objects to the Unified Kill Chain framework, and enriching phase entries with additional metadata. Visualize and assess complex attack scenarios by combining flexible TTP mappings with atomic observables, CVE/CVSS context, and STIX intelligence objects.
 
 ![Version](https://img.shields.io/badge/version-2.9.3-blue)
-[![MITRE ATT&CK® 20](https://img.shields.io/badge/MITRE%20ATT%26CK®-v20-red)](https://attack.mitre.org/versions/v20/)
+[![MITRE ATT&CK® 20.1](https://img.shields.io/badge/MITRE%20ATT%26CK®-v20.1-red)](https://attack.mitre.org/versions/v20/)
 [![CAPEC 3.9](https://img.shields.io/badge/CAPEC-v3.9-purple)](https://capec.mitre.org/data/downloads.html)
 [![CWE 5.0](https://img.shields.io/badge/CWE-v5.0-orange)](https://cwe.mitre.org/data/downloads.html)
 ![License](https://img.shields.io/badge/license-Apache%202.0-green)
