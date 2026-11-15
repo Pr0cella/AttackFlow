@@ -15,11 +15,23 @@
 - **CWE Schema 8 support**: `scripts/extract-data.py` now accepts both CWE Schema 7.x (`cwe-7` namespace, `Category`) and Schema 8.x (`cwe-8` namespace, `Grouping`). It stops without updating the generated files if a source file cannot be parsed, has an unsupported namespace, or yields no CAPEC patterns or CWE weaknesses. Before, CWE 5.0 produced a CWE library of 336 placeholder entries without an error, and a file with an XML error was skipped, which wrote a reduced library.
 - **Source versions**: `config.js` now records `sources.capec.version` (3.9) and `sources.cwe.version` (5.0). The extractor logs each file's version and warns when it differs from the config.
 - **CAPEC technique remap**: Both extraction scripts now remap revoked ATT&CK IDs in `capec-full.json`, `capec-to-technique.json` and `technique-to-capec.json` to their replacements, using the ATT&CK `revoked-by` relationships. Affected patterns record each change in a new `attackRemaps` field, for example `{"from": "T1562.002", "to": "T1685.001"}`. The remapped links are derived from ATT&CK data and are not CAPEC's own mapping. 14 references in 5 patterns were remapped (CAPEC-13, CAPEC-268, CAPEC-571, CAPEC-578, CAPEC-641).
+- **Export Filenames**: Downloads are now named from a fixed prefix and a UTC timestamp instead of being derived from the document title
+- **Export Contents**: JSON export no longer writes the sidebar filter state or the current entity selection. Documents that still contain the two keys import normally and the values are ignored
 
 ### Fixed
 - **Mobile and ICS tactics**: Mobile and ICS techniques now include their tactics. Previously the extractor accepted only the Enterprise kill chain name.
 - **Domain fallback**: `detectDomain()` no longer labels unknown Enterprise IDs in the T1398 to T1665 range as Mobile. Unknown IDs now fall back to ICS for `T0xxx` and Enterprise otherwise.
 - **Deterministic CWE output**: Merging CAPEC references for CWEs that appear in several source files no longer changes their order between runs.
+- **Custom Object Name Preservation**: Native kill-chain imports keep custom STIX object names up to the same 200-character limit the create and edit modals allow, instead of shortening them to the 50-character label limit. Label, description and other field limits are unchanged
+- **Support Legacy CVE Metadata**: Native kill-chain imports preserve legacy `metadata.cves` entries, including CVE scores and validated CVSS vectors, and normalize them into the current metadata format
+- **Reject invalid array assignments**: Native JSON imports now reject array-valued document roots and `assignments` containers before replacing assignments, groups, layout, title, view, or custom STIX library data
+- **Group Assignment Preservation**: Deleting a group now keeps STIX assignments in the correct phase array with their metadata and instance IDs intact, including through JSON export/import. Invalid item or layout data stops deletion before any assignments are moved
+- **Framework Record ID Validation**: Fixed an issue where IDs in internal framework data would not be validated correctly. ATT&CK, CAPEC, and CWE records now require matching dictionary keys before caching or sharing, and list/search controls handle IDs safely
+- **Transient Rename State**: Finishing or cancelling a group rename now clears the internal rename flag instead of keeping it, so it no longer appears in exported JSON documents
+- **Field Encoding**: Added defensive field encoding in STIX Composer fields
+- **CSV Serialization**: Fixed an issue where CSV cells protected against spreadsheet formula injection were quoted more than once. Protected cells now carry a single leading tab inside one layer of quoting, cells containing a carriage return are quoted, and records are terminated with CRLF
+- **STIX Property Export**: STIX bundle export and the bundle embedded in JSON export now preserve stored properties correctly
+- **Export Value Validation**: Incompatible value shapes now stop the download and report the affected property instead of omitting them
 
 ### Revoked techniques (v18.1 to v20.1)
 Saved kill chains that use these IDs show the ID without metadata. Replace them manually with the new ID:

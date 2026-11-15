@@ -161,7 +161,7 @@ Major additions reflected in v2.9.0 runtime:
 
 ### 6.2 METADATA + TYPE MAPPING + ASSIGNMENT/GROUP LOGIC
 
-- Metadata normalization now handles `cveEntries`, legacy `cveId`/`cveIds`, and optional `cves` payloads.
+- Metadata normalization handles `cveEntries`, legacy `cveId`/`cveIds`, and legacy `cves` arrays in nested or flat assignment metadata. Array entries retain source order, with current entries before legacy entries when both keys are present. Same-ID rows remain separate so differing score or vector evidence is not discarded; exports use the current `cveEntries` representation.
 - `normalizeCvssVector` trims string inputs and uses unchanged `vectorString` regexes from FIRST's [3.0](https://www.first.org/cvss/cvss-v3.0.json), [3.1](https://www.first.org/cvss/cvss-v3.1.json), and [4.0](https://www.first.org/cvss/cvss-v4.0.json) schemas. For 3.x, it also rejects missing base metrics and duplicate metrics as required by the [specification](https://www.first.org/cvss/v3.1/specification-document#Vector-String) and checked by FIRST's calculator. These checks permit any metric order in 3.x; the 4.0 regex enforces its mandatory order. Official optional metrics are supported.
 - Invalid or non-string vectors become empty during import/display normalization; the metadata editor rejects invalid nonempty vectors on save. Empty vectors remain optional. Current CVE entries and legacy `cvssVector`/`cvss` fields use the shared normalizer, and CVE tooltip attributes use `InputSecurity.encodeHtmlEntities`. Vector validation does not calculate or verify numeric CVSS scores.
 - Confidence buckets changed to:
@@ -176,6 +176,8 @@ Major additions reflected in v2.9.0 runtime:
   - deterministic UUIDv5 stack: `uuidv5`, `sha1Bytes`, `mitigationStixId`, `techniqueStixId`
 - Group/assignment utilities:
   - `ensurePhaseLayout`, `extractAssignmentInstance`, `moveGroupBetweenPhases`, `findAssignment`, `updateAssignmentMetadata`
+
+`removeGroup()` uses `TYPE_KEYS` to return grouped assignments to their corresponding phase arrays, including `customItems` for STIX. It preserves assignment objects, metadata, instance IDs, the custom library, and existing append order. After confirmation, it validates the item list, own supported type keys, destination arrays, and layout before moving anything. A missing item list is treated as an empty group. This prevents future assignment loss during JSON export/import but does not repair previously corrupted documents.
 
 ### 6.3 STATE + PHASE MODEL + CORE HELPERS
 
@@ -215,6 +217,8 @@ Behavior:
 - HTTP context: standard `fetch` path.
 - `file://` context: local file selection and cloned JSON store.
 - shared dataset validated for schema + limits before reuse/broadcast.
+- `validateSharedDatasetShape` requires every ATT&CK, CAPEC, and CWE record to own a string `id` matching its dictionary key and framework format (`T1234`/`T1234.001`, `CAPEC-123`, `CWE-123`). Invalid records reject the dataset before cache write or reuse. `buildImmutableSharedDataPayload` reuses this validation before cloning/freezing data for sharing. A failed reload retains the previous cache.
+- Framework list and global-search click/drag handlers consume quote-safe encoded `data-*` attributes instead of interpolating record IDs into JavaScript.
 
 ### 6.5 LOCAL IFRAME IPC BRIDGE
 
@@ -362,7 +366,12 @@ Export:
   - generated `relationship` SROs (`mitigates` + co-location relations)
 - `addRelationship(...)`
 - `exportSTIXBundle()`
-- `exportCSV()` with formula-injection hardening (`sanitizeForCsv` prefix guard)
+- `exportCSV()` with formula-injection hardening (`sanitizeForCsv` prefix guard). Cells
+  whose first character is `=`, `+`, `-`, `@`, tab or CR get one leading tab and are always
+  wrapped in quotes; other cells are quoted only where RFC 4180 requires. Quoting is
+  applied exactly once and records are terminated with CRLF. No UTF-8 BOM is written.
+
+Custom SDO export is descriptor-allowlisted. It preserves exact stored strings, booleans, finite integers, and cloned string lists; absent values are omitted. A populated supported property with an incompatible shape aborts either download entry point with a property-specific diagnostic. Structured descriptor types such as `kill-chain-phases` and `external-references`, optional common STIX properties, arbitrary internal fields, and `customTypeName` are not projected. Missing required properties are not synthesized, and successful projection is not a general STIX conformance check.
 
 Import:
 
@@ -494,11 +503,9 @@ Initialization order:
   description: '',
   view: 'killchain'|'relationship'|'explorer'|'stix-builder',
   activeTab: 'attack'|'capec'|'cwe'|'custom',
-  filters: { attack, capec, cwe, custom },
   layers: { attack, capec, cwe, custom },
   hideEmpty: boolean,
   assignments: { [phaseKey]: PhaseData },
-  selection: { type, id },
   customLibrary: { [stixId]: StixLibraryEntry },
   stixBundle?: StixBundle
 }
@@ -518,7 +525,9 @@ Defense-in-depth implementation in v2.9.0:
 6. **IPC allowlisting + nonce checks + channel-only messaging + throttling**.
 7. **Shared payload immutability** via deep clone + deep freeze before iframe handoff.
 8. **URL protocol allowlist** (`http`/`https`) for rendered external links.
-9. **CSV formula injection prevention** by prefixing risky leading characters.
+9. **CSV formula injection prevention** by prefixing risky leading characters, serialized
+   with a single layer of RFC 4180 quoting so the guard survives a standards-compliant
+   reader intact.
 
 ---
 

@@ -4787,7 +4787,7 @@
             if (!phaseData) return;
             const group = (phaseData.groups || []).find(g => g.groupId === groupId);
             if (!group) return;
-            group.editing = false;
+            delete group.editing;
             if (!cancel) {
                 const sanitized = sanitizeForStorage(value || '', 80).trim();
                 group.label = sanitized || 'New Group';
@@ -4804,9 +4804,22 @@
             const group = phaseData.groups[groupIdx];
             if (!window.confirm('Delete this group and move its items back to the phase?')) return;
 
-            const items = group.items || [];
+            const items = hasOwn(group, 'items') ? group.items : [];
+            if (!Array.isArray(items) || !Array.isArray(phaseData.layout)) {
+                showToast('Cannot delete group: invalid item or layout data.');
+                return;
+            }
+            // validate destination before moving any assignment
+            for (const item of items) {
+                if (!item || typeof item !== 'object' || Array.isArray(item)
+                    || !hasOwn(item, 'type') || typeof item.type !== 'string'
+                    || !hasOwn(TYPE_KEYS, item.type) || !Array.isArray(phaseData[TYPE_KEYS[item.type]])) {
+                    showToast('Cannot delete group: invalid item or layout data.');
+                    return;
+                }
+            }
             items.forEach(item => {
-                const key = item.type === 'attack' ? 'techniques' : item.type === 'capec' ? 'capecs' : 'cwes';
+                const key = TYPE_KEYS[item.type];
                 phaseData[key].push(item);
                 phaseData.layout.push({ kind: 'item', type: item.type, instanceId: getAssignmentInstanceId(item) });
             });
@@ -5728,20 +5741,7 @@
         }
 
         function buildImmutableSharedDataPayload(rawData) {
-            if (!isPlainObject(rawData)) {
-                logLocalIframeIPCTrace('index', 'AF_SHARED_DATA rejected: shared cache is not object');
-                return null;
-            }
-            if (!hasOnlyAllowedKeys(rawData, IPC_SHARED_DATA_KEYS, 'AF_SHARED_DATA')) {
-                return null;
-            }
-            for (const key of IPC_SHARED_DATA_KEYS) {
-                const value = rawData[key];
-                if (!isPlainObject(value)) {
-                    logLocalIframeIPCTrace('index', 'AF_SHARED_DATA rejected: invalid data bucket', { key });
-                    return null;
-                }
-            }
+            if (!validateSharedDatasetShape(rawData)) return null;
             if (!enforceSharedDatasetLimits(rawData)) {
                 logLocalIframeIPCTrace('index', 'AF_SHARED_DATA rejected: shared cache exceeds configured limits');
                 return null;
@@ -5762,6 +5762,20 @@
                 if (!isPlainObject(rawData[key])) {
                     logLocalIframeIPCTrace('index', 'shared loader dataset rejected: invalid top-level bucket', { key });
                     return false;
+                }
+            }
+            for (const [bucket, pattern] of [
+                ['attack', IMPORT_LIMITS.techniqueIdPattern],
+                ['capecPatterns', /^CAPEC-\d+$/],
+                ['cweWeaknesses', /^CWE-\d+$/]
+            ]) {
+                for (const [key, record] of Object.entries(rawData[bucket])) {
+                    if (!isPlainObject(record) || !hasOwn(record, 'id')
+                        || typeof record.id !== 'string' || record.id !== key
+                        || pattern.exec(record.id)?.[0] !== record.id) {
+                        logLocalIframeIPCTrace('index', 'shared loader dataset rejected: invalid framework record ID', { bucket });
+                        return false;
+                    }
                 }
             }
             return true;
@@ -5921,6 +5935,9 @@
             const cache = getSharedDataCache();
 
             if (!forceReload && cache.data) {
+                if (!validateSharedDatasetShape(cache.data)) {
+                    throw new Error('Shared dataset validation failed');
+                }
                 return cache.data;
             }
 
@@ -6778,9 +6795,10 @@
                 const safeName = esc(result.name || '');
                 return `
                     <button class="global-search-item entity-item ${escAttr(result.type)}" draggable="true"
-                        ondragstart="handleDragStart(event, '${escAttr(result.type)}', '${escAttr(result.id)}')"
+                        data-entity-type="${InputSecurity.encodeHtmlEntities(result.type)}" data-entity-id="${InputSecurity.encodeHtmlEntities(result.id)}"
+                        ondragstart="handleDragStart(event, this.dataset.entityType, this.dataset.entityId)"
                         ondragend="handleDragEnd(event)"
-                        onclick="openGlobalSearchResult('${escAttr(result.type)}', '${escAttr(result.id)}')">
+                        onclick="openGlobalSearchResult(this.dataset.entityType, this.dataset.entityId)">
                         <div class="global-search-meta">
                             <span class="global-search-type ${escAttr(result.type)}">${esc(typeLabel)}</span>
                             <span>${safeId}</span>
@@ -6904,9 +6922,10 @@
                     const tacticBadge = entity.tactics?.length ? `<span class="entity-badge">${esc(entity.tactics[0])}</span>` : '';
                     html += `
                         <div class="entity-item attack ${isSelected ? 'selected' : ''}" 
-                             onclick="selectEntity('attack', '${esc(entity.id)}')"
+                             data-entity-id="${InputSecurity.encodeHtmlEntities(entity.id)}"
+                             onclick="selectEntity('attack', this.dataset.entityId)"
                              draggable="true"
-                             ondragstart="handleDragStart(event, 'attack', '${esc(entity.id)}')"
+                             ondragstart="handleDragStart(event, 'attack', this.dataset.entityId)"
                              ondragend="handleDragEnd(event)"
                              title="${escAttr(entity.description ? entity.description.substring(0, 200) + '...' : '')}">
                             <div class="entity-header">
@@ -6925,9 +6944,10 @@
                                          entity.severity?.toLowerCase().includes('medium') ? 'severity-medium' : 'severity-low';
                     html += `
                         <div class="entity-item capec ${isSelected ? 'selected' : ''}"
-                             onclick="selectEntity('capec', '${esc(entity.id)}')"
+                             data-entity-id="${InputSecurity.encodeHtmlEntities(entity.id)}"
+                             onclick="selectEntity('capec', this.dataset.entityId)"
                              draggable="true"
-                             ondragstart="handleDragStart(event, 'capec', '${esc(entity.id)}')"
+                             ondragstart="handleDragStart(event, 'capec', this.dataset.entityId)"
                              ondragend="handleDragEnd(event)">
                             <div class="entity-header">
                                 <span class="entity-id">${esc(entity.id)}</span>
@@ -6943,9 +6963,10 @@
                 } else if (type === 'cwe') {
                     html += `
                         <div class="entity-item cwe ${isSelected ? 'selected' : ''}"
-                             onclick="selectEntity('cwe', '${esc(entity.id)}')"
+                             data-entity-id="${InputSecurity.encodeHtmlEntities(entity.id)}"
+                             onclick="selectEntity('cwe', this.dataset.entityId)"
                              draggable="true"
-                             ondragstart="handleDragStart(event, 'cwe', '${esc(entity.id)}')"
+                             ondragstart="handleDragStart(event, 'cwe', this.dataset.entityId)"
                              ondragend="handleDragEnd(event)">
                             <div class="entity-header">
                                 <span class="entity-id">${esc(entity.id)}</span>
@@ -7121,7 +7142,7 @@
                     if (CONFIG.imports?.clearStixOnBundleImport) renderAll();
                     showToast(msg);
                 } catch (err) {
-                    showToast('STIX import failed: ' + InputSecurity.escapeHtml(err.message));
+                    showToast('STIX import failed: ' + err.message);
                 }
             };
             reader.readAsText(file);
@@ -9105,35 +9126,46 @@
             showToast('Cleared all assignments');
         }
 
+        // Download names are generated, never derived from document content: a fixed
+        // prefix per export kind plus a UTC timestamp.
+        function exportFileName(prefix, extension, when = new Date()) {
+            const stamp = when.toISOString().replace(/[-:]/g, '').replace('T', '-').slice(0, 15);
+            return `${prefix}-${stamp}${extension}`;
+        }
+
         function exportJSON() {
+            const exportedAt = new Date();
             const exportData = {
                 version: APP_VERSION,
                 schema: 'killchain-export-lite',
-                exportedAt: new Date().toISOString(),
+                exportedAt: exportedAt.toISOString(),
                 title: state.title || '',
                 description: state.description || '',
                 view: state.view,
                 activeTab: state.activeTab,
-                filters: state.filters,
                 layers: state.layers,
                 hideEmpty: state.hideEmpty,
                 assignments: state.assignments,
-                selection: state.selection,
                 customLibrary: state.library.custom
             };
 
             // Generate embedded STIX bundle if custom items exist
             const customIds = Object.keys(state.library.custom);
             if (customIds.length > 0) {
-                exportData.stixBundle = buildSTIXBundle();
+                try {
+                    exportData.stixBundle = buildSTIXBundle();
+                } catch (err) {
+                    const message = err && typeof err.message === 'string' ? err.message : 'Unknown export error';
+                    showToast('JSON export failed: ' + message);
+                    return;
+                }
             }
-            
+
             const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            const slug = state.title ? state.title.replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/-+$/,'').substring(0, 60) : 'attack-chain-export';
-            a.download = slug + '.json';
+            a.download = exportFileName('attackflow-export', '.json', exportedAt);
             a.click();
             URL.revokeObjectURL(url);
             showToast('Exported JSON');
@@ -9155,7 +9187,74 @@
                     name: item.name || ''
                 };
                 if (item.description) sdo.description = item.description;
-                if (item.labels && item.labels.length > 0) sdo.labels = item.labels;
+                if (item.labels && item.labels.length > 0) sdo.labels = item.labels.slice();
+
+                const typeDef = (typeof STIX_OBJECTS !== 'undefined'
+                    && !isDangerousObjectKey(item.stixType)
+                    && hasOwn(STIX_OBJECTS, item.stixType))
+                    ? STIX_OBJECTS[item.stixType]
+                    : null;
+                if (typeDef) {
+                    const coreKeys = new Set([
+                        'type', 'spec_version', 'id', 'created', 'modified',
+                        'name', 'description', 'labels', 'customTypeName'
+                    ]);
+                    const scalarTypes = new Set(['string', 'text', 'enum', 'open-vocab', 'timestamp', 'identifier']);
+                    const listTypes = new Set(['list', 'list:open-vocab']);
+                    const fields = [...(typeDef.required || []), ...(typeDef.optional || [])];
+
+                    for (const field of fields) {
+                        if (!field || typeof field.key !== 'string' || isDangerousObjectKey(field.key)) continue;
+                        if (coreKeys.has(field.key) || !hasOwn(item, field.key)) continue;
+
+                        const value = item[field.key];
+                        if (value === undefined || value === null || value === ''
+                            || (Array.isArray(value) && value.length === 0)) continue;
+
+                        let expectedType = '';
+                        if (scalarTypes.has(field.type)) {
+                            if (typeof value === 'string') {
+                                sdo[field.key] = value;
+                                continue;
+                            }
+                            expectedType = 'string';
+                        } else if (field.type === 'boolean') {
+                            if (typeof value === 'boolean') {
+                                sdo[field.key] = value;
+                                continue;
+                            }
+                            expectedType = 'boolean';
+                        } else if (field.type === 'integer') {
+                            if (typeof value === 'number' && Number.isFinite(value) && Number.isInteger(value)) {
+                                sdo[field.key] = value;
+                                continue;
+                            }
+                            expectedType = 'finite integer';
+                        } else if (listTypes.has(field.type)) {
+                            let validList = Array.isArray(value);
+                            if (validList) {
+                                for (let index = 0; index < value.length; index++) {
+                                    if (!hasOwn(value, index) || typeof value[index] !== 'string') {
+                                        validList = false;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (validList) {
+                                sdo[field.key] = value.slice();
+                                continue;
+                            }
+                            expectedType = 'array of strings';
+                        } else {
+                            // Structured descriptor types are not supported by the main editor/export projection.
+                            continue;
+                        }
+
+                        throw new TypeError(
+                            `Cannot export STIX property "${item.stixType}.${field.key}": expected ${expectedType}.`
+                        );
+                    }
+                }
                 objects.push(sdo);
             }
 
@@ -9324,13 +9423,19 @@
                 showToast('No STIX objects to export');
                 return;
             }
-            const bundle = buildSTIXBundle();
+            let bundle;
+            try {
+                bundle = buildSTIXBundle();
+            } catch (err) {
+                const message = err && typeof err.message === 'string' ? err.message : 'Unknown export error';
+                showToast('STIX export failed: ' + message);
+                return;
+            }
             const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            const slug = state.title ? state.title.replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/-+$/,'').substring(0, 60) : 'stix-bundle';
-            a.download = slug + '-stix-bundle.json';
+            a.download = exportFileName('stix-bundle', '.json');
             a.click();
             URL.revokeObjectURL(url);
             showToast('Exported STIX 2.1 Bundle');
@@ -9426,12 +9531,12 @@
         };
 
         function validateKillChainImport(data) {
-            if (!data || typeof data !== 'object') {
+            if (!data || typeof data !== 'object' || Array.isArray(data)) {
                 return { valid: false, error: 'Invalid export format: expected object' };
             }
 
             const assignments = data.assignments;
-            if (!assignments || typeof assignments !== 'object') {
+            if (!assignments || typeof assignments !== 'object' || Array.isArray(assignments)) {
                 return { valid: false, error: 'Missing or invalid assignments object' };
             }
 
@@ -9552,15 +9657,16 @@
                 metadata.confidence = Math.max(0, Math.min(100, Math.floor(sourceMeta.confidence)));
             }
 
-            // Sanitize CVE entries (handle cveEntries, cveIds, legacy cveId/cve + cvssVector)
+            // Sanitize CVE entries (handle cveEntries/cves, cveIds, legacy cveId/cve + cvssVector)
             const cveEntries = [];
-            if (Array.isArray(sourceMeta.cveEntries)) {
-                sourceMeta.cveEntries.forEach(entry => {
-                    if (!entry || typeof entry !== 'object') return;
+            const appendCveEntries = (entries) => {
+                if (!Array.isArray(entries)) return;
+                entries.forEach(entry => {
+                    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return;
                     const id = typeof entry.id === 'string' ? entry.id.trim().toUpperCase() : '';
                     if (!/^CVE-\d{4}-\d{4,}$/.test(id)) return;
                     let score = null;
-                    if (entry.score !== null && entry.score !== undefined && entry.score !== '') {
+                    if ((typeof entry.score === 'number' || typeof entry.score === 'string') && entry.score !== '') {
                         const scoreValue = parseFloat(entry.score);
                         if (Number.isFinite(scoreValue) && scoreValue >= 0 && scoreValue <= 10) {
                             score = Math.round(scoreValue * 10) / 10;
@@ -9570,7 +9676,9 @@
                     const vector = normalizeCvssVector(vectorRaw);
                     cveEntries.push({ id, score, vector });
                 });
-            }
+            };
+            appendCveEntries(sourceMeta.cveEntries);
+            appendCveEntries(sourceMeta.cves);
 
             const cveValues = [];
             if (Array.isArray(sourceMeta.cveIds)) {
@@ -9778,7 +9886,7 @@
                     const entry = {
                         id: id,
                         stixType: stixType,
-                        name: sanitizeImportedString(item.name || '', CONFIG.display?.maxLabelLength || 50),
+                        name: sanitizeImportedString(item.name || '', CONFIG.display?.maxNameLength || 200),
                         description: sanitizeImportedString(item.description || '', CONFIG.display?.maxCustomDescLength || 2000),
                         labels: Array.isArray(item.labels)
                             ? item.labels
@@ -9909,7 +10017,7 @@
                     renderAll();
                     showToast('Imported kill chain');
                 } catch (err) {
-                    showToast('Import failed: ' + InputSecurity.escapeHtml(err.message));
+                    showToast('Import failed: ' + err.message);
                 }
             };
 
@@ -10096,34 +10204,34 @@
                 rows.push(row);
             }
             
-            // Convert to CSV string
-            // Prefix cells containing formula characters with a tab character and wraps the cell content in double quotes
+            // Convert to CSV string.
+            // A cell whose first character could be read as the start of a spreadsheet
+            // formula is protected with a leading tab. The guard adds that tab and nothing
+            // else: quoting happens exactly once, in the serializer below.
+            const FORMULA_LEAD = /^[=+\-@\t\r]/;
             const sanitizeForCsv = (value) => {
                 const str = String(value);
-                // prefix with tab and wrap in quotes
-                if (/^[=+\-@\t\r]/.test(str)) {
-                    return '"' + "\t" + str + '"';
-                }
-                return str;
+                return FORMULA_LEAD.test(str) ? '\t' + str : str;
             };
             
             const csvContent = rows.map(row => 
                 row.map(cell => {
-                    // Sanitize for formula injection, then escape quotes
-                    const sanitized = sanitizeForCsv(cell);
+                    const raw = String(cell);
+                    const sanitized = sanitizeForCsv(raw);
                     const escaped = sanitized.replace(/"/g, '""');
-                    return escaped.includes(',') || escaped.includes('"') || escaped.includes('\n') 
-                        ? `"${escaped}"` 
-                        : escaped;
+                    // A protected cell is always wrapped: the quotes are what carry its
+                    // leading tab through a spreadsheet importer intact. Every other cell is
+                    // wrapped only where RFC 4180 requires it.
+                    const needsQuotes = sanitized !== raw || /[",\r\n]/.test(raw);
+                    return needsQuotes ? `"${escaped}"` : escaped;
                 }).join(',')
-            ).join('\n');
+            ).join('\r\n');
             
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            const csvSlug = state.title ? state.title.replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/-+$/,'').substring(0, 60) : 'attack-chain-export';
-            a.download = csvSlug + '.csv';
+            a.download = exportFileName('attackflow-export', '.csv');
             a.click();
             URL.revokeObjectURL(url);
             showToast('Exported CSV');
