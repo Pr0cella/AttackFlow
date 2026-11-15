@@ -1,0 +1,18 @@
+# ignore all files in docs/dev/
+docs/dev/
+
+# playwright output (default outputDir next to playwright.config.cjs)
+test-results/
+playwright-report/
+blob-report/
+node_modules/
+
+# python bytecode from scripts/
+__pycache__/
+*.py[cod]
+
+# os/editor cruft (windows + linux)
+Thumbs.db
+desktop.ini
+*~
+*.swp
