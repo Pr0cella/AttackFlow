@@ -1,0 +1,18 @@
+{
+  "_comment": "MUST FAIL: Invalid observable type",
+  "version": "2.4.2",
+  "assignments": {
+    "in:reconnaissance": {
+      "techniques": [
+        {
+          "id": "T1595",
+          "observables": [
+            { "type": "invalid-type", "value": "test" }
+          ]
+        }
+      ],
+      "capecs": [],
+      "cwes": []
+    }
+  }
+}

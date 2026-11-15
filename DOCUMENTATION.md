@@ -1,6 +1,6 @@
 # AttackFlow — Monolithic API Reference
 
-> **Version:** 2.9.0  
+> **Version:** 2.9.3  
 > **Scope:** Documents the current inline JavaScript implementation in `index.html` and companion `config.js` + `stix-config.js` (plus embedded iframe IPC surface used by `explorer.html` and `stix-builder.html`).  
 > **Purpose:** Definitive implementation reference for ongoing hardening and v3 modularization planning.
 
@@ -40,7 +40,7 @@ AttackFlow is a zero-build browser SPA with all core runtime logic inside inline
 
 - No bundler, no module system, global-scope runtime.
 - Mutable app state lives in a single `state` object.
-- Rendering is template-string + `innerHTML` driven, protected by strict sanitization and validator guards.
+- Rendering is template-string + `innerHTML` driven, protected by contextual output encoding, validation, and targeted sanitization.
 - Companion scripts:
   - `config.js` (theme/config/import behavior/debug toggles)
   - `stix-config.js` (STIX SDO schemas + vocabularies + helpers)
@@ -57,10 +57,10 @@ AttackFlow is a zero-build browser SPA with all core runtime logic inside inline
 |------|------|
 | `index.html` | Main UI, CSS, and inline runtime (monolith, ~10.5k lines total) |
 | `config.js` | App config, theme presets, feature flags, IPC debug/rate/bootstrap tuning |
-| `stix-config.js` | STIX common fields, vocabularies, 19 SDO type definitions, helper APIs |
+| `stix-config.js` | STIX common fields, vocabularies, definitions for 18 SDO types and one custom object type, helper APIs |
 | `explorer.html` | Relationship Explorer iframe view |
 | `stix-builder.html` | STIX Composer iframe view (theme + local IPC aware) |
-| `resources/*.json` | Generated runtime datasets (ATT&CK/CAPEC/CWE + mappings + Navigator layers) |
+| `resources/*.json` | Generated runtime datasets (ATT&CK/CAPEC/CWE + mappings) and ATT&CK Navigator layer exports |
 
 ---
 
@@ -92,12 +92,14 @@ Major additions reflected in v2.9.0 runtime:
 
 ## 4. config.js — Configuration & Theme Engine
 
-### 4.1 `CONFIG` Highlights (v2.9.0)
+### 4.1 `CONFIG` Highlights (v2.9.3)
 
-- `version: '2.9.0'`
-- `sources.attack.version: '18.1'`
+- `version: '2.9.3'`
+- `sources.attack.version: '20.1'`
+- `sources.capec.version: '3.9'`, `sources.cwe.version: '5.0'` — expected source versions; `extract-data.py` warns on mismatch
 - `imports.clearStixOnBundleImport`, `imports.clearStixOnKillChainImport`
 - `navigation.confirmOnLeave`, `navigation.showStixBuilder`
+- `console.showStartupBanner` — print the AttackFlow ASCII banner to the browser console when the main editor starts (default `true`)
 - `visualizer.enabled`
 - `ConfigIframeIPC.enableLocalIframeIPC`
 - `debugging.traceLocalIframeIPCLogs`
@@ -119,7 +121,7 @@ Major additions reflected in v2.9.0 runtime:
 
 - `STIX_COMMON_PROPERTIES`
 - `STIX_VOCABULARIES`
-- `STIX_OBJECTS` (19 SDO types)
+- `STIX_OBJECTS` (18 SDO types and one custom object type)
 - `STIX_RELATIONSHIP_DEFAULTS`
 
 ### 5.2 Helper functions
@@ -147,19 +149,21 @@ Major additions reflected in v2.9.0 runtime:
   - validators (CVE/CVSS/hash/IP/domain/url/filename)
   - `validateObservable(type, value)` dispatch
 - Input guard stack (`applyInputGuards`) covers:
-  - `keydown`, `beforeinput`, `paste`, `drop`, `input`
+  - `paste`, `drop`, `input`
+  - printable punctuation is not blocked during native keyboard or `beforeinput` handling
 - Added sanitizer primitives:
   - `normalizeUserInput(text, maxLength, allowNewlines)`
   - `sanitizeUserInputText(text, allowNewlines)`
   - `sanitizeForStorage(text, maxLength)`
+- Main-editor evidence helpers preserve printable characters, including repeated hyphens and STIX pattern punctuation. They retain control-character removal and length limits; storage commits also trim surrounding whitespace. The older restrictive `InputSecurity.sanitize` remains unchanged for its existing non-evidence call sites.
 - Prototype pollution defenses:
   - `DANGEROUS_OBJECT_KEYS`
   - `isDangerousObjectKey`, `createSafeObject`, `hasOwn`, `parseJsonSafe`
-  - recursive loader sanitizer `stripAngleBracketsFromJson`
+  - recursive loader sanitizer `stripAngleBracketsFromJson`, retained for framework and Navigator inputs
 
 ### 6.2 METADATA + TYPE MAPPING + ASSIGNMENT/GROUP LOGIC
 
-- Metadata normalization now handles `cveEntries`, legacy `cveId`/`cveIds`, and optional `cves` payloads.
+- Metadata normalization handles `cveEntries`, legacy `cveId`/`cveIds`, and legacy `cves` arrays in nested or flat assignment metadata. Array entries retain source order, with current entries before legacy entries when both keys are present. Same-ID rows remain separate so differing score or vector evidence is not discarded; exports use the current `cveEntries` representation.
 - `normalizeCvssVector` trims string inputs and uses unchanged `vectorString` regexes from FIRST's [3.0](https://www.first.org/cvss/cvss-v3.0.json), [3.1](https://www.first.org/cvss/cvss-v3.1.json), and [4.0](https://www.first.org/cvss/cvss-v4.0.json) schemas. For 3.x, it also rejects missing base metrics and duplicate metrics as required by the [specification](https://www.first.org/cvss/v3.1/specification-document#Vector-String) and checked by FIRST's calculator. These checks permit any metric order in 3.x; the 4.0 regex enforces its mandatory order. Official optional metrics are supported.
 - Invalid or non-string vectors become empty during import/display normalization; the metadata editor rejects invalid nonempty vectors on save. Empty vectors remain optional. Current CVE entries and legacy `cvssVector`/`cvss` fields use the shared normalizer, and CVE tooltip attributes use `InputSecurity.encodeHtmlEntities`. Vector validation does not calculate or verify numeric CVSS scores.
 - Confidence buckets changed to:
@@ -174,6 +178,8 @@ Major additions reflected in v2.9.0 runtime:
   - deterministic UUIDv5 stack: `uuidv5`, `sha1Bytes`, `mitigationStixId`, `techniqueStixId`
 - Group/assignment utilities:
   - `ensurePhaseLayout`, `extractAssignmentInstance`, `moveGroupBetweenPhases`, `findAssignment`, `updateAssignmentMetadata`
+
+`removeGroup()` uses `TYPE_KEYS` to return grouped assignments to their corresponding phase arrays, including `customItems` for STIX. It preserves assignment objects, metadata, instance IDs, the custom library, and existing append order. After confirmation, it validates the item list, own supported type keys, destination arrays, and layout before moving anything. A missing item list is treated as an empty group. This prevents future assignment loss during JSON export/import but does not repair previously corrupted documents.
 
 ### 6.3 STATE + PHASE MODEL + CORE HELPERS
 
@@ -213,6 +219,8 @@ Behavior:
 - HTTP context: standard `fetch` path.
 - `file://` context: local file selection and cloned JSON store.
 - shared dataset validated for schema + limits before reuse/broadcast.
+- `validateSharedDatasetShape` requires every ATT&CK, CAPEC, and CWE record to own a string `id` matching its dictionary key and framework format (`T1234`/`T1234.001`, `CAPEC-123`, `CWE-123`). Invalid records reject the dataset before cache write or reuse. `buildImmutableSharedDataPayload` reuses this validation before cloning/freezing data for sharing. A failed reload retains the previous cache.
+- Framework list and global-search click/drag handlers consume quote-safe encoded `data-*` attributes instead of interpolating record IDs into JavaScript.
 
 ### 6.5 LOCAL IFRAME IPC BRIDGE
 
@@ -360,7 +368,12 @@ Export:
   - generated `relationship` SROs (`mitigates` + co-location relations)
 - `addRelationship(...)`
 - `exportSTIXBundle()`
-- `exportCSV()` with formula-injection hardening (`sanitizeForCsv` prefix guard)
+- `exportCSV()` with formula-injection hardening (`sanitizeForCsv` prefix guard). Cells
+  whose first character is `=`, `+`, `-`, `@`, tab or CR get one leading tab and are always
+  wrapped in quotes; other cells are quoted only where RFC 4180 requires. Quoting is
+  applied exactly once and records are terminated with CRLF. No UTF-8 BOM is written.
+
+Custom SDO export is descriptor-allowlisted. It preserves exact stored strings, booleans, finite integers, and cloned string lists; absent values are omitted. A populated supported property with an incompatible shape aborts either download entry point with a property-specific diagnostic. Structured descriptor types such as `kill-chain-phases` and `external-references`, optional common STIX properties, arbitrary internal fields, and `customTypeName` are not projected. Missing required properties are not synthesized, and successful projection is not a general STIX conformance check.
 
 Import:
 
@@ -387,25 +400,26 @@ Modals + app shell:
 
 - usage/changelog: `showUsageGuide`, `closeUsageGuide`, `showChangelog`, `closeChangelog`
 - dropdown helpers: `toggleDropdown`, `closeDropdowns`
-- `showToast`, `renderAll`, `enableLeaveSiteConfirmation`
+- `showToast`, `renderAll`, `enableLeaveSiteConfirmation`, `logStartupBanner`
 
 Initialization order:
 
-1. `initThemeControls()`
-2. `logLocalIframeIPCSplash('index')`
-3. `updateLoadingContextInfo()`
-4. storage listener for theme sync
-5. leave-site confirmation (config-gated)
-6. `initEmbeddedMessageBridge()`
-7. `applyNavigationConfig()`
-8. `initAssignments()`
-9. `initCompactMode()`
-10. resize listener for compact layout
-11. `applyInputGuards()`
-12. `initGlobalSearch()`
-13. `populateStixTypeDropdown()`
-14. `loadVersion()`
-15. `loadData()`
+1. `logStartupBanner()` (config-gated by `CONFIG.console.showStartupBanner`)
+2. `initThemeControls()`
+3. `logLocalIframeIPCSplash('index')`
+4. `updateLoadingContextInfo()`
+5. storage listener for theme sync
+6. leave-site confirmation (config-gated)
+7. `initEmbeddedMessageBridge()`
+8. `applyNavigationConfig()`
+9. `initAssignments()`
+10. `initCompactMode()`
+11. resize listener for compact layout
+12. `applyInputGuards()`
+13. `initGlobalSearch()`
+14. `populateStixTypeDropdown()`
+15. `loadVersion()`
+16. `loadData()`
 
 ---
 
@@ -484,18 +498,16 @@ Initialization order:
 
 ```js
 {
-  version: '2.9.0',
+  version: '2.9.3',
   schema: 'killchain-export-lite',
   exportedAt: 'ISO-8601',
   title: '',
   description: '',
   view: 'killchain'|'relationship'|'explorer'|'stix-builder',
   activeTab: 'attack'|'capec'|'cwe'|'custom',
-  filters: { attack, capec, cwe, custom },
   layers: { attack, capec, cwe, custom },
   hideEmpty: boolean,
   assignments: { [phaseKey]: PhaseData },
-  selection: { type, id },
   customLibrary: { [stixId]: StixLibraryEntry },
   stixBundle?: StixBundle
 }
@@ -505,9 +517,9 @@ Initialization order:
 
 ## 8. Security Model
 
-Defense-in-depth implementation in v2.9.0:
+Defense-in-depth implementation in v2.9.3:
 
-1. **Input blocking + normalization** on all text-entry paths.
+1. **Input normalization** on all text-entry paths: control characters removed and lengths bounded. The main editor preserves printable evidence. The STIX Composer still blocks typing of `` < > [ ] { } " ' ; ` ``, removes `` [ ] { } ; " ' ` `` from imported text and stores `<` and `>` as `&lt;` and `&gt;`.
 2. **Output encoding** before template insertion (`esc`, `escAttr`, entity encoding).
 3. **Safe JSON parsing** using reviver to strip `__proto__` / `constructor` / `prototype`.
 4. **Null-prototype object construction** for untrusted accumulator objects.
@@ -515,7 +527,9 @@ Defense-in-depth implementation in v2.9.0:
 6. **IPC allowlisting + nonce checks + channel-only messaging + throttling**.
 7. **Shared payload immutability** via deep clone + deep freeze before iframe handoff.
 8. **URL protocol allowlist** (`http`/`https`) for rendered external links.
-9. **CSV formula injection prevention** by prefixing risky leading characters.
+9. **CSV formula injection prevention** by prefixing risky leading characters, serialized
+   with a single layer of RFC 4180 quoting so the guard survives a standards-compliant
+   reader intact.
 
 ---
 
@@ -528,8 +542,8 @@ Primary listeners include:
 - `window.message` (channel bootstrap guard)
 - `window.resize` (compact layout)
 - `document.click` (dropdown close + global search close)
-- `document.keydown` (escape handling + input guard)
-- `document.beforeinput` / `paste` / `drop` / `input` (input hardening)
+- `document.keydown` (escape handling)
+- `document.paste` / `drop` / `input` (input normalization)
 - iframe `load` handlers for explorer and STIX builder channel setup
 
 ---
@@ -570,4 +584,4 @@ python3 scripts/generate-function-index.py
 
 ---
 
-*Generated for AttackFlow v2.9.0 from current workspace sources (`index.html`, `config.js`, `stix-config.js`, `docs/IPC_API-DOCS.md`).*
+*Generated for AttackFlow v2.9.3 from current workspace sources (`index.html`, `config.js`, `stix-config.js`, `docs/IPC_API-DOCS.md`).*

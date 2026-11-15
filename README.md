@@ -2,10 +2,10 @@
 
 An editor for creating enriched Cyber Kill Chain assessments by mapping MITRE ATT&CK, CAPEC, CWE, and STIX 2.1 objects to the Unified Kill Chain framework, and enriching phase entries with additional metadata. Visualize and assess complex attack scenarios by combining flexible TTP mappings with atomic observables, CVE/CVSS context, and STIX intelligence objects.
 
-### Work in progress 
-
-![Version](https://img.shields.io/badge/version-2.9.2-blue)
-[![MITRE ATT&CK® 18](https://img.shields.io/badge/MITRE%20ATT%26CK®-v18-red)](https://attack.mitre.org/versions/v18/)
+![Version](https://img.shields.io/badge/version-2.9.3-blue)
+[![MITRE ATT&CK® 20.1](https://img.shields.io/badge/MITRE%20ATT%26CK®-v20.1-red)](https://attack.mitre.org/versions/v20/)
+[![CAPEC 3.9](https://img.shields.io/badge/CAPEC-v3.9-purple)](https://capec.mitre.org/data/downloads.html)
+[![CWE 5.0](https://img.shields.io/badge/CWE-v5.0-orange)](https://cwe.mitre.org/data/downloads.html)
 ![License](https://img.shields.io/badge/license-Apache%202.0-green)
 ![Dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)
 
@@ -28,7 +28,7 @@ An editor for creating enriched Cyber Kill Chain assessments by mapping MITRE AT
 
 ### Resource Corpus
 - **Unified Kill Chain** — Map entities to IN → THROUGH → OUT phases
-- **Multi-Domain ATT&CK** — 898 techniques across Enterprise, Mobile, and ICS
+- **Multi-Domain ATT&CK** — 935 techniques across Enterprise, Mobile, and ICS
 - **CAPEC/CWE Integration** — Link attack patterns and weaknesses
 - **STIX 2.1 Objects** — Create and manage all 19 configured SDO types (including `x-custom`)
 
@@ -102,8 +102,36 @@ See the usecases [README](docs/Usecases/README.md) for details.
 
 - **Demo kill chain**: Import [examples/demo.json](examples/demo.json) to exercise all metadata fields (CVE/CVSS, observables, links, confidence) and multi-phase coverage.
 - **Grouping demo**: Import [examples/grouping-demo.json](examples/grouping-demo.json) for a ransomware-focused TTP mapping that showcases grouping.
-- **STIX demo**: Import [examples/stix-demo.json](examples/stix-demo.json) for a full STIX 2.1 showcase with all 19 SDO types across UKC phases.
-- **STIX bundle**: Import [examples/Operation-Midnight-Eclipse-stix-bundle.json](examples/Operation-Midnight-Eclipse-stix-bundle.json) via the STIX tab's "Import STIX Bundle" button to test STIX bundle parsing (25 SDOs across 19 types + 18 phase-relationship SROs).
+- **STIX demo**: Import [examples/stix-demo.json](examples/stix-demo.json) for a STIX 2.1 showcase with 18 SDO types and one custom object across UKC phases.
+- **STIX bundle**: Import [examples/Operation-Midnight-Eclipse-stix-bundle.json](examples/Operation-Midnight-Eclipse-stix-bundle.json) via the STIX tab's "Import STIX Bundle" button to test STIX bundle parsing (25 SDOs of 18 SDO types plus one custom object, 4 SCOs and 16 phase relationships).
+
+### Automated Test Suite
+
+The end-to-end suite in `tests/e2e/` uses [Playwright](https://playwright.dev/) with Chromium. It covers import validation, export formats, STIX round trips and security regressions. Requirements: Node.js and Python 3 (`python3` on `PATH`; the suite serves the app with `python3 -m http.server` on `127.0.0.1:4173`).
+
+Install Playwright once, outside the repository, so that `node_modules` does not end up in the working tree:
+
+```bash
+mkdir -p ~/af-qa && cd ~/af-qa
+npm install @playwright/test@1.64.1
+npx playwright install chromium
+```
+
+Run the full suite from the repository root:
+
+```bash
+# bash
+NODE_PATH=~/af-qa/node_modules node ~/af-qa/node_modules/@playwright/test/cli.js test --config playwright.config.cjs
+```
+
+```powershell
+# PowerShell
+$env:NODE_PATH = "$HOME\af-qa\node_modules"
+node "$HOME\af-qa\node_modules\@playwright\test\cli.js" test --config playwright.config.cjs
+```
+
+To test a server that is already running, set `PLAYWRIGHT_BASE_URL` (for example `http://127.0.0.1:8080`). Results are written to `test-results/` in the repository root.
+
 ## Project Structure
 
 ```
@@ -133,11 +161,12 @@ See the usecases [README](docs/Usecases/README.md) for details.
 │       ├── ALL.xml                 # Full CWE list
 │       ├── HARDWARE.xml            # CWE hardware design weaknesses
 │       └── SOFTWARE.xml            # CWE software development weaknesses
-└── resources/                      # Generated data (do not edit directly)
-    ├── attack-techniques.json      # ATT&CK library (898 techniques)
+└── resources/                      # Generated data and ATT&CK Navigator layer exports (do not edit directly)
+    ├── attack-techniques.json      # ATT&CK library (935 techniques)
     ├── capec-full.json             # CAPEC attack patterns
     ├── cwe-full.json               # CWE weaknesses
     ├── capec-to-technique.json     # CAPEC → ATT&CK mappings
+    ├── technique-to-capec.json     # ATT&CK → CAPEC mappings
     ├── cwe-to-capec.json           # CWE → CAPEC mappings
     ├── Nav_Layer_ENTERPRISE.json   # Enterprise Navigator layer
     ├── Nav_Layer_MOBILE.json       # Mobile Navigator layer
@@ -184,7 +213,7 @@ AttackFlow implements defense-in-depth protections and adheres to security by de
 (Note: Application NOT production ready yet - may still contain vulnerable components) 
 Please do not hesitate to create an issue / pull request or contact me directly if you find any security related issues or have suggestions for further improving application security and mitigating exploitation scenarios. 
 
-- **Input Blocking** — Dangerous characters (`` < > [ ] { } " ' ; -- ` ``) blocked at input level
+- **Input Normalization** — Control characters are removed, lengths bounded and structural values are allowlist validated
 - **Output Encoding** — All user-supplied values HTML-encoded before rendering
 - **Defensive Rendering** — Dynamic template rendering is output-encoded and sanitized before insertion
 - **Import Validation** — File size, item count, and pattern validation on imports
@@ -270,16 +299,21 @@ Download the latest framework data and run the extraction scripts:
 # Place in frameworks/ATTCK/ as ENTERPRISE.json, MOBILE.json, ICS.json
 
 # Download CAPEC XML views from https://capec.mitre.org/data/
-# Place in frameworks/CAPEC/ as DOMAINS.xml, MECHANISMS.xml
+# Place in frameworks/CAPEC/ as DOMAINS.xml (view 3000), MECHANISMS.xml (view 1000)
 
-# Download CWE XML views from https://cwe.mitre.org/data/
-# Place in frameworks/CWE/ as ALL.xml, SOFTWARE.xml, HARDWARE.xml
+# Download CWE XML from https://cwe.mitre.org/data/ (CWE Schema 7.x and 8.x are supported)
+# Place in frameworks/CWE/ as ALL.xml (cwec_vX.Y.xml), SOFTWARE.xml (view 699), HARDWARE.xml (view 1194)
 
-# Run extraction scripts
-python3 scripts/extract-attack.py    # Parse ATT&CK techniques
+# Export one layer per domain from ATT&CK Navigator (https://mitre-attack.github.io/attack-navigator/)
+# for the same ATT&CK version, with all techniques and sub-techniques selected
+# Save in resources/ as Nav_Layer_ENTERPRISE.json, Nav_Layer_MOBILE.json, Nav_Layer_ICS.json
+
+# Run extraction scripts (either order; both produce the same result)
+python3 scripts/extract-attack.py    # Parse ATT&CK techniques, check the Navigator layers
 python3 scripts/extract-data.py      # Parse CAPEC/CWE
+# Both scripts remap revoked ATT&CK IDs in the CAPEC mappings when the ATT&CK bundles are present
 
-# File paths are configurable in config.js under sources.*
+# File paths and expected source versions are configurable in config.js under sources.*
 # JSON sanitization paths are configurable in config.js under sanitize.paths
 # Sanitization runs before and after parsing to keep source and generated files clean
 ```

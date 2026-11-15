@@ -3,9 +3,14 @@
 Extract CAPEC and CWE data from XML files
 Generates JSON files for use in the Kill Chain Editor
 
+Supports CWE Schema 7.x (cwe-7 namespace, Categories) and Schema 8.x
+(cwe-8 namespace, Groupings). When the ATT&CK bundles are present, revoked
+technique IDs in the CAPEC mappings are remapped via extract-attack.py.
+
 Usage: python3 scripts/extract-data.py
 """
 
+import importlib.util
 import json
 import os
 import re
@@ -22,7 +27,26 @@ from pathlib import Path
 
 # XML namespaces
 CAPEC_NS = {'capec': 'http://capec.mitre.org/capec-3', 'xhtml': 'http://www.w3.org/1999/xhtml'}
-CWE_NS = {'cwe': 'http://cwe.mitre.org/cwe-7', 'xhtml': 'http://www.w3.org/1999/xhtml'}
+# supported CWE schema namespaces (7.x up to CWE 4.x, 8.x from CWE 5.0)
+CWE_NAMESPACES = ('http://cwe.mitre.org/cwe-7', 'http://cwe.mitre.org/cwe-8')
+
+
+class SourceFormatError(Exception):
+    """Raised when a source file is not in a supported format."""
+
+
+def root_namespace(root):
+    """Return the namespace URI of an XML root element ('' if none)."""
+    return root.tag[1:].split('}', 1)[0] if root.tag.startswith('{') else ''
+
+
+def report_source_version(root, xml_file, label, expected_version):
+    """Print the Version/Date of a source file; warn if it differs from config."""
+    version = root.get('Version', '?')
+    print(f'    {label} version {version} ({root.get("Date", "no date")})')
+    if expected_version and version != expected_version:
+        print(f'    Warning: {os.path.basename(xml_file)} is {label} {version}, '
+              f'config.js expects {expected_version}')
 
 
 def get_text(element, default=''):
@@ -66,22 +90,26 @@ def sanitize_value(value):
     return value
 
 
-def extract_capec(xml_files):
+def extract_capec(xml_files, expected_version=None):
     """Extract CAPEC attack patterns from XML files."""
     print('Extracting CAPEC data...')
     patterns = {}
     categories = {}
-    
+
     for xml_file in xml_files:
         print(f'  Processing {os.path.basename(xml_file)}...')
-        
+
         try:
             tree = ET.parse(xml_file)
             root = tree.getroot()
         except ET.ParseError as e:
-            print(f'    Error parsing {xml_file}: {e}')
-            continue
-        
+            # fatal: skipping one file would silently write a reduced library
+            raise SourceFormatError(f'{xml_file}: XML parse error ({e})')
+
+        if root_namespace(root) != CAPEC_NS['capec']:
+            raise SourceFormatError(f'{xml_file}: unsupported CAPEC namespace "{root_namespace(root)}"')
+        report_source_version(root, xml_file, 'CAPEC', expected_version)
+
         # Find Attack_Patterns
         attack_patterns_el = root.find('capec:Attack_Patterns', CAPEC_NS)
         if attack_patterns_el is not None:
@@ -189,22 +217,28 @@ def extract_capec(xml_files):
     return {'patterns': patterns, 'categories': categories}
 
 
-def extract_cwe(xml_files):
-    """Extract CWE weaknesses from XML files."""
+def extract_cwe(xml_files, expected_version=None):
+    """Extract CWE weaknesses from XML files (CWE Schema 7.x or 8.x)."""
     print('Extracting CWE data...')
     weaknesses = {}
     categories = {}
-    
+
     for xml_file in xml_files:
         print(f'  Processing {os.path.basename(xml_file)}...')
-        
+
         try:
             tree = ET.parse(xml_file)
             root = tree.getroot()
         except ET.ParseError as e:
-            print(f'    Error parsing {xml_file}: {e}')
-            continue
-        
+            # fatal: skipping one file would silently write a reduced library
+            raise SourceFormatError(f'{xml_file}: XML parse error ({e})')
+
+        ns_uri = root_namespace(root)
+        if ns_uri not in CWE_NAMESPACES:
+            raise SourceFormatError(f'{xml_file}: unsupported CWE namespace "{ns_uri}"')
+        CWE_NS = {'cwe': ns_uri, 'xhtml': 'http://www.w3.org/1999/xhtml'}
+        report_source_version(root, xml_file, 'CWE', expected_version)
+
         # Find Weaknesses
         weaknesses_el = root.find('cwe:Weaknesses', CWE_NS)
         if weaknesses_el is not None:
@@ -262,7 +296,8 @@ def extract_cwe(xml_files):
                     if not existing.get('parent') and parent:
                         existing['parent'] = parent
                     if capecs:
-                        existing['capecs'] = list({*existing.get('capecs', []), *capecs})
+                        # ordered merge; a set here made output order vary between runs
+                        existing['capecs'] = list(dict.fromkeys([*existing.get('capecs', []), *capecs]))
                 else:
                     weaknesses[cwe_id] = {
                         'id': cwe_id,
@@ -275,10 +310,14 @@ def extract_cwe(xml_files):
                         'children': []
                     }
         
-        # Find Categories
+        # Find Categories (Schema 7.x) or Groupings (Schema 8.x replaces Category)
         categories_el = root.find('cwe:Categories', CWE_NS)
+        category_tag = 'cwe:Category'
+        if categories_el is None:
+            categories_el = root.find('cwe:Groupings', CWE_NS)
+            category_tag = 'cwe:Grouping'
         if categories_el is not None:
-            category_elements = categories_el.findall('cwe:Category', CWE_NS)
+            category_elements = categories_el.findall(category_tag, CWE_NS)
             print(f'    Found {len(category_elements)} categories')
             
             for cat in category_elements:
@@ -410,6 +449,14 @@ def load_config(project_dir):
         with open(config_path, 'r', encoding='utf-8') as f:
             content = f.read()
             
+            # Extract expected source versions (capec: { version: ... }, cwe: { version: ... })
+            for source in ('capec', 'cwe'):
+                block = re.search(source + r":\s*\{([^}]+)\}", content)
+                if block:
+                    m = re.search(r"version:\s*['\"]([^'\"]+)['\"]", block.group(1))
+                    if m:
+                        config['sources'][source]['version'] = m.group(1)
+
             # Extract CAPEC paths
             m = re.search(r"domains:\s*['\"]([^'\"]+)['\"]", content)
             if m:
@@ -480,11 +527,18 @@ def main():
         return 1
     
     print('=== Attack Chain Data Extraction ===\n')
-    
-    # Extract data
-    capec_data = extract_capec([str(f) for f in capec_files])
-    cwe_data = extract_cwe([str(f) for f in cwe_files])
-    
+
+    # Extract data (fail before writing anything if a source is unusable)
+    try:
+        capec_data = extract_capec([str(f) for f in capec_files], config['sources']['capec'].get('version'))
+        cwe_data = extract_cwe([str(f) for f in cwe_files], config['sources']['cwe'].get('version'))
+    except SourceFormatError as e:
+        print(f'\nError: {e}. Generated files were not updated.')
+        return 1
+    if not capec_data['patterns'] or not cwe_data['weaknesses']:
+        print('\nError: no CAPEC patterns or no CWE weaknesses extracted. Generated files were not updated.')
+        return 1
+
     # Add missing CWEs referenced by CAPECs
     cwe_data = add_missing_cwes(cwe_data, capec_data)
     
@@ -509,7 +563,21 @@ def main():
         with open(file_path, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
         print(f'  Written: {name}')
-    
+
+    # Remap revoked ATT&CK IDs in the regenerated CAPEC files (shared with extract-attack.py)
+    print('\nRemapping revoked ATT&CK techniques in CAPEC mappings...')
+    spec = importlib.util.spec_from_file_location('extract_attack', script_dir / 'extract-attack.py')
+    extract_attack = importlib.util.module_from_spec(spec)
+    dont_write_bytecode = sys.dont_write_bytecode
+    sys.dont_write_bytecode = True  # keep scripts/__pycache__ out of the repository
+    try:
+        spec.loader.exec_module(extract_attack)
+    finally:
+        sys.dont_write_bytecode = dont_write_bytecode
+    if not extract_attack.remap_capec_from_bundles(project_dir, resources_dir):
+        print('  Warning: ATT&CK bundles not found; CAPEC technique mappings were not remapped. '
+              'Run scripts/extract-attack.py once the bundles are available.')
+
     print('\n=== Extraction Complete ===')
     
     # Summary stats
@@ -517,8 +585,11 @@ def main():
     print(f'  CAPEC patterns: {len(capec_data["patterns"])}')
     print(f'  CAPEC categories: {len(capec_data["categories"])}')
     print(f'  CWE weaknesses: {len(cwe_data["weaknesses"])}')
-    print(f'  CAPEC→Technique mappings: {len(capec_to_technique)}')
-    print(f'  Technique→CAPEC mappings: {len(technique_to_capec)}')
+    deprecated = sorted((w['id'] for w in cwe_data['weaknesses'].values() if w.get('status') == 'Deprecated'),
+                        key=lambda i: int(i.split('-')[1]))
+    print(f'  CWE deprecated (kept, labelled by MITRE): {len(deprecated)} {deprecated}')
+    print(f'  CAPEC→Technique mappings (before ATT&CK remap): {len(capec_to_technique)}')
+    print(f'  Technique→CAPEC mappings (before ATT&CK remap): {len(technique_to_capec)}')
     print(f'  CWE→CAPEC mappings: {len(cwe_to_capec)}')
 
     # Sanitize JSON after parsing (cleans generated files)

@@ -33,10 +33,12 @@ jobs:
         uses: actions/checkout@v4
       - name: Setup Pages
         uses: actions/configure-pages@v5
+      - name: Remove test files, docs, scripts from the deployment
+        run: rm -rf tests playwright.config.cjs docs scripts
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Upload entire repository
+          # Upload the repository without the removed test files
           path: .
     
       - name: Deploy to GitHub Pages

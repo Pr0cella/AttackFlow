@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """
 Extract ATT&CK technique data from STIX bundles
-Generates attack-techniques.json for use in the Kill Chain Editor
+Generates attack-techniques.json for use in the Kill Chain Editor, checks the
+Nav_Layer_*.json files (exported from ATT&CK Navigator) against the extracted
+techniques, and remaps revoked technique IDs in the CAPEC mapping files
+(capec-full, capec-to-technique, technique-to-capec)
 
 Usage: python3 scripts/extract-attack.py
 """
@@ -11,6 +14,16 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+
+# kill chain names used by attack-pattern objects in each ATT&CK domain bundle
+ATTACK_KILL_CHAINS = {'mitre-attack', 'mitre-mobile-attack', 'mitre-ics-attack'}
+
+# navigator layer file per domain (exported from ATT&CK Navigator; checked, never written)
+NAV_LAYER_FILES = {
+    'enterprise': 'Nav_Layer_ENTERPRISE.json',
+    'mobile': 'Nav_Layer_MOBILE.json',
+    'ics': 'Nav_Layer_ICS.json'
+}
 
 
 def extract_external_id(obj):
@@ -48,26 +61,49 @@ def extract_tactics(obj):
     """Extract tactic names from kill_chain_phases."""
     tactics = []
     for phase in obj.get('kill_chain_phases', []):
-        if phase.get('kill_chain_name') == 'mitre-attack':
+        if phase.get('kill_chain_name') in ATTACK_KILL_CHAINS:
             tactics.append(phase.get('phase_name'))
     return tactics
 
 
-def process_stix_bundle(file_path, techniques, mitigations, relationships):
+def extract_any_attack_id(obj):
+    """External ID from any ATT&CK source name; older revoked mobile/ics objects
+    use mitre-mobile-attack / mitre-ics-attack instead of mitre-attack."""
+    for ref in obj.get('external_references', []):
+        if ref.get('source_name') in ATTACK_KILL_CHAINS and ref.get('external_id'):
+            return ref.get('external_id')
+    return None
+
+
+def new_revocations():
+    """Container for revoked attack-pattern data collected across bundles."""
+    return {'revoked': {}, 'stix_to_ext': {}}
+
+
+def process_stix_bundle(file_path, techniques, mitigations, detection_strategies, relationships, layer_entries,
+                        revocations):
     """Process a STIX bundle file and extract relevant data."""
     print(f'  Processing {os.path.basename(file_path)}...')
-    
+
     with open(file_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
-    
+
     objects = data.get('objects', [])
     tech_count = 0
     mit_count = 0
     rel_count = 0
-    
+
     for obj in objects:
         obj_type = obj.get('type')
-        
+
+        # record every attack-pattern id (incl. revoked) to resolve revoked-by relationships
+        if obj_type == 'attack-pattern':
+            any_ext_id = extract_any_attack_id(obj)
+            if any_ext_id:
+                revocations['stix_to_ext'][obj.get('id')] = any_ext_id
+                if obj.get('revoked'):
+                    revocations['revoked'][obj.get('id')] = any_ext_id
+
         # Skip deprecated and revoked items
         if obj.get('x_mitre_deprecated') or obj.get('revoked'):
             continue
@@ -87,7 +123,11 @@ def process_stix_bundle(file_path, techniques, mitigations, relationships):
                 domain = 'ics'
             else:
                 domain = 'enterprise'
-            
+
+            tactics = extract_tactics(obj)
+            for tactic in tactics:
+                layer_entries.setdefault(domain, set()).add((ext_id, tactic))
+
             # Only add if not already present (avoid duplicates across files)
             if ext_id not in techniques:
                 techniques[ext_id] = {
@@ -96,17 +136,26 @@ def process_stix_bundle(file_path, techniques, mitigations, relationships):
                     'name': obj.get('name', ''),
                     'description': (obj.get('description', '') or '')[:3000],
                     'platforms': obj.get('x_mitre_platforms', []),
-                    'tactics': extract_tactics(obj),
+                    'tactics': tactics,
                     'domain': domain,
                     'isSubtechnique': obj.get('x_mitre_is_subtechnique', False),
                     'parentTechnique': None,  # Will be resolved later
-                    'detection': (obj.get('x_mitre_detection', '') or '')[:2000],
                     'version': obj.get('x_mitre_version', '1.0'),
                     'references': extract_references(obj),
-                    'mitigations': []  # Will be populated later
+                    'mitigations': [],  # Will be populated later
+                    'detectionStrategies': []  # Will be populated later
                 }
                 tech_count += 1
-        
+
+        elif obj_type == 'x-mitre-detection-strategy':
+            # ATT&CK v18+ replaces technique detection text with detection strategies
+            det_id = extract_external_id(obj)
+            if det_id:
+                detection_strategies[obj.get('id')] = {
+                    'id': det_id,
+                    'name': obj.get('name', '')
+                }
+
         elif obj_type == 'course-of-action':
             mit_id = extract_mitigation_id(obj)
             if mit_id:
@@ -120,7 +169,7 @@ def process_stix_bundle(file_path, techniques, mitigations, relationships):
         
         elif obj_type == 'relationship':
             rel_type = obj.get('relationship_type')
-            if rel_type in ('mitigates', 'subtechnique-of'):
+            if rel_type in ('mitigates', 'subtechnique-of', 'detects', 'revoked-by'):
                 relationships.append({
                     'type': rel_type,
                     'source': obj.get('source_ref'),
@@ -132,18 +181,19 @@ def process_stix_bundle(file_path, techniques, mitigations, relationships):
     print(f'    Found: {tech_count} techniques, {mit_count} mitigations, {rel_count} relevant relationships')
 
 
-def resolve_relationships(techniques, mitigations, relationships):
-    """Resolve relationships to link mitigations and parent techniques."""
+def resolve_relationships(techniques, mitigations, detection_strategies, relationships):
+    """Resolve relationships to link mitigations, detection strategies, and parent techniques."""
     print('Resolving relationships...')
-    
+
     # Build STIX ID to external ID mapping for techniques
     stix_to_ext = {}
     for ext_id, tech in techniques.items():
         stix_to_ext[tech['stixId']] = ext_id
-    
+
     mit_count = 0
     parent_count = 0
-    
+    det_count = 0
+
     for rel in relationships:
         if rel['type'] == 'mitigates':
             # source is course-of-action, target is attack-pattern
@@ -172,12 +222,188 @@ def resolve_relationships(techniques, mitigations, relationships):
                 parent_ext_id = stix_to_ext[parent_stix_id]
                 techniques[sub_ext_id]['parentTechnique'] = parent_ext_id
                 parent_count += 1
-    
-    print(f'  Resolved: {mit_count} mitigation links, {parent_count} parent technique links')
-    
-    # Clean up stixId from output (not needed in final JSON)
+
+        elif rel['type'] == 'detects':
+            # source is x-mitre-detection-strategy, target is attack-pattern
+            det_stix_id = rel['source']
+            tech_stix_id = rel['target']
+
+            if det_stix_id in detection_strategies and tech_stix_id in stix_to_ext:
+                det = detection_strategies[det_stix_id]
+                strategies = techniques[stix_to_ext[tech_stix_id]]['detectionStrategies']
+                if det not in strategies:
+                    strategies.append(dict(det))
+                    det_count += 1
+
+    print(f'  Resolved: {mit_count} mitigation links, {det_count} detection strategy links, '
+          f'{parent_count} parent technique links')
+
+    # Clean up stixId from output (not needed in final JSON); sort for stable output
     for tech in techniques.values():
         del tech['stixId']
+        tech['detectionStrategies'].sort(key=lambda d: d['id'])
+
+
+def build_revoked_map(revocations, relationships, active_ids):
+    """Map revoked technique IDs to their active replacement via revoked-by chains.
+
+    IDs without an active replacement (e.g. deprecated with no successor) are omitted.
+    """
+    direct = {}
+    for rel in relationships:
+        if rel['type'] != 'revoked-by' or rel['source'] not in revocations['revoked']:
+            continue
+        new_id = revocations['stix_to_ext'].get(rel['target'])
+        if new_id:
+            direct[revocations['revoked'][rel['source']]] = new_id
+
+    resolved = {}
+    for old_id in direct:
+        if old_id in active_ids:
+            continue  # never remap an id that is still active
+        current, seen = old_id, set()
+        while current not in active_ids and current in direct and current not in seen:
+            seen.add(current)
+            current = direct[current]
+        if current in active_ids:
+            resolved[old_id] = current
+    return resolved
+
+
+def dedupe(items):
+    """Remove duplicates, keeping first-seen order."""
+    return list(dict.fromkeys(items))
+
+
+def remap_capec_mappings(resources_dir, revoked_map, active_ids):
+    """Rewrite revoked ATT&CK IDs in the CAPEC mapping files to their replacements.
+
+    CAPEC's own ATT&CK mappings predate many ATT&CK revocations. capec-full.json is
+    remapped (affected patterns record the change in attackRemaps), then
+    capec-to-technique.json and technique-to-capec.json are rebuilt from it the same
+    way extract-data.py builds them, so all three stay consistent. Idempotent.
+    """
+    capec_path = resources_dir / 'capec-full.json'
+    if not capec_path.exists():
+        print('  Skipped CAPEC remap: capec-full.json not found')
+        return
+
+    with open(capec_path, 'r', encoding='utf-8') as f:
+        capec = json.load(f)
+
+    remap_count = 0
+    affected = []
+    for capec_id, pattern in capec.get('patterns', {}).items():
+        original = pattern.get('techniques', [])
+        if not any(t in revoked_map for t in original):
+            continue
+        remaps = pattern.get('attackRemaps', [])
+        for old_id in dedupe(t for t in original if t in revoked_map):
+            entry = {'from': old_id, 'to': revoked_map[old_id]}
+            if entry not in remaps:
+                remaps.append(entry)
+            remap_count += 1
+        pattern['attackRemaps'] = remaps
+        pattern['techniques'] = dedupe(revoked_map.get(t, t) for t in original)
+        affected.append(capec_id)
+
+    # rebuild both mapping files from capec-full (same logic as extract-data.py)
+    capec_to_technique = {}
+    technique_to_capec = {}
+    for capec_id, pattern in capec.get('patterns', {}).items():
+        techniques = pattern.get('techniques', [])
+        if techniques:
+            capec_to_technique[capec_id] = techniques
+        for tech_id in techniques:
+            technique_to_capec.setdefault(tech_id, []).append(capec_id)
+
+    outputs = [
+        (capec_path, capec),
+        (resources_dir / 'capec-to-technique.json', capec_to_technique),
+        (resources_dir / 'technique-to-capec.json', technique_to_capec)
+    ]
+    for path, data in outputs:
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+
+    unresolved = sorted(t for t in technique_to_capec if t not in active_ids)
+    print(f'  CAPEC remap: {remap_count} revoked technique references in {len(affected)} patterns '
+          f'{affected if affected else ""}'.rstrip())
+    print(f'  CAPEC mappings after remap: {len(capec_to_technique)} CAPECs, '
+          f'{len(technique_to_capec)} techniques')
+    if unresolved:
+        print(f'  Warning: CAPEC references without an active technique: {unresolved}')
+
+
+def remap_capec_from_bundles(project_dir, resources_dir):
+    """Parse the configured ATT&CK bundles and remap the CAPEC mapping files.
+
+    Entry point for extract-data.py, which regenerates the CAPEC files and would
+    otherwise drop the remap. Returns False when no bundles are available.
+    """
+    attack_config = load_config(project_dir)['sources']['attack']
+    stix_files = [project_dir / attack_config[d] for d in ('enterprise', 'mobile', 'ics')]
+    stix_files = [f for f in stix_files if f.exists()]
+    if not stix_files:
+        return False
+
+    techniques, relationships, revocations = {}, [], new_revocations()
+    for stix_file in stix_files:
+        process_stix_bundle(str(stix_file), techniques, {}, {}, relationships, {}, revocations)
+    revoked_map = build_revoked_map(revocations, relationships, set(techniques))
+    remap_capec_mappings(resources_dir, revoked_map, set(techniques))
+    return True
+
+
+def validate_nav_layers(resources_dir, layer_entries, attack_version, techniques):
+    """Check the Nav_Layer_*.json files against the extracted techniques (read-only).
+
+    The layers are exports from ATT&CK Navigator and are never rewritten here.
+    Prints a warning for each mismatch; returns the number of warnings.
+    """
+    major_version = str(attack_version).split('.')[0]
+    warnings = 0
+
+    def warn(file_name, message):
+        nonlocal warnings
+        warnings += 1
+        print(f'  Warning: {file_name}: {message}')
+
+    for domain, file_name in NAV_LAYER_FILES.items():
+        layer_path = resources_dir / file_name
+        if not layer_path.exists():
+            warn(file_name, 'not found; export it from ATT&CK Navigator')
+            continue
+        try:
+            with open(layer_path, 'r', encoding='utf-8') as f:
+                layer = json.load(f)
+        except (OSError, ValueError) as e:
+            warn(file_name, f'cannot be read ({e})')
+            continue
+
+        versions = layer.get('versions') or {}
+        if str(versions.get('attack', '')).split('.')[0] != major_version:
+            warn(file_name, f'versions.attack is {versions.get("attack")!r}, config.js expects {major_version}')
+        if not str(versions.get('layer', '')).startswith('4.'):
+            warn(file_name, f'versions.layer is {versions.get("layer")!r}, expected layer format 4.x')
+        if layer.get('domain') != f'{domain}-attack':
+            warn(file_name, f'domain is {layer.get("domain")!r}, expected {domain}-attack')
+
+        entries = [t for t in layer.get('techniques', []) if isinstance(t, dict)]
+        ids = {t.get('techniqueID') for t in entries}
+        unknown = sorted(i for i in ids if i not in techniques or techniques[i]['domain'] != domain)
+        if unknown:
+            warn(file_name, f'{len(unknown)} technique IDs not in the {domain} library: {unknown[:10]}')
+        missing = sorted({i for i, _ in layer_entries.get(domain, set())} - ids)
+        if missing:
+            warn(file_name, f'{len(missing)} {domain} techniques missing from the layer: {missing[:10]}')
+        disabled = sum(1 for t in entries if t.get('enabled') is False)
+        if disabled:
+            warn(file_name, f'{disabled} entries are disabled and will be skipped on import')
+
+        print(f'  {file_name}: navigator {versions.get("navigator")}, layer {versions.get("layer")}, '
+              f'attack {versions.get("attack")}, {len(entries)} entries, {len(ids)} techniques')
+    return warnings
 
 
 def load_config(project_dir):
@@ -186,7 +412,7 @@ def load_config(project_dir):
     config = {
         'sources': {
             'attack': {
-                'version': '18.1',
+                'version': '20.1',
                 'enterprise': 'frameworks/ATTCK/ENTERPRISE.json',
                 'mobile': 'frameworks/ATTCK/MOBILE.json',
                 'ics': 'frameworks/ATTCK/ICS.json'
@@ -262,22 +488,34 @@ def main():
     # Data structures
     techniques = {}
     mitigations = {}
+    detection_strategies = {}
     relationships = []
-    
+    layer_entries = {}
+    revocations = new_revocations()
+
     # Process each STIX bundle
     for stix_file in stix_files:
-        process_stix_bundle(str(stix_file), techniques, mitigations, relationships)
-    
+        process_stix_bundle(str(stix_file), techniques, mitigations, detection_strategies,
+                            relationships, layer_entries, revocations)
+
+    revoked_map = build_revoked_map(revocations, relationships, set(techniques))
+
     # Resolve relationships
-    resolve_relationships(techniques, mitigations, relationships)
-    
+    resolve_relationships(techniques, mitigations, detection_strategies, relationships)
+
     # Write output
     output_file = resources_dir / 'attack-techniques.json'
     print(f'\nWriting {output_file.name}...')
-    
+
     with open(output_file, 'w', encoding='utf-8') as f:
         json.dump(techniques, f, indent=2, ensure_ascii=False)
-    
+
+    print('Checking Navigator layers (exported from ATT&CK Navigator, not modified)...')
+    validate_nav_layers(resources_dir, layer_entries, attack_config['version'], techniques)
+
+    print('Remapping revoked techniques in CAPEC mappings...')
+    remap_capec_mappings(resources_dir, revoked_map, set(techniques))
+
     # Summary
     print('\n=== Extraction Complete ===')
     print(f'\nSummary:')
@@ -298,6 +536,10 @@ def main():
     # Count techniques with mitigations
     with_mit = sum(1 for t in techniques.values() if t['mitigations'])
     print(f'  With mitigations: {with_mit}')
+    with_det = sum(1 for t in techniques.values() if t['detectionStrategies'])
+    print(f'  With detection strategies: {with_det}')
+    no_tactics = sum(1 for t in techniques.values() if not t['tactics'])
+    print(f'  Without tactics: {no_tactics}')
 
     # Sanitize JSON after parsing (cleans generated files)
     run_sanitizer(project_dir, 'after')

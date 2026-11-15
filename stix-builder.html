@@ -1695,7 +1695,7 @@
                     return `<input type="checkbox" data-field="${key}" data-type="boolean" ${value ? 'checked' : ''}>`;
                 case 'integer':
                 case 'number':
-                    return `<input type="number" data-field="${key}" data-type="${field.type}" value="${value ?? ''}" ${roAttr}>`;
+                    return `<input type="number" data-field="${key}" data-type="${field.type}" value="${InputSecurity.encodeHtmlEntities(value ?? '')}" ${roAttr}>`;
                 case 'timestamp':
                     return `<input type="text" data-field="${key}" data-type="timestamp" value="${escAttr(value || '')}" placeholder="2026-02-19T12:00:00Z" ${roAttr}>`;
                 case 'identifier':
@@ -2689,7 +2689,10 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'stix-bundle.json';
+            // Same generated-name convention as the main editor's exports: a fixed prefix
+            // plus a UTC timestamp, never anything derived from bundle content.
+            const stamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '-').slice(0, 15);
+            a.download = `stix-bundle-${stamp}.json`;
             a.click();
             URL.revokeObjectURL(url);
         }

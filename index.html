@@ -1,10 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
-    <!-- AttackFlow - An editor for creating enriched Cyber Kill Chain assessments
-        Project Page: https://github.com/Pr0cella/AttackFlow
-    -->
 <head>
     <meta charset="UTF-8">
+    <!--
+         █████╗ ████████╗████████╗ █████╗  ██████╗██╗  ██╗███████╗██╗      ██████╗ ██╗    ██╗
+        ██╔══██╗╚══██╔══╝╚══██╔══╝██╔══██╗██╔════╝██║ ██╔╝██╔════╝██║     ██╔═══██╗██║    ██║
+        ███████║   ██║      ██║   ███████║██║     █████╔╝ █████╗  ██║     ██║   ██║██║ █╗ ██║
+        ██╔══██║   ██║      ██║   ██╔══██║██║     ██╔═██╗ ██╔══╝  ██║     ██║   ██║██║███╗██║
+        ██║  ██║   ██║      ██║   ██║  ██║╚██████╗██║  ██╗██║     ███████╗╚██████╔╝╚███╔███╔╝
+        ╚═╝  ╚═╝   ╚═╝      ╚═╝   ╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝     ╚══════╝ ╚═════╝  ╚══╝╚══╝
+
+        AttackFlow - An editor for creating enriched Cyber Kill Chain assessments
+        Author:                     Pr0cella (https://github.com/Pr0cella)
+        Project Page:               https://github.com/Pr0cella/AttackFlow
+        Vulnerability Disclosure:   https://github.com/Pr0cella/AttackFlow/security/advisories
+        License:                    Apache License 2.0 (https://www.apache.org/licenses/LICENSE-2.0)
+        All rights reserved. Use at your own risk. No warranty is provided.
+    -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/x-icon" href="./favicon.ico">
     <meta http-equiv="Content-Security-Policy" content="
@@ -3708,7 +3720,7 @@
                         <span style="color: var(--text-secondary); margin-right: 6px;">Metadata:</span>
                         <div class="legend-item">
                             <span class="legend-icon has-cve">
-                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v7a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-7a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5Zm-3 8V7a3 3 0 1 1 6 0v3H9Zm3 3a2 2 0 0 1 1 3.732V18h-2v-1.268A2 2 0 0 1 12 13Z"/></svg>
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" stroke="none" d="M12 2 4 5v6c0 5.05 3.41 9.76 8 11 4.59-1.24 8-5.95 8-11V5l-8-3Zm-1.25 4.5h2.5v7h-2.5v-7Zm0 8.75h2.5v2.5h-2.5v-2.5Z"/></svg>
                             </span>
                             <span>CVE</span>
                         </div>
@@ -4055,7 +4067,7 @@
         // ============================================================
         // VERSION - Loaded dynamically from changelog
         // ============================================================
-        let APP_VERSION = '2.9.2';  // Fallback version
+        let APP_VERSION = '2.9.3';  // Fallback version
         
         async function loadVersion() {
             try {
@@ -4103,7 +4115,7 @@
                     .replace(/\\/g, '&#92;');
             },
 
-            // Normalize input: remove control chars, strip script tags, trim, limit length
+            // Normalize input: remove control chars and limit length
             normalize(str, maxLength = 1000) {
                 if (str === null || str === undefined) return '';
                 // NOTE: Do NOT add .trim() here — normalize() is called on every
@@ -4157,7 +4169,7 @@
                     return { valid, message: valid ? null : 'Invalid domain name' };
                 },
                 url(v) {
-                    const valid = /^https?:\/\/[^\s<>"{}|\\^`\[\]]+$/.test(v);
+                    const valid = typeof v === 'string' && /^https?:\/\/[^\s<>"`\\]+$/.test(v) && isSafeHttpUrl(v); // parser-checked http(s); | ^ [ ] { } allowed
                     return { valid, message: valid ? null : 'Invalid URL (must start with http:// or https://)' };
                 },
                 cveId(v) {
@@ -4203,8 +4215,6 @@
         const esc = (str) => InputSecurity.escapeHtml(str);
         const escAttr = (str) => InputSecurity.sanitizeAttr(str);
 
-        const BLOCKED_INPUT_CHARS = new Set(['<', '>', '[', ']', '{', '}', '"', "'", '`', ';']);
-
         function isTextInputElement(el) {
             return el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA');
         }
@@ -4220,17 +4230,11 @@
         }
 
         function sanitizeUserInputText(text, allowNewlines = false) {
-            let value = normalizeUserInput(text, 10000, allowNewlines);
-            value = value.replace(/[\[\]\{\};"'`]/g, '');
-            value = value.replace(/--+/g, '');
-            return value;
+            return normalizeUserInput(text, 10000, allowNewlines);
         }
 
         function sanitizeForStorage(text, maxLength = 1000) {
-            let value = InputSecurity.normalize(text, maxLength).trim();
-            value = value.replace(/[\[\]\{\};"'`]/g, '');
-            value = value.replace(/--+/g, '');
-            return value;
+            return InputSecurity.normalize(text, maxLength).trim();
         }
 
         function truncateAtBoundary(text, maxLen = 500) {
@@ -4247,42 +4251,6 @@
         }
 
         function applyInputGuards() {
-            document.addEventListener('keydown', (e) => {
-                const target = e.target;
-                if (!isTextInputElement(target)) return;
-                if (e.ctrlKey || e.metaKey || e.altKey) return;
-
-                const key = e.key;
-                if (BLOCKED_INPUT_CHARS.has(key)) {
-                    e.preventDefault();
-                    return;
-                }
-
-                if (key === '-') {
-                    const value = target.value || '';
-                    const start = target.selectionStart ?? 0;
-                    const end = target.selectionEnd ?? start;
-                    const prev = start > 0 ? value[start - 1] : '';
-                    const next = end < value.length ? value[end] : '';
-                    if (prev === '-' || next === '-') {
-                        e.preventDefault();
-                    }
-                }
-            });
-
-            document.addEventListener('beforeinput', (e) => {
-                const target = e.target;
-                if (!isTextInputElement(target)) return;
-                if (e.inputType === 'insertText' && e.data) {
-                    if ([...e.data].some(ch => BLOCKED_INPUT_CHARS.has(ch))) {
-                        e.preventDefault();
-                    }
-                    if (e.data.includes('--')) {
-                        e.preventDefault();
-                    }
-                }
-            });
-
             document.addEventListener('paste', (e) => {
                 const target = e.target;
                 if (!isTextInputElement(target)) return;
@@ -4341,7 +4309,7 @@
             });
         }
 
-        // Encode < and > in any JSON-loaded strings
+        // Safe object construction and loader-only angle encoding
         const DANGEROUS_OBJECT_KEYS = new Set(['__proto__', 'prototype', 'constructor']);
 
         function isDangerousObjectKey(key) {
@@ -4775,7 +4743,7 @@
             if (!phaseData) return;
             const group = (phaseData.groups || []).find(g => g.groupId === groupId);
             if (!group) return;
-            group.editing = false;
+            delete group.editing;
             if (!cancel) {
                 const sanitized = sanitizeForStorage(value || '', 80).trim();
                 group.label = sanitized || 'New Group';
@@ -4792,9 +4760,22 @@
             const group = phaseData.groups[groupIdx];
             if (!window.confirm('Delete this group and move its items back to the phase?')) return;
 
-            const items = group.items || [];
+            const items = hasOwn(group, 'items') ? group.items : [];
+            if (!Array.isArray(items) || !Array.isArray(phaseData.layout)) {
+                showToast('Cannot delete group: invalid item or layout data.');
+                return;
+            }
+            // validate destination before moving any assignment
+            for (const item of items) {
+                if (!item || typeof item !== 'object' || Array.isArray(item)
+                    || !hasOwn(item, 'type') || typeof item.type !== 'string'
+                    || !hasOwn(TYPE_KEYS, item.type) || !Array.isArray(phaseData[TYPE_KEYS[item.type]])) {
+                    showToast('Cannot delete group: invalid item or layout data.');
+                    return;
+                }
+            }
             items.forEach(item => {
-                const key = item.type === 'attack' ? 'techniques' : item.type === 'capec' ? 'capecs' : 'cwes';
+                const key = TYPE_KEYS[item.type];
                 phaseData[key].push(item);
                 phaseData.layout.push({ kind: 'item', type: item.type, instanceId: getAssignmentInstanceId(item) });
             });
@@ -5717,20 +5698,7 @@
         }
 
         function buildImmutableSharedDataPayload(rawData) {
-            if (!isPlainObject(rawData)) {
-                logLocalIframeIPCTrace('index', 'AF_SHARED_DATA rejected: shared cache is not object');
-                return null;
-            }
-            if (!hasOnlyAllowedKeys(rawData, IPC_SHARED_DATA_KEYS, 'AF_SHARED_DATA')) {
-                return null;
-            }
-            for (const key of IPC_SHARED_DATA_KEYS) {
-                const value = rawData[key];
-                if (!isPlainObject(value)) {
-                    logLocalIframeIPCTrace('index', 'AF_SHARED_DATA rejected: invalid data bucket', { key });
-                    return null;
-                }
-            }
+            if (!validateSharedDatasetShape(rawData)) return null;
             if (!enforceSharedDatasetLimits(rawData)) {
                 logLocalIframeIPCTrace('index', 'AF_SHARED_DATA rejected: shared cache exceeds configured limits');
                 return null;
@@ -5751,6 +5719,20 @@
                 if (!isPlainObject(rawData[key])) {
                     logLocalIframeIPCTrace('index', 'shared loader dataset rejected: invalid top-level bucket', { key });
                     return false;
+                }
+            }
+            for (const [bucket, pattern] of [
+                ['attack', IMPORT_LIMITS.techniqueIdPattern],
+                ['capecPatterns', /^CAPEC-\d+$/],
+                ['cweWeaknesses', /^CWE-\d+$/]
+            ]) {
+                for (const [key, record] of Object.entries(rawData[bucket])) {
+                    if (!isPlainObject(record) || !hasOwn(record, 'id')
+                        || typeof record.id !== 'string' || record.id !== key
+                        || pattern.exec(record.id)?.[0] !== record.id) {
+                        logLocalIframeIPCTrace('index', 'shared loader dataset rejected: invalid framework record ID', { bucket });
+                        return false;
+                    }
                 }
             }
             return true;
@@ -5910,6 +5892,9 @@
             const cache = getSharedDataCache();
 
             if (!forceReload && cache.data) {
+                if (!validateSharedDatasetShape(cache.data)) {
+                    throw new Error('Shared dataset validation failed');
+                }
                 return cache.data;
             }
 
@@ -6229,10 +6214,10 @@
         }
 
         // Domain detection
+        // fallback for IDs missing from the loaded library; ID ranges are shared
+        // across domains (e.g. T1566 is enterprise, T1691 is ics), so only T0xxx is reliable
         function detectDomain(techId) {
             if (techId.startsWith('T0')) return 'ics';
-            const num = parseInt(techId.replace(/^T/, '').split('.')[0], 10);
-            if (num >= 1398 && num <= 1665) return 'mobile';
             return 'enterprise';
         }
 
@@ -6767,9 +6752,10 @@
                 const safeName = esc(result.name || '');
                 return `
                     <button class="global-search-item entity-item ${escAttr(result.type)}" draggable="true"
-                        ondragstart="handleDragStart(event, '${escAttr(result.type)}', '${escAttr(result.id)}')"
+                        data-entity-type="${InputSecurity.encodeHtmlEntities(result.type)}" data-entity-id="${InputSecurity.encodeHtmlEntities(result.id)}"
+                        ondragstart="handleDragStart(event, this.dataset.entityType, this.dataset.entityId)"
                         ondragend="handleDragEnd(event)"
-                        onclick="openGlobalSearchResult('${escAttr(result.type)}', '${escAttr(result.id)}')">
+                        onclick="openGlobalSearchResult(this.dataset.entityType, this.dataset.entityId)">
                         <div class="global-search-meta">
                             <span class="global-search-type ${escAttr(result.type)}">${esc(typeLabel)}</span>
                             <span>${safeId}</span>
@@ -6893,9 +6879,10 @@
                     const tacticBadge = entity.tactics?.length ? `<span class="entity-badge">${esc(entity.tactics[0])}</span>` : '';
                     html += `
                         <div class="entity-item attack ${isSelected ? 'selected' : ''}" 
-                             onclick="selectEntity('attack', '${esc(entity.id)}')"
+                             data-entity-id="${InputSecurity.encodeHtmlEntities(entity.id)}"
+                             onclick="selectEntity('attack', this.dataset.entityId)"
                              draggable="true"
-                             ondragstart="handleDragStart(event, 'attack', '${esc(entity.id)}')"
+                             ondragstart="handleDragStart(event, 'attack', this.dataset.entityId)"
                              ondragend="handleDragEnd(event)"
                              title="${escAttr(entity.description ? entity.description.substring(0, 200) + '...' : '')}">
                             <div class="entity-header">
@@ -6914,9 +6901,10 @@
                                          entity.severity?.toLowerCase().includes('medium') ? 'severity-medium' : 'severity-low';
                     html += `
                         <div class="entity-item capec ${isSelected ? 'selected' : ''}"
-                             onclick="selectEntity('capec', '${esc(entity.id)}')"
+                             data-entity-id="${InputSecurity.encodeHtmlEntities(entity.id)}"
+                             onclick="selectEntity('capec', this.dataset.entityId)"
                              draggable="true"
-                             ondragstart="handleDragStart(event, 'capec', '${esc(entity.id)}')"
+                             ondragstart="handleDragStart(event, 'capec', this.dataset.entityId)"
                              ondragend="handleDragEnd(event)">
                             <div class="entity-header">
                                 <span class="entity-id">${esc(entity.id)}</span>
@@ -6932,9 +6920,10 @@
                 } else if (type === 'cwe') {
                     html += `
                         <div class="entity-item cwe ${isSelected ? 'selected' : ''}"
-                             onclick="selectEntity('cwe', '${esc(entity.id)}')"
+                             data-entity-id="${InputSecurity.encodeHtmlEntities(entity.id)}"
+                             onclick="selectEntity('cwe', this.dataset.entityId)"
                              draggable="true"
-                             ondragstart="handleDragStart(event, 'cwe', '${esc(entity.id)}')"
+                             ondragstart="handleDragStart(event, 'cwe', this.dataset.entityId)"
                              ondragend="handleDragEnd(event)">
                             <div class="entity-header">
                                 <span class="entity-id">${esc(entity.id)}</span>
@@ -6953,7 +6942,7 @@
                              draggable="true"
                              ondragstart="handleDragStart(event, 'custom', '${esc(entity.id)}')"
                              ondragend="handleDragEnd(event)"
-                             title="${escAttr(entity.description ? entity.description.substring(0, 200) : '')}">
+                             title="${InputSecurity.encodeHtmlEntities(entity.description ? entity.description.substring(0, 200) : '')}">
                             <div class="entity-header">
                                 <span class="entity-id">${esc(shortId)}</span>
                                 <span class="entity-badge stix-badge">${esc(stixLabel)}${customTypeName}</span>
@@ -7010,8 +6999,7 @@
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {
-                    const rawData = parseJsonSafe(e.target.result);
-                    const data = stripAngleBracketsFromJson(rawData);
+                    const data = parseJsonSafe(e.target.result);
 
                     // Validate top-level bundle structure
                     if (typeof data !== 'object' || data === null || Array.isArray(data)) {
@@ -7110,7 +7098,7 @@
                     if (CONFIG.imports?.clearStixOnBundleImport) renderAll();
                     showToast(msg);
                 } catch (err) {
-                    showToast('STIX import failed: ' + InputSecurity.escapeHtml(err.message));
+                    showToast('STIX import failed: ' + err.message);
                 }
             };
             reader.readAsText(file);
@@ -7194,8 +7182,8 @@
                     if (field.type === 'boolean') {
                         entry[field.key] = !!raw;
                     } else if (field.type === 'integer') {
-                        const num = parseInt(raw, 10);
-                        if (!isNaN(num)) entry[field.key] = num;
+                        const num = typeof raw === 'number' ? raw : parseInt(raw, 10);
+                        if (Number.isSafeInteger(num)) entry[field.key] = num;
                     } else if (field.type === 'list' || field.type === 'list:open-vocab') {
                         if (Array.isArray(raw)) {
                             entry[field.key] = raw
@@ -7463,7 +7451,7 @@
                         item[field.key] = fieldEl.checked;
                     } else if (field.type === 'integer') {
                         const num = parseInt(rawVal, 10);
-                        item[field.key] = isNaN(num) ? undefined : num;
+                        item[field.key] = Number.isSafeInteger(num) ? num : undefined;
                     } else if (field.type === 'list' || field.type === 'list:open-vocab') {
                         item[field.key] = rawVal.split(',').map(s => sanitizeForStorage(s.trim(), 200)).filter(s => s.length > 0);
                     } else {
@@ -7491,7 +7479,7 @@
             const reqMark = required ? '<span class="field-required">*</span>' : '';
             return `<div class="stix-field-group">
                 <label>${esc(label)}${reqMark}</label>
-                <input type="text" id="${esc(id)}" value="${esc(value)}" maxlength="${maxLen || 200}" placeholder="${esc(placeholder || '')}" spellcheck="false">
+                <input type="text" id="${InputSecurity.encodeHtmlEntities(id)}" value="${InputSecurity.encodeHtmlEntities(value)}" maxlength="${maxLen || 200}" placeholder="${InputSecurity.encodeHtmlEntities(placeholder || '')}" spellcheck="false">
             </div>`;
         }
 
@@ -7499,7 +7487,7 @@
             const reqMark = required ? '<span class="field-required">*</span>' : '';
             return `<div class="stix-field-group">
                 <label>${esc(label)}${reqMark}</label>
-                <textarea id="${esc(id)}" maxlength="${maxLen || 2000}" rows="3" placeholder="${esc(placeholder || '')}">${esc(value)}</textarea>
+                <textarea id="${InputSecurity.encodeHtmlEntities(id)}" maxlength="${maxLen || 2000}" rows="3" placeholder="${InputSecurity.encodeHtmlEntities(placeholder || '')}">${esc(value)}</textarea>
             </div>`;
         }
 
@@ -7513,14 +7501,14 @@
                 case 'string':
                     return `<div class="stix-field-group">
                         <label>${esc(field.label)}${reqMark}</label>
-                        <input type="text" id="${esc(fieldId)}" value="${esc(currentVal || '')}" maxlength="2000" placeholder="${esc(field.placeholder || '')}" spellcheck="false">
+                        <input type="text" id="${InputSecurity.encodeHtmlEntities(fieldId)}" value="${InputSecurity.encodeHtmlEntities(currentVal || '')}" maxlength="2000" placeholder="${InputSecurity.encodeHtmlEntities(field.placeholder || '')}" spellcheck="false">
                         ${hint}
                     </div>`;
 
                 case 'text':
                     return `<div class="stix-field-group">
                         <label>${esc(field.label)}${reqMark}</label>
-                        <textarea id="${esc(fieldId)}" maxlength="5000" rows="3" placeholder="${esc(field.placeholder || '')}">${esc(currentVal || '')}</textarea>
+                        <textarea id="${InputSecurity.encodeHtmlEntities(fieldId)}" maxlength="5000" rows="3" placeholder="${InputSecurity.encodeHtmlEntities(field.placeholder || '')}">${esc(currentVal || '')}</textarea>
                         ${hint}
                     </div>`;
 
@@ -7530,17 +7518,17 @@
                     let opts = '<option value="">— Select —</option>';
                     for (const v of vocabValues) {
                         const sel = (currentVal === v) ? ' selected' : '';
-                        opts += `<option value="${esc(v)}"${sel}>${esc(v)}</option>`;
+                        opts += `<option value="${InputSecurity.encodeHtmlEntities(v)}"${sel}>${esc(v)}</option>`;
                     }
                     if (field.type === 'open-vocab') {
                         // If current value is not in vocab, add it as option
                         if (currentVal && !vocabValues.includes(currentVal)) {
-                            opts += `<option value="${esc(currentVal)}" selected>${esc(currentVal)} (custom)</option>`;
+                            opts += `<option value="${InputSecurity.encodeHtmlEntities(currentVal)}" selected>${esc(currentVal)} (custom)</option>`;
                         }
                     }
                     return `<div class="stix-field-group">
                         <label>${esc(field.label)}${reqMark}</label>
-                        <select id="${esc(fieldId)}">${opts}</select>
+                        <select id="${InputSecurity.encodeHtmlEntities(fieldId)}">${opts}</select>
                         ${hint}
                     </div>`;
                 }
@@ -7553,7 +7541,7 @@
                         : '';
                     return `<div class="stix-field-group">
                         <label>${esc(field.label)} <span style="color:var(--text-secondary);font-weight:normal;">(comma-separated)</span>${reqMark}</label>
-                        <input type="text" id="${esc(fieldId)}" value="${esc(arrVal)}" maxlength="2000" spellcheck="false">
+                        <input type="text" id="${InputSecurity.encodeHtmlEntities(fieldId)}" value="${InputSecurity.encodeHtmlEntities(arrVal)}" maxlength="2000" spellcheck="false">
                         ${hint}${vocabHint}
                     </div>`;
                 }
@@ -7561,14 +7549,14 @@
                 case 'integer':
                     return `<div class="stix-field-group">
                         <label>${esc(field.label)}${reqMark}</label>
-                        <input type="number" id="${esc(fieldId)}" value="${currentVal != null ? currentVal : ''}" spellcheck="false">
+                        <input type="number" id="${InputSecurity.encodeHtmlEntities(fieldId)}" value="${InputSecurity.encodeHtmlEntities(currentVal != null ? currentVal : '')}" spellcheck="false">
                         ${hint}
                     </div>`;
 
                 case 'boolean':
                     return `<div class="stix-field-group">
                         <label style="display:inline-flex;align-items:center;gap:6px;">
-                            <input type="checkbox" id="${esc(fieldId)}" ${currentVal ? 'checked' : ''} style="width:auto;">
+                            <input type="checkbox" id="${InputSecurity.encodeHtmlEntities(fieldId)}" ${currentVal ? 'checked' : ''} style="width:auto;">
                             ${esc(field.label)}${reqMark}
                         </label>
                         ${hint}
@@ -7577,14 +7565,14 @@
                 case 'timestamp':
                     return `<div class="stix-field-group">
                         <label>${esc(field.label)}${reqMark}</label>
-                        <input type="text" id="${esc(fieldId)}" value="${esc(currentVal || '')}" placeholder="YYYY-MM-DDThh:mm:ss.sssZ" spellcheck="false">
+                        <input type="text" id="${InputSecurity.encodeHtmlEntities(fieldId)}" value="${InputSecurity.encodeHtmlEntities(currentVal || '')}" placeholder="YYYY-MM-DDThh:mm:ss.sssZ" spellcheck="false">
                         ${hint}
                     </div>`;
 
                 case 'identifier':
                     return `<div class="stix-field-group">
                         <label>${esc(field.label)}${reqMark}</label>
-                        <input type="text" id="${esc(fieldId)}" value="${esc(currentVal || '')}" placeholder="${esc(field.placeholder || 'type--uuid')}" spellcheck="false">
+                        <input type="text" id="${InputSecurity.encodeHtmlEntities(fieldId)}" value="${InputSecurity.encodeHtmlEntities(currentVal || '')}" placeholder="${InputSecurity.encodeHtmlEntities(field.placeholder || 'type--uuid')}" spellcheck="false">
                         ${hint}
                     </div>`;
 
@@ -7595,14 +7583,14 @@
                     const jsonVal = currentVal ? JSON.stringify(currentVal, null, 2) : '';
                     return `<div class="stix-field-group">
                         <label>${esc(field.label)} <span style="color:var(--text-secondary);font-weight:normal;">(JSON)</span>${reqMark}</label>
-                        <textarea id="${esc(fieldId)}" rows="3" placeholder="${esc(field.description || '')}">${esc(jsonVal)}</textarea>
+                        <textarea id="${InputSecurity.encodeHtmlEntities(fieldId)}" rows="3" placeholder="${InputSecurity.encodeHtmlEntities(field.description || '')}">${esc(jsonVal)}</textarea>
                         ${hint}
                     </div>`;
 
                 default:
                     return `<div class="stix-field-group">
                         <label>${esc(field.label)}${reqMark}</label>
-                        <input type="text" id="${esc(fieldId)}" value="${esc(currentVal || '')}" spellcheck="false">
+                        <input type="text" id="${InputSecurity.encodeHtmlEntities(fieldId)}" value="${InputSecurity.encodeHtmlEntities(currentVal || '')}" spellcheck="false">
                         ${hint}
                     </div>`;
             }
@@ -7697,13 +7685,24 @@
                     `).join('') + (mitigations.length > 8 ? `<div class="list-info">+${mitigations.length - 8} more</div>` : '')
                     : '<div class="list-info">No mitigations available</div>';
 
+                // ATT&CK v18+ detection strategies (replace per-technique detection text)
+                const detectionStrategies = (Array.isArray(entity?.detectionStrategies) ? entity.detectionStrategies : [])
+                    .filter(d => typeof d?.id === 'string' && /^DET\d{4,}$/.test(d.id));
+                const detectionHtml = detectionStrategies.map(d => `
+                    <div class="detail-list-item">
+                        <a href="https://attack.mitre.org/detectionstrategies/${escAttr(d.id)}" target="_blank" rel="noopener noreferrer" style="color: var(--text-secondary); text-decoration: none;">
+                            <span class="id">${esc(d.id)}</span> ${esc(d.name || '')} →
+                        </a>
+                    </div>
+                `).join('');
+
                 const refs = entity?.references || [];
                 const refsHtml = refs.slice(0, 3).map(r => {
                     const url = r?.url || '';
                     const isSafeUrl = isSafeHttpUrl(url);
                     return isSafeUrl ? `
                     <div class="detail-list-item">
-                        <a href="${escAttr(url)}" target="_blank" rel="noopener noreferrer" style="color: var(--text-secondary); text-decoration: none;">
+                        <a href="${InputSecurity.encodeHtmlEntities(url)}" target="_blank" rel="noopener noreferrer" style="color: var(--text-secondary); text-decoration: none;">
                             ${esc(r.name)} →
                         </a>
                     </div>
@@ -7728,13 +7727,12 @@
                             <div class="detail-list-item"><span>Version:</span><span>${esc(entity?.version || '1.0')}</span></div>
                         </div>
                     </div>
-                    ${entity?.detection ? `
+                    ${detectionStrategies.length > 0 ? `
                     <div class="detail-section">
-                        <h4>Detection</h4>
-                        <details>
-                            <summary>Show / hide detection guidance</summary>
-                            <p style="font-size: 0.75rem;">${renderDescriptionWithBadges(esc(entity.detection))}</p>
-                        </details>
+                        <h4>Detection Strategies (${detectionStrategies.length})</h4>
+                        <div class="detail-list">
+                            ${detectionHtml}
+                        </div>
                     </div>
                     ` : ''}
                     <div class="detail-section">
@@ -7949,11 +7947,11 @@
                 })
                 : [];
 
-            const links = (metadata.hyperlinks || []).filter(l => l?.url && /^https?:\/\//i.test(l.url));
+            const links = (metadata.hyperlinks || []).filter(l => l?.url && InputSecurity.validators.url(l.url).valid);
             const linksHtml = links.length
                 ? links.map(l => `
                     <div class="detail-list-item">
-                        <a href="${escAttr(l.url)}" target="_blank" rel="noopener noreferrer" style="color: var(--text-secondary); text-decoration: none;">
+                        <a href="${InputSecurity.encodeHtmlEntities(l.url)}" target="_blank" rel="noopener noreferrer" style="color: var(--text-secondary); text-decoration: none;">
                             ${esc(l.label || l.url)} →
                         </a>
                     </div>
@@ -8387,7 +8385,7 @@
                         return parts.length ? `${entry.id} (${parts.join(', ')})` : entry.id;
                     }).join(', ');
                     metaIcons += `<span class="meta-icon has-cve" title="${InputSecurity.encodeHtmlEntities(cveTitle)}">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v7a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-7a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5Zm-3 8V7a3 3 0 1 1 6 0v3H9Zm3 3a2 2 0 0 1 1 3.732V18h-2v-1.268A2 2 0 0 1 12 13Z"/></svg>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" stroke="none" d="M12 2 4 5v6c0 5.05 3.41 9.76 8 11 4.59-1.24 8-5.95 8-11V5l-8-3Zm-1.25 4.5h2.5v7h-2.5v-7Zm0 8.75h2.5v2.5h-2.5v-2.5Z"/></svg>
                     <span>${esc(cveLabel)}</span>
                 </span>`;
                 }
@@ -9084,35 +9082,46 @@
             showToast('Cleared all assignments');
         }
 
+        // Download names are generated, never derived from document content: a fixed
+        // prefix per export kind plus a UTC timestamp.
+        function exportFileName(prefix, extension, when = new Date()) {
+            const stamp = when.toISOString().replace(/[-:]/g, '').replace('T', '-').slice(0, 15);
+            return `${prefix}-${stamp}${extension}`;
+        }
+
         function exportJSON() {
+            const exportedAt = new Date();
             const exportData = {
                 version: APP_VERSION,
                 schema: 'killchain-export-lite',
-                exportedAt: new Date().toISOString(),
+                exportedAt: exportedAt.toISOString(),
                 title: state.title || '',
                 description: state.description || '',
                 view: state.view,
                 activeTab: state.activeTab,
-                filters: state.filters,
                 layers: state.layers,
                 hideEmpty: state.hideEmpty,
                 assignments: state.assignments,
-                selection: state.selection,
                 customLibrary: state.library.custom
             };
 
             // Generate embedded STIX bundle if custom items exist
             const customIds = Object.keys(state.library.custom);
             if (customIds.length > 0) {
-                exportData.stixBundle = buildSTIXBundle();
+                try {
+                    exportData.stixBundle = buildSTIXBundle();
+                } catch (err) {
+                    const message = err && typeof err.message === 'string' ? err.message : 'Unknown export error';
+                    showToast('JSON export failed: ' + message);
+                    return;
+                }
             }
-            
+
             const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            const slug = state.title ? state.title.replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/-+$/,'').substring(0, 60) : 'attack-chain-export';
-            a.download = slug + '.json';
+            a.download = exportFileName('attackflow-export', '.json', exportedAt);
             a.click();
             URL.revokeObjectURL(url);
             showToast('Exported JSON');
@@ -9134,7 +9143,74 @@
                     name: item.name || ''
                 };
                 if (item.description) sdo.description = item.description;
-                if (item.labels && item.labels.length > 0) sdo.labels = item.labels;
+                if (item.labels && item.labels.length > 0) sdo.labels = item.labels.slice();
+
+                const typeDef = (typeof STIX_OBJECTS !== 'undefined'
+                    && !isDangerousObjectKey(item.stixType)
+                    && hasOwn(STIX_OBJECTS, item.stixType))
+                    ? STIX_OBJECTS[item.stixType]
+                    : null;
+                if (typeDef) {
+                    const coreKeys = new Set([
+                        'type', 'spec_version', 'id', 'created', 'modified',
+                        'name', 'description', 'labels', 'customTypeName'
+                    ]);
+                    const scalarTypes = new Set(['string', 'text', 'enum', 'open-vocab', 'timestamp', 'identifier']);
+                    const listTypes = new Set(['list', 'list:open-vocab']);
+                    const fields = [...(typeDef.required || []), ...(typeDef.optional || [])];
+
+                    for (const field of fields) {
+                        if (!field || typeof field.key !== 'string' || isDangerousObjectKey(field.key)) continue;
+                        if (coreKeys.has(field.key) || !hasOwn(item, field.key)) continue;
+
+                        const value = item[field.key];
+                        if (value === undefined || value === null || value === ''
+                            || (Array.isArray(value) && value.length === 0)) continue;
+
+                        let expectedType = '';
+                        if (scalarTypes.has(field.type)) {
+                            if (typeof value === 'string') {
+                                sdo[field.key] = value;
+                                continue;
+                            }
+                            expectedType = 'string';
+                        } else if (field.type === 'boolean') {
+                            if (typeof value === 'boolean') {
+                                sdo[field.key] = value;
+                                continue;
+                            }
+                            expectedType = 'boolean';
+                        } else if (field.type === 'integer') {
+                            if (typeof value === 'number' && Number.isFinite(value) && Number.isInteger(value)) {
+                                sdo[field.key] = value;
+                                continue;
+                            }
+                            expectedType = 'finite integer';
+                        } else if (listTypes.has(field.type)) {
+                            let validList = Array.isArray(value);
+                            if (validList) {
+                                for (let index = 0; index < value.length; index++) {
+                                    if (!hasOwn(value, index) || typeof value[index] !== 'string') {
+                                        validList = false;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (validList) {
+                                sdo[field.key] = value.slice();
+                                continue;
+                            }
+                            expectedType = 'array of strings';
+                        } else {
+                            // Structured descriptor types are not supported by the main editor/export projection.
+                            continue;
+                        }
+
+                        throw new TypeError(
+                            `Cannot export STIX property "${item.stixType}.${field.key}": expected ${expectedType}.`
+                        );
+                    }
+                }
                 objects.push(sdo);
             }
 
@@ -9303,13 +9379,19 @@
                 showToast('No STIX objects to export');
                 return;
             }
-            const bundle = buildSTIXBundle();
+            let bundle;
+            try {
+                bundle = buildSTIXBundle();
+            } catch (err) {
+                const message = err && typeof err.message === 'string' ? err.message : 'Unknown export error';
+                showToast('STIX export failed: ' + message);
+                return;
+            }
             const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            const slug = state.title ? state.title.replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/-+$/,'').substring(0, 60) : 'stix-bundle';
-            a.download = slug + '-stix-bundle.json';
+            a.download = exportFileName('stix-bundle', '.json');
             a.click();
             URL.revokeObjectURL(url);
             showToast('Exported STIX 2.1 Bundle');
@@ -9405,12 +9487,12 @@
         };
 
         function validateKillChainImport(data) {
-            if (!data || typeof data !== 'object') {
+            if (!data || typeof data !== 'object' || Array.isArray(data)) {
                 return { valid: false, error: 'Invalid export format: expected object' };
             }
 
             const assignments = data.assignments;
-            if (!assignments || typeof assignments !== 'object') {
+            if (!assignments || typeof assignments !== 'object' || Array.isArray(assignments)) {
                 return { valid: false, error: 'Missing or invalid assignments object' };
             }
 
@@ -9460,12 +9542,9 @@
         function sanitizeImportedString(str, maxLength = KILLCHAIN_IMPORT_LIMITS.maxStringLength) {
             if (str === null || str === undefined) return '';
             if (typeof str !== 'string') return '';
-            // Normalize, remove dangerous chars, limit length
+            // Preserve printable evidence; rendering contexts perform output encoding.
             return String(str)
                 .replace(/[\x00-\x1F\x7F]/g, '')  // Control chars
-                .replace(/[\[\]\{\};"'`]/g, '')  // Blocked chars including double quotes
-                .replace(/--+/g, '')  // SQL comments
-                .replace(/</g, '&lt;').replace(/>/g, '&gt;')  // Encode angle brackets
                 .trim()
                 .slice(0, maxLength);
         }
@@ -9531,15 +9610,16 @@
                 metadata.confidence = Math.max(0, Math.min(100, Math.floor(sourceMeta.confidence)));
             }
 
-            // Sanitize CVE entries (handle cveEntries, cveIds, legacy cveId/cve + cvssVector)
+            // Sanitize CVE entries (handle cveEntries/cves, cveIds, legacy cveId/cve + cvssVector)
             const cveEntries = [];
-            if (Array.isArray(sourceMeta.cveEntries)) {
-                sourceMeta.cveEntries.forEach(entry => {
-                    if (!entry || typeof entry !== 'object') return;
+            const appendCveEntries = (entries) => {
+                if (!Array.isArray(entries)) return;
+                entries.forEach(entry => {
+                    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return;
                     const id = typeof entry.id === 'string' ? entry.id.trim().toUpperCase() : '';
                     if (!/^CVE-\d{4}-\d{4,}$/.test(id)) return;
                     let score = null;
-                    if (entry.score !== null && entry.score !== undefined && entry.score !== '') {
+                    if ((typeof entry.score === 'number' || typeof entry.score === 'string') && entry.score !== '') {
                         const scoreValue = parseFloat(entry.score);
                         if (Number.isFinite(scoreValue) && scoreValue >= 0 && scoreValue <= 10) {
                             score = Math.round(scoreValue * 10) / 10;
@@ -9549,7 +9629,9 @@
                     const vector = normalizeCvssVector(vectorRaw);
                     cveEntries.push({ id, score, vector });
                 });
-            }
+            };
+            appendCveEntries(sourceMeta.cveEntries);
+            appendCveEntries(sourceMeta.cves);
 
             const cveValues = [];
             if (Array.isArray(sourceMeta.cveIds)) {
@@ -9591,12 +9673,13 @@
                 metadata.hyperlinks = sourceMeta.hyperlinks
                     .slice(0, KILLCHAIN_IMPORT_LIMITS.maxHyperlinks)
                     .filter(h => h && typeof h === 'object')
-                    .map(h => ({
-                        label: sanitizeImportedString(h.label || '', 200),
-                        url: (typeof h.url === 'string' && /^https?:\/\//.test(h.url)) 
-                            ? sanitizeImportedString(h.url, 2000) 
-                            : ''
-                    }))
+                    .map(h => {
+                        const url = typeof h.url === 'string' ? sanitizeImportedString(h.url, 2000) : '';
+                        return {
+                            label: sanitizeImportedString(h.label || '', 200),
+                            url: InputSecurity.validators.url(url).valid ? url : ''
+                        };
+                    })
                     .filter(h => h.url);  // Keep only valid URLs
             }
 
@@ -9757,7 +9840,7 @@
                     const entry = {
                         id: id,
                         stixType: stixType,
-                        name: sanitizeImportedString(item.name || '', CONFIG.display?.maxLabelLength || 50),
+                        name: sanitizeImportedString(item.name || '', CONFIG.display?.maxNameLength || 200),
                         description: sanitizeImportedString(item.description || '', CONFIG.display?.maxCustomDescLength || 2000),
                         labels: Array.isArray(item.labels)
                             ? item.labels
@@ -9784,8 +9867,8 @@
                             if (field.type === 'boolean') {
                                 entry[field.key] = !!raw;
                             } else if (field.type === 'integer') {
-                                const num = parseInt(raw, 10);
-                                if (!isNaN(num)) entry[field.key] = num;
+                                const num = typeof raw === 'number' ? raw : parseInt(raw, 10);
+                                if (Number.isSafeInteger(num)) entry[field.key] = num;
                             } else if (field.type === 'list' || field.type === 'list:open-vocab') {
                                 if (Array.isArray(raw)) {
                                     entry[field.key] = raw
@@ -9824,8 +9907,7 @@
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {
-                    const rawData = parseJsonSafe(e.target.result);
-                    const data = stripAngleBracketsFromJson(rawData);
+                    const data = parseJsonSafe(e.target.result);
 
                     // Validate structure before processing
                     const validation = validateKillChainImport(data);
@@ -9888,7 +9970,7 @@
                     renderAll();
                     showToast('Imported kill chain');
                 } catch (err) {
-                    showToast('Import failed: ' + InputSecurity.escapeHtml(err.message));
+                    showToast('Import failed: ' + err.message);
                 }
             };
 
@@ -10075,34 +10157,34 @@
                 rows.push(row);
             }
             
-            // Convert to CSV string
-            // Prefix cells containing formula characters with a tab character and wraps the cell content in double quotes
+            // Convert to CSV string.
+            // A cell whose first character could be read as the start of a spreadsheet
+            // formula is protected with a leading tab. The guard adds that tab and nothing
+            // else: quoting happens exactly once, in the serializer below.
+            const FORMULA_LEAD = /^[=+\-@\t\r]/;
             const sanitizeForCsv = (value) => {
                 const str = String(value);
-                // prefix with tab and wrap in quotes
-                if (/^[=+\-@\t\r]/.test(str)) {
-                    return '"' + "\t" + str + '"';
-                }
-                return str;
+                return FORMULA_LEAD.test(str) ? '\t' + str : str;
             };
             
             const csvContent = rows.map(row => 
                 row.map(cell => {
-                    // Sanitize for formula injection, then escape quotes
-                    const sanitized = sanitizeForCsv(cell);
+                    const raw = String(cell);
+                    const sanitized = sanitizeForCsv(raw);
                     const escaped = sanitized.replace(/"/g, '""');
-                    return escaped.includes(',') || escaped.includes('"') || escaped.includes('\n') 
-                        ? `"${escaped}"` 
-                        : escaped;
+                    // A protected cell is always wrapped: the quotes are what carry its
+                    // leading tab through a spreadsheet importer intact. Every other cell is
+                    // wrapped only where RFC 4180 requires it.
+                    const needsQuotes = sanitized !== raw || /[",\r\n]/.test(raw);
+                    return needsQuotes ? `"${escaped}"` : escaped;
                 }).join(',')
-            ).join('\n');
+            ).join('\r\n');
             
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            const csvSlug = state.title ? state.title.replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/-+$/,'').substring(0, 60) : 'attack-chain-export';
-            a.download = csvSlug + '.csv';
+            a.download = exportFileName('attackflow-export', '.csv');
             a.click();
             URL.revokeObjectURL(url);
             showToast('Exported CSV');
@@ -10528,8 +10610,42 @@
         }
 
         // ============================================================
+        // CONSOLE STARTUP BANNER
+        // ============================================================
+        const STARTUP_BANNER_LINES = [
+            ' █████╗ ████████╗████████╗ █████╗  ██████╗██╗  ██╗███████╗██╗      ██████╗ ██╗    ██╗',
+            '██╔══██╗╚══██╔══╝╚══██╔══╝██╔══██╗██╔════╝██║ ██╔╝██╔════╝██║     ██╔═══██╗██║    ██║',
+            '███████║   ██║      ██║   ███████║██║     █████╔╝ █████╗  ██║     ██║   ██║██║ █╗ ██║',
+            '██╔══██║   ██║      ██║   ██╔══██║██║     ██╔═██╗ ██╔══╝  ██║     ██║   ██║██║███╗██║',
+            '██║  ██║   ██║      ██║   ██║  ██║╚██████╗██║  ██╗██║     ███████╗╚██████╔╝╚███╔███╔╝',
+            '╚═╝  ╚═╝   ╚═╝      ╚═╝   ╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝     ╚══════╝ ╚═════╝  ╚══╝╚══╝'
+        ];
+        const STARTUP_BANNER_SPLIT = 50; // Column where "ATTACK" ends and "FLOW" begins
+
+        function logStartupBanner() {
+            if (typeof CONFIG !== 'undefined' && CONFIG.console?.showStartupBanner === false) return;
+            const attackColor = (typeof CONFIG !== 'undefined' && CONFIG.frameworks?.attack) || '#3b82f6';
+            const flowColor = '#ffffff';
+            const version = (typeof CONFIG !== 'undefined' && CONFIG.version) || APP_VERSION;
+            const font = 'font-family: monospace; line-height: 1.1;';
+            const art = "\n" + STARTUP_BANNER_LINES.map(line =>
+                `%c${line.slice(0, STARTUP_BANNER_SPLIT)}%c${line.slice(STARTUP_BANNER_SPLIT)}`
+            ).join('\n');
+            const styles = STARTUP_BANNER_LINES.flatMap(() => [
+                `${font} color: ${attackColor};`,
+                `${font} color: ${flowColor};`
+            ]);
+            console.log(
+                `${art}\n\n%cAttackFlow v${version} - An editor for creating enriched Cyber Kill Chain assessments\nhttps://github.com/Pr0cella/AttackFlow`,
+                ...styles,
+                'font-family: monospace; color: inherit;'
+            );
+        }
+
+        // ============================================================
         // INITIALIZATION
         // ============================================================
+        logStartupBanner();
         initThemeControls();
         logLocalIframeIPCSplash('index');
         updateLoadingContextInfo();
