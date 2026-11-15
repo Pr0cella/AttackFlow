@@ -18,6 +18,7 @@
 - **Export Filenames**: Downloads are now named from a fixed prefix and a UTC timestamp instead of being derived from the document title
 - **Export Contents**: JSON export no longer writes the sidebar filter state or the current entity selection. Documents that still contain the two keys import normally and the values are ignored
 - **Hyperlink URLs**: Metadata hyperlinks, and URL observables entered in the metadata editor, accept any `http://` or `https://` URL the browser can parse, including `|`, `^`, `[ ]` and `{ }` (for example IPv6 addresses or query arrays). Whitespace, double quotes, angle brackets, backticks and backslashes are still rejected
+- **CVE Indicator Icon**: The CVE metadata indicator on kill chain items and in the metadata legend now shows a shield with an exclamation mark
 
 ### Fixed
 - **Mobile and ICS tactics**: Mobile and ICS techniques now include their tactics. Previously the extractor accepted only the Enterprise kill chain name.
@@ -35,7 +36,7 @@
 - **Export Value Validation**: Incompatible value shapes now stop the download and report the affected property instead of omitting them
 - **Input Preservation**: Main-editor typing and kill-chain/STIX imports now preserve punctuation, repeated hyphens and STIX pattern characters
 - **Contextual Output Encoding**: Imported and user-entered text is now escaped where it is displayed, in page text, attributes, and links, so preserved special characters render as literal text rather than markup
-- **STIX Integer Fields**: Integer properties too large to represent, such as a `number_observed` with hundreds of digits, are left out at STIX bundle and kill-chain import instead of blocking JSON and STIX export
+- **STIX Integer Fields**: Integer properties outside the STIX 2.1 integer range (-9,007,199,254,740,991 to 9,007,199,254,740,991) are left out at STIX bundle and kill-chain import and when saving the STIX editor, and imported JSON numbers that are not whole numbers are left out instead of being cut off. Before, such values could block JSON and STIX export, or were exported in exponent form and changed on re-import
 
 ### Revoked techniques (v18.1 to v20.1)
 Saved kill chains that use these IDs keep the assignment and its metadata, but the technique shows only its ID, without the ATT&CK name, description or tactics. Replace them manually with the new ID:
