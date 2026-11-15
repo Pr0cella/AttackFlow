@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """
 Extract ATT&CK technique data from STIX bundles
-Generates attack-techniques.json and the Nav_Layer_*.json library layers
-for use in the Kill Chain Editor, and remaps revoked technique IDs in the
-CAPEC mapping files (capec-full, capec-to-technique, technique-to-capec)
+Generates attack-techniques.json for use in the Kill Chain Editor, checks the
+Nav_Layer_*.json files (exported from ATT&CK Navigator) against the extracted
+techniques, and remaps revoked technique IDs in the CAPEC mapping files
+(capec-full, capec-to-technique, technique-to-capec)
 
 Usage: python3 scripts/extract-attack.py
 """
 
-import copy
 import json
 import os
 import subprocess
@@ -18,7 +18,7 @@ from pathlib import Path
 # kill chain names used by attack-pattern objects in each ATT&CK domain bundle
 ATTACK_KILL_CHAINS = {'mitre-attack', 'mitre-mobile-attack', 'mitre-ics-attack'}
 
-# navigator layer file per domain (existing file is used as the settings template)
+# navigator layer file per domain (exported from ATT&CK Navigator; checked, never written)
 NAV_LAYER_FILES = {
     'enterprise': 'Nav_Layer_ENTERPRISE.json',
     'mobile': 'Nav_Layer_MOBILE.json',
@@ -355,52 +355,55 @@ def remap_capec_from_bundles(project_dir, resources_dir):
     return True
 
 
-def write_nav_layers(resources_dir, layer_entries, attack_version, techniques):
-    """Regenerate the Nav_Layer_*.json library layers from the extracted techniques.
+def validate_nav_layers(resources_dir, layer_entries, attack_version, techniques):
+    """Check the Nav_Layer_*.json files against the extracted techniques (read-only).
 
-    The existing layer file is the template: its settings and the default
-    technique entry style are kept; versions.attack and techniques are replaced,
-    and platforms used by the domain's techniques are added to filters.platforms
-    (otherwise ATT&CK Navigator would hide those techniques).
+    The layers are exports from ATT&CK Navigator and are never rewritten here.
+    Prints a warning for each mismatch; returns the number of warnings.
     """
     major_version = str(attack_version).split('.')[0]
+    warnings = 0
+
+    def warn(file_name, message):
+        nonlocal warnings
+        warnings += 1
+        print(f'  Warning: {file_name}: {message}')
+
     for domain, file_name in NAV_LAYER_FILES.items():
-        entries = layer_entries.get(domain)
         layer_path = resources_dir / file_name
-        if not entries:
-            print(f'  Skipped {file_name}: no {domain} techniques extracted')
-            continue
         if not layer_path.exists():
-            print(f'  Skipped {file_name}: template layer not found')
+            warn(file_name, 'not found; export it from ATT&CK Navigator')
+            continue
+        try:
+            with open(layer_path, 'r', encoding='utf-8') as f:
+                layer = json.load(f)
+        except (OSError, ValueError) as e:
+            warn(file_name, f'cannot be read ({e})')
             continue
 
-        with open(layer_path, 'r', encoding='utf-8') as f:
-            layer = json.load(f)
+        versions = layer.get('versions') or {}
+        if str(versions.get('attack', '')).split('.')[0] != major_version:
+            warn(file_name, f'versions.attack is {versions.get("attack")!r}, config.js expects {major_version}')
+        if not str(versions.get('layer', '')).startswith('4.'):
+            warn(file_name, f'versions.layer is {versions.get("layer")!r}, expected layer format 4.x')
+        if layer.get('domain') != f'{domain}-attack':
+            warn(file_name, f'domain is {layer.get("domain")!r}, expected {domain}-attack')
 
-        template_entries = layer.get('techniques') or [{}]
-        entry_template = copy.deepcopy(template_entries[0])
+        entries = [t for t in layer.get('techniques', []) if isinstance(t, dict)]
+        ids = {t.get('techniqueID') for t in entries}
+        unknown = sorted(i for i in ids if i not in techniques or techniques[i]['domain'] != domain)
+        if unknown:
+            warn(file_name, f'{len(unknown)} technique IDs not in the {domain} library: {unknown[:10]}')
+        missing = sorted({i for i, _ in layer_entries.get(domain, set())} - ids)
+        if missing:
+            warn(file_name, f'{len(missing)} {domain} techniques missing from the layer: {missing[:10]}')
+        disabled = sum(1 for t in entries if t.get('enabled') is False)
+        if disabled:
+            warn(file_name, f'{disabled} entries are disabled and will be skipped on import')
 
-        entries_out = []
-        for ext_id, tactic in sorted(entries):
-            entry = copy.deepcopy(entry_template)
-            entry['techniqueID'] = ext_id
-            entry['tactic'] = tactic
-            entries_out.append(entry)
-
-        layer.setdefault('versions', {})['attack'] = major_version
-        layer['techniques'] = entries_out
-
-        # keep the template's platform order; append platforms new in this ATT&CK version
-        filters = layer.setdefault('filters', {})
-        platforms = list(filters.get('platforms', []))
-        used = {p for t in techniques.values() if t['domain'] == domain for p in t['platforms']}
-        platforms += sorted(used - set(platforms))
-        filters['platforms'] = platforms
-
-        with open(layer_path, 'w', encoding='utf-8') as f:
-            json.dump(layer, f, indent=2, ensure_ascii=False)
-        print(f'  Written: {file_name} ({len(entries_out)} technique/tactic entries, '
-              f'platform filter: {platforms})')
+        print(f'  {file_name}: navigator {versions.get("navigator")}, layer {versions.get("layer")}, '
+              f'attack {versions.get("attack")}, {len(entries)} entries, {len(ids)} techniques')
+    return warnings
 
 
 def load_config(project_dir):
@@ -507,8 +510,8 @@ def main():
     with open(output_file, 'w', encoding='utf-8') as f:
         json.dump(techniques, f, indent=2, ensure_ascii=False)
 
-    print('Writing Navigator layers...')
-    write_nav_layers(resources_dir, layer_entries, attack_config['version'], techniques)
+    print('Checking Navigator layers (exported from ATT&CK Navigator, not modified)...')
+    validate_nav_layers(resources_dir, layer_entries, attack_config['version'], techniques)
 
     print('Remapping revoked techniques in CAPEC mappings...')
     remap_capec_mappings(resources_dir, revoked_map, set(techniques))

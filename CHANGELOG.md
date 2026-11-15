@@ -2,15 +2,18 @@
 ---
 ## [2.9.3] - 2026-11-15
 
+### Added
+- **Startup Banner**: The main editor prints an AttackFlow ASCII banner with the version to the browser console on startup. Disable it with `CONFIG.console.showStartupBanner = false` in `config.js`
+
 ### Changed
-- **MITRE ATT&CK v20.1**: Technique data and the bundled Navigator layers were regenerated from the ATT&CK v20.1 STIX 2.1 bundles (`mitre-attack/attack-stix-data`). The library now has 935 techniques (706 Enterprise, 125 Mobile, 104 ICS), up from 898 in v18.1. Enterprise Defense Evasion is now split into Stealth (TA0005) and Defense Impairment (TA0112). ICS now has sub-techniques, and new ICS techniques use `T1xxx` IDs.
+- **MITRE ATT&CK v20.1**: Technique data was regenerated from the ATT&CK v20.1 STIX 2.1 bundles (`mitre-attack/attack-stix-data`). The library now has 935 techniques (706 Enterprise, 125 Mobile, 104 ICS), up from 898 in v18.1. Enterprise Defense Evasion is now split into Stealth (TA0005) and Defense Impairment (TA0112). ICS now has sub-techniques, and new ICS techniques use `T1xxx` IDs.
 - **Detection Strategies**: The technique detail panel now lists ATT&CK detection strategies (`DETxxxx`) with links to attack.mitre.org. They replace the detection text that ATT&CK stopped publishing in v18. The `detection` field in `attack-techniques.json` is replaced by `detectionStrategies`.
-- **Navigator layers**: `scripts/extract-attack.py` now regenerates `resources/Nav_Layer_*.json` from the bundles. It keeps each existing layer's settings, replaces the ATT&CK version and the technique list, and adds platforms used by the techniques to the layer's platform filter (the ICS layer previously filtered on `None` only, which would hide most v20 ICS techniques in ATT&CK Navigator).
+- **Navigator layers**: `resources/Nav_Layer_*.json` were re-exported from ATT&CK Navigator v5.3.2 (layer format 4.5) for ATT&CK v20. `scripts/extract-attack.py` does not write them; it checks each layer's ATT&CK version, layer format, domain and technique coverage against the extracted library and prints a warning for each mismatch.
+- **JSON sanitization scope**: `sanitize.paths` in `config.js` now lists the generated resource files explicitly, so the Navigator layer exports are no longer rewritten. The app still strips angle brackets from layers when it loads or imports them.
 - **Use case examples**: `T1562.001` (revoked) was replaced with `T1685` in the incident response and ransomware playbook examples.
 - **CWE 5.0**: CWE data was regenerated from CWE 5.0 (CWE Schema 8.0). The library now has 984 weaknesses: 956 active and 28 deprecated. The 15 new weaknesses (CWE-1461 to CWE-1476, except CWE-1468, which is a view) include session and credential weaknesses. Deprecated entries keep MITRE's "DEPRECATED:" name, so saved kill chains that use them (for example CWE-613) still resolve. CAPEC-149 and CAPEC-155 reference the deprecated CWE-377.
 - **CWE Schema 8 support**: `scripts/extract-data.py` now accepts both CWE Schema 7.x (`cwe-7` namespace, `Category`) and Schema 8.x (`cwe-8` namespace, `Grouping`). It stops without updating the generated files if a source file cannot be parsed, has an unsupported namespace, or yields no CAPEC patterns or CWE weaknesses. Before, CWE 5.0 produced a CWE library of 336 placeholder entries without an error, and a file with an XML error was skipped, which wrote a reduced library.
 - **Source versions**: `config.js` now records `sources.capec.version` (3.9) and `sources.cwe.version` (5.0). The extractor logs each file's version and warns when it differs from the config.
-- **CAPEC 3.9 confirmed**: CAPEC 3.9 (2023-01-24) is the latest CAPEC release, and its ATT&CK mappings are based on ATT&CK 12.0. Extracting the CAPEC 3.9 views reproduced the previously shipped CAPEC files byte for byte.
 - **CAPEC technique remap**: Both extraction scripts now remap revoked ATT&CK IDs in `capec-full.json`, `capec-to-technique.json` and `technique-to-capec.json` to their replacements, using the ATT&CK `revoked-by` relationships. Affected patterns record each change in a new `attackRemaps` field, for example `{"from": "T1562.002", "to": "T1685.001"}`. The remapped links are derived from ATT&CK data and are not CAPEC's own mapping. 14 references in 5 patterns were remapped (CAPEC-13, CAPEC-268, CAPEC-571, CAPEC-578, CAPEC-641).
 
 ### Fixed

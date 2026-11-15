@@ -35,9 +35,16 @@ const CONFIG = {
     },
 
     // JSON sanitization paths (glob patterns, relative to project root)
+    // Generated files only: resources/Nav_Layer_*.json are ATT&CK Navigator exports and stay unmodified
+    // (the app strips angle brackets from layers when loading them)
     sanitize: {
         paths: [
-            'resources/**/*.json',
+            'resources/attack-techniques.json',
+            'resources/capec-full.json',
+            'resources/capec-to-technique.json',
+            'resources/technique-to-capec.json',
+            'resources/cwe-full.json',
+            'resources/cwe-to-capec.json',
             'frameworks/ATTCK/**/*.json'
         ]
     },
@@ -194,6 +201,11 @@ const CONFIG = {
     imports: {
         clearStixOnBundleImport: false,    // Auto-clear STIX library before importing a STIX bundle
         clearStixOnKillChainImport: true   // Auto-clear STIX library before importing a kill chain
+    },
+
+    // Browser console output
+    console: {
+        showStartupBanner: true // Print the AttackFlow ASCII banner to the browser console on startup
     },
 
     // Debugging controls

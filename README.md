@@ -277,8 +277,12 @@ Download the latest framework data and run the extraction scripts:
 # Download CWE XML from https://cwe.mitre.org/data/ (CWE Schema 7.x and 8.x are supported)
 # Place in frameworks/CWE/ as ALL.xml (cwec_vX.Y.xml), SOFTWARE.xml (view 699), HARDWARE.xml (view 1194)
 
+# Export one layer per domain from ATT&CK Navigator (https://mitre-attack.github.io/attack-navigator/)
+# for the same ATT&CK version, with all techniques and sub-techniques selected
+# Save in resources/ as Nav_Layer_ENTERPRISE.json, Nav_Layer_MOBILE.json, Nav_Layer_ICS.json
+
 # Run extraction scripts (either order; both produce the same result)
-python3 scripts/extract-attack.py    # Parse ATT&CK techniques, rebuild Navigator layers
+python3 scripts/extract-attack.py    # Parse ATT&CK techniques, check the Navigator layers
 python3 scripts/extract-data.py      # Parse CAPEC/CWE
 # Both scripts remap revoked ATT&CK IDs in the CAPEC mappings when the ATT&CK bundles are present
 

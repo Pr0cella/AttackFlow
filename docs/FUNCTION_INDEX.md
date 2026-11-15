@@ -353,6 +353,7 @@ Update strategy:
 - `showToast`
 - `renderAll`
 - `enableLeaveSiteConfirmation`
+- `logStartupBanner`
 
 ---
 
