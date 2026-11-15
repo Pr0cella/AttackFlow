@@ -32,6 +32,8 @@
 - **CSV Serialization**: Fixed an issue where CSV cells protected against spreadsheet formula injection were quoted more than once. Protected cells now carry a single leading tab inside one layer of quoting, cells containing a carriage return are quoted, and records are terminated with CRLF
 - **STIX Property Export**: STIX bundle export and the bundle embedded in JSON export now preserve stored properties correctly
 - **Export Value Validation**: Incompatible value shapes now stop the download and report the affected property instead of omitting them
+- **Input Preservation**: Main-editor typing and kill-chain/STIX imports now preserve punctuation, repeated hyphens and STIX pattern characters
+- **Contextual Output Encoding**: Imported and user-entered text is now escaped where it is displayed, in page text, attributes, and links, so preserved special characters render as literal text rather than markup
 
 ### Revoked techniques (v18.1 to v20.1)
 Saved kill chains that use these IDs show the ID without metadata. Replace them manually with the new ID:

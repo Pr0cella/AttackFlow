@@ -1,6 +1,6 @@
 # AttackFlow — Monolithic API Reference
 
-> **Version:** 2.9.0  
+> **Version:** 2.9.3  
 > **Scope:** Documents the current inline JavaScript implementation in `index.html` and companion `config.js` + `stix-config.js` (plus embedded iframe IPC surface used by `explorer.html` and `stix-builder.html`).  
 > **Purpose:** Definitive implementation reference for ongoing hardening and v3 modularization planning.
 
@@ -40,7 +40,7 @@ AttackFlow is a zero-build browser SPA with all core runtime logic inside inline
 
 - No bundler, no module system, global-scope runtime.
 - Mutable app state lives in a single `state` object.
-- Rendering is template-string + `innerHTML` driven, protected by strict sanitization and validator guards.
+- Rendering is template-string + `innerHTML` driven, protected by contextual output encoding, validation, and targeted sanitization.
 - Companion scripts:
   - `config.js` (theme/config/import behavior/debug toggles)
   - `stix-config.js` (STIX SDO schemas + vocabularies + helpers)
@@ -149,15 +149,17 @@ Major additions reflected in v2.9.0 runtime:
   - validators (CVE/CVSS/hash/IP/domain/url/filename)
   - `validateObservable(type, value)` dispatch
 - Input guard stack (`applyInputGuards`) covers:
-  - `keydown`, `beforeinput`, `paste`, `drop`, `input`
+  - `paste`, `drop`, `input`
+  - printable punctuation is not blocked during native keyboard or `beforeinput` handling
 - Added sanitizer primitives:
   - `normalizeUserInput(text, maxLength, allowNewlines)`
   - `sanitizeUserInputText(text, allowNewlines)`
   - `sanitizeForStorage(text, maxLength)`
+- Main-editor evidence helpers preserve printable characters, including repeated hyphens and STIX pattern punctuation. They retain control-character removal and length limits; storage commits also trim surrounding whitespace. The older restrictive `InputSecurity.sanitize` remains unchanged for its existing non-evidence call sites.
 - Prototype pollution defenses:
   - `DANGEROUS_OBJECT_KEYS`
   - `isDangerousObjectKey`, `createSafeObject`, `hasOwn`, `parseJsonSafe`
-  - recursive loader sanitizer `stripAngleBracketsFromJson`
+  - recursive loader sanitizer `stripAngleBracketsFromJson`, retained for framework and Navigator inputs
 
 ### 6.2 METADATA + TYPE MAPPING + ASSIGNMENT/GROUP LOGIC
 
