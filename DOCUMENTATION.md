@@ -57,7 +57,7 @@ AttackFlow is a zero-build browser SPA with all core runtime logic inside inline
 |------|------|
 | `index.html` | Main UI, CSS, and inline runtime (monolith, ~10.5k lines total) |
 | `config.js` | App config, theme presets, feature flags, IPC debug/rate/bootstrap tuning |
-| `stix-config.js` | STIX common fields, vocabularies, 19 SDO type definitions, helper APIs |
+| `stix-config.js` | STIX common fields, vocabularies, definitions for 18 SDO types and one custom object type, helper APIs |
 | `explorer.html` | Relationship Explorer iframe view |
 | `stix-builder.html` | STIX Composer iframe view (theme + local IPC aware) |
 | `resources/*.json` | Generated runtime datasets (ATT&CK/CAPEC/CWE + mappings) and ATT&CK Navigator layer exports |
@@ -121,7 +121,7 @@ Major additions reflected in v2.9.0 runtime:
 
 - `STIX_COMMON_PROPERTIES`
 - `STIX_VOCABULARIES`
-- `STIX_OBJECTS` (19 SDO types)
+- `STIX_OBJECTS` (18 SDO types and one custom object type)
 - `STIX_RELATIONSHIP_DEFAULTS`
 
 ### 5.2 Helper functions

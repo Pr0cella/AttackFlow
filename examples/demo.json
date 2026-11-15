@@ -1,10 +1,17 @@
 {
-  "version": "2.4.3",
+  "version": "2.9.3",
   "schema": "killchain-export-lite",
-  "exportedAt": "2026-01-31T09:00:00.000Z",
+  "exportedAt": "2026-11-15T11:47:42.831Z",
+  "title": "",
+  "description": "",
   "view": "killchain",
   "activeTab": "attack",
-  "layers": { "attack": true, "capec": true, "cwe": true },
+  "layers": {
+    "attack": true,
+    "capec": true,
+    "cwe": true,
+    "custom": false
+  },
   "hideEmpty": false,
   "assignments": {
     "IN:reconnaissance": {
@@ -15,15 +22,31 @@
             "score": "medium",
             "confidence": 42,
             "comments": "Active scanning against public-facing infrastructure consistent with an APT-style intrusion.",
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
             "hyperlinks": [
-              { "label": "Recon overview", "url": "https://example.com/advisory/recon" }
+              {
+                "label": "Recon overview",
+                "url": "https://example.com/advisory/recon"
+              }
             ],
             "observables": [
-              { "type": "ipv4-addr", "value": "192.0.2.10" },
-              { "type": "domain-name", "value": "vpn-gateway.example.com" },
-              { "type": "url", "value": "https://vpn-gateway.example.com/" }
+              {
+                "type": "ipv4-addr",
+                "value": "192.0.2.10"
+              },
+              {
+                "type": "domain-name",
+                "value": "vpn-gateway.example.com"
+              },
+              {
+                "type": "url",
+                "value": "https://vpn-gateway.example.com/"
+              }
             ]
-          }
+          },
+          "instanceId": "itm-mwhrss53-1"
         },
         {
           "id": "T1592",
@@ -31,10 +54,18 @@
             "score": "low",
             "confidence": 20,
             "comments": "Harvested host information and exposed services from public sources.",
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
+            "hyperlinks": [],
             "observables": [
-              { "type": "domain-name", "value": "docs.example.org" }
+              {
+                "type": "domain-name",
+                "value": "docs.example.org"
+              }
             ]
-          }
+          },
+          "instanceId": "itm-mwhrss53-2"
         }
       ],
       "capecs": [
@@ -42,11 +73,37 @@
           "id": "CAPEC-169",
           "metadata": {
             "score": "low",
-            "comments": "Reconnaissance and footprinting activity prior to initial access."
-          }
+            "confidence": null,
+            "comments": "Reconnaissance and footprinting activity prior to initial access.",
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
+            "hyperlinks": [],
+            "observables": []
+          },
+          "instanceId": "itm-mwhrss53-3"
         }
       ],
-      "cwes": []
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": [
+        {
+          "kind": "item",
+          "type": "attack",
+          "instanceId": "itm-mwhrss53-1"
+        },
+        {
+          "kind": "item",
+          "type": "attack",
+          "instanceId": "itm-mwhrss53-2"
+        },
+        {
+          "kind": "item",
+          "type": "capec",
+          "instanceId": "itm-mwhrss53-3"
+        }
+      ]
     },
     "IN:resource-development": {
       "techniques": [
@@ -56,14 +113,31 @@
             "score": "medium",
             "confidence": 35,
             "comments": "Registered look-alike domains for staging and phishing.",
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
+            "hyperlinks": [],
             "observables": [
-              { "type": "domain-name", "value": "login-update.example.net" }
+              {
+                "type": "domain-name",
+                "value": "login-update.example.net"
+              }
             ]
-          }
+          },
+          "instanceId": "itm-mwhrss53-4"
         }
       ],
       "capecs": [],
-      "cwes": []
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": [
+        {
+          "kind": "item",
+          "type": "attack",
+          "instanceId": "itm-mwhrss53-4"
+        }
+      ]
     },
     "IN:delivery": {
       "techniques": [
@@ -73,11 +147,22 @@
             "score": "high",
             "confidence": 70,
             "comments": "Spearphishing link used to deliver a staged loader.",
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
+            "hyperlinks": [],
             "observables": [
-              { "type": "email-addr", "value": "it-support@example.com" },
-              { "type": "url", "value": "https://login-update.example.net/portal" }
+              {
+                "type": "email-addr",
+                "value": "it-support@example.com"
+              },
+              {
+                "type": "url",
+                "value": "https://login-update.example.net/portal"
+              }
             ]
-          }
+          },
+          "instanceId": "itm-mwhrss53-5"
         }
       ],
       "capecs": [
@@ -85,11 +170,32 @@
           "id": "CAPEC-98",
           "metadata": {
             "score": "medium",
-            "comments": "Phishing used for initial access and credential theft."
-          }
+            "confidence": null,
+            "comments": "Phishing used for initial access and credential theft.",
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
+            "hyperlinks": [],
+            "observables": []
+          },
+          "instanceId": "itm-mwhrss53-6"
         }
       ],
-      "cwes": []
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": [
+        {
+          "kind": "item",
+          "type": "attack",
+          "instanceId": "itm-mwhrss53-5"
+        },
+        {
+          "kind": "item",
+          "type": "capec",
+          "instanceId": "itm-mwhrss53-6"
+        }
+      ]
     },
     "IN:social-engineering": {
       "techniques": [
@@ -98,12 +204,27 @@
           "metadata": {
             "score": "medium",
             "confidence": 55,
-            "comments": "User execution of a malicious link disguised as an SSO update notice."
-          }
+            "comments": "User execution of a malicious link disguised as an SSO update notice.",
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
+            "hyperlinks": [],
+            "observables": []
+          },
+          "instanceId": "itm-mwhrss53-7"
         }
       ],
       "capecs": [],
-      "cwes": []
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": [
+        {
+          "kind": "item",
+          "type": "attack",
+          "instanceId": "itm-mwhrss53-7"
+        }
+      ]
     },
     "IN:exploitation": {
       "techniques": [
@@ -112,13 +233,27 @@
           "metadata": {
             "score": "critical",
             "confidence": 88,
-            "cveId": "CVE-2021-44228",
-            "cvssVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
             "comments": "Public-facing app exploit for initial foothold (Log4Shell-style tradecraft).",
+            "cveEntries": [
+              {
+                "id": "CVE-2021-44228",
+                "score": null,
+                "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+              }
+            ],
+            "cveId": "CVE-2021-44228",
+            "cveIds": [
+              "CVE-2021-44228"
+            ],
+            "hyperlinks": [],
             "observables": [
-              { "type": "url", "value": "https://app.example.com/" }
+              {
+                "type": "url",
+                "value": "https://app.example.com/"
+              }
             ]
-          }
+          },
+          "instanceId": "itm-mwhrss53-8"
         }
       ],
       "capecs": [
@@ -126,8 +261,15 @@
           "id": "CAPEC-242",
           "metadata": {
             "score": "high",
-            "comments": "Code injection technique aligned with exploitation of exposed services."
-          }
+            "confidence": null,
+            "comments": "Code injection technique aligned with exploitation of exposed services.",
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
+            "hyperlinks": [],
+            "observables": []
+          },
+          "instanceId": "itm-mwhrss53-9"
         }
       ],
       "cwes": [
@@ -135,8 +277,34 @@
           "id": "CWE-78",
           "metadata": {
             "score": "high",
-            "comments": "OS command injection risk in exposed services."
-          }
+            "confidence": null,
+            "comments": "OS command injection risk in exposed services.",
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
+            "hyperlinks": [],
+            "observables": []
+          },
+          "instanceId": "itm-mwhrss53-10"
+        }
+      ],
+      "customItems": [],
+      "groups": [],
+      "layout": [
+        {
+          "kind": "item",
+          "type": "attack",
+          "instanceId": "itm-mwhrss53-8"
+        },
+        {
+          "kind": "item",
+          "type": "capec",
+          "instanceId": "itm-mwhrss53-9"
+        },
+        {
+          "kind": "item",
+          "type": "cwe",
+          "instanceId": "itm-mwhrss53-10"
         }
       ]
     },
@@ -148,15 +316,35 @@
             "score": "high",
             "confidence": 75,
             "comments": "Scheduled task persists a loader across reboots.",
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
+            "hyperlinks": [],
             "observables": [
-              { "type": "file-name", "value": "sysupdate.ps1" },
-              { "type": "file-hash-sha256", "value": "d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2" }
+              {
+                "type": "file-name",
+                "value": "sysupdate.ps1"
+              },
+              {
+                "type": "file-hash-sha256",
+                "value": "d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2"
+              }
             ]
-          }
+          },
+          "instanceId": "itm-mwhrss53-11"
         }
       ],
       "capecs": [],
-      "cwes": []
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": [
+        {
+          "kind": "item",
+          "type": "attack",
+          "instanceId": "itm-mwhrss53-11"
+        }
+      ]
     },
     "IN:defense-evasion": {
       "techniques": [
@@ -165,12 +353,27 @@
           "metadata": {
             "score": "medium",
             "confidence": 60,
-            "comments": "Cleared log artifacts to reduce detection surface."
-          }
+            "comments": "Cleared log artifacts to reduce detection surface.",
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
+            "hyperlinks": [],
+            "observables": []
+          },
+          "instanceId": "itm-mwhrss53-12"
         }
       ],
       "capecs": [],
-      "cwes": []
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": [
+        {
+          "kind": "item",
+          "type": "attack",
+          "instanceId": "itm-mwhrss53-12"
+        }
+      ]
     },
     "IN:command-control": {
       "techniques": [
@@ -180,15 +383,35 @@
             "score": "high",
             "confidence": 80,
             "comments": "C2 over HTTPS with domain-fronted infrastructure.",
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
+            "hyperlinks": [],
             "observables": [
-              { "type": "domain-name", "value": "cdn-updates.example.com" },
-              { "type": "url", "value": "https://cdn-updates.example.com/api" }
+              {
+                "type": "domain-name",
+                "value": "cdn-updates.example.com"
+              },
+              {
+                "type": "url",
+                "value": "https://cdn-updates.example.com/api"
+              }
             ]
-          }
+          },
+          "instanceId": "itm-mwhrss53-13"
         }
       ],
       "capecs": [],
-      "cwes": []
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": [
+        {
+          "kind": "item",
+          "type": "attack",
+          "instanceId": "itm-mwhrss53-13"
+        }
+      ]
     },
     "THROUGH:pivoting": {
       "techniques": [
@@ -197,12 +420,27 @@
           "metadata": {
             "score": "medium",
             "confidence": 50,
-            "comments": "Multi-hop proxying used to reach segmented environments."
-          }
+            "comments": "Multi-hop proxying used to reach segmented environments.",
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
+            "hyperlinks": [],
+            "observables": []
+          },
+          "instanceId": "itm-mwhrss53-14"
         }
       ],
       "capecs": [],
-      "cwes": []
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": [
+        {
+          "kind": "item",
+          "type": "attack",
+          "instanceId": "itm-mwhrss53-14"
+        }
+      ]
     },
     "THROUGH:discovery": {
       "techniques": [
@@ -211,12 +449,27 @@
           "metadata": {
             "score": "low",
             "confidence": 35,
-            "comments": "System information discovery to map target assets."
-          }
+            "comments": "System information discovery to map target assets.",
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
+            "hyperlinks": [],
+            "observables": []
+          },
+          "instanceId": "itm-mwhrss53-15"
         }
       ],
       "capecs": [],
-      "cwes": []
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": [
+        {
+          "kind": "item",
+          "type": "attack",
+          "instanceId": "itm-mwhrss53-15"
+        }
+      ]
     },
     "THROUGH:privilege-escalation": {
       "techniques": [
@@ -225,10 +478,22 @@
           "metadata": {
             "score": "high",
             "confidence": 72,
+            "comments": "Privilege escalation leveraging a known print spooler vulnerability.",
+            "cveEntries": [
+              {
+                "id": "CVE-2021-34527",
+                "score": null,
+                "vector": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H"
+              }
+            ],
             "cveId": "CVE-2021-34527",
-            "cvssVector": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
-            "comments": "Privilege escalation leveraging a known print spooler vulnerability."
-          }
+            "cveIds": [
+              "CVE-2021-34527"
+            ],
+            "hyperlinks": [],
+            "observables": []
+          },
+          "instanceId": "itm-mwhrss53-16"
         }
       ],
       "capecs": [],
@@ -237,8 +502,29 @@
           "id": "CWE-269",
           "metadata": {
             "score": "medium",
-            "comments": "Improper privilege management enabling escalation."
-          }
+            "confidence": null,
+            "comments": "Improper privilege management enabling escalation.",
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
+            "hyperlinks": [],
+            "observables": []
+          },
+          "instanceId": "itm-mwhrss53-17"
+        }
+      ],
+      "customItems": [],
+      "groups": [],
+      "layout": [
+        {
+          "kind": "item",
+          "type": "attack",
+          "instanceId": "itm-mwhrss53-16"
+        },
+        {
+          "kind": "item",
+          "type": "cwe",
+          "instanceId": "itm-mwhrss53-17"
         }
       ]
     },
@@ -250,15 +536,35 @@
             "score": "high",
             "confidence": 78,
             "comments": "PowerShell used to execute staging scripts.",
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
+            "hyperlinks": [],
             "observables": [
-              { "type": "file-name", "value": "stage.ps1" },
-              { "type": "file-hash-md5", "value": "1a2b3c4d5e6f78901a2b3c4d5e6f7890" }
+              {
+                "type": "file-name",
+                "value": "stage.ps1"
+              },
+              {
+                "type": "file-hash-md5",
+                "value": "1a2b3c4d5e6f78901a2b3c4d5e6f7890"
+              }
             ]
-          }
+          },
+          "instanceId": "itm-mwhrss53-18"
         }
       ],
       "capecs": [],
-      "cwes": []
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": [
+        {
+          "kind": "item",
+          "type": "attack",
+          "instanceId": "itm-mwhrss53-18"
+        }
+      ]
     },
     "THROUGH:credential-access": {
       "techniques": [
@@ -267,8 +573,14 @@
           "metadata": {
             "score": "critical",
             "confidence": 90,
-            "comments": "Credential dumping from LSASS memory."
-          }
+            "comments": "Credential dumping from LSASS memory.",
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
+            "hyperlinks": [],
+            "observables": []
+          },
+          "instanceId": "itm-mwhrss53-19"
         }
       ],
       "capecs": [
@@ -276,8 +588,15 @@
           "id": "CAPEC-112",
           "metadata": {
             "score": "medium",
-            "comments": "Password guessing and credential access activity."
-          }
+            "confidence": null,
+            "comments": "Password guessing and credential access activity.",
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
+            "hyperlinks": [],
+            "observables": []
+          },
+          "instanceId": "itm-mwhrss53-20"
         }
       ],
       "cwes": [
@@ -285,8 +604,34 @@
           "id": "CWE-522",
           "metadata": {
             "score": "low",
-            "comments": "Weak credential management noted in the environment."
-          }
+            "confidence": null,
+            "comments": "Weak credential management noted in the environment.",
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
+            "hyperlinks": [],
+            "observables": []
+          },
+          "instanceId": "itm-mwhrss53-21"
+        }
+      ],
+      "customItems": [],
+      "groups": [],
+      "layout": [
+        {
+          "kind": "item",
+          "type": "attack",
+          "instanceId": "itm-mwhrss53-19"
+        },
+        {
+          "kind": "item",
+          "type": "capec",
+          "instanceId": "itm-mwhrss53-20"
+        },
+        {
+          "kind": "item",
+          "type": "cwe",
+          "instanceId": "itm-mwhrss53-21"
         }
       ]
     },
@@ -298,14 +643,31 @@
             "score": "high",
             "confidence": 65,
             "comments": "Remote services used to move laterally across hosts.",
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
+            "hyperlinks": [],
             "observables": [
-              { "type": "ipv4-addr", "value": "198.51.100.25" }
+              {
+                "type": "ipv4-addr",
+                "value": "198.51.100.25"
+              }
             ]
-          }
+          },
+          "instanceId": "itm-mwhrss53-22"
         }
       ],
       "capecs": [],
-      "cwes": []
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": [
+        {
+          "kind": "item",
+          "type": "attack",
+          "instanceId": "itm-mwhrss53-22"
+        }
+      ]
     },
     "OUT:collection": {
       "techniques": [
@@ -314,12 +676,27 @@
           "metadata": {
             "score": "medium",
             "confidence": 52,
-            "comments": "Email collection from local clients."
-          }
+            "comments": "Email collection from local clients.",
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
+            "hyperlinks": [],
+            "observables": []
+          },
+          "instanceId": "itm-mwhrss53-23"
         }
       ],
       "capecs": [],
-      "cwes": []
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": [
+        {
+          "kind": "item",
+          "type": "attack",
+          "instanceId": "itm-mwhrss53-23"
+        }
+      ]
     },
     "OUT:exfiltration": {
       "techniques": [
@@ -329,14 +706,31 @@
             "score": "high",
             "confidence": 82,
             "comments": "Exfiltration over the existing C2 channel.",
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
+            "hyperlinks": [],
             "observables": [
-              { "type": "url", "value": "https://cdn-updates.example.com/exfil" }
+              {
+                "type": "url",
+                "value": "https://cdn-updates.example.com/exfil"
+              }
             ]
-          }
+          },
+          "instanceId": "itm-mwhrss53-24"
         }
       ],
       "capecs": [],
-      "cwes": []
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": [
+        {
+          "kind": "item",
+          "type": "attack",
+          "instanceId": "itm-mwhrss53-24"
+        }
+      ]
     },
     "OUT:impact": {
       "techniques": [
@@ -346,14 +740,31 @@
             "score": "critical",
             "confidence": 85,
             "comments": "Ransomware encryption used to disrupt operations.",
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
+            "hyperlinks": [],
             "observables": [
-              { "type": "file-name", "value": "README-RECOVER.txt" }
+              {
+                "type": "file-name",
+                "value": "README-RECOVER.txt"
+              }
             ]
-          }
+          },
+          "instanceId": "itm-mwhrss53-25"
         }
       ],
       "capecs": [],
-      "cwes": []
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": [
+        {
+          "kind": "item",
+          "type": "attack",
+          "instanceId": "itm-mwhrss53-25"
+        }
+      ]
     },
     "OUT:objectives": {
       "techniques": [
@@ -363,14 +774,32 @@
             "score": "high",
             "confidence": 70,
             "comments": "Inhibited system recovery to pressure ransom payment.",
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
+            "hyperlinks": [],
             "observables": [
-              { "type": "threat-actor", "value": "LockBit" }
+              {
+                "type": "threat-actor",
+                "value": "LockBit"
+              }
             ]
-          }
+          },
+          "instanceId": "itm-mwhrss53-26"
         }
       ],
       "capecs": [],
-      "cwes": []
+      "cwes": [],
+      "customItems": [],
+      "groups": [],
+      "layout": [
+        {
+          "kind": "item",
+          "type": "attack",
+          "instanceId": "itm-mwhrss53-26"
+        }
+      ]
     }
-  }
+  },
+  "customLibrary": {}
 }
