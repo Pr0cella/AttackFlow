@@ -319,6 +319,7 @@ Update strategy:
 
 ### Import / Export / Serialization / Validation
 
+- `exportFileName`
 - `exportJSON`
 - `buildSTIXBundle`
 - `addRelationship`
@@ -353,6 +354,7 @@ Update strategy:
 - `showToast`
 - `renderAll`
 - `enableLeaveSiteConfirmation`
+- `logStartupBanner`
 
 ---
 

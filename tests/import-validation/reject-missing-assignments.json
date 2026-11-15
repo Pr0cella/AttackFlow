@@ -1,0 +1,5 @@
+{
+  "_comment": "MUST FAIL: Missing assignments object",
+  "version": "2.4.2",
+  "view": "killchain"
+}

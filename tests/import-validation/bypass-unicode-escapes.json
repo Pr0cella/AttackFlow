@@ -1,0 +1,16 @@
+{
+  "_comment": "SHOULD FAIL: Unicode escape sequences for XSS",
+  "version": "2.4.2",
+  "assignments": {
+    "in:reconnaissance": {
+      "techniques": [
+        {
+          "id": "T1595",
+          "comments": "\\u003cscript\\u003ealert(1)\\u003c/script\\u003e"
+        }
+      ],
+      "capecs": [],
+      "cwes": []
+    }
+  }
+}

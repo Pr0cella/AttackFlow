@@ -1,0 +1,12 @@
+{
+  "_comment": "MUST FAIL: Invalid view value",
+  "version": "2.4.2",
+  "view": "malicious-view",
+  "assignments": {
+    "in:reconnaissance": {
+      "techniques": [],
+      "capecs": [],
+      "cwes": []
+    }
+  }
+}

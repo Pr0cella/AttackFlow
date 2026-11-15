@@ -1,7 +1,7 @@
 {
-  "version": "2.7.0",
+  "version": "2.9.3",
   "schema": "killchain-export-lite",
-  "exportedAt": "2026-02-10T09:00:00.000Z",
+  "exportedAt": "2026-11-15T11:48:11.578Z",
   "title": "UC4 — Aerospace Espionage Campaign: CTI Report",
   "description": "CTI report for an aerospace espionage campaign, combining ATT&CK techniques with rich STIX objects to tell the kill chain narrative.",
   "view": "killchain",
@@ -13,230 +13,6 @@
     "custom": true
   },
   "hideEmpty": true,
-  "customLibrary": {
-    "threat-actor--37520548-fd0c-48ea-841a-c46fd32b930c": {
-      "id": "threat-actor--37520548-fd0c-48ea-841a-c46fd32b930c",
-      "stixType": "threat-actor",
-      "name": "SkyForge",
-      "description": "State-sponsored threat actor attributed to a foreign military intelligence service. Active since 2021. Targets aerospace, defense, and satellite communications sectors. Known for patient intrusions with custom tooling and satellite-themed infrastructure naming.",
-      "labels": [
-        "nation-state",
-        "espionage",
-        "aerospace"
-      ],
-      "created": "2026-01-15T08:00:00.000Z",
-      "modified": "2026-02-10T09:00:00.000Z",
-      "threat_actor_types": [
-        "nation-state",
-        "spy"
-      ],
-      "aliases": [
-        "UNC7733",
-        "BRONZE ORBITER",
-        "Celestial Spider"
-      ],
-      "first_seen": "2021-06-15T00:00:00.000Z",
-      "last_seen": "2026-01-20T00:00:00.000Z",
-      "roles": [
-        "agent",
-        "malware-author",
-        "infrastructure-operator"
-      ],
-      "goals": [
-        "Steal aerospace trade secrets",
-        "Access satellite communication protocols",
-        "Monitor defense procurement intelligence"
-      ],
-      "sophistication": "expert",
-      "resource_level": "government",
-      "primary_motivation": "organizational-gain"
-    },
-    "intrusion-set--dd166b5e-3c91-4350-8aaa-4fd9470c3a99": {
-      "id": "intrusion-set--dd166b5e-3c91-4350-8aaa-4fd9470c3a99",
-      "stixType": "intrusion-set",
-      "name": "Operation Zenith",
-      "description": "Targeted cyber-espionage campaign against aerospace contractors in NATO and Five Eyes nations. Q2 2025 to present. Focused on next-generation fighter jet avionics designs and satellite ground station protocols.",
-      "labels": [
-        "espionage",
-        "aerospace",
-        "multi-victim"
-      ],
-      "created": "2026-01-20T10:00:00.000Z",
-      "modified": "2026-02-10T09:00:00.000Z",
-      "aliases": [
-        "ZENITH-25",
-        "SKYFALL Campaign"
-      ],
-      "first_seen": "2025-04-01T00:00:00.000Z",
-      "last_seen": "2026-01-20T00:00:00.000Z",
-      "goals": [
-        "Exfiltrate avionics design documents",
-        "Access satellite ground station source code"
-      ],
-      "resource_level": "government",
-      "primary_motivation": "organizational-gain"
-    },
-    "campaign--73ad0606-2bfe-4674-b87e-8b74edf65719": {
-      "id": "campaign--73ad0606-2bfe-4674-b87e-8b74edf65719",
-      "stixType": "campaign",
-      "name": "ZENITH Phase 1 — Initial Access Wave",
-      "description": "First phase targeting HR departments of 6 aerospace contractors with LinkedIn-sourced spearphishing. April–July 2025.",
-      "labels": [
-        "phase-1",
-        "initial-access",
-        "spearphishing"
-      ],
-      "created": "2026-01-22T09:00:00.000Z",
-      "modified": "2026-02-10T09:00:00.000Z",
-      "first_seen": "2025-04-15T00:00:00.000Z",
-      "last_seen": "2025-07-30T00:00:00.000Z",
-      "objective": "Establish persistent access in at least 3 of 6 targeted aerospace contractors."
-    },
-    "malware--ef58bf35-6405-4f38-a9e8-0a22d8a47beb": {
-      "id": "malware--ef58bf35-6405-4f38-a9e8-0a22d8a47beb",
-      "stixType": "malware",
-      "name": "OrbitRAT",
-      "description": "Custom Go-based RAT attributed to SkyForge. Communicates via gRPC over mTLS with certificate pinning. Supports file exfiltration, screenshot capture, keylogging, and browser credential theft. Anti-analysis: checks hypervisor CPUID leaf, detects common sandbox MAC prefixes.",
-      "labels": [
-        "rat",
-        "custom",
-        "golang"
-      ],
-      "created": "2026-01-16T10:00:00.000Z",
-      "modified": "2026-02-10T09:00:00.000Z",
-      "is_family": true,
-      "malware_types": [
-        "remote-access-trojan",
-        "backdoor",
-        "spyware"
-      ],
-      "aliases": [
-        "OrbitRAT",
-        "SatComLoader"
-      ],
-      "first_seen": "2023-11-20T00:00:00.000Z",
-      "last_seen": "2026-01-15T00:00:00.000Z",
-      "implementation_languages": [
-        "go"
-      ],
-      "capabilities": [
-        "communicates-with-c2",
-        "exfiltrates-data",
-        "captures-input-peripherals",
-        "anti-debugging",
-        "anti-sandbox"
-      ]
-    },
-    "infrastructure--126dc140-ee70-4287-a5f8-36f377c7aebd": {
-      "id": "infrastructure--126dc140-ee70-4287-a5f8-36f377c7aebd",
-      "stixType": "infrastructure",
-      "name": "Zenith C2 — gRPC over mTLS",
-      "description": "Distributed C2 infrastructure using gRPC over mutual TLS. 8 active nodes across Linode (Singapore), OVH (France), and Hetzner (Finland). Certificate pinning prevents interception. Nodes rotate on a 48-hour cycle.",
-      "labels": [
-        "c2",
-        "grpc",
-        "mtls"
-      ],
-      "created": "2026-01-18T14:00:00.000Z",
-      "modified": "2026-02-10T09:00:00.000Z",
-      "infrastructure_types": [
-        "command-and-control"
-      ],
-      "first_seen": "2025-04-01T00:00:00.000Z",
-      "last_seen": "2026-01-20T00:00:00.000Z"
-    },
-    "identity--30705aa7-f856-456b-9804-85ac0a27c177": {
-      "id": "identity--30705aa7-f856-456b-9804-85ac0a27c177",
-      "stixType": "identity",
-      "name": "AeroTech Dynamics Ltd",
-      "description": "Primary victim. UK-based aerospace contractor specializing in next-gen fighter jet avionics systems for the Tempest programme. 4,200 employees. MoD contractor clearance: SECRET.",
-      "labels": [
-        "victim",
-        "aerospace",
-        "uk"
-      ],
-      "created": "2026-01-15T08:00:00.000Z",
-      "modified": "2026-02-10T09:00:00.000Z",
-      "identity_class": "organization",
-      "sectors": [
-        "aerospace",
-        "defense"
-      ],
-      "contact_information": "CISO: ciso@aerotech-dynamics.example.com"
-    },
-    "indicator--5c51dd1d-260f-4a96-8a95-d94956ce2a91": {
-      "id": "indicator--5c51dd1d-260f-4a96-8a95-d94956ce2a91",
-      "stixType": "indicator",
-      "name": "OrbitRAT v4.1 SHA-256",
-      "description": "SHA-256 of OrbitRAT v4.1 ELF binary recovered from compromised Linux build server at AeroTech.",
-      "labels": [
-        "malicious-activity",
-        "file-hash"
-      ],
-      "created": "2026-01-17T13:00:00.000Z",
-      "modified": "2026-02-10T09:00:00.000Z",
-      "pattern": "[file:hashes.'SHA-256' = 'b5c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0']",
-      "pattern_type": "stix",
-      "valid_from": "2025-05-01T00:00:00.000Z",
-      "indicator_types": [
-        "malicious-activity"
-      ]
-    },
-    "indicator--ef184ae2-0f94-410f-8d26-107d0978c378": {
-      "id": "indicator--ef184ae2-0f94-410f-8d26-107d0978c378",
-      "stixType": "indicator",
-      "name": "C2 Domain — satcom-update-svc.com",
-      "description": "Primary gRPC C2 domain used by OrbitRAT. Registered via Njalla privacy registrar. DNS resolves to rotating Linode/OVH IPs.",
-      "labels": [
-        "malicious-activity",
-        "c2-domain"
-      ],
-      "created": "2026-01-19T15:00:00.000Z",
-      "modified": "2026-02-10T09:00:00.000Z",
-      "pattern": "[domain-name:value = 'satcom-update-svc.com']",
-      "pattern_type": "stix",
-      "valid_from": "2025-04-01T00:00:00.000Z",
-      "indicator_types": [
-        "malicious-activity"
-      ]
-    },
-    "report--a2ff9c4d-60a3-4d8d-a792-d4af3ce67642": {
-      "id": "report--a2ff9c4d-60a3-4d8d-a792-d4af3ce67642",
-      "stixType": "report",
-      "name": "Operation Zenith — Threat Intelligence Report Q1 2026",
-      "description": "Comprehensive CTI report covering Operation Zenith: TTPs, IOCs, victim analysis, SkyForge attribution, and recommended mitigations. Classification: TLP:AMBER.",
-      "labels": [
-        "threat-report",
-        "tlp-amber",
-        "aerospace"
-      ],
-      "created": "2026-02-01T08:00:00.000Z",
-      "modified": "2026-02-10T09:00:00.000Z",
-      "published": "2026-02-08T00:00:00.000Z",
-      "report_types": [
-        "threat-report",
-        "campaign",
-        "intrusion-set"
-      ]
-    },
-    "opinion--b6a17cc2-91d3-4bfe-b363-67f5494a90d5": {
-      "id": "opinion--b6a17cc2-91d3-4bfe-b363-67f5494a90d5",
-      "stixType": "opinion",
-      "name": "Five Eyes Partner Concurrence",
-      "description": "Attribution concurrence from Five Eyes partner agency.",
-      "labels": [
-        "peer-review",
-        "attribution"
-      ],
-      "created": "2026-02-07T10:00:00.000Z",
-      "modified": "2026-02-10T09:00:00.000Z",
-      "opinion": "agree",
-      "explanation": "Independent SIGINT and HUMINT corroborate SkyForge attribution with HIGH confidence. Overlapping infrastructure with previously reported BRONZE ORBITER campaigns targeting Australian defence primes.",
-      "authors": [
-        "Allied SIGINT Partner — Redacted"
-      ]
-    }
-  },
   "assignments": {
     "IN:reconnaissance": {
       "techniques": [],
@@ -245,34 +21,54 @@
       "customItems": [],
       "groups": [
         {
-          "groupId": "grp-cti-attribution",
+          "groupId": "grp-mwhrtebc-un15q",
           "label": "Attribution Context",
           "collapsed": false,
           "items": [
             {
-              "type": "attack",
               "id": "T1589.002",
-              "instanceId": "itm-auto-1770835608204-9",
               "metadata": {
                 "score": "medium",
                 "confidence": 60,
                 "comments": "LinkedIn harvesting of employee profiles at AeroTech Dynamics. SkyForge created 3 sock puppet recruiter accounts (identified post-compromise). Collected names, roles, and email patterns for spearphishing targeting.",
-                "cves": [],
+                "cveEntries": [],
+                "cveId": "",
+                "cveIds": [],
                 "hyperlinks": [],
                 "observables": []
-              }
+              },
+              "instanceId": "itm-auto-1770835608204-9",
+              "type": "attack"
             },
             {
-              "type": "custom",
               "id": "threat-actor--37520548-fd0c-48ea-841a-c46fd32b930c",
+              "metadata": {
+                "score": "unclassified",
+                "confidence": null,
+                "comments": "",
+                "cveEntries": [],
+                "cveId": "",
+                "cveIds": [],
+                "hyperlinks": [],
+                "observables": []
+              },
               "instanceId": "itm-cti-ta1",
-              "metadata": {}
+              "type": "custom"
             },
             {
-              "type": "custom",
               "id": "intrusion-set--dd166b5e-3c91-4350-8aaa-4fd9470c3a99",
+              "metadata": {
+                "score": "unclassified",
+                "confidence": null,
+                "comments": "",
+                "cveEntries": [],
+                "cveId": "",
+                "cveIds": [],
+                "hyperlinks": [],
+                "observables": []
+              },
               "instanceId": "itm-cti-is1",
-              "metadata": {}
+              "type": "custom"
             }
           ]
         }
@@ -280,7 +76,7 @@
       "layout": [
         {
           "kind": "group",
-          "groupId": "grp-cti-attribution"
+          "groupId": "grp-mwhrtebc-un15q"
         }
       ]
     },
@@ -291,15 +87,24 @@
       "customItems": [
         {
           "id": "infrastructure--126dc140-ee70-4287-a5f8-36f377c7aebd",
-          "instanceId": "itm-cti-infra1",
-          "type": "custom",
-          "metadata": {}
+          "metadata": {
+            "score": "unclassified",
+            "confidence": null,
+            "comments": "",
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
+            "hyperlinks": [],
+            "observables": []
+          },
+          "instanceId": "itm-cti-infra1"
         }
       ],
       "groups": [],
       "layout": [
         {
           "kind": "item",
+          "type": "custom",
           "instanceId": "itm-cti-infra1"
         }
       ]
@@ -312,7 +117,9 @@
             "score": "high",
             "confidence": 85,
             "comments": "Spearphishing with ISO-embedded LNK file targeting HR department. Emails spoofed Rolls-Royce recruitment. ISO contained OrbitRAT loader disguised as job application PDF viewer.",
-            "cves": [],
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
             "hyperlinks": [],
             "observables": [
               {
@@ -324,7 +131,8 @@
                 "value": "RR_Senior_Avionics_Engineer_2025.iso"
               }
             ]
-          }
+          },
+          "instanceId": "itm-mwhrtebc-1"
         }
       ],
       "capecs": [],
@@ -332,15 +140,29 @@
       "customItems": [
         {
           "id": "campaign--73ad0606-2bfe-4674-b87e-8b74edf65719",
-          "instanceId": "itm-cti-camp1",
-          "type": "custom",
-          "metadata": {}
+          "metadata": {
+            "score": "unclassified",
+            "confidence": null,
+            "comments": "",
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
+            "hyperlinks": [],
+            "observables": []
+          },
+          "instanceId": "itm-cti-camp1"
         }
       ],
       "groups": [],
       "layout": [
         {
           "kind": "item",
+          "type": "attack",
+          "instanceId": "itm-mwhrtebc-1"
+        },
+        {
+          "kind": "item",
+          "type": "custom",
           "instanceId": "itm-cti-camp1"
         }
       ]
@@ -361,7 +183,9 @@
             "score": "high",
             "confidence": 90,
             "comments": "User execution of LNK file inside ISO mount. LNK executes PowerShell cradle downloading OrbitRAT from cloud-hosted staging server.",
-            "cves": [],
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
             "hyperlinks": [],
             "observables": [
               {
@@ -369,7 +193,8 @@
                 "value": "View_Application.lnk"
               }
             ]
-          }
+          },
+          "instanceId": "itm-mwhrtebc-2"
         }
       ],
       "capecs": [],
@@ -377,15 +202,29 @@
       "customItems": [
         {
           "id": "malware--ef58bf35-6405-4f38-a9e8-0a22d8a47beb",
-          "instanceId": "itm-cti-mal1",
-          "type": "custom",
-          "metadata": {}
+          "metadata": {
+            "score": "unclassified",
+            "confidence": null,
+            "comments": "",
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
+            "hyperlinks": [],
+            "observables": []
+          },
+          "instanceId": "itm-cti-mal1"
         }
       ],
       "groups": [],
       "layout": [
         {
           "kind": "item",
+          "type": "attack",
+          "instanceId": "itm-mwhrtebc-2"
+        },
+        {
+          "kind": "item",
+          "type": "custom",
           "instanceId": "itm-cti-mal1"
         }
       ]
@@ -398,7 +237,9 @@
             "score": "high",
             "confidence": 80,
             "comments": "OrbitRAT installs as a Windows service (DisplayName: 'Satellite Telemetry Service'). Service binary in C:\\ProgramData\\SatComSvc\\.",
-            "cves": [],
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
             "hyperlinks": [],
             "observables": [
               {
@@ -406,14 +247,21 @@
                 "value": "satcomsvc.exe"
               }
             ]
-          }
+          },
+          "instanceId": "itm-mwhrtebc-3"
         }
       ],
       "capecs": [],
       "cwes": [],
       "customItems": [],
       "groups": [],
-      "layout": []
+      "layout": [
+        {
+          "kind": "item",
+          "type": "attack",
+          "instanceId": "itm-mwhrtebc-3"
+        }
+      ]
     },
     "IN:defense-evasion": {
       "techniques": [],
@@ -431,7 +279,9 @@
             "score": "high",
             "confidence": 88,
             "comments": "gRPC over mTLS C2 channel. Certificate pinning prevents proxy interception. Beacon interval: 300 seconds with 20% jitter. 8 rotating C2 nodes.",
-            "cves": [],
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
             "hyperlinks": [],
             "observables": [
               {
@@ -443,7 +293,8 @@
                 "value": "139.162.15.42"
               }
             ]
-          }
+          },
+          "instanceId": "itm-mwhrtebc-4"
         }
       ],
       "capecs": [],
@@ -451,25 +302,48 @@
       "customItems": [
         {
           "id": "indicator--5c51dd1d-260f-4a96-8a95-d94956ce2a91",
-          "instanceId": "itm-cti-ind1",
-          "type": "custom",
-          "metadata": {}
+          "metadata": {
+            "score": "unclassified",
+            "confidence": null,
+            "comments": "",
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
+            "hyperlinks": [],
+            "observables": []
+          },
+          "instanceId": "itm-cti-ind1"
         },
         {
           "id": "indicator--ef184ae2-0f94-410f-8d26-107d0978c378",
-          "instanceId": "itm-cti-ind2",
-          "type": "custom",
-          "metadata": {}
+          "metadata": {
+            "score": "unclassified",
+            "confidence": null,
+            "comments": "",
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
+            "hyperlinks": [],
+            "observables": []
+          },
+          "instanceId": "itm-cti-ind2"
         }
       ],
       "groups": [],
       "layout": [
         {
           "kind": "item",
+          "type": "attack",
+          "instanceId": "itm-mwhrtebc-4"
+        },
+        {
+          "kind": "item",
+          "type": "custom",
           "instanceId": "itm-cti-ind1"
         },
         {
           "kind": "item",
+          "type": "custom",
           "instanceId": "itm-cti-ind2"
         }
       ]
@@ -514,17 +388,26 @@
             "score": "high",
             "confidence": 75,
             "comments": "OrbitRAT module extracts credentials from Chrome and Edge browsers. Targeted engineering team members with access to internal Git repositories containing avionics source code.",
-            "cves": [],
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
             "hyperlinks": [],
             "observables": []
-          }
+          },
+          "instanceId": "itm-mwhrtebc-5"
         }
       ],
       "capecs": [],
       "cwes": [],
       "customItems": [],
       "groups": [],
-      "layout": []
+      "layout": [
+        {
+          "kind": "item",
+          "type": "attack",
+          "instanceId": "itm-mwhrtebc-5"
+        }
+      ]
     },
     "THROUGH:lateral-movement": {
       "techniques": [
@@ -534,10 +417,13 @@
             "score": "high",
             "confidence": 70,
             "comments": "SSH lateral movement to Linux build servers using stolen developer credentials from browser credential theft.",
-            "cves": [],
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
             "hyperlinks": [],
             "observables": []
-          }
+          },
+          "instanceId": "itm-mwhrtebc-6"
         }
       ],
       "capecs": [],
@@ -545,15 +431,29 @@
       "customItems": [
         {
           "id": "identity--30705aa7-f856-456b-9804-85ac0a27c177",
-          "instanceId": "itm-cti-id1",
-          "type": "custom",
-          "metadata": {}
+          "metadata": {
+            "score": "unclassified",
+            "confidence": null,
+            "comments": "",
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
+            "hyperlinks": [],
+            "observables": []
+          },
+          "instanceId": "itm-cti-id1"
         }
       ],
       "groups": [],
       "layout": [
         {
           "kind": "item",
+          "type": "attack",
+          "instanceId": "itm-mwhrtebc-6"
+        },
+        {
+          "kind": "item",
+          "type": "custom",
           "instanceId": "itm-cti-id1"
         }
       ]
@@ -566,17 +466,26 @@
             "score": "critical",
             "confidence": 80,
             "comments": "Git clone of internal avionics design repositories. 3 repos totaling 4.7 GB cloned from internal GitLab. Included Tempest avionics schematics and satellite ground station protocol specifications.",
-            "cves": [],
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
             "hyperlinks": [],
             "observables": []
-          }
+          },
+          "instanceId": "itm-mwhrtebc-7"
         }
       ],
       "capecs": [],
       "cwes": [],
       "customItems": [],
       "groups": [],
-      "layout": []
+      "layout": [
+        {
+          "kind": "item",
+          "type": "attack",
+          "instanceId": "itm-mwhrtebc-7"
+        }
+      ]
     },
     "OUT:exfiltration": {
       "techniques": [
@@ -586,17 +495,26 @@
             "score": "critical",
             "confidence": 85,
             "comments": "4.7 GB exfiltrated over gRPC C2 channel in chunked, encrypted transfers over 21 days. OrbitRAT's built-in file exfiltration module.",
-            "cves": [],
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
             "hyperlinks": [],
             "observables": []
-          }
+          },
+          "instanceId": "itm-mwhrtebc-8"
         }
       ],
       "capecs": [],
       "cwes": [],
       "customItems": [],
       "groups": [],
-      "layout": []
+      "layout": [
+        {
+          "kind": "item",
+          "type": "attack",
+          "instanceId": "itm-mwhrtebc-8"
+        }
+      ]
     },
     "OUT:impact": {
       "techniques": [],
@@ -605,25 +523,43 @@
       "customItems": [
         {
           "id": "report--a2ff9c4d-60a3-4d8d-a792-d4af3ce67642",
-          "instanceId": "itm-cti-report1",
-          "type": "custom",
-          "metadata": {}
+          "metadata": {
+            "score": "unclassified",
+            "confidence": null,
+            "comments": "",
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
+            "hyperlinks": [],
+            "observables": []
+          },
+          "instanceId": "itm-cti-report1"
         },
         {
           "id": "opinion--b6a17cc2-91d3-4bfe-b363-67f5494a90d5",
-          "instanceId": "itm-cti-opinion1",
-          "type": "custom",
-          "metadata": {}
+          "metadata": {
+            "score": "unclassified",
+            "confidence": null,
+            "comments": "",
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
+            "hyperlinks": [],
+            "observables": []
+          },
+          "instanceId": "itm-cti-opinion1"
         }
       ],
       "groups": [],
       "layout": [
         {
           "kind": "item",
+          "type": "custom",
           "instanceId": "itm-cti-report1"
         },
         {
           "kind": "item",
+          "type": "custom",
           "instanceId": "itm-cti-opinion1"
         }
       ]
@@ -635,6 +571,258 @@
       "customItems": [],
       "groups": [],
       "layout": []
+    }
+  },
+  "customLibrary": {
+    "threat-actor--37520548-fd0c-48ea-841a-c46fd32b930c": {
+      "id": "threat-actor--37520548-fd0c-48ea-841a-c46fd32b930c",
+      "stixType": "threat-actor",
+      "name": "SkyForge",
+      "description": "State-sponsored threat actor attributed to a foreign military intelligence service. Active since 2021. Targets aerospace, defense, and satellite communications sectors. Known for patient intrusions with custom tooling and satellite-themed infrastructure naming.",
+      "labels": [
+        "espionage",
+        "aerospace"
+      ],
+      "customTypeName": "",
+      "created": "2026-01-15T08:00:00.000Z",
+      "modified": "2026-02-10T09:00:00.000Z",
+      "lang": "en",
+      "threat_actor_types": [
+        "nation-state",
+        "spy"
+      ],
+      "aliases": [
+        "UNC7733",
+        "BRONZE ORBITER",
+        "Celestial Spider"
+      ],
+      "first_seen": "2021-06-15T00:00:00.000Z",
+      "last_seen": "2026-01-20T00:00:00.000Z",
+      "roles": [
+        "agent",
+        "malware-author",
+        "infrastructure-operator"
+      ],
+      "goals": [
+        "Steal aerospace trade secrets",
+        "Access satellite communication protocols",
+        "Monitor defense procurement intelligence"
+      ],
+      "sophistication": "expert",
+      "resource_level": "government",
+      "primary_motivation": "organizational-gain"
+    },
+    "intrusion-set--dd166b5e-3c91-4350-8aaa-4fd9470c3a99": {
+      "id": "intrusion-set--dd166b5e-3c91-4350-8aaa-4fd9470c3a99",
+      "stixType": "intrusion-set",
+      "name": "Operation Zenith",
+      "description": "Targeted cyber-espionage campaign against aerospace contractors in NATO and Five Eyes nations. Q2 2025 to present. Focused on next-generation fighter jet avionics designs and satellite ground station protocols.",
+      "labels": [
+        "espionage",
+        "aerospace",
+        "multi-victim"
+      ],
+      "customTypeName": "",
+      "created": "2026-01-20T10:00:00.000Z",
+      "modified": "2026-02-10T09:00:00.000Z",
+      "lang": "en",
+      "aliases": [
+        "ZENITH-25",
+        "SKYFALL Campaign"
+      ],
+      "first_seen": "2025-04-01T00:00:00.000Z",
+      "last_seen": "2026-01-20T00:00:00.000Z",
+      "goals": [
+        "Exfiltrate avionics design documents",
+        "Access satellite ground station source code"
+      ],
+      "resource_level": "government",
+      "primary_motivation": "organizational-gain"
+    },
+    "campaign--73ad0606-2bfe-4674-b87e-8b74edf65719": {
+      "id": "campaign--73ad0606-2bfe-4674-b87e-8b74edf65719",
+      "stixType": "campaign",
+      "name": "ZENITH Phase 1 — Initial Access Wave",
+      "description": "First phase targeting HR departments of 6 aerospace contractors with LinkedIn-sourced spearphishing. April–July 2025.",
+      "labels": [
+        "phase-1",
+        "initial-access",
+        "spearphishing"
+      ],
+      "customTypeName": "",
+      "created": "2026-01-22T09:00:00.000Z",
+      "modified": "2026-02-10T09:00:00.000Z",
+      "lang": "en",
+      "first_seen": "2025-04-15T00:00:00.000Z",
+      "last_seen": "2025-07-30T00:00:00.000Z",
+      "objective": "Establish persistent access in at least 3 of 6 targeted aerospace contractors."
+    },
+    "malware--ef58bf35-6405-4f38-a9e8-0a22d8a47beb": {
+      "id": "malware--ef58bf35-6405-4f38-a9e8-0a22d8a47beb",
+      "stixType": "malware",
+      "name": "OrbitRAT",
+      "description": "Custom Go-based RAT attributed to SkyForge. Communicates via gRPC over mTLS with certificate pinning. Supports file exfiltration, screenshot capture, keylogging, and browser credential theft. Anti-analysis: checks hypervisor CPUID leaf, detects common sandbox MAC prefixes.",
+      "labels": [
+        "rat",
+        "custom",
+        "golang"
+      ],
+      "customTypeName": "",
+      "created": "2026-01-16T10:00:00.000Z",
+      "modified": "2026-02-10T09:00:00.000Z",
+      "lang": "en",
+      "is_family": true,
+      "malware_types": [
+        "remote-access-trojan",
+        "backdoor",
+        "spyware"
+      ],
+      "aliases": [
+        "OrbitRAT",
+        "SatComLoader"
+      ],
+      "first_seen": "2023-11-20T00:00:00.000Z",
+      "last_seen": "2026-01-15T00:00:00.000Z",
+      "implementation_languages": [
+        "go"
+      ],
+      "capabilities": [
+        "communicates-with-c2",
+        "exfiltrates-data",
+        "captures-input-peripherals",
+        "anti-debugging",
+        "anti-sandbox"
+      ]
+    },
+    "infrastructure--126dc140-ee70-4287-a5f8-36f377c7aebd": {
+      "id": "infrastructure--126dc140-ee70-4287-a5f8-36f377c7aebd",
+      "stixType": "infrastructure",
+      "name": "Zenith C2 — gRPC over mTLS",
+      "description": "Distributed C2 infrastructure using gRPC over mutual TLS. 8 active nodes across Linode (Singapore), OVH (France), and Hetzner (Finland). Certificate pinning prevents interception. Nodes rotate on a 48-hour cycle.",
+      "labels": [
+        "c2",
+        "grpc",
+        "mtls"
+      ],
+      "customTypeName": "",
+      "created": "2026-01-18T14:00:00.000Z",
+      "modified": "2026-02-10T09:00:00.000Z",
+      "lang": "en",
+      "infrastructure_types": [
+        "command-and-control"
+      ],
+      "first_seen": "2025-04-01T00:00:00.000Z",
+      "last_seen": "2026-01-20T00:00:00.000Z"
+    },
+    "identity--30705aa7-f856-456b-9804-85ac0a27c177": {
+      "id": "identity--30705aa7-f856-456b-9804-85ac0a27c177",
+      "stixType": "identity",
+      "name": "AeroTech Dynamics Ltd",
+      "description": "Primary victim. UK-based aerospace contractor specializing in next-gen fighter jet avionics systems for the Tempest programme. 4,200 employees. MoD contractor clearance: SECRET.",
+      "labels": [
+        "victim",
+        "aerospace",
+        "uk"
+      ],
+      "customTypeName": "",
+      "created": "2026-01-15T08:00:00.000Z",
+      "modified": "2026-02-10T09:00:00.000Z",
+      "lang": "en",
+      "identity_class": "organization",
+      "sectors": [
+        "aerospace",
+        "defense"
+      ],
+      "contact_information": "CISO: ciso@aerotech-dynamics.example.com"
+    },
+    "indicator--5c51dd1d-260f-4a96-8a95-d94956ce2a91": {
+      "id": "indicator--5c51dd1d-260f-4a96-8a95-d94956ce2a91",
+      "stixType": "indicator",
+      "name": "OrbitRAT v4.1 SHA-256",
+      "description": "SHA-256 of OrbitRAT v4.1 ELF binary recovered from compromised Linux build server at AeroTech.",
+      "labels": [
+        "file-hash"
+      ],
+      "customTypeName": "",
+      "created": "2026-01-17T13:00:00.000Z",
+      "modified": "2026-02-10T09:00:00.000Z",
+      "lang": "en",
+      "pattern": "[file:hashes.'SHA-256' = '1a460b584faac70be17a3b71d59b1e1a88d29f213bd7a756d2dc21e5e35b8c7e']",
+      "pattern_type": "stix",
+      "valid_from": "2025-05-01T00:00:00.000Z",
+      "indicator_types": [
+        "malicious-activity"
+      ]
+    },
+    "indicator--ef184ae2-0f94-410f-8d26-107d0978c378": {
+      "id": "indicator--ef184ae2-0f94-410f-8d26-107d0978c378",
+      "stixType": "indicator",
+      "name": "C2 Domain — satcom-update-svc.com",
+      "description": "Primary gRPC C2 domain used by OrbitRAT. Registered via Njalla privacy registrar. DNS resolves to rotating Linode/OVH IPs.",
+      "labels": [
+        "c2-domain"
+      ],
+      "customTypeName": "",
+      "created": "2026-01-19T15:00:00.000Z",
+      "modified": "2026-02-10T09:00:00.000Z",
+      "lang": "en",
+      "pattern": "[domain-name:value = 'satcom-update-svc.com']",
+      "pattern_type": "stix",
+      "valid_from": "2025-04-01T00:00:00.000Z",
+      "indicator_types": [
+        "malicious-activity"
+      ]
+    },
+    "report--a2ff9c4d-60a3-4d8d-a792-d4af3ce67642": {
+      "id": "report--a2ff9c4d-60a3-4d8d-a792-d4af3ce67642",
+      "stixType": "report",
+      "name": "Operation Zenith — Threat Intelligence Report Q1 2026",
+      "description": "Comprehensive CTI report covering Operation Zenith: TTPs, IOCs, victim analysis, SkyForge attribution, and recommended mitigations. Classification: TLP:AMBER.",
+      "labels": [
+        "tlp-amber",
+        "aerospace"
+      ],
+      "customTypeName": "",
+      "created": "2026-02-01T08:00:00.000Z",
+      "modified": "2026-02-10T09:00:00.000Z",
+      "lang": "en",
+      "published": "2026-02-08T00:00:00.000Z",
+      "report_types": [
+        "threat-report",
+        "campaign",
+        "intrusion-set"
+      ],
+      "object_refs": [
+        "threat-actor--37520548-fd0c-48ea-841a-c46fd32b930c",
+        "intrusion-set--dd166b5e-3c91-4350-8aaa-4fd9470c3a99",
+        "campaign--73ad0606-2bfe-4674-b87e-8b74edf65719",
+        "malware--ef58bf35-6405-4f38-a9e8-0a22d8a47beb",
+        "infrastructure--126dc140-ee70-4287-a5f8-36f377c7aebd",
+        "identity--30705aa7-f856-456b-9804-85ac0a27c177",
+        "indicator--5c51dd1d-260f-4a96-8a95-d94956ce2a91",
+        "indicator--ef184ae2-0f94-410f-8d26-107d0978c378"
+      ]
+    },
+    "opinion--b6a17cc2-91d3-4bfe-b363-67f5494a90d5": {
+      "id": "opinion--b6a17cc2-91d3-4bfe-b363-67f5494a90d5",
+      "stixType": "opinion",
+      "labels": [
+        "peer-review",
+        "attribution"
+      ],
+      "customTypeName": "",
+      "created": "2026-02-07T10:00:00.000Z",
+      "modified": "2026-02-10T09:00:00.000Z",
+      "lang": "en",
+      "opinion": "agree",
+      "explanation": "Independent SIGINT and HUMINT corroborate SkyForge attribution with HIGH confidence. Overlapping infrastructure with previously reported BRONZE ORBITER campaigns targeting Australian defence primes.",
+      "authors": [
+        "Allied SIGINT Partner — Redacted"
+      ],
+      "object_refs": [
+        "threat-actor--37520548-fd0c-48ea-841a-c46fd32b930c",
+        "report--a2ff9c4d-60a3-4d8d-a792-d4af3ce67642"
+      ]
     }
   }
 }

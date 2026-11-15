@@ -1,5 +1,83 @@
 # Changelog
 ---
+## [2.9.3] - 2026-11-15
+
+### Added
+- **Startup Banner**: The main editor prints an AttackFlow ASCII banner with the version to the browser console on startup. Disable it with `CONFIG.console.showStartupBanner = false` in `config.js`
+
+### Changed
+- **MITRE ATT&CK v20.1**: Technique data was regenerated from the ATT&CK v20.1 STIX 2.1 bundles (`mitre-attack/attack-stix-data`). The library now has 935 techniques (706 Enterprise, 125 Mobile, 104 ICS), up from 898 in v18.1. Enterprise Defense Evasion is now split into Stealth (TA0005) and Defense Impairment (TA0112). ICS now has sub-techniques, and new ICS techniques use `T1xxx` IDs.
+- **Detection Strategies**: The technique detail panel now lists ATT&CK detection strategies (`DETxxxx`) with links to attack.mitre.org. They replace the detection text that ATT&CK stopped publishing in v18. The `detection` field in `attack-techniques.json` is replaced by `detectionStrategies`.
+- **Navigator layers**: `resources/Nav_Layer_*.json` were re-exported from ATT&CK Navigator v5.3.2 (layer format 4.5) for ATT&CK v20. `scripts/extract-attack.py` does not write them; it checks each layer's ATT&CK version, layer format, domain and technique coverage against the extracted library and prints a warning for each mismatch.
+- **JSON sanitization scope**: `sanitize.paths` in `config.js` now lists the generated resource files explicitly, so the Navigator layer exports are no longer rewritten. The app still strips angle brackets from layers when it loads or imports them.
+- **Use case examples**: `T1562.001` (revoked) was replaced with `T1685` in the incident response and ransomware playbook examples.
+- **Example files**: The demo, STIX demo, STIX bundle and use case files use the current export format and follow STIX 2.1. Custom objects have valid identifiers and all required properties, labels no longer repeat object type vocabulary values, and notes, opinions, observed data and malware analyses no longer carry a name or description. The STIX bundle includes the cyber-observable objects that its observed data and malware analysis refer to, and no longer has a bundle-level `spec_version`. Observables of types the editor does not support are now part of the item comments, and comment line breaks were replaced with ` | `.
+- **CWE 5.0**: CWE data was regenerated from CWE 5.0 (CWE Schema 8.0). The library now has 984 weaknesses: 956 active and 28 deprecated. The 15 new weaknesses (CWE-1461 to CWE-1476, except CWE-1468, which is a view) include session and credential weaknesses. Deprecated entries keep MITRE's "DEPRECATED:" name, so saved kill chains that use them (for example CWE-613) still resolve. CAPEC-149 and CAPEC-155 reference the deprecated CWE-377.
+- **CWE Schema 8 support**: `scripts/extract-data.py` now accepts both CWE Schema 7.x (`cwe-7` namespace, `Category`) and Schema 8.x (`cwe-8` namespace, `Grouping`). It stops without updating the generated files if a source file cannot be parsed, has an unsupported namespace, or yields no CAPEC patterns or CWE weaknesses. Before, CWE 5.0 produced a CWE library of 336 placeholder entries without an error, and a file with an XML error was skipped, which wrote a reduced library.
+- **Source versions**: `config.js` now records `sources.capec.version` (3.9) and `sources.cwe.version` (5.0). The extractor logs each file's version and warns when it differs from the config.
+- **CAPEC technique remap**: Both extraction scripts now remap revoked ATT&CK IDs in `capec-full.json`, `capec-to-technique.json` and `technique-to-capec.json` to their replacements, using the ATT&CK `revoked-by` relationships. Affected patterns record each change in a new `attackRemaps` field, for example `{"from": "T1562.002", "to": "T1685.001"}`. The remapped links are derived from ATT&CK data and are not CAPEC's own mapping. 14 references in 5 patterns were remapped (CAPEC-13, CAPEC-268, CAPEC-571, CAPEC-578, CAPEC-641).
+- **Export Filenames**: Downloads are now named from a fixed prefix and a UTC timestamp instead of being derived from the document title
+- **Export Contents**: JSON export no longer writes the sidebar filter state or the current entity selection. Documents that still contain the two keys import normally and the values are ignored
+- **Hyperlink URLs**: Metadata hyperlinks, and URL observables entered in the metadata editor, accept any `http://` or `https://` URL the browser can parse, including `|`, `^`, `[ ]` and `{ }` (for example IPv6 addresses or query arrays). Whitespace, double quotes, angle brackets, backticks and backslashes are still rejected
+- **CVE Indicator Icon**: The CVE metadata indicator on kill chain items and in the metadata legend now shows a shield with an exclamation mark
+
+### Fixed
+- **Mobile and ICS tactics**: Mobile and ICS techniques now include their tactics. Previously the extractor accepted only the Enterprise kill chain name.
+- **Domain fallback**: `detectDomain()` no longer labels unknown Enterprise IDs in the T1398 to T1665 range as Mobile. Unknown IDs now fall back to ICS for `T0xxx` and Enterprise otherwise.
+- **Deterministic CWE output**: Merging CAPEC references for CWEs that appear in several source files no longer changes their order between runs.
+- **Custom Object Name Preservation**: Native kill-chain imports keep custom STIX object names up to the same 200-character limit the create and edit modals allow, instead of shortening them to the 50-character label limit. Label, description and other field limits are unchanged
+- **Support Legacy CVE Metadata**: Native kill-chain imports preserve legacy `metadata.cves` entries, including CVE scores and validated CVSS vectors, and normalize them into the current metadata format
+- **Reject invalid array assignments**: Native JSON imports now reject array-valued document roots and `assignments` containers before replacing assignments, groups, layout, title, view, or custom STIX library data
+- **Group Assignment Preservation**: Deleting a group now keeps STIX assignments in the correct phase array with their metadata and instance IDs intact, including through JSON export/import. Invalid item or layout data stops deletion before any assignments are moved
+- **Framework Record ID Validation**: Fixed an issue where IDs in internal framework data would not be validated correctly. ATT&CK, CAPEC, and CWE records now require matching dictionary keys before caching or sharing, and list/search controls handle IDs safely
+- **Transient Rename State**: Finishing or cancelling a group rename now clears the internal rename flag instead of keeping it, so it no longer appears in exported JSON documents
+- **Field Encoding**: Added defensive field encoding in STIX Composer fields
+- **CSV Serialization**: Fixed an issue where CSV cells protected against spreadsheet formula injection were quoted more than once. Protected cells now carry a single leading tab inside one layer of quoting, cells containing a carriage return are quoted, and records are terminated with CRLF
+- **STIX Property Export**: STIX bundle export and the bundle embedded in JSON export now preserve stored properties correctly
+- **Export Value Validation**: Incompatible value shapes now stop the download and report the affected property instead of omitting them
+- **Input Preservation**: Main-editor typing and kill-chain/STIX imports now preserve punctuation, repeated hyphens and STIX pattern characters
+- **Contextual Output Encoding**: Imported and user-entered text is now escaped where it is displayed, in page text, attributes, and links, so preserved special characters render as literal text rather than markup
+- **STIX Integer Fields**: Integer properties are kept only within the STIX 2.1 integer range (-9,007,199,254,740,991 to 9,007,199,254,740,991). At STIX bundle and kill-chain import, JSON numbers outside the range or with a fractional part are left out. Text values, at import and in the STIX editor, are read as their leading whole number (for example `12.5` as `12`) and left out if the result is outside the range. Before, such values could block JSON and STIX export, or were exported in exponent form and changed on re-import
+
+### Revoked techniques (v18.1 to v20.1)
+Saved kill chains that use these IDs keep the assignment and its metadata, but the technique shows only its ID, without the ATT&CK name, description or tactics. Replace them manually with the new ID:
+
+| Old ID | Old name | Replaced by |
+|---|---|---|
+| T1562 | Impair Defenses | T1685 Disable or Modify Tools |
+| T1562.001 | Disable or Modify Tools | T1685 Disable or Modify Tools |
+| T1562.002 | Disable Windows Event Logging | T1685.001 Disable or Modify Windows Event Log |
+| T1562.003 | Impair Command History Logging | T1690 Prevent Command History Logging |
+| T1562.004 | Disable or Modify System Firewall | T1686 Disable or Modify System Firewall |
+| T1562.006 | Indicator Blocking | T1685 Disable or Modify Tools |
+| T1562.007 | Disable or Modify Cloud Firewall | T1686.001 Cloud Firewall |
+| T1562.008 | Disable or Modify Cloud Logs | T1685.002 Disable or Modify Cloud Log |
+| T1562.009 | Safe Mode Boot | T1688 Safe Mode Boot |
+| T1562.010 | Downgrade Attack | T1689 Downgrade Attack |
+| T1562.011 | Spoof Security Alerting | T1685.003 Modify or Spoof Tool UI |
+| T1562.012 | Disable or Modify Linux Audit System | T1685.004 Disable or Modify Linux Audit System Log |
+| T1562.013 | Disable or Modify Network Device Firewall | T1686.002 Network Device Firewall |
+| T1070.001 | Clear Windows Event Logs | T1685.005 Clear Windows Event Logs |
+| T1070.002 | Clear Linux or Mac System Logs | T1685.006 Clear Linux or Mac System Logs |
+| T1656 | Impersonation | T1684.001 Impersonation |
+| T1672 | Email Spoofing | T1684.002 Email Spoofing |
+| T0803 | Block Command Message | T1691.001 Command Message |
+| T0804 | Block Reporting Message | T1691.002 Reporting Message |
+| T0805 | Block Serial COM | T1695.001 Serial COM |
+| T0812 | Default Credentials | T1694.001 Default Credentials |
+| T0839 | Module Firmware | T1693.002 Module Firmware |
+| T0855 | Unauthorized Command Message | T1692.001 Command Message |
+| T0856 | Spoof Reporting Message | T1692.002 Reporting Message |
+| T0857 | System Firmware | T1693.001 System Firmware |
+| T0891 | Hardcoded Credentials | T1694.002 Hardcoded Credentials |
+| T0807 | Command-Line Interface | Deprecated, no replacement listed (closest new technique: T1701 Command and Scripting Interpreter) |
+| T0853 | Scripting | Deprecated, no replacement listed (closest new technique: T1701 Command and Scripting Interpreter) |
+
+### Known limitations
+- CAPEC has not updated its ATT&CK mappings since CAPEC 3.9 (January 2023). Techniques added to ATT&CK since then, including the 65 added in v19 and v20, have no CAPEC links, except 7 that inherit links through the revoked-ID remap (T1685, T1685.001, T1685.002, T1686, T1686.001, T1688, T1690).
+- `resources/cwe-to-capec.json` is built from CAPEC 3.9 data, so CWEs added in CWE 5.0 have no CAPEC links.
+- STIX bundle import skips cyber-observable objects, relationships, and malware analyses, which have no name. The editor does not keep `lang`, numeric location coordinates, external references on custom objects, or malware analysis `analysis_sco_refs`, so the example files contain values that are lost on import.
+
 ## [2.9.2] - 2026-04-30
 
 ### Added 

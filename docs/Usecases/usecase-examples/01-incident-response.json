@@ -1,7 +1,7 @@
 {
-  "version": "2.7.0",
+  "version": "2.9.3",
   "schema": "killchain-export-lite",
-  "exportedAt": "2026-02-10T09:00:00.000Z",
+  "exportedAt": "2026-11-15T11:47:59.297Z",
   "title": "UC1 — Healthcare Data Breach Incident Response",
   "description": "Incident response mapping of a healthcare breach with evidence-based ATT&CK placement, IOC observables, CVE links, and confidence scoring across the UKC.",
   "view": "killchain",
@@ -13,77 +13,6 @@
     "custom": true
   },
   "hideEmpty": true,
-  "customLibrary": {
-    "indicator--1c8bf733-f7f2-48a1-910d-74bf03170aad": {
-      "id": "indicator--1c8bf733-f7f2-48a1-910d-74bf03170aad",
-      "stixType": "indicator",
-      "name": "MedLoader SHA-256 Hash",
-      "description": "SHA-256 hash of the first-stage loader DLL recovered from the radiology workstation. Identified during forensic triage of Patient Zero endpoint.",
-      "labels": [
-        "malicious-activity",
-        "file-hash"
-      ],
-      "created": "2026-02-05T14:00:00.000Z",
-      "modified": "2026-02-10T09:00:00.000Z",
-      "pattern": "[file:hashes.'SHA-256' = '7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069']",
-      "pattern_type": "stix",
-      "valid_from": "2026-01-20T00:00:00.000Z",
-      "indicator_types": [
-        "malicious-activity"
-      ]
-    },
-    "indicator--f87570ca-10b0-4919-93ca-cf032d84484a": {
-      "id": "indicator--f87570ca-10b0-4919-93ca-cf032d84484a",
-      "stixType": "indicator",
-      "name": "C2 Domain — medupdate-portal.com",
-      "description": "Primary C2 domain resolved from DNS logs on compromised endpoints. Registered 3 days before first observed beacon. WHOIS privacy-protected, hosted on AS12345.",
-      "labels": [
-        "malicious-activity",
-        "c2-domain"
-      ],
-      "created": "2026-02-06T10:00:00.000Z",
-      "modified": "2026-02-10T09:00:00.000Z",
-      "pattern": "[domain-name:value = 'medupdate-portal.com']",
-      "pattern_type": "stix",
-      "valid_from": "2026-01-17T00:00:00.000Z",
-      "indicator_types": [
-        "malicious-activity"
-      ]
-    },
-    "observed-data--a698eb60-d252-408b-8695-a17689c39356": {
-      "id": "observed-data--a698eb60-d252-408b-8695-a17689c39356",
-      "stixType": "observed-data",
-      "name": "C2 Beaconing — 21 Jan 2026",
-      "description": "Netflow telemetry showing HTTPS beaconing from radiology workstation (10.10.5.42) to medupdate-portal.com at 60-second intervals. 1,247 connections in 24-hour window.",
-      "labels": [
-        "network-telemetry",
-        "c2-beaconing"
-      ],
-      "created": "2026-02-06T11:00:00.000Z",
-      "modified": "2026-02-10T09:00:00.000Z",
-      "first_observed": "2026-01-21T02:15:00.000Z",
-      "last_observed": "2026-01-22T02:15:00.000Z",
-      "number_observed": 1247
-    },
-    "note--076608f0-3cff-4d3c-b246-a2bbe7bd44fb": {
-      "id": "note--076608f0-3cff-4d3c-b246-a2bbe7bd44fb",
-      "stixType": "note",
-      "name": "Analyst Note — Dwell Time Assessment",
-      "description": "Assessment of adversary dwell time and investigation gaps.",
-      "labels": [
-        "analyst-note",
-        "dwell-time"
-      ],
-      "created": "2026-02-08T16:00:00.000Z",
-      "modified": "2026-02-10T09:00:00.000Z",
-      "content": "Estimated dwell time: 18 days (Jan 3 initial compromise → Jan 21 detection via anomalous DNS query volume). GAP: No endpoint telemetry for first 14 days — EDR agent was not deployed on radiology VLAN. SIEM correlation rule for beaconing only triggered after threshold tuning on Jan 20. Recommend: extend EDR coverage to all medical device VLANs, lower beaconing detection threshold to 30-second intervals.",
-      "abstract": "18-day dwell time. EDR gap on medical VLANs enabled undetected persistence.",
-      "authors": [
-        "IR Lead — A. Chen",
-        "Forensic Analyst — K. Petrov"
-      ]
-    }
-  },
   "assignments": {
     "IN:reconnaissance": {
       "techniques": [
@@ -93,7 +22,9 @@
             "score": "medium",
             "confidence": 35,
             "comments": "Vulnerability scanning detected in WAF logs against patient portal (portal.mercyhealth.example.com). Source IPs associated with TOR exit nodes. Evidence: WAF log entries showing Nuclei scanner user-agent.",
-            "cves": [],
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
             "hyperlinks": [],
             "observables": [
               {
@@ -109,14 +40,21 @@
                 "value": "portal.mercyhealth.example.com"
               }
             ]
-          }
+          },
+          "instanceId": "itm-mwhrt4u8-1"
         }
       ],
       "capecs": [],
       "cwes": [],
       "customItems": [],
       "groups": [],
-      "layout": []
+      "layout": [
+        {
+          "kind": "item",
+          "type": "attack",
+          "instanceId": "itm-mwhrt4u8-1"
+        }
+      ]
     },
     "IN:resource-development": {
       "techniques": [],
@@ -134,7 +72,9 @@
             "score": "high",
             "confidence": 92,
             "comments": "Spearphishing email with weaponized XLSX macro targeting radiology department. Email recovered from quarantine. Macro deobfuscated — downloads second-stage from hxxps://medupdate-portal[.]com/update.dll. Evidence: Email headers, attachment hash, macro decompilation.",
-            "cves": [],
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
             "hyperlinks": [
               {
                 "label": "Case ticket IR-2026-0172",
@@ -159,7 +99,8 @@
                 "value": "https://medupdate-portal.com/update.dll"
               }
             ]
-          }
+          },
+          "instanceId": "itm-mwhrt4u8-2"
         }
       ],
       "capecs": [
@@ -167,14 +108,32 @@
           "id": "CAPEC-163",
           "metadata": {
             "score": "high",
-            "comments": "Spearphishing with weaponized attachment — matches CAPEC-163 (Spear Phishing). Macro execution required user interaction."
-          }
+            "confidence": null,
+            "comments": "Spearphishing with weaponized attachment — matches CAPEC-163 (Spear Phishing). Macro execution required user interaction.",
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
+            "hyperlinks": [],
+            "observables": []
+          },
+          "instanceId": "itm-mwhrt4u8-3"
         }
       ],
       "cwes": [],
       "customItems": [],
       "groups": [],
-      "layout": []
+      "layout": [
+        {
+          "kind": "item",
+          "type": "attack",
+          "instanceId": "itm-mwhrt4u8-2"
+        },
+        {
+          "kind": "item",
+          "type": "capec",
+          "instanceId": "itm-mwhrt4u8-3"
+        }
+      ]
     },
     "IN:social-engineering": {
       "techniques": [
@@ -184,7 +143,9 @@
             "score": "high",
             "confidence": 95,
             "comments": "User enabled macros after social engineering pretext (HR benefits enrollment). Confirmed via endpoint forensic timeline — macro execution at 2026-01-03T09:42:17Z.",
-            "cves": [],
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
             "hyperlinks": [],
             "observables": [
               {
@@ -192,14 +153,21 @@
                 "value": "Benefits_Update_2026.xlsx"
               }
             ]
-          }
+          },
+          "instanceId": "itm-mwhrt4u8-4"
         }
       ],
       "capecs": [],
       "cwes": [],
       "customItems": [],
       "groups": [],
-      "layout": []
+      "layout": [
+        {
+          "kind": "item",
+          "type": "attack",
+          "instanceId": "itm-mwhrt4u8-4"
+        }
+      ]
     },
     "IN:exploitation": {
       "techniques": [
@@ -209,7 +177,9 @@
             "score": "high",
             "confidence": 88,
             "comments": "PowerShell cradle executed by macro. Amsi.dll bypass via reflection before downloading second-stage. Evidence: PowerShell ScriptBlock log (Event ID 4104) partially recovered — AMSI bypass visible before logging was disabled by the attacker.",
-            "cves": [],
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
             "hyperlinks": [],
             "observables": [
               {
@@ -221,7 +191,8 @@
                 "value": "7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069"
               }
             ]
-          }
+          },
+          "instanceId": "itm-mwhrt4u8-5"
         }
       ],
       "capecs": [],
@@ -229,15 +200,29 @@
       "customItems": [
         {
           "id": "indicator--1c8bf733-f7f2-48a1-910d-74bf03170aad",
-          "instanceId": "itm-ir01-ind1",
-          "type": "custom",
-          "metadata": {}
+          "metadata": {
+            "score": "unclassified",
+            "confidence": null,
+            "comments": "",
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
+            "hyperlinks": [],
+            "observables": []
+          },
+          "instanceId": "itm-ir01-ind1"
         }
       ],
       "groups": [],
       "layout": [
         {
           "kind": "item",
+          "type": "attack",
+          "instanceId": "itm-mwhrt4u8-5"
+        },
+        {
+          "kind": "item",
+          "type": "custom",
           "instanceId": "itm-ir01-ind1"
         }
       ]
@@ -249,43 +234,56 @@
           "metadata": {
             "score": "high",
             "confidence": 90,
-            "comments": "Registry Run key persistence for MedLoader DLL. Key: HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\MedUpdateSvc. Discovered during forensic registry analysis.",
-            "cves": [],
+            "comments": "Registry Run key persistence for MedLoader DLL. Key: HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\MedUpdateSvc. Discovered during forensic registry analysis. Registry Run key: HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\MedUpdateSvc",
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
             "hyperlinks": [],
-            "observables": [
-              {
-                "type": "windows-registry-key",
-                "value": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\MedUpdateSvc"
-              }
-            ]
-          }
+            "observables": []
+          },
+          "instanceId": "itm-mwhrt4u8-6"
         }
       ],
       "capecs": [],
       "cwes": [],
       "customItems": [],
       "groups": [],
-      "layout": []
+      "layout": [
+        {
+          "kind": "item",
+          "type": "attack",
+          "instanceId": "itm-mwhrt4u8-6"
+        }
+      ]
     },
     "IN:defense-evasion": {
       "techniques": [
         {
-          "id": "T1562.001",
+          "id": "T1685",
           "metadata": {
             "score": "critical",
             "confidence": 78,
             "comments": "Windows Defender real-time protection disabled via PowerShell Set-MpPreference. Event log gap from Jan 3-6 suggests log tampering. Evidence: Defender event 5001 (real-time protection disabled) followed by 1102 (log cleared).",
-            "cves": [],
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
             "hyperlinks": [],
             "observables": []
-          }
+          },
+          "instanceId": "itm-mwhrt4u8-7"
         }
       ],
       "capecs": [],
       "cwes": [],
       "customItems": [],
       "groups": [],
-      "layout": []
+      "layout": [
+        {
+          "kind": "item",
+          "type": "attack",
+          "instanceId": "itm-mwhrt4u8-7"
+        }
+      ]
     },
     "IN:command-control": {
       "techniques": [],
@@ -299,14 +297,14 @@
           "collapsed": false,
           "items": [
             {
-              "type": "attack",
               "id": "T1071.001",
-              "instanceId": "itm-auto-1770835608196-1",
               "metadata": {
                 "score": "high",
                 "confidence": 85,
                 "comments": "HTTPS C2 to medupdate-portal.com. Beacon interval: 60 seconds. JA3 fingerprint matches known Cobalt Strike Beacon malleable profile. Evidence: Zeek SSL logs, DNS query logs, proxy logs.",
-                "cves": [],
+                "cveEntries": [],
+                "cveId": "",
+                "cveIds": [],
                 "hyperlinks": [],
                 "observables": [
                   {
@@ -322,19 +320,39 @@
                     "value": "https://medupdate-portal.com/api/v2/check"
                   }
                 ]
-              }
+              },
+              "instanceId": "itm-auto-1770835608196-1",
+              "type": "attack"
             },
             {
-              "type": "custom",
               "id": "indicator--f87570ca-10b0-4919-93ca-cf032d84484a",
+              "metadata": {
+                "score": "unclassified",
+                "confidence": null,
+                "comments": "",
+                "cveEntries": [],
+                "cveId": "",
+                "cveIds": [],
+                "hyperlinks": [],
+                "observables": []
+              },
               "instanceId": "itm-ir01-ind2",
-              "metadata": {}
+              "type": "custom"
             },
             {
-              "type": "custom",
               "id": "observed-data--a698eb60-d252-408b-8695-a17689c39356",
+              "metadata": {
+                "score": "unclassified",
+                "confidence": null,
+                "comments": "",
+                "cveEntries": [],
+                "cveId": "",
+                "cveIds": [],
+                "hyperlinks": [],
+                "observables": []
+              },
               "instanceId": "itm-ir01-obs1",
-              "metadata": {}
+              "type": "custom"
             }
           ]
         }
@@ -362,17 +380,26 @@
             "score": "medium",
             "confidence": 60,
             "comments": "Remote system discovery via net view and arp -a. Evidence: command-line audit logs (Event ID 4688) on Patient Zero endpoint.",
-            "cves": [],
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
             "hyperlinks": [],
             "observables": []
-          }
+          },
+          "instanceId": "itm-mwhrt4u8-8"
         }
       ],
       "capecs": [],
       "cwes": [],
       "customItems": [],
       "groups": [],
-      "layout": []
+      "layout": [
+        {
+          "kind": "item",
+          "type": "attack",
+          "instanceId": "itm-mwhrt4u8-8"
+        }
+      ]
     },
     "THROUGH:privilege-escalation": {
       "techniques": [
@@ -382,12 +409,16 @@
             "score": "critical",
             "confidence": 72,
             "comments": "Local privilege escalation via PrintNightmare (CVE-2021-34527). Unpatched on radiology workstation — last patch cycle was 2025-11-15. Evidence: Suspicious spoolsv.exe child process in Sysmon logs.",
-            "cves": [
+            "cveEntries": [
               {
                 "id": "CVE-2021-34527",
-                "score": "8.8",
+                "score": 8.8,
                 "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H"
               }
+            ],
+            "cveId": "CVE-2021-34527",
+            "cveIds": [
+              "CVE-2021-34527"
             ],
             "hyperlinks": [
               {
@@ -396,7 +427,8 @@
               }
             ],
             "observables": []
-          }
+          },
+          "instanceId": "itm-mwhrt4u8-9"
         }
       ],
       "capecs": [],
@@ -405,13 +437,31 @@
           "id": "CWE-269",
           "metadata": {
             "score": "high",
-            "comments": "Improper privilege management — unpatched print spooler enabled escalation from user to SYSTEM."
-          }
+            "confidence": null,
+            "comments": "Improper privilege management — unpatched print spooler enabled escalation from user to SYSTEM.",
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
+            "hyperlinks": [],
+            "observables": []
+          },
+          "instanceId": "itm-mwhrt4u8-10"
         }
       ],
       "customItems": [],
       "groups": [],
-      "layout": []
+      "layout": [
+        {
+          "kind": "item",
+          "type": "attack",
+          "instanceId": "itm-mwhrt4u8-9"
+        },
+        {
+          "kind": "item",
+          "type": "cwe",
+          "instanceId": "itm-mwhrt4u8-10"
+        }
+      ]
     },
     "THROUGH:execution": {
       "techniques": [],
@@ -429,7 +479,9 @@
             "score": "critical",
             "confidence": 80,
             "comments": "LSASS memory dump via comsvcs.dll MiniDump technique. Evidence: Sysmon Event 10 (process access to lsass.exe) from rundll32.exe with comsvcs.dll argument.",
-            "cves": [],
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
             "hyperlinks": [],
             "observables": [
               {
@@ -437,14 +489,21 @@
                 "value": "debug.dmp"
               }
             ]
-          }
+          },
+          "instanceId": "itm-mwhrt4u8-11"
         }
       ],
       "capecs": [],
       "cwes": [],
       "customItems": [],
       "groups": [],
-      "layout": []
+      "layout": [
+        {
+          "kind": "item",
+          "type": "attack",
+          "instanceId": "itm-mwhrt4u8-11"
+        }
+      ]
     },
     "THROUGH:lateral-movement": {
       "techniques": [
@@ -454,7 +513,9 @@
             "score": "high",
             "confidence": 75,
             "comments": "SMB lateral movement from radiology workstation to EMR database server (10.10.8.15). Evidence: Windows Security 4624 Type 3 logon events, SMB share access audit.",
-            "cves": [],
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
             "hyperlinks": [],
             "observables": [
               {
@@ -466,14 +527,21 @@
                 "value": "10.10.8.15"
               }
             ]
-          }
+          },
+          "instanceId": "itm-mwhrt4u8-12"
         }
       ],
       "capecs": [],
       "cwes": [],
       "customItems": [],
       "groups": [],
-      "layout": []
+      "layout": [
+        {
+          "kind": "item",
+          "type": "attack",
+          "instanceId": "itm-mwhrt4u8-12"
+        }
+      ]
     },
     "OUT:collection": {
       "techniques": [
@@ -483,7 +551,9 @@
             "score": "critical",
             "confidence": 82,
             "comments": "Patient records accessed from EMR SQL database. Evidence: SQL audit log shows bulk SELECT queries across patient demographics and treatment tables. 47,000 records accessed between Jan 15-19.",
-            "cves": [],
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
             "hyperlinks": [],
             "observables": [
               {
@@ -491,14 +561,21 @@
                 "value": "emr-db01.mercyhealth.local"
               }
             ]
-          }
+          },
+          "instanceId": "itm-mwhrt4u8-13"
         }
       ],
       "capecs": [],
       "cwes": [],
       "customItems": [],
       "groups": [],
-      "layout": []
+      "layout": [
+        {
+          "kind": "item",
+          "type": "attack",
+          "instanceId": "itm-mwhrt4u8-13"
+        }
+      ]
     },
     "OUT:exfiltration": {
       "techniques": [
@@ -508,7 +585,9 @@
             "score": "critical",
             "confidence": 78,
             "comments": "Data exfiltrated over C2 channel. Estimated 1.8 GB based on netflow analysis. Evidence: sustained high-volume HTTPS sessions to C2 domain between Jan 19-21, anomalous compared to baseline.",
-            "cves": [],
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
             "hyperlinks": [],
             "observables": [
               {
@@ -516,7 +595,8 @@
                 "value": "medupdate-portal.com"
               }
             ]
-          }
+          },
+          "instanceId": "itm-mwhrt4u8-14"
         }
       ],
       "capecs": [],
@@ -524,15 +604,29 @@
       "customItems": [
         {
           "id": "note--076608f0-3cff-4d3c-b246-a2bbe7bd44fb",
-          "instanceId": "itm-ir01-note1",
-          "type": "custom",
-          "metadata": {}
+          "metadata": {
+            "score": "unclassified",
+            "confidence": null,
+            "comments": "",
+            "cveEntries": [],
+            "cveId": "",
+            "cveIds": [],
+            "hyperlinks": [],
+            "observables": []
+          },
+          "instanceId": "itm-ir01-note1"
         }
       ],
       "groups": [],
       "layout": [
         {
           "kind": "item",
+          "type": "attack",
+          "instanceId": "itm-mwhrt4u8-14"
+        },
+        {
+          "kind": "item",
+          "type": "custom",
           "instanceId": "itm-ir01-note1"
         }
       ]
@@ -552,6 +646,88 @@
       "customItems": [],
       "groups": [],
       "layout": []
+    }
+  },
+  "customLibrary": {
+    "indicator--1c8bf733-f7f2-48a1-910d-74bf03170aad": {
+      "id": "indicator--1c8bf733-f7f2-48a1-910d-74bf03170aad",
+      "stixType": "indicator",
+      "name": "MedLoader SHA-256 Hash",
+      "description": "SHA-256 hash of the first-stage loader DLL recovered from the radiology workstation. Identified during forensic triage of Patient Zero endpoint.",
+      "labels": [
+        "file-hash"
+      ],
+      "customTypeName": "",
+      "created": "2026-02-05T14:00:00.000Z",
+      "modified": "2026-02-10T09:00:00.000Z",
+      "lang": "en",
+      "pattern": "[file:hashes.'SHA-256' = 'cbf26b645a9288b22f079bf0b2502dee5b3236475337306c6238d4de18e7e814']",
+      "pattern_type": "stix",
+      "valid_from": "2026-01-20T00:00:00.000Z",
+      "indicator_types": [
+        "malicious-activity"
+      ]
+    },
+    "indicator--f87570ca-10b0-4919-93ca-cf032d84484a": {
+      "id": "indicator--f87570ca-10b0-4919-93ca-cf032d84484a",
+      "stixType": "indicator",
+      "name": "C2 Domain — medupdate-portal.com",
+      "description": "Primary C2 domain resolved from DNS logs on compromised endpoints. Registered 3 days before first observed beacon. WHOIS privacy-protected, hosted on AS12345.",
+      "labels": [
+        "c2-domain"
+      ],
+      "customTypeName": "",
+      "created": "2026-02-06T10:00:00.000Z",
+      "modified": "2026-02-10T09:00:00.000Z",
+      "lang": "en",
+      "pattern": "[domain-name:value = 'medupdate-portal.com']",
+      "pattern_type": "stix",
+      "valid_from": "2026-01-17T00:00:00.000Z",
+      "indicator_types": [
+        "malicious-activity"
+      ]
+    },
+    "observed-data--a698eb60-d252-408b-8695-a17689c39356": {
+      "id": "observed-data--a698eb60-d252-408b-8695-a17689c39356",
+      "stixType": "observed-data",
+      "labels": [
+        "network-telemetry",
+        "c2-beaconing"
+      ],
+      "customTypeName": "",
+      "created": "2026-02-06T11:00:00.000Z",
+      "modified": "2026-02-10T09:00:00.000Z",
+      "lang": "en",
+      "first_observed": "2026-01-21T02:15:00.000Z",
+      "last_observed": "2026-01-22T02:15:00.000Z",
+      "number_observed": 1247,
+      "object_refs": [
+        "ipv4-addr--a14b3455-507f-5bac-b0f7-b196861cb99f",
+        "domain-name--1822a758-81a6-5fea-9655-6b556a2eb1cb"
+      ]
+    },
+    "note--076608f0-3cff-4d3c-b246-a2bbe7bd44fb": {
+      "id": "note--076608f0-3cff-4d3c-b246-a2bbe7bd44fb",
+      "stixType": "note",
+      "labels": [
+        "analyst-note",
+        "dwell-time"
+      ],
+      "customTypeName": "",
+      "created": "2026-02-08T16:00:00.000Z",
+      "modified": "2026-02-10T09:00:00.000Z",
+      "lang": "en",
+      "content": "Estimated dwell time: 18 days (Jan 3 initial compromise → Jan 21 detection via anomalous DNS query volume). GAP: No endpoint telemetry for first 14 days — EDR agent was not deployed on radiology VLAN. SIEM correlation rule for beaconing only triggered after threshold tuning on Jan 20. Recommend: extend EDR coverage to all medical device VLANs, lower beaconing detection threshold to 30-second intervals.",
+      "abstract": "18-day dwell time. EDR gap on medical VLANs enabled undetected persistence.",
+      "authors": [
+        "IR Lead — A. Chen",
+        "Forensic Analyst — K. Petrov"
+      ],
+      "object_refs": [
+        "indicator--1c8bf733-f7f2-48a1-910d-74bf03170aad",
+        "indicator--f87570ca-10b0-4919-93ca-cf032d84484a",
+        "observed-data--a698eb60-d252-408b-8695-a17689c39356"
+      ]
     }
   }
 }

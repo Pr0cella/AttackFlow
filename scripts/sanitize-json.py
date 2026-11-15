@@ -76,8 +76,14 @@ def sanitize_json_file(file_path):
 
 def load_config_paths(project_dir):
     """Load sanitization paths from config.js, with defaults."""
+    # generated files only; Nav_Layer_*.json are ATT&CK Navigator exports and are not modified
     default_paths = [
-        'resources/**/*.json',
+        'resources/attack-techniques.json',
+        'resources/capec-full.json',
+        'resources/capec-to-technique.json',
+        'resources/technique-to-capec.json',
+        'resources/cwe-full.json',
+        'resources/cwe-to-capec.json',
         'frameworks/ATTCK/**/*.json'
     ]
 
