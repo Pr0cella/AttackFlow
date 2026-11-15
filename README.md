@@ -104,6 +104,34 @@ See the usecases [README](docs/Usecases/README.md) for details.
 - **Grouping demo**: Import [examples/grouping-demo.json](examples/grouping-demo.json) for a ransomware-focused TTP mapping that showcases grouping.
 - **STIX demo**: Import [examples/stix-demo.json](examples/stix-demo.json) for a full STIX 2.1 showcase with all 19 SDO types across UKC phases.
 - **STIX bundle**: Import [examples/Operation-Midnight-Eclipse-stix-bundle.json](examples/Operation-Midnight-Eclipse-stix-bundle.json) via the STIX tab's "Import STIX Bundle" button to test STIX bundle parsing (25 SDOs across 19 types + 18 phase-relationship SROs).
+
+### Automated Test Suite
+
+The end-to-end suite in `tests/e2e/` uses [Playwright](https://playwright.dev/) with Chromium. It covers import validation, export formats, STIX round trips and security regressions. Requirements: Node.js and Python 3 (`python3` on `PATH`; the suite serves the app with `python3 -m http.server` on `127.0.0.1:4173`).
+
+Install Playwright once, outside the repository, so that `node_modules` does not end up in the working tree:
+
+```bash
+mkdir -p ~/af-qa && cd ~/af-qa
+npm install @playwright/test@1.64.1
+npx playwright install chromium
+```
+
+Run the full suite from the repository root:
+
+```bash
+# bash
+NODE_PATH=~/af-qa/node_modules node ~/af-qa/node_modules/@playwright/test/cli.js test --config playwright.config.cjs
+```
+
+```powershell
+# PowerShell
+$env:NODE_PATH = "$HOME\af-qa\node_modules"
+node "$HOME\af-qa\node_modules\@playwright\test\cli.js" test --config playwright.config.cjs
+```
+
+To test a server that is already running, set `PLAYWRIGHT_BASE_URL` (for example `http://127.0.0.1:8080`). Results are written to `test-results/` in the repository root.
+
 ## Project Structure
 
 ```
