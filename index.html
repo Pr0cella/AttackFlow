@@ -4169,7 +4169,7 @@
                     return { valid, message: valid ? null : 'Invalid domain name' };
                 },
                 url(v) {
-                    const valid = /^https?:\/\/[^\s<>"{}|\\^`\[\]]+$/.test(v);
+                    const valid = typeof v === 'string' && /^https?:\/\/[^\s<>"`\\]+$/.test(v) && isSafeHttpUrl(v); // parser-checked http(s); | ^ [ ] { } allowed
                     return { valid, message: valid ? null : 'Invalid URL (must start with http:// or https://)' };
                 },
                 cveId(v) {
@@ -7182,7 +7182,7 @@
                         entry[field.key] = !!raw;
                     } else if (field.type === 'integer') {
                         const num = parseInt(raw, 10);
-                        if (!isNaN(num)) entry[field.key] = num;
+                        if (Number.isFinite(num)) entry[field.key] = num;
                     } else if (field.type === 'list' || field.type === 'list:open-vocab') {
                         if (Array.isArray(raw)) {
                             entry[field.key] = raw
@@ -7450,7 +7450,7 @@
                         item[field.key] = fieldEl.checked;
                     } else if (field.type === 'integer') {
                         const num = parseInt(rawVal, 10);
-                        item[field.key] = isNaN(num) ? undefined : num;
+                        item[field.key] = Number.isFinite(num) ? num : undefined;
                     } else if (field.type === 'list' || field.type === 'list:open-vocab') {
                         item[field.key] = rawVal.split(',').map(s => sanitizeForStorage(s.trim(), 200)).filter(s => s.length > 0);
                     } else {
@@ -9867,7 +9867,7 @@
                                 entry[field.key] = !!raw;
                             } else if (field.type === 'integer') {
                                 const num = parseInt(raw, 10);
-                                if (!isNaN(num)) entry[field.key] = num;
+                                if (Number.isFinite(num)) entry[field.key] = num;
                             } else if (field.type === 'list' || field.type === 'list:open-vocab') {
                                 if (Array.isArray(raw)) {
                                     entry[field.key] = raw

@@ -133,11 +133,12 @@ See the usecases [README](docs/Usecases/README.md) for details.
 │       ├── ALL.xml                 # Full CWE list
 │       ├── HARDWARE.xml            # CWE hardware design weaknesses
 │       └── SOFTWARE.xml            # CWE software development weaknesses
-└── resources/                      # Generated data (do not edit directly)
+└── resources/                      # Generated data and ATT&CK Navigator layer exports (do not edit directly)
     ├── attack-techniques.json      # ATT&CK library (935 techniques)
     ├── capec-full.json             # CAPEC attack patterns
     ├── cwe-full.json               # CWE weaknesses
     ├── capec-to-technique.json     # CAPEC → ATT&CK mappings
+    ├── technique-to-capec.json     # ATT&CK → CAPEC mappings
     ├── cwe-to-capec.json           # CWE → CAPEC mappings
     ├── Nav_Layer_ENTERPRISE.json   # Enterprise Navigator layer
     ├── Nav_Layer_MOBILE.json       # Mobile Navigator layer
@@ -184,7 +185,7 @@ AttackFlow implements defense-in-depth protections and adheres to security by de
 (Note: Application NOT production ready yet - may still contain vulnerable components) 
 Please do not hesitate to create an issue / pull request or contact me directly if you find any security related issues or have suggestions for further improving application security and mitigating exploitation scenarios. 
 
-- **Input Blocking** — Dangerous characters (`` < > [ ] { } " ' ; -- ` ``) blocked at input level
+- **Input Normalization** — Control characters are removed, lengths bounded and structural values are allowlist validated
 - **Output Encoding** — All user-supplied values HTML-encoded before rendering
 - **Defensive Rendering** — Dynamic template rendering is output-encoded and sanitized before insertion
 - **Import Validation** — File size, item count, and pattern validation on imports

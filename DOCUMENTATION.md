@@ -60,7 +60,7 @@ AttackFlow is a zero-build browser SPA with all core runtime logic inside inline
 | `stix-config.js` | STIX common fields, vocabularies, 19 SDO type definitions, helper APIs |
 | `explorer.html` | Relationship Explorer iframe view |
 | `stix-builder.html` | STIX Composer iframe view (theme + local IPC aware) |
-| `resources/*.json` | Generated runtime datasets (ATT&CK/CAPEC/CWE + mappings + Navigator layers) |
+| `resources/*.json` | Generated runtime datasets (ATT&CK/CAPEC/CWE + mappings) and ATT&CK Navigator layer exports |
 
 ---
 
@@ -92,9 +92,9 @@ Major additions reflected in v2.9.0 runtime:
 
 ## 4. config.js — Configuration & Theme Engine
 
-### 4.1 `CONFIG` Highlights (v2.9.0)
+### 4.1 `CONFIG` Highlights (v2.9.3)
 
-- `version: '2.9.0'`
+- `version: '2.9.3'`
 - `sources.attack.version: '20.1'`
 - `sources.capec.version: '3.9'`, `sources.cwe.version: '5.0'` — expected source versions; `extract-data.py` warns on mismatch
 - `imports.clearStixOnBundleImport`, `imports.clearStixOnKillChainImport`
@@ -498,7 +498,7 @@ Initialization order:
 
 ```js
 {
-  version: '2.9.0',
+  version: '2.9.3',
   schema: 'killchain-export-lite',
   exportedAt: 'ISO-8601',
   title: '',
@@ -517,9 +517,9 @@ Initialization order:
 
 ## 8. Security Model
 
-Defense-in-depth implementation in v2.9.0:
+Defense-in-depth implementation in v2.9.3:
 
-1. **Input blocking + normalization** on all text-entry paths.
+1. **Input normalization** on all text-entry paths: control characters removed and lengths bounded. The main editor preserves printable evidence. The STIX Composer still blocks typing of `` < > [ ] { } " ' ; ` ``, removes `` [ ] { } ; " ' ` `` from imported text and stores `<` and `>` as `&lt;` and `&gt;`.
 2. **Output encoding** before template insertion (`esc`, `escAttr`, entity encoding).
 3. **Safe JSON parsing** using reviver to strip `__proto__` / `constructor` / `prototype`.
 4. **Null-prototype object construction** for untrusted accumulator objects.
@@ -542,8 +542,8 @@ Primary listeners include:
 - `window.message` (channel bootstrap guard)
 - `window.resize` (compact layout)
 - `document.click` (dropdown close + global search close)
-- `document.keydown` (escape handling + input guard)
-- `document.beforeinput` / `paste` / `drop` / `input` (input hardening)
+- `document.keydown` (escape handling)
+- `document.paste` / `drop` / `input` (input normalization)
 - iframe `load` handlers for explorer and STIX builder channel setup
 
 ---
@@ -584,4 +584,4 @@ python3 scripts/generate-function-index.py
 
 ---
 
-*Generated for AttackFlow v2.9.0 from current workspace sources (`index.html`, `config.js`, `stix-config.js`, `docs/IPC_API-DOCS.md`).*
+*Generated for AttackFlow v2.9.3 from current workspace sources (`index.html`, `config.js`, `stix-config.js`, `docs/IPC_API-DOCS.md`).*
